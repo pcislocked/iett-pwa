@@ -286,8 +286,7 @@ export default function RoutePage() {
                 <Marker key={b.kapino} position={[b.latitude, b.longitude]} icon={busIcon}>
                   <Popup>
                     <strong>{b.kapino}</strong><br />
-                    {b.direction}<br />
-                    Hız: {b.speed} km/h
+                    {b.direction}
                   </Popup>
                 </Marker>
               ))}
