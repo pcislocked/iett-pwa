@@ -7,6 +7,13 @@ import { usePolling } from '@/hooks/usePolling'
 import { api, type Announcement, type StopDetail, type BusPosition } from '@/api/client'
 import { useFavorites } from '@/hooks/useFavorites'
 
+const busMarkerIcon = L.divIcon({
+  className: '',
+  html: `<div style="background:#10b981;border-radius:50%;width:10px;height:10px;border:2px solid #fff;box-shadow:0 0 0 2px rgba(16,185,129,0.4)"></div>`,
+  iconSize: [10, 10],
+  iconAnchor: [5, 5],
+})
+
 function EtaChip({ minutes, raw }: { minutes: number | null; raw: string }) {
   if (minutes === null) return <span className="eta-chip eta-far">{raw}</span>
   if (minutes < 5)
@@ -103,6 +110,12 @@ export default function StopPage() {
     [arrivals, activeRoutes],
   )
 
+  const etaByKapino = useMemo(() => {
+    const m = new Map<string, number | null>()
+    filteredArrivals.forEach((a) => { if (a.kapino) m.set(a.kapino, a.eta_minutes) })
+    return m
+  }, [filteredArrivals])
+
   if (!dcode) return null
 
   return (
@@ -180,7 +193,7 @@ export default function StopPage() {
 
         {/* Map — top ~40% */}
         <div className="h-[40%] shrink-0 border-b border-surface-muted relative">
-          {stopDetail?.latitude && stopDetail.longitude ? (
+          {stopDetail && stopDetail.latitude != null && stopDetail.longitude != null ? (
             <MapContainer
               center={[stopDetail.latitude, stopDetail.longitude]}
               zoom={16}
@@ -190,7 +203,7 @@ export default function StopPage() {
                 attribution='&copy; <a href="https://carto.com/">CartoDB</a>'
                 url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
               />
-              {/* Stop marker — prominent pulse ring */}
+              {/* Stop marker — prominent static circle */}
               <CircleMarker
                 center={[stopDetail.latitude, stopDetail.longitude]}
                 radius={12}
@@ -203,15 +216,9 @@ export default function StopPage() {
               </CircleMarker>
               {/* Bus markers */}
               {routeBuses.map((b) => {
-                const eta = filteredArrivals.find((a) => a.kapino === b.kapino)?.eta_minutes ?? null
-                const busIcon = L.divIcon({
-                  className: '',
-                  html: `<div style="background:#10b981;border-radius:50%;width:10px;height:10px;border:2px solid #fff;box-shadow:0 0 0 2px rgba(16,185,129,0.4)"></div>`,
-                  iconSize: [10, 10],
-                  iconAnchor: [5, 5],
-                })
+                const eta = etaByKapino.get(b.kapino) ?? null
                 return (
-                  <Marker key={b.kapino} position={[b.latitude, b.longitude]} icon={busIcon}>
+                  <Marker key={b.kapino} position={[b.latitude, b.longitude]} icon={busMarkerIcon}>
                     <Popup>
                       <strong>{b.route_code}</strong>
                       {b.route_name && <><br />{b.route_name}</>}
@@ -235,7 +242,7 @@ export default function StopPage() {
             </div>
           )}
           {/* Hint overlay when no route is selected */}
-          {stopDetail?.latitude && activeRoutes.size === 0 && (
+          {stopDetail && stopDetail.latitude != null && stopDetail.longitude != null && activeRoutes.size === 0 && (
             <div className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-black/60 text-white text-[10px] font-medium px-3 py-1 rounded-full pointer-events-none z-[1000]">
               Otobüsleri görmek için bir hat seç
             </div>
@@ -272,7 +279,9 @@ export default function StopPage() {
             </div>
           )}
 
-          {filteredArrivals.map((a, i) => (
+          {filteredArrivals.map((a, i) => {
+            const vehicleId = a.plate ?? a.kapino
+            return (
             <Link
               key={`${a.route_code}-${a.destination}-${i}`}
               to={`/routes/${a.route_code}`}
@@ -285,12 +294,13 @@ export default function StopPage() {
               <div className="flex-1 min-w-0">
                 <p className="text-xs text-slate-200 truncate leading-snug">{a.destination}</p>
                 <p className="text-[10px] text-slate-500 mt-0.5">
-                  {a.plate ?? a.kapino ? `${a.plate ?? a.kapino}  ·  ` : ''}{a.eta_raw}
+                  {vehicleId ? `${vehicleId}  ·  ` : ''}{a.eta_raw}
                 </p>
               </div>
               <EtaChip minutes={a.eta_minutes} raw={a.eta_raw} />
             </Link>
-          ))}
+            )
+          })}
 
           {/* Announcements for first selected route */}
           {firstActive && (announcements ?? []).length > 0 && (
