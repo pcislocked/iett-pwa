@@ -6,6 +6,7 @@ import { addRecent } from '@/hooks/useRecentSearches'
 type SearchResult =
   | ({ kind: 'stop' } & StopSearchResult)
   | ({ kind: 'route' } & RouteSearchResult)
+  | { kind: 'stop-direct'; dcode: string }
 
 interface Props {
   placeholder?: string
@@ -25,9 +26,16 @@ export default function SearchBar({ placeholder = 'Hat kodu, durak adı...', aut
   }, [autoFocus])
 
   useEffect(() => {
-    if (query.trim().length < 2) {
+    const q = query.trim()
+    if (q.length < 2) {
       setResults([])
       setOpen(false)
+      return
+    }
+    // Numeric-only input ≥ 4 digits → treat as dcode, skip API
+    if (/^\d{4,}$/.test(q)) {
+      setResults([{ kind: 'stop-direct', dcode: q }])
+      setOpen(true)
       return
     }
     if (timerRef.current) clearTimeout(timerRef.current)
@@ -53,7 +61,9 @@ export default function SearchBar({ placeholder = 'Hat kodu, durak adı...', aut
   function handleSelect(r: SearchResult) {
     setOpen(false)
     setQuery('')
-    if (r.kind === 'stop') {
+    if (r.kind === 'stop-direct') {
+      navigate(`/stops/${r.dcode}`)
+    } else if (r.kind === 'stop') {
       addRecent({ kind: 'stop', code: r.dcode, name: r.name })
       navigate(`/stops/${r.dcode}`)
     } else {
@@ -91,16 +101,29 @@ export default function SearchBar({ placeholder = 'Hat kodu, durak adı...', aut
                            flex items-center gap-3"
                 onClick={() => handleSelect(r)}
               >
-                <span className={`text-xs font-bold px-1.5 py-0.5 rounded ${
-                  r.kind === 'stop'
-                    ? 'bg-brand-900 text-brand-100'
-                    : 'bg-amber-900 text-amber-100'
-                }`}>
-                  {r.kind === 'stop' ? 'DURAK' : 'HAT'}
-                </span>
-                <span className="truncate text-sm">
-                  {r.kind === 'stop' ? r.name : `${r.hat_kodu} — ${r.name}`}
-                </span>
+                {r.kind === 'stop-direct' ? (
+                  <>
+                    <span className="text-xs font-bold px-1.5 py-0.5 rounded bg-emerald-900 text-emerald-100">
+                      KOD
+                    </span>
+                    <span className="truncate text-sm text-slate-200">
+                      Durak #{r.dcode} sayfasına git
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <span className={`text-xs font-bold px-1.5 py-0.5 rounded ${
+                      r.kind === 'stop'
+                        ? 'bg-brand-900 text-brand-100'
+                        : 'bg-amber-900 text-amber-100'
+                    }`}>
+                      {r.kind === 'stop' ? 'DURAK' : 'HAT'}
+                    </span>
+                    <span className="truncate text-sm">
+                      {r.kind === 'stop' ? r.name : `${r.hat_kodu} — ${r.name}`}
+                    </span>
+                  </>
+                )}
               </button>
             </li>
           ))}
