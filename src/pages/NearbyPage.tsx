@@ -333,7 +333,7 @@ function NearbyMapView({ stops, userLat, userLon }: {
                     ))}
                   </div>
                 )}
-                <a href={`/stops/${s.stop_code}`} style={{ display: 'block', textAlign: 'center', background: '#2563eb', color: '#fff', borderRadius: 6, padding: '4px 8px', fontSize: 11, fontWeight: 600, textDecoration: 'none' }}>Varış Saatleri</a>
+                <Link to={`/stops/${s.stop_code}`} style={{ display: 'block', textAlign: 'center', background: '#2563eb', color: '#fff', borderRadius: 6, padding: '4px 8px', fontSize: 11, fontWeight: 600, textDecoration: 'none' }}>Varış Saatleri</Link>
               </div>
             </Popup>
           </CircleMarker>
