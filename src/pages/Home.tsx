@@ -66,7 +66,7 @@ export default function Home() {
   return (
     <div className="min-h-screen flex flex-col">
       {/* Hero */}
-      <div className="relative overflow-hidden"
+      <div className="relative"
            style={{ background: 'linear-gradient(160deg, #0c1a3a 0%, #1a3460 40%, #0f2548 70%, #0f172a 100%)' }}>
         {/* Decorative lines (Bosphorus bridge silhouette hint) */}
         <div className="absolute inset-0 opacity-10">
