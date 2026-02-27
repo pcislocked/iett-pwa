@@ -65,6 +65,7 @@ export interface NearbyStop {
   latitude: number
   longitude: number
   district: string | null
+  direction?: string | null
   distance_m: number
 }
 
