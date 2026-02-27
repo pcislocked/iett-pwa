@@ -41,15 +41,17 @@ function TimetableView({ schedule, scheduleError, onRetry, metadata }: {
   const [dayType, setDayType] = useState('H')
   const [direction, setDirection] = useState('')
 
-  // Map direction code → human label from metadata
+  // Map direction code ('D'/'G') → human label from metadata
+  // variant_code looks like "14M_D_D0" or "500T_G_G0" — extract D/G from it
   const dirLabel = useMemo(() => {
     const map: Record<string, string> = {}
     if (metadata) {
       for (const m of metadata) {
         if (m.variant_code && m.direction_name) {
-          // SYON is '0' or '1' in some endpoints; store by direction int too
-          map[String(m.direction)] = m.direction_name
-          map[m.variant_code] = m.direction_name
+          const dir = m.variant_code.includes('_D_') ? 'D'
+                    : m.variant_code.includes('_G_') ? 'G'
+                    : null
+          if (dir) map[dir] = m.direction_name
         }
       }
     }
@@ -115,20 +117,23 @@ function TimetableView({ schedule, scheduleError, onRetry, metadata }: {
         ))}
       </div>
 
-      {/* Direction dropdown */}
-      {availableDirections.length > 0 && (
-        <select
-          value={effectiveDirection}
-          onChange={(e) => setDirection(e.target.value)}
-          className="w-full bg-surface-card border border-surface-muted rounded-xl px-4 py-2.5
-                     text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500"
-        >
+      {/* Direction pill toggle — replaces native <select> */}
+      {availableDirections.length > 1 && (
+        <div className="flex gap-1 bg-surface-card rounded-xl p-1 border border-surface-muted">
           {availableDirections.map((dir) => (
-            <option key={dir} value={dir}>
+            <button
+              key={dir}
+              onClick={() => setDirection(dir)}
+              className={`flex-1 text-xs py-1.5 px-2 rounded-lg font-medium transition-colors truncate ${
+                effectiveDirection === dir
+                  ? 'bg-brand-600 text-white'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
               {dirLabel(dir)}
-            </option>
+            </button>
           ))}
-        </select>
+        </div>
       )}
 
       {/* Hour grid */}
