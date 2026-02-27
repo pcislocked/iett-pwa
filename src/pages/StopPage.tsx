@@ -282,9 +282,7 @@ export default function StopPage() {
           )}
 
           {filteredArrivals.map((a, i) => {
-            const kapino = a.kapino
-            const plate  = a.plate
-            const vehicleLine = [kapino, plate].filter(Boolean).join('  ·  ')
+            const vehicleLine = [a.kapino, a.plate].filter(Boolean).join('  ·  ')
             return (
             <Link
               key={`${a.route_code}-${a.destination}-${i}`}
