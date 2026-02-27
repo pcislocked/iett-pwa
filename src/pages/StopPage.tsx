@@ -1,9 +1,10 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { MapContainer, TileLayer, CircleMarker, Popup } from 'react-leaflet'
+import { MapContainer, TileLayer, CircleMarker, Marker, Popup } from 'react-leaflet'
+import * as L from 'leaflet'
 import { useArrivals } from '@/hooks/useArrivals'
 import { usePolling } from '@/hooks/usePolling'
-import { api, type Announcement, type StopDetail } from '@/api/client'
+import { api, type Announcement, type StopDetail, type BusPosition } from '@/api/client'
 import { useFavorites } from '@/hooks/useFavorites'
 
 function EtaChip({ minutes, raw }: { minutes: number | null; raw: string }) {
@@ -35,6 +36,28 @@ export default function StopPage() {
   const navigate = useNavigate()
   const [activeRoutes, setActiveRoutes] = useState<Set<string>>(new Set())
   const [showAnnouncements, setShowAnnouncements] = useState(false)
+  const [routeBuses, setRouteBuses] = useState<BusPosition[]>([])
+
+  // Poll bus positions for selected routes every 15s
+  useEffect(() => {
+    if (activeRoutes.size === 0) {
+      setRouteBuses([])
+      return
+    }
+    let cancelled = false
+    const fetchBuses = async () => {
+      const results = await Promise.all(
+        Array.from(activeRoutes).map((r) => api.routes.buses(r).catch(() => [] as BusPosition[]))
+      )
+      if (!cancelled) setRouteBuses(results.flat())
+    }
+    fetchBuses()
+    const id = setInterval(fetchBuses, 15_000)
+    return () => {
+      cancelled = true
+      clearInterval(id)
+    }
+  }, [activeRoutes])
 
   const { data: arrivals, loading, error, stale } = useArrivals(dcode ?? '')
 
@@ -156,7 +179,7 @@ export default function StopPage() {
       <div className="flex-1 flex flex-col overflow-hidden max-w-2xl w-full mx-auto">
 
         {/* Map — top ~40% */}
-        <div className="h-[40%] shrink-0 border-b border-surface-muted">
+        <div className="h-[40%] shrink-0 border-b border-surface-muted relative">
           {stopDetail?.latitude && stopDetail.longitude ? (
             <MapContainer
               center={[stopDetail.latitude, stopDetail.longitude]}
@@ -167,16 +190,37 @@ export default function StopPage() {
                 attribution='&copy; <a href="https://carto.com/">CartoDB</a>'
                 url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
               />
+              {/* Stop marker — prominent pulse ring */}
               <CircleMarker
                 center={[stopDetail.latitude, stopDetail.longitude]}
-                radius={10}
-                pathOptions={{ color: '#2563eb', fillColor: '#2563eb', fillOpacity: 0.9 }}
+                radius={12}
+                pathOptions={{ color: '#3b82f6', fillColor: '#2563eb', fillOpacity: 1, weight: 3 }}
               >
                 <Popup>
                   <strong>{stopName}</strong>
                   <br />#{dcode}
                 </Popup>
               </CircleMarker>
+              {/* Bus markers */}
+              {routeBuses.map((b) => {
+                const eta = filteredArrivals.find((a) => a.kapino === b.kapino)?.eta_minutes ?? null
+                const busIcon = L.divIcon({
+                  className: '',
+                  html: `<div style="background:#10b981;border-radius:50%;width:10px;height:10px;border:2px solid #fff;box-shadow:0 0 0 2px rgba(16,185,129,0.4)"></div>`,
+                  iconSize: [10, 10],
+                  iconAnchor: [5, 5],
+                })
+                return (
+                  <Marker key={b.kapino} position={[b.latitude, b.longitude]} icon={busIcon}>
+                    <Popup>
+                      <strong>{b.route_code}</strong>
+                      {b.route_name && <><br />{b.route_name}</>}
+                      {eta !== null && <><br />{eta} dk</>}
+                      <br /><span style={{ fontFamily: 'monospace', fontSize: 11 }}>{b.plate ?? b.kapino}</span>
+                    </Popup>
+                  </Marker>
+                )
+              })}
             </MapContainer>
           ) : (
             <div className="h-full flex flex-col items-center justify-center text-slate-500">
@@ -188,6 +232,12 @@ export default function StopPage() {
               ) : (
                 <p className="text-xs">Konum verisi yok</p>
               )}
+            </div>
+          )}
+          {/* Hint overlay when no route is selected */}
+          {stopDetail?.latitude && activeRoutes.size === 0 && (
+            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-black/60 text-white text-[10px] font-medium px-3 py-1 rounded-full pointer-events-none z-[1000]">
+              Otobüsleri görmek için bir hat seç
             </div>
           )}
         </div>
