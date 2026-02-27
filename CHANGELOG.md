@@ -5,6 +5,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [0.1.2] — 2026-02-28
+
+### Fixed
+- **BUG-09** — Searching by numeric stop code (dcode) now works. `SearchBar` detects all-digit queries ≥ 4 characters, skips the API, and injects a direct "Durak #XXXXXX sayfasına git" result that navigates straight to `/stops/{dcode}`.
+- **BUG-10** — Direction pill labels on the route timetable page are now short terminal names. `direction_name` is split on ` - ` and only the first terminal is shown. The opposite direction is derived from the same metadata variant (via `fullNameByDir` to avoid inconsistency). Hardcoded `Gidiş`/`Dönüş` fallback now only fires when there is no metadata at all.
+- **BUG-11** — Fleet map fixes for mobile: `100vh` → `100dvh` (dynamic viewport height accounts for collapsible browser chrome), `overflow-hidden` added to wrapper to isolate scroll context, `touchAction: 'none'` on `MapContainer` prevents Leaflet touch events from leaking to the page scroll.
+
+---
+
 ## [0.1.1] — 2026-02-28
 
 ### Added
