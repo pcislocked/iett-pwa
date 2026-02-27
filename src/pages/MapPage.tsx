@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import React, { useState, useMemo } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet'
 import * as L from 'leaflet'
 import { useFleet } from '@/hooks/useFleet'
@@ -188,6 +188,3 @@ export default function MapPage() {
     </div>
   )
 }
-
-// React must be in scope for <React.Fragment>
-import React from 'react'
