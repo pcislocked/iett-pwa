@@ -94,13 +94,19 @@ export default function StopPage() {
     if (activeRoutes.size === 0) { setRouteBuses([]); return }
     let cancelled = false
     const fetchBuses = async () => {
-      const results = await Promise.all(
-        Array.from(activeRoutes).map((r) => api.routes.buses(r).catch(() => [] as BusPosition[]))
-      )
-      if (!cancelled) setRouteBuses(results.flat())
+      try {
+        const results = await Promise.all(
+          Array.from(activeRoutes).map((r) => api.routes.buses(r).catch(() => [] as BusPosition[])),
+        )
+        if (!cancelled) setRouteBuses(results.flat())
+      } catch (err) {
+        // Keep previous routeBuses on error to avoid clearing markers on transient failures
+        console.error('Failed to fetch buses', err)
+      }
     }
-    fetchBuses()
-    const id = setInterval(fetchBuses, 15_000)
+    void fetchBuses()
+    const tick = () => { void fetchBuses() }
+    const id = setInterval(tick, 15_000)
     return () => { cancelled = true; clearInterval(id) }
   }, [activeRoutes])
 
