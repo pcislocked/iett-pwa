@@ -103,24 +103,24 @@ export default function SearchBar({ placeholder = 'Hat kodu, durak adı...', aut
               >
                 {r.kind === 'stop-direct' ? (
                   <>
-                    <span className="text-xs font-bold px-1.5 py-0.5 rounded bg-emerald-900 text-emerald-100">
-                      KOD
+                    <span className="text-xs font-bold px-1.5 py-0.5 rounded bg-emerald-900 text-emerald-100 font-mono">
+                      #{r.dcode}
                     </span>
                     <span className="truncate text-sm text-slate-200">
-                      Durak #{r.dcode} sayfasına git
+                      Durak sayfasına git
                     </span>
                   </>
                 ) : (
                   <>
-                    <span className={`text-xs font-bold px-1.5 py-0.5 rounded ${
+                    <span className={`text-xs font-bold px-1.5 py-0.5 rounded font-mono ${
                       r.kind === 'stop'
                         ? 'bg-brand-900 text-brand-100'
                         : 'bg-amber-900 text-amber-100'
                     }`}>
-                      {r.kind === 'stop' ? 'DURAK' : 'HAT'}
+                      {r.kind === 'stop' ? r.dcode : r.hat_kodu}
                     </span>
                     <span className="truncate text-sm">
-                      {r.kind === 'stop' ? r.name : `${r.hat_kodu} — ${r.name}`}
+                      {r.kind === 'stop' ? r.name : r.name}
                     </span>
                   </>
                 )}
