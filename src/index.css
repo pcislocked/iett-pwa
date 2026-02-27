@@ -23,6 +23,12 @@
   .eta-far    { @apply eta-badge bg-eta-far/20  text-eta-far; }
 }
 
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  .safe-area-pb { padding-bottom: env(safe-area-inset-bottom, 0px); }
+}
+
 /* Leaflet dark-mode map container */
 .leaflet-container {
   background: #1e293b;

@@ -1,18 +1,28 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api, type StopSearchResult, type RouteSearchResult } from '@/api/client'
+import { addRecent } from '@/hooks/useRecentSearches'
 
 type SearchResult =
   | ({ kind: 'stop' } & StopSearchResult)
   | ({ kind: 'route' } & RouteSearchResult)
 
-export default function SearchBar() {
+interface Props {
+  placeholder?: string
+  autoFocus?: boolean
+}
+
+export default function SearchBar({ placeholder = 'Hat kodu, durak adı...', autoFocus }: Props) {
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<SearchResult[]>([])
   const [open, setOpen] = useState(false)
   const navigate = useNavigate()
   const inputRef = useRef<HTMLInputElement>(null)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    if (autoFocus) inputRef.current?.focus()
+  }, [autoFocus])
 
   useEffect(() => {
     if (query.trim().length < 2) {
@@ -43,20 +53,32 @@ export default function SearchBar() {
   function handleSelect(r: SearchResult) {
     setOpen(false)
     setQuery('')
-    if (r.kind === 'stop') navigate(`/stops/${r.dcode}`)
-    else navigate(`/routes/${r.hat_kodu}`)
+    if (r.kind === 'stop') {
+      addRecent({ kind: 'stop', code: r.dcode, name: r.name })
+      navigate(`/stops/${r.dcode}`)
+    } else {
+      addRecent({ kind: 'route', code: r.hat_kodu, name: r.name })
+      navigate(`/routes/${r.hat_kodu}`)
+    }
   }
 
   return (
-    <div className="relative w-full max-w-lg mx-auto">
+    <div className="relative w-full">
+      <div className="relative">
+        <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500"
+             fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round"
+                d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+        </svg>
       <input
         ref={inputRef}
         type="search"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        placeholder="Durak adı veya hat numarası..."
-        className="w-full bg-surface-card border border-surface-muted rounded-xl
-                   px-4 py-3 text-slate-100 placeholder-slate-500
+        onBlur={() => setTimeout(() => setOpen(false), 150)}
+        placeholder={placeholder}
+        className="w-full bg-surface-card border border-surface-muted rounded-2xl
+                   pl-10 pr-4 py-3.5 text-slate-100 placeholder-slate-500 text-sm
                    focus:outline-none focus:ring-2 focus:ring-brand-500"
       />
       {open && (
@@ -84,6 +106,7 @@ export default function SearchBar() {
           ))}
         </ul>
       )}
+      </div>
     </div>
   )
 }
