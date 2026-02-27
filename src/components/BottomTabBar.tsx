@@ -60,13 +60,13 @@ export default function BottomTabBar() {
             key={to}
             to={to}
             end={to === '/'}
-            className={({ isActive }) =>
+            className={({ isActive }: { isActive: boolean }) =>
               `flex-1 flex flex-col items-center justify-center py-2.5 gap-0.5 transition-colors ${
                 isActive ? 'text-brand-500' : 'text-slate-500 hover:text-slate-300'
               }`
             }
           >
-            {({ isActive }) => (
+            {({ isActive }: { isActive: boolean }) => (
               <>
                 {icon(isActive)}
                 <span className="text-[10px] font-medium leading-none">{label}</span>

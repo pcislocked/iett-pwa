@@ -1,32 +1,11 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { MapContainer, TileLayer, CircleMarker, Popup, Marker } from 'react-leaflet'
-import L from 'leaflet'
-import { api, type RouteStop } from '@/api/client'
+import { MapContainer, TileLayer, CircleMarker, Popup, Marker, useMapEvents } from 'react-leaflet'
+import * as L from 'leaflet'
+import { api, type NearbyStop as ApiNearbyStop } from '@/api/client'
+import { distanceLabel } from '@/utils/distance'
 
-// Curated backbone routes covering most of Istanbul
-const BACKBONE_ROUTES = [
-  '14M', '15M', '16M', '22', '25E', '28', '34', '38', '44B', '48',
-  '52', '56', '59', '63', '500T', 'HT1', 'HT2', 'DT1', 'DT2',
-]
-
-function haversineMeters(lat1: number, lon1: number, lat2: number, lon2: number): number {
-  const R = 6_371_000
-  const φ1 = (lat1 * Math.PI) / 180
-  const φ2 = (lat2 * Math.PI) / 180
-  const Δφ = ((lat2 - lat1) * Math.PI) / 180
-  const Δλ = ((lon2 - lon1) * Math.PI) / 180
-  const a = Math.sin(Δφ / 2) ** 2 + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) ** 2
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-}
-
-function distanceLabel(m: number): string {
-  if (m < 1000) return `${Math.round(m)} m`
-  return `${(m / 1000).toFixed(1)} km`
-}
-
-interface NearbyStop extends RouteStop {
-  distance_m: number
+interface NearbyStop extends ApiNearbyStop {
   routes: string[]
 }
 
@@ -38,8 +17,9 @@ export default function NearbyPage() {
   const [userLat, setUserLat] = useState<number | null>(null)
   const [userLon, setUserLon] = useState<number | null>(null)
   const [allStops, setAllStops] = useState<NearbyStop[]>([])
-  const [progress, setProgress] = useState(0)
   const [view, setView] = useState<'list' | 'map'>('list')
+  const [pickedLat, setPickedLat] = useState<number | null>(null)
+  const [pickedLon, setPickedLon] = useState<number | null>(null)
 
   async function locate() {
     setPhase('locating')
@@ -66,46 +46,34 @@ export default function NearbyPage() {
 
   async function fetchNearby(lat: number, lon: number) {
     setPhase('loading')
-    setProgress(0)
-
-    const stopMap = new Map<string, NearbyStop>()
-    let done = 0
-
-    await Promise.allSettled(
-      BACKBONE_ROUTES.map(async (route) => {
-        try {
-          const stops = await api.routes.stops(route)
-          for (const s of stops) {
-            const dist = haversineMeters(lat, lon, s.latitude, s.longitude)
-            const existing = stopMap.get(s.stop_code)
-            if (!existing) {
-              stopMap.set(s.stop_code, { ...s, distance_m: dist, routes: [route] })
-            } else {
-              if (!existing.routes.includes(route)) existing.routes.push(route)
-              if (dist < existing.distance_m) existing.distance_m = dist
-            }
-          }
-        } catch {
-          // Silently skip failed routes
-        } finally {
-          done++
-          setProgress(Math.round((done / BACKBONE_ROUTES.length) * 100))
-        }
-      }),
-    )
-
-    const sorted = Array.from(stopMap.values())
-      .sort((a, b) => a.distance_m - b.distance_m)
-      .slice(0, 30)
-
-    setAllStops(sorted)
-    setPhase('done')
+    try {
+      const nearby = await api.stops.nearby(lat, lon)
+      const base: NearbyStop[] = nearby.map((s) => ({ ...s, routes: [] }))
+      setAllStops(base)
+      setPhase('done')
+      // Silently enrich route pills in the background
+      const enriched = await Promise.allSettled(
+        nearby.map((s) => api.stops.routes(s.stop_code)),
+      )
+      setAllStops(
+        nearby.map((s, i) => ({
+          ...s,
+          routes: enriched[i].status === 'fulfilled' ? enriched[i].value : [],
+        })),
+      )
+    } catch {
+      setPhase('error')
+      setErrorMsg('Duraklar yüklenemedi. Lütfen tekrar deneyin.')
+    }
   }
 
-  useEffect(() => {
-    locate()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  function handleManual() {
+    if (pickedLat !== null && pickedLon !== null) {
+      setUserLat(pickedLat)
+      setUserLon(pickedLon)
+      fetchNearby(pickedLat, pickedLon)
+    }
+  }
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -138,6 +106,18 @@ export default function NearbyPage() {
             </div>
 
             <button
+              onClick={() => { setPhase('idle'); setPickedLat(null); setPickedLon(null) }}
+              disabled={phase === 'locating' || phase === 'loading'}
+              className="p-1.5 text-slate-500 hover:text-slate-300 disabled:opacity-40 transition-colors"
+              aria-label="Konumu Değiştir"
+              title="Konum Seç"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+              </svg>
+            </button>
+            <button
               onClick={locate}
               disabled={phase === 'locating' || phase === 'loading'}
               className="p-1.5 text-brand-400 hover:text-brand-300 disabled:opacity-40 transition-colors"
@@ -155,25 +135,71 @@ export default function NearbyPage() {
 
       <div className="flex-1 max-w-2xl w-full mx-auto px-4 pb-28 pt-4">
 
+        {/* Idle — map location picker */}
+        {phase === 'idle' && (
+          <div className="flex flex-col gap-3">
+            <p className="text-xs text-slate-500 text-center">
+              Haritaya uzun bas veya tıkla → pin bırak, sonra aramayı başlat
+            </p>
+            <div className="relative rounded-2xl overflow-hidden border border-surface-muted" style={{ height: 420 }}>
+              <MapContainer
+                center={[41.015, 28.98]}
+                zoom={11}
+                style={{ height: '100%', width: '100%' }}
+              >
+                <TileLayer
+                  attribution='&copy; CartoDB'
+                  url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+                />
+                <LocationPickerEvents onPick={(lat, lon) => { setPickedLat(lat); setPickedLon(lon) }} />
+                {pickedLat !== null && pickedLon !== null && (
+                  <Marker
+                    position={[pickedLat, pickedLon]}
+                    icon={L.divIcon({
+                      className: '',
+                      html: `<div style="background:#2563eb;border-radius:50%;width:16px;height:16px;border:3px solid #fff;box-shadow:0 0 0 3px rgba(37,99,235,0.4)"></div>`,
+                      iconSize: [16, 16],
+                      iconAnchor: [8, 8],
+                    })}
+                  />
+                )}
+              </MapContainer>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={locate}
+                className="flex items-center justify-center gap-2 flex-1 bg-surface-muted hover:bg-slate-600 text-slate-200 font-semibold py-3 rounded-2xl transition-colors text-sm"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+                </svg>
+                GPS
+              </button>
+              <button
+                onClick={handleManual}
+                disabled={pickedLat === null}
+                className="flex-[3] bg-brand-600 hover:bg-brand-500 disabled:opacity-40 text-white font-semibold py-3 rounded-2xl transition-colors text-sm"
+              >
+                {pickedLat !== null ? 'Bu Noktadaki Yakın Duraklar' : 'Haritadan Nokta Seç'}
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Locating */}
-        {phase === 'idle' || phase === 'locating' ? (
+        {phase === 'locating' && (
           <div className="flex flex-col items-center justify-center py-24 text-slate-500">
             <div className="w-10 h-10 border-2 border-brand-500 border-t-transparent rounded-full animate-spin mb-4" />
             <p className="text-sm">Konum alınıyor...</p>
           </div>
-        ) : null}
+        )}
 
         {/* Loading */}
         {phase === 'loading' && (
           <div className="flex flex-col items-center justify-center py-24 text-slate-500">
-            <div className="w-48 bg-surface-muted rounded-full h-2 mb-4">
-              <div
-                className="bg-brand-500 h-2 rounded-full transition-all duration-300"
-                style={{ width: `${progress}%` }}
-              />
-            </div>
-            <p className="text-sm">Duraklar yükleniyor... {progress}%</p>
-            <p className="text-xs mt-1 text-slate-600">{BACKBONE_ROUTES.length} hat taranıyor</p>
+            <div className="w-10 h-10 border-2 border-brand-500 border-t-transparent rounded-full animate-spin mb-4" />
+            <p className="text-sm">Yakın duraklar aranıyor…</p>
           </div>
         )}
 
@@ -183,7 +209,7 @@ export default function NearbyPage() {
             <div className="bg-red-900/30 border border-red-700 rounded-xl px-5 py-4 text-red-300 text-sm w-full">
               {errorMsg}
             </div>
-            <button onClick={locate} className="btn-primary">
+            <button onClick={() => setPhase('idle')} className="btn-primary">
               Tekrar Dene
             </button>
           </div>
@@ -247,7 +273,17 @@ export default function NearbyPage() {
   )
 }
 
-// Lazy-load the map component to avoid importing Leaflet until needed
+// Invisible map layer that fires onPick on every click
+function LocationPickerEvents({ onPick }: { onPick: (lat: number, lon: number) => void }) {
+  useMapEvents({
+    click(e) {
+      onPick(e.latlng.lat, e.latlng.lng)
+    },
+  })
+  return null
+}
+
+// Results map view
 function NearbyMapView({ stops, userLat, userLon }: {
   stops: NearbyStop[]
   userLat: number

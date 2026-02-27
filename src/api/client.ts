@@ -16,18 +16,25 @@ async function get<T>(path: string): Promise<T> {
 
 // ─── Model types ──────────────────────────────────────────────────────────────
 
+export interface TrailPoint {
+  lat: number
+  lon: number
+  ts: string
+}
+
 export interface BusPosition {
   kapino: string
   plate: string | null
   latitude: number
   longitude: number
-  speed: number
+  speed: number | null
   operator: string | null
   last_seen: string
   route_code: string | null
   route_name: string | null
   direction: string | null
   nearest_stop: string | null
+  trail: TrailPoint[]
 }
 
 export interface Arrival {
@@ -35,12 +42,30 @@ export interface Arrival {
   destination: string
   eta_minutes: number | null
   eta_raw: string
+  plate: string | null
+  kapino: string | null
 }
 
 export interface StopSearchResult {
   dcode: string
   name: string
   path: string | null
+}
+
+export interface StopDetail {
+  dcode: string
+  name: string
+  latitude: number | null
+  longitude: number | null
+}
+
+export interface NearbyStop {
+  stop_code: string
+  stop_name: string
+  latitude: number
+  longitude: number
+  district: string | null
+  distance_m: number
 }
 
 export interface RouteSearchResult {
@@ -86,6 +111,13 @@ export interface Announcement {
   message: string
 }
 
+export interface Garage {
+  code: string | null
+  name: string
+  latitude: number
+  longitude: number
+}
+
 export interface TrafficIndex {
   index: number
   description: string
@@ -105,9 +137,15 @@ export const api = {
   fleet: {
     all: () => get<BusPosition[]>('/v1/fleet'),
     byPlate: (kapino: string) => get<BusPosition>(`/v1/fleet/${encodeURIComponent(kapino)}`),
+    meta: () => get<{ bus_count: number; updated_at: string | null }>('/v1/fleet/meta'),
+    refresh: () =>
+      fetch(`${BASE}/v1/fleet/refresh`, { method: 'POST' }).then((r) => r.json()),
   },
   stops: {
     search: (q: string) => get<StopSearchResult[]>(`/v1/stops/search?q=${encodeURIComponent(q)}`),
+    nearby: (lat: number, lon: number, radius = 500) =>
+      get<NearbyStop[]>(`/v1/stops/nearby?lat=${lat}&lon=${lon}&radius=${radius}`),
+    detail: (dcode: string) => get<StopDetail>(`/v1/stops/${encodeURIComponent(dcode)}`),
     arrivals: (dcode: string, via?: string) =>
       get<Arrival[]>(`/v1/stops/${dcode}/arrivals${via ? `?via=${via}` : ''}`),
     routes: (dcode: string) => get<string[]>(`/v1/stops/${dcode}/routes`),
@@ -119,6 +157,9 @@ export const api = {
     stops: (hatKodu: string) => get<RouteStop[]>(`/v1/routes/${hatKodu}/stops`),
     schedule: (hatKodu: string) => get<ScheduledDeparture[]>(`/v1/routes/${hatKodu}/schedule`),
     announcements: (hatKodu: string) => get<Announcement[]>(`/v1/routes/${hatKodu}/announcements`),
+  },
+  garages: {
+    list: () => get<Garage[]>('/v1/garages'),
   },
   traffic: {
     index: () => get<TrafficIndex>('/v1/traffic/index'),

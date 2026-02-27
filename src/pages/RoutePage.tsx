@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { MapContainer, TileLayer, Marker, Popup, CircleMarker } from 'react-leaflet'
-import L from 'leaflet'
+import * as L from 'leaflet'
 import { useRouteBuses } from '@/hooks/useFleet'
 import { usePolling } from '@/hooks/usePolling'
 import { api, type RouteStop, type ScheduledDeparture, type Announcement, type RouteMetadata } from '@/api/client'
@@ -25,25 +25,44 @@ function TimetableView({ schedule, metadata }: {
   metadata: RouteMetadata[] | null
 }) {
   const [dayType, setDayType] = useState('H')
-  const [direction, setDirection] = useState('D')
+  const [direction, setDirection] = useState('')
 
-  // Build direction labels from metadata
-  const dirNames = useMemo(() => {
-    if (!metadata) return { D: 'Gidiş', G: 'Dönüş' }
-    const d = metadata.find((m) => m.direction === 1 || m.direction === 0)
-    const g = metadata.find((m) => m.direction === 2 || m.direction === 1)
-    const first = metadata[0]
-    const last = metadata[metadata.length - 1]
-    return {
-      D: first?.direction_name ?? 'Gidiş',
-      G: last?.direction_name ?? 'Dönüş',
+  // Map direction code → human label from metadata
+  const dirLabel = useMemo(() => {
+    const map: Record<string, string> = {}
+    if (metadata) {
+      for (const m of metadata) {
+        if (m.variant_code && m.direction_name) {
+          // SYON is '0' or '1' in some endpoints; store by direction int too
+          map[String(m.direction)] = m.direction_name
+          map[m.variant_code] = m.direction_name
+        }
+      }
     }
+    return (code: string) => map[code] ?? (code === 'D' ? 'Gidiş' : code === 'G' ? 'Dönüş' : code)
   }, [metadata])
+
+  // Directions available for the current day type
+  const availableDirections = useMemo(() => {
+    if (!schedule) return [] as string[]
+    const seen = new Set<string>()
+    for (const d of schedule) {
+      if (d.day_type === dayType) seen.add(d.direction)
+    }
+    return Array.from(seen).sort()
+  }, [schedule, dayType])
+
+  // Auto-select first direction when day type changes or schedule loads
+  const effectiveDirection = availableDirections.includes(direction)
+    ? direction
+    : (availableDirections[0] ?? '')
 
   // Group filtered departures by hour
   const hourMap = useMemo(() => {
-    if (!schedule) return new Map<number, number[]>()
-    const filtered = schedule.filter((d) => d.day_type === dayType && d.direction === direction)
+    if (!schedule || !effectiveDirection) return new Map<number, number[]>()
+    const filtered = schedule.filter(
+      (d) => d.day_type === dayType && d.direction === effectiveDirection,
+    )
     const map = new Map<number, number[]>()
     for (const dep of filtered) {
       const [h, m] = dep.departure_time.split(':').map(Number)
@@ -52,7 +71,7 @@ function TimetableView({ schedule, metadata }: {
     }
     for (const mins of map.values()) mins.sort((a, b) => a - b)
     return map
-  }, [schedule, dayType, direction])
+  }, [schedule, dayType, effectiveDirection])
 
   const hours = Array.from(hourMap.keys()).sort((a, b) => a - b)
 
@@ -69,7 +88,7 @@ function TimetableView({ schedule, metadata }: {
         {DAY_TYPES.map(({ key, label }) => (
           <button
             key={key}
-            onClick={() => setDayType(key)}
+            onClick={() => { setDayType(key); setDirection('') }}
             disabled={!availableDays.has(key)}
             className={`flex-1 text-sm py-1.5 rounded-lg font-medium transition-colors disabled:opacity-30 ${
               dayType === key
@@ -82,27 +101,21 @@ function TimetableView({ schedule, metadata }: {
         ))}
       </div>
 
-      {/* Direction toggle */}
-      <div className="flex gap-2 text-sm">
-        {(['D', 'G'] as const).map((dir) => (
-          <button
-            key={dir}
-            onClick={() => setDirection(dir)}
-            className={`flex-1 py-2.5 px-3 rounded-xl font-medium border transition-colors text-left ${
-              direction === dir
-                ? 'bg-brand-600/20 border-brand-600 text-brand-300'
-                : 'border-surface-muted text-slate-500 hover:text-slate-300'
-            }`}
-          >
-            <span className="text-[10px] uppercase tracking-wide block mb-0.5 opacity-60">
-              {dir === 'D' ? 'Gidiş' : 'Dönüş'}
-            </span>
-            <span className="truncate block">
-              {dir === 'D' ? dirNames.D : dirNames.G}
-            </span>
-          </button>
-        ))}
-      </div>
+      {/* Direction dropdown */}
+      {availableDirections.length > 0 && (
+        <select
+          value={effectiveDirection}
+          onChange={(e) => setDirection(e.target.value)}
+          className="w-full bg-surface-card border border-surface-muted rounded-xl px-4 py-2.5
+                     text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500"
+        >
+          {availableDirections.map((dir) => (
+            <option key={dir} value={dir}>
+              {dirLabel(dir)}
+            </option>
+          ))}
+        </select>
+      )}
 
       {/* Hour grid */}
       {!schedule && (
@@ -290,6 +303,18 @@ export default function RoutePage() {
                 {[...Array(6)].map((_, i) => (
                   <div key={i} className="h-12 bg-surface-muted rounded-xl animate-pulse" />
                 ))}
+              </div>
+            )}
+            {stops?.length === 0 && (
+              <div className="flex flex-col items-center justify-center py-16 text-slate-500">
+                <svg className="w-10 h-10 mb-2 opacity-40" fill="none" viewBox="0 0 24 24"
+                     stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round"
+                        d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round"
+                        d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+                </svg>
+                <p className="text-sm">Durak listesi yüklenemedi</p>
               </div>
             )}
             {stops?.map((s) => (
