@@ -313,10 +313,28 @@ function NearbyMapView({ stops, userLat, userLon }: {
             radius={6}
             pathOptions={{ color: '#3b82f6', fillColor: '#3b82f6', fillOpacity: 0.8 }}
           >
-            <Popup>
-              <strong>{s.stop_name}</strong>
-              <br />{distanceLabel(s.distance_m)}
-              <br />Hatlar: {s.routes.join(', ')}
+            <Popup minWidth={180}>
+              <div style={{ fontFamily: 'inherit', minWidth: 180 }}>
+                <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 4, lineHeight: 1.3 }}>{s.stop_name}</div>
+                {s.direction && (
+                  <div style={{ display: 'inline-block', background: '#1e40af', color: '#fff', borderRadius: 4, padding: '2px 6px', fontSize: 11, marginBottom: 4 }}>
+                    → {s.direction}
+                  </div>
+                )}
+                <div style={{ marginBottom: 4 }}>
+                  <span style={{ background: '#f1f5f9', borderRadius: 4, padding: '1px 6px', fontSize: 11, color: '#475569' }}>
+                    {distanceLabel(s.distance_m)}
+                  </span>
+                </div>
+                {s.routes.length > 0 && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3, marginBottom: 6 }}>
+                    {s.routes.map((r) => (
+                      <span key={r} style={{ background: '#0f172a', color: '#38bdf8', borderRadius: 4, padding: '1px 5px', fontSize: 10, fontWeight: 600 }}>{r}</span>
+                    ))}
+                  </div>
+                )}
+                <a href={`/stops/${s.stop_code}`} style={{ display: 'block', textAlign: 'center', background: '#2563eb', color: '#fff', borderRadius: 6, padding: '4px 8px', fontSize: 11, fontWeight: 600, textDecoration: 'none' }}>Varış Saatleri</a>
+              </div>
             </Popup>
           </CircleMarker>
         ))}
