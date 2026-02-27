@@ -46,6 +46,9 @@ function TimetableView({ schedule, scheduleError, onRetry, metadata }: {
   // direction_name is "A - B"; we take the first terminal as the short label
   const dirLabel = useMemo(() => {
     const map: Record<string, string> = {}
+    // Track the full direction_name for the same variant that last populated map[dir],
+    // so derivative logic uses a consistent source rather than a separate find().
+    const fullNameByDir: Record<string, string> = {}
     if (metadata) {
       for (const m of metadata) {
         if (m.variant_code && m.direction_name) {
@@ -55,21 +58,25 @@ function TimetableView({ schedule, scheduleError, onRetry, metadata }: {
           if (dir) {
             const parts = m.direction_name.split(' - ')
             map[dir] = parts[0].trim()
+            fullNameByDir[dir] = m.direction_name
           }
         }
       }
     }
-    // If only one direction has metadata, derive the other from it
-    if (map['D'] && !map['G'] && metadata) {
-      const full = metadata.find(m => m.variant_code?.includes('_D_'))?.direction_name ?? ''
-      const parts = full.split(' - ')
+    // If only one direction has metadata, derive the other terminal from the
+    // same fullNameByDir entry (avoids inconsistency with a separate find()).
+    if (map['D'] && !map['G']) {
+      const parts = fullNameByDir['D'].split(' - ')
       if (parts.length >= 2) map['G'] = parts[parts.length - 1].trim()
-    } else if (map['G'] && !map['D'] && metadata) {
-      const full = metadata.find(m => m.variant_code?.includes('_G_'))?.direction_name ?? ''
-      const parts = full.split(' - ')
+    } else if (map['G'] && !map['D']) {
+      const parts = fullNameByDir['G'].split(' - ')
       if (parts.length >= 2) map['D'] = parts[parts.length - 1].trim()
     }
-    return (code: string) => map[code] ?? (code === 'D' ? 'Gidiş' : code === 'G' ? 'Dönüş' : code)
+    // Only fall back to Turkish labels when there is truly no metadata at all;
+    // if metadata exists but a direction key is still absent, return the raw code.
+    const hasMetadata = !!metadata?.length
+    return (code: string) =>
+      map[code] ?? (hasMetadata ? code : code === 'D' ? 'Gidiş' : code === 'G' ? 'Dönüş' : code)
   }, [metadata])
 
   // Directions available for the current day type
