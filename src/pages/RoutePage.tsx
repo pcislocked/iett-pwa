@@ -41,8 +41,9 @@ function TimetableView({ schedule, scheduleError, onRetry, metadata }: {
   const [dayType, setDayType] = useState('H')
   const [direction, setDirection] = useState('')
 
-  // Map direction code ('D'/'G') → human label from metadata
+  // Map direction code ('D'/'G') → short terminal label from metadata
   // variant_code looks like "14M_D_D0" or "500T_G_G0" — extract D/G from it
+  // direction_name is "A - B"; we take the first terminal as the short label
   const dirLabel = useMemo(() => {
     const map: Record<string, string> = {}
     if (metadata) {
@@ -51,9 +52,22 @@ function TimetableView({ schedule, scheduleError, onRetry, metadata }: {
           const dir = m.variant_code.includes('_D_') ? 'D'
                     : m.variant_code.includes('_G_') ? 'G'
                     : null
-          if (dir) map[dir] = m.direction_name
+          if (dir) {
+            const parts = m.direction_name.split(' - ')
+            map[dir] = parts[0].trim()
+          }
         }
       }
+    }
+    // If only one direction has metadata, derive the other from it
+    if (map['D'] && !map['G'] && metadata) {
+      const full = metadata.find(m => m.variant_code?.includes('_D_'))?.direction_name ?? ''
+      const parts = full.split(' - ')
+      if (parts.length >= 2) map['G'] = parts[parts.length - 1].trim()
+    } else if (map['G'] && !map['D'] && metadata) {
+      const full = metadata.find(m => m.variant_code?.includes('_G_'))?.direction_name ?? ''
+      const parts = full.split(' - ')
+      if (parts.length >= 2) map['D'] = parts[parts.length - 1].trim()
     }
     return (code: string) => map[code] ?? (code === 'D' ? 'Gidiş' : code === 'G' ? 'Dönüş' : code)
   }, [metadata])
