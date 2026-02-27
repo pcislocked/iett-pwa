@@ -61,7 +61,7 @@ export default function MapPage() {
   }, [buses, routeSet, entitySet, hasFilter])
 
   return (
-    <div className="flex flex-col h-[calc(100vh-3.5rem)]">
+    <div className="relative flex flex-col overflow-hidden h-[calc(100dvh-3.5rem)]">
       {/* Filter panel */}
       <div className="absolute top-16 left-1/2 -translate-x-1/2 z-[1000] w-full max-w-sm px-4 flex flex-col gap-2">
         <input
@@ -101,7 +101,7 @@ export default function MapPage() {
       <MapContainer
         center={[41.015, 28.98]}
         zoom={11}
-        style={{ flex: 1, width: '100%' }}
+        style={{ flex: 1, width: '100%', touchAction: 'none' }}
       >
         <TileLayer
           attribution='&copy; <a href="https://carto.com/">CartoDB</a>'
