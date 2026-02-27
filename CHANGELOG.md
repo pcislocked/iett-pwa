@@ -5,6 +5,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [0.1.3] — 2026-02-28
+
+### Fixed
+- **BUG-12** — Search result badges now display real domain identifiers in a monospace badge: stop results show `dcode`, route results show `hat_kodu`, and numeric-code direct-jump results show `#dcode`. Previously the badge always showed a static type label ("Durak" / "Hat").
+- **BUG-13** — Arrival row second line on StopPage now shows `kapino · plate` when available. The redundant `eta_raw` duplicate that appeared alongside the `<EtaChip>` has been removed. Backend enrichment switched from a route-code-based fleet scan to a direct `kapino → plate` lookup in the in-memory fleet store (`get_plate_by_kapino`).
+
+---
+
 ## [0.1.2] — 2026-02-28
 
 ### Fixed
