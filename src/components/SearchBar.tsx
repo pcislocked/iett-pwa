@@ -120,7 +120,7 @@ export default function SearchBar({ placeholder = 'Hat kodu, durak adı...', aut
                       {r.kind === 'stop' ? r.dcode : r.hat_kodu}
                     </span>
                     <span className="truncate text-sm">
-                      {r.kind === 'stop' ? r.name : r.name}
+                      {r.name}
                     </span>
                   </>
                 )}
