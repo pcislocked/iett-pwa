@@ -24,7 +24,7 @@ function ErrorRetry({ message, onRetry }: { message: string; onRetry: () => void
   return (
     <div className="flex flex-col items-center py-16 gap-4 text-slate-500">
       <p className="text-sm text-red-400">{message}</p>
-      <button onClick={onRetry}
+      <button type="button" onClick={onRetry}
               className="px-4 py-2 bg-surface-muted rounded-xl text-sm text-slate-300 hover:bg-slate-600 transition-colors">
         Tekrar Dene
       </button>
@@ -335,7 +335,7 @@ export default function RoutePage() {
                   <path strokeLinecap="round" strokeLinejoin="round"
                         d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
                 </svg>
-                <p className="text-sm">Durak listesi yüklenemedi</p>
+                <p className="text-sm">Bu hat için durak bulunamadı</p>
               </div>
             )}
             {stops?.map((s) => (
