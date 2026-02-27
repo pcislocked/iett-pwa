@@ -20,8 +20,22 @@ const DAY_TYPES = [
   { key: 'P', label: 'Pazar' },
 ]
 
-function TimetableView({ schedule, metadata }: {
+function ErrorRetry({ message, onRetry }: { message: string; onRetry: () => void }) {
+  return (
+    <div className="flex flex-col items-center py-16 gap-4 text-slate-500">
+      <p className="text-sm text-red-400">{message}</p>
+      <button type="button" onClick={onRetry}
+              className="px-4 py-2 bg-surface-muted rounded-xl text-sm text-slate-300 hover:bg-slate-600 transition-colors">
+        Tekrar Dene
+      </button>
+    </div>
+  )
+}
+
+function TimetableView({ schedule, scheduleError, onRetry, metadata }: {
   schedule: ScheduledDeparture[] | null
+  scheduleError: string | null
+  onRetry: () => void
   metadata: RouteMetadata[] | null
 }) {
   const [dayType, setDayType] = useState('H')
@@ -118,12 +132,16 @@ function TimetableView({ schedule, metadata }: {
       )}
 
       {/* Hour grid */}
-      {!schedule && (
+      {!schedule && !scheduleError && (
         <div className="flex flex-col gap-2">
           {[...Array(5)].map((_, i) => (
             <div key={i} className="h-12 bg-surface-muted rounded-xl animate-pulse" />
           ))}
         </div>
+      )}
+
+      {!schedule && scheduleError && (
+        <ErrorRetry message="Sefer saatleri yüklenemedi" onRetry={onRetry} />
       )}
 
       {schedule && hours.length === 0 && (
@@ -170,9 +188,9 @@ export default function RoutePage() {
   const announceFetcher = useMemo(() => () => api.routes.announcements(hatKodu ?? ''), [hatKodu])
   const metaFetcher = useMemo(() => () => api.routes.metadata(hatKodu ?? ''), [hatKodu])
 
-  const { data: stops } = usePolling<RouteStop[]>(stopsFetcher, 300_000)
-  const { data: schedule } = usePolling<ScheduledDeparture[]>(scheduleFetcher, 300_000)
-  const { data: announcements } = usePolling<Announcement[]>(announceFetcher, 300_000)
+  const { data: stops, error: stopsError, refresh: refreshStops } = usePolling<RouteStop[]>(stopsFetcher, 300_000)
+  const { data: schedule, error: scheduleError, refresh: refreshSchedule } = usePolling<ScheduledDeparture[]>(scheduleFetcher, 300_000)
+  const { data: announcements, error: announcementsError, refresh: refreshAnnouncements } = usePolling<Announcement[]>(announceFetcher, 300_000)
   const { data: metadata } = usePolling<RouteMetadata[]>(metaFetcher, 600_000)
 
   const { isFavorite, toggle } = useFavorites()
@@ -261,7 +279,7 @@ export default function RoutePage() {
 
         {/* Timetable tab */}
         {tab === 'schedule' && (
-          <TimetableView schedule={schedule} metadata={metadata} />
+          <TimetableView schedule={schedule} scheduleError={scheduleError} onRetry={refreshSchedule} metadata={metadata} />
         )}
 
         {/* Map tab */}
@@ -297,12 +315,15 @@ export default function RoutePage() {
         {/* Stops tab */}
         {tab === 'stops' && (
           <div className="flex flex-col gap-1">
-            {!stops && (
+            {!stops && !stopsError && (
               <div className="flex flex-col gap-2">
                 {[...Array(6)].map((_, i) => (
                   <div key={i} className="h-12 bg-surface-muted rounded-xl animate-pulse" />
                 ))}
               </div>
+            )}
+            {!stops && stopsError && (
+              <ErrorRetry message="Durak listesi yüklenemedi" onRetry={refreshStops} />
             )}
             {stops?.length === 0 && (
               <div className="flex flex-col items-center justify-center py-16 text-slate-500">
@@ -313,7 +334,7 @@ export default function RoutePage() {
                   <path strokeLinecap="round" strokeLinejoin="round"
                         d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
                 </svg>
-                <p className="text-sm">Durak listesi yüklenemedi</p>
+                <p className="text-sm">Bu hat için durak bulunamadı</p>
               </div>
             )}
             {stops?.map((s) => (
@@ -339,7 +360,10 @@ export default function RoutePage() {
         {/* Alerts tab */}
         {tab === 'alerts' && (
           <div className="flex flex-col gap-3">
-            {!announcements && <p className="text-slate-400 text-sm">Yükleniyor...</p>}
+            {!announcements && !announcementsError && <p className="text-slate-400 text-sm">Yükleniyor...</p>}
+            {!announcements && announcementsError && (
+              <ErrorRetry message="Duyurular yüklenemedi" onRetry={refreshAnnouncements} />
+            )}
             {announcements?.length === 0 && (
               <div className="flex flex-col items-center py-16 text-slate-500">
                 <svg className="w-10 h-10 mb-2 opacity-40" fill="none" viewBox="0 0 24 24"
