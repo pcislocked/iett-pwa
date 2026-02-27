@@ -157,7 +157,7 @@ export default function StopPage() {
 
         {/* Map — top ~40% */}
         <div className="h-[40%] shrink-0 border-b border-surface-muted">
-          {stopDetail?.latitude && stopDetail.longitude ? (
+          {stopDetail && stopDetail.latitude != null && stopDetail.longitude != null ? (
             <MapContainer
               center={[stopDetail.latitude, stopDetail.longitude]}
               zoom={16}
@@ -222,7 +222,9 @@ export default function StopPage() {
             </div>
           )}
 
-          {filteredArrivals.map((a, i) => (
+          {filteredArrivals.map((a, i) => {
+            const vehicleId = a.plate ?? a.kapino
+            return (
             <Link
               key={`${a.route_code}-${a.destination}-${i}`}
               to={`/routes/${a.route_code}`}
@@ -235,12 +237,13 @@ export default function StopPage() {
               <div className="flex-1 min-w-0">
                 <p className="text-xs text-slate-200 truncate leading-snug">{a.destination}</p>
                 <p className="text-[10px] text-slate-500 mt-0.5">
-                  {a.plate ?? a.kapino ? `${a.plate ?? a.kapino}  ·  ` : ''}{a.eta_raw}
+                  {vehicleId ? `${vehicleId}  ·  ` : ''}{a.eta_raw}
                 </p>
               </div>
               <EtaChip minutes={a.eta_minutes} raw={a.eta_raw} />
             </Link>
-          ))}
+            )
+          })}
 
           {/* Announcements for first selected route */}
           {firstActive && (announcements ?? []).length > 0 && (
