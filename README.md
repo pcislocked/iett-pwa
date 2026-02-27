@@ -1,6 +1,21 @@
 # iett-pwa
 
+[![Tests](https://img.shields.io/badge/tests-30%20passed-brightgreen)](#development)
+[![React](https://img.shields.io/badge/React-18-61DAFB?logo=react)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript)](https://www.typescriptlang.org/)
+[![PWA](https://img.shields.io/badge/PWA-installable-5A0FC8?logo=pwa)](https://web.dev/progressive-web-apps/)
+[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+[![Version](https://img.shields.io/badge/version-0.1-orange)](https://github.com/pcislocked/iett-pwa/releases/tag/v0.1)
+
 Progressive Web App for real-time Istanbul IETT bus tracking.
+Installable on Android and desktop. Works offline (last-fetched data). Dark transit theme.
+
+Requires a running [**iett-middle**](https://github.com/pcislocked/iett-middle) API instance.
+
+Part of a three-repo stack:
+[iett-middle](https://github.com/pcislocked/iett-middle) (API proxy) ·
+[iett-hacs](https://github.com/pcislocked/iett-hacs) (Home Assistant integration) ·
+[**iett-pwa**](https://github.com/pcislocked/iett-pwa) (this repo)
 
 ## Stack
 
@@ -75,3 +90,7 @@ cp -r dist/* ../iett-middle/static/
 | Variable | Default | Description |
 |---|---|---|
 | `VITE_API_BASE_URL` | `''` (same origin) | iett-middle base URL |
+
+## Licence
+
+MIT
