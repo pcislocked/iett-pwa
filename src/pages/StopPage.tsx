@@ -282,7 +282,7 @@ export default function StopPage() {
           )}
 
           {filteredArrivals.map((a, i) => {
-            const vehicleId = a.plate ?? a.kapino
+            const vehicleLine = [a.kapino, a.plate].filter(Boolean).join('  ·  ')
             return (
             <Link
               key={`${a.route_code}-${a.destination}-${i}`}
@@ -295,9 +295,9 @@ export default function StopPage() {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-xs text-slate-200 truncate leading-snug">{a.destination}</p>
-                <p className="text-[10px] text-slate-500 mt-0.5">
-                  {vehicleId ? `${vehicleId}  ·  ` : ''}{a.eta_raw}
-                </p>
+                {vehicleLine ? (
+                  <p className="text-[10px] text-slate-500 mt-0.5 font-mono">{vehicleLine}</p>
+                ) : null}
               </div>
               <EtaChip minutes={a.eta_minutes} raw={a.eta_raw} />
             </Link>
