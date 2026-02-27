@@ -92,13 +92,15 @@ export default function StopPage() {
   // Fetch bus positions for all active routes, refresh every 15 s
   useEffect(() => {
     if (activeRoutes.size === 0) { setRouteBuses([]); return }
-    let cancelled = false
+    let latestReqId = 0
     const fetchBuses = async () => {
+      const myReqId = ++latestReqId
       try {
         const results = await Promise.all(
           Array.from(activeRoutes).map((r) => api.routes.buses(r).catch(() => [] as BusPosition[])),
         )
-        if (!cancelled) setRouteBuses(results.flat())
+        // Only apply result if no newer request has started (prevents stale overwrites)
+        if (myReqId === latestReqId) setRouteBuses(results.flat())
       } catch (err) {
         // Keep previous routeBuses on error to avoid clearing markers on transient failures
         console.error('Failed to fetch buses', err)
@@ -107,7 +109,7 @@ export default function StopPage() {
     void fetchBuses()
     const tick = () => { void fetchBuses() }
     const id = setInterval(tick, 15_000)
-    return () => { cancelled = true; clearInterval(id) }
+    return () => { latestReqId = Infinity; clearInterval(id) }
   }, [activeRoutes])
 
   // O(1) ETA lookup by kapino for bus popups
