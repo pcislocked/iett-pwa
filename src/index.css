@@ -1,0 +1,30 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html { font-family: Inter, system-ui, sans-serif; }
+  body { @apply bg-surface text-slate-100; }
+}
+
+@layer components {
+  .card {
+    @apply bg-surface-card rounded-2xl p-4 shadow-md border border-surface-muted;
+  }
+  .btn-primary {
+    @apply bg-brand-600 hover:bg-brand-500 text-white font-semibold
+           py-2 px-4 rounded-xl transition-colors duration-150;
+  }
+  .eta-badge {
+    @apply inline-block text-xs font-mono font-bold rounded-full px-2 py-0.5;
+  }
+  .eta-soon   { @apply eta-badge bg-eta-soon/20 text-eta-soon; }
+  .eta-coming { @apply eta-badge bg-eta-coming/20 text-eta-coming; }
+  .eta-far    { @apply eta-badge bg-eta-far/20  text-eta-far; }
+}
+
+/* Leaflet dark-mode map container */
+.leaflet-container {
+  background: #1e293b;
+  font-family: inherit;
+}

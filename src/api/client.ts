@@ -1,0 +1,127 @@
+/**
+ * Typed API client for iett-middle REST endpoints.
+ * Base URL is read from VITE_API_BASE_URL env var (defaults to same origin).
+ */
+
+const BASE = import.meta.env.VITE_API_BASE_URL ?? ''
+
+async function get<T>(path: string): Promise<T> {
+  const res = await fetch(`${BASE}${path}`)
+  if (!res.ok) {
+    const text = await res.text().catch(() => '')
+    throw new Error(`API ${path} → HTTP ${res.status}: ${text}`)
+  }
+  return res.json() as Promise<T>
+}
+
+// ─── Model types ──────────────────────────────────────────────────────────────
+
+export interface BusPosition {
+  kapino: string
+  plate: string | null
+  latitude: number
+  longitude: number
+  speed: number
+  operator: string | null
+  last_seen: string
+  route_code: string | null
+  route_name: string | null
+  direction: string | null
+  nearest_stop: string | null
+}
+
+export interface Arrival {
+  route_code: string
+  destination: string
+  eta_minutes: number | null
+  eta_raw: string
+}
+
+export interface StopSearchResult {
+  dcode: string
+  name: string
+  path: string | null
+}
+
+export interface RouteSearchResult {
+  hat_kodu: string
+  name: string
+}
+
+export interface RouteMetadata {
+  hat_kodu: string
+  direction_name: string
+  full_name: string
+  variant_code: string
+  direction: number
+  depar_no: number
+}
+
+export interface RouteStop {
+  route_code: string
+  direction: string
+  sequence: number
+  stop_code: string
+  stop_name: string
+  latitude: number
+  longitude: number
+  district: string | null
+}
+
+export interface ScheduledDeparture {
+  route_code: string
+  route_name: string
+  route_variant: string
+  direction: string
+  day_type: string
+  service_type: string
+  departure_time: string
+}
+
+export interface Announcement {
+  route_code: string
+  route_name: string
+  type: string
+  updated_at: string
+  message: string
+}
+
+export interface TrafficIndex {
+  index: number
+  description: string
+  fetched_at: string
+}
+
+export interface TrafficSegment {
+  segment_id: string
+  speed_kmh: number
+  congestion: number
+  timestamp: string
+}
+
+// ─── API calls ────────────────────────────────────────────────────────────────
+
+export const api = {
+  fleet: {
+    all: () => get<BusPosition[]>('/v1/fleet'),
+    byPlate: (kapino: string) => get<BusPosition>(`/v1/fleet/${encodeURIComponent(kapino)}`),
+  },
+  stops: {
+    search: (q: string) => get<StopSearchResult[]>(`/v1/stops/search?q=${encodeURIComponent(q)}`),
+    arrivals: (dcode: string, via?: string) =>
+      get<Arrival[]>(`/v1/stops/${dcode}/arrivals${via ? `?via=${via}` : ''}`),
+    routes: (dcode: string) => get<string[]>(`/v1/stops/${dcode}/routes`),
+  },
+  routes: {
+    search: (q: string) => get<RouteSearchResult[]>(`/v1/routes/search?q=${encodeURIComponent(q)}`),
+    metadata: (hatKodu: string) => get<RouteMetadata[]>(`/v1/routes/${hatKodu}`),
+    buses: (hatKodu: string) => get<BusPosition[]>(`/v1/routes/${hatKodu}/buses`),
+    stops: (hatKodu: string) => get<RouteStop[]>(`/v1/routes/${hatKodu}/stops`),
+    schedule: (hatKodu: string) => get<ScheduledDeparture[]>(`/v1/routes/${hatKodu}/schedule`),
+    announcements: (hatKodu: string) => get<Announcement[]>(`/v1/routes/${hatKodu}/announcements`),
+  },
+  traffic: {
+    index: () => get<TrafficIndex>('/v1/traffic/index'),
+    segments: () => get<TrafficSegment[]>('/v1/traffic/segments'),
+  },
+}
