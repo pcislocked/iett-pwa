@@ -1,5 +1,4 @@
-import React from 'react'
-import { useState, useMemo } from 'react'
+import React, { useState, useMemo } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet'
 import * as L from 'leaflet'
 import { useFleet } from '@/hooks/useFleet'
@@ -185,6 +184,7 @@ export default function MapPage() {
           {filtered.length.toLocaleString()} araç
           {hasFilter && ` / ${(buses ?? []).length.toLocaleString()} toplam`}
         </div>
-      </div>    </div>
+      </div>
+    </div>
   )
 }
