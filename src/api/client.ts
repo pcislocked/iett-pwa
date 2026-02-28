@@ -57,6 +57,7 @@ export interface StopDetail {
   name: string
   latitude: number | null
   longitude: number | null
+  direction?: string | null
 }
 
 export interface NearbyStop {

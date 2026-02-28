@@ -34,3 +34,118 @@
   background: #1e293b;
   font-family: inherit;
 }
+
+/* ── Leaflet popup base overrides ─────────────────────────────────────────── */
+.leaflet-popup-content-wrapper {
+  background: #1e293b;
+  color: #e2e8f0;
+  border: 1px solid #334155;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+  padding: 0;
+}
+.leaflet-popup-content {
+  margin: 0;
+  min-width: 160px;
+}
+.leaflet-popup-tip-container { display: none; }
+.leaflet-popup-close-button {
+  color: #64748b !important;
+  top: 6px !important;
+  right: 8px !important;
+  font-size: 18px !important;
+}
+.leaflet-popup-close-button:hover { color: #e2e8f0 !important; }
+
+/* ── Reusable popup card ───────────────────────────────────────────────────── */
+.popup-card {
+  padding: 10px 14px 12px;
+  min-width: 160px;
+}
+.popup-route {
+  display: inline-block;
+  font-weight: 800;
+  font-size: 13px;
+  color: #fff;
+  border-radius: 6px;
+  padding: 2px 8px;
+  margin-bottom: 5px;
+}
+.popup-name {
+  font-size: 12px;
+  color: #cbd5e1;
+  margin: 0 0 3px;
+  line-height: 1.35;
+}
+.popup-eta {
+  font-size: 13px;
+  color: #f1f5f9;
+  margin: 2px 0;
+}
+.popup-label {
+  font-size: 10px;
+  color: #64748b;
+}
+.popup-mono {
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 10px;
+  color: #94a3b8;
+  margin-top: 4px;
+  letter-spacing: 0.025em;
+}
+.popup-stop-name {
+  font-weight: 700;
+  font-size: 13px;
+  color: #f1f5f9;
+  margin-bottom: 4px;
+  line-height: 1.3;
+}
+.popup-direction-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: #1d4ed8;
+  color: #bfdbfe;
+  border-radius: 4px;
+  padding: 2px 7px;
+  font-size: 11px;
+  font-weight: 600;
+  margin-bottom: 5px;
+}
+.popup-distance-badge {
+  display: inline-block;
+  background: #0f172a;
+  color: #94a3b8;
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-size: 11px;
+  margin-bottom: 6px;
+}
+.popup-route-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  margin-bottom: 8px;
+}
+.popup-route-pill {
+  background: #0f172a;
+  color: #38bdf8;
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-size: 10px;
+  font-weight: 600;
+}
+.popup-link-btn {
+  display: block;
+  text-align: center;
+  background: #2563eb;
+  color: #fff;
+  border-radius: 6px;
+  padding: 5px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  margin-top: 4px;
+  transition: background 0.15s;
+}
+.popup-link-btn:hover { background: #1d4ed8; }
