@@ -4,6 +4,7 @@ import { MapContainer, TileLayer, CircleMarker, Popup, Marker, useMapEvents } fr
 import * as L from 'leaflet'
 import { api, type NearbyStop as ApiNearbyStop } from '@/api/client'
 import { distanceLabel } from '@/utils/distance'
+import { loadSettings } from '@/utils/settings'
 import LocationConsentModal from '@/components/LocationConsentModal'
 
 interface NearbyStop extends ApiNearbyStop {
@@ -11,8 +12,6 @@ interface NearbyStop extends ApiNearbyStop {
 }
 
 type Phase = 'idle' | 'consent' | 'locating' | 'loading' | 'done' | 'error'
-
-const SETTINGS_KEY = 'iett_settings'
 
 export default function NearbyPage() {
   const [phase, setPhase] = useState<Phase>('idle')
@@ -26,16 +25,7 @@ export default function NearbyPage() {
 
   useEffect(() => {
     // Auto-locate if user previously granted permission and has autoLocate enabled
-    const raw = localStorage.getItem(SETTINGS_KEY)
-    let autoLocate = false
-    if (raw) {
-      try {
-        const parsed = JSON.parse(raw) as { autoLocate?: boolean }
-        autoLocate = parsed.autoLocate ?? false
-      } catch {
-        autoLocate = false
-      }
-    }
+    const { autoLocate } = loadSettings()
     if (!autoLocate) return
     const perms = (navigator as Navigator & { permissions?: Permissions }).permissions
     if (!perms || typeof perms.query !== 'function') return

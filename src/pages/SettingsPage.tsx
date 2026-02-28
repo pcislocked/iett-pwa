@@ -1,28 +1,12 @@
 import { useState, useEffect } from 'react'
-
-const STORAGE_KEY = 'iett_settings'
-
-interface Settings {
-  apiBase: string
-  refreshInterval: number
-  autoLocate: boolean
-}
-
-function loadSettings(): Settings {
-  const defaults: Settings = { apiBase: '', refreshInterval: 20, autoLocate: false }
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (raw) return { ...defaults, ...(JSON.parse(raw) as Partial<Settings>) }
-  } catch { /* ignore */ }
-  return defaults
-}
+import { type Settings, loadSettings, saveSettings } from '@/utils/settings'
 
 export default function SettingsPage() {
   const [settings, setSettings] = useState<Settings>(loadSettings)
   const [saved, setSaved] = useState(false)
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(settings))
+    saveSettings(settings)
     setSaved(true)
     const t = setTimeout(() => setSaved(false), 1500)
     return () => clearTimeout(t)
