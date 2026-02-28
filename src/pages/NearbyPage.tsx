@@ -27,26 +27,42 @@ export default function NearbyPage() {
   useEffect(() => {
     // Auto-locate if user previously granted permission and has autoLocate enabled
     const raw = localStorage.getItem(SETTINGS_KEY)
-    const autoLocate = raw ? (JSON.parse(raw) as { autoLocate?: boolean }).autoLocate ?? false : false
+    let autoLocate = false
+    if (raw) {
+      try {
+        const parsed = JSON.parse(raw) as { autoLocate?: boolean }
+        autoLocate = parsed.autoLocate ?? false
+      } catch {
+        autoLocate = false
+      }
+    }
     if (!autoLocate) return
-    navigator.permissions
+    const perms = (navigator as Navigator & { permissions?: Permissions }).permissions
+    if (!perms || typeof perms.query !== 'function') return
+    perms
       .query({ name: 'geolocation' as PermissionName })
       .then((status) => { if (status.state === 'granted') locate() })
-      .catch(() => { /* permissions API not available */ })
+      .catch(() => { /* permissions API query failed */ })
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   async function requestLocate() {
     // Check permission without triggering the browser prompt
+    const perms = (navigator as Navigator & { permissions?: Permissions }).permissions
+    if (!perms || typeof perms.query !== 'function') {
+      // Permissions API unavailable — show consent modal to be safe
+      setPhase('consent')
+      return
+    }
     try {
-      const status = await navigator.permissions.query({ name: 'geolocation' as PermissionName })
+      const status = await perms.query({ name: 'geolocation' as PermissionName })
       if (status.state === 'granted') {
         locate()
       } else {
         setPhase('consent')
       }
     } catch {
-      // permissions API unavailable — show consent modal to be safe
+      // Permissions API query failed — show consent modal to be safe
       setPhase('consent')
     }
   }

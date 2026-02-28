@@ -9,11 +9,12 @@ interface Settings {
 }
 
 function loadSettings(): Settings {
+  const defaults: Settings = { apiBase: '', refreshInterval: 20, autoLocate: false }
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
-    if (raw) return JSON.parse(raw) as Settings
+    if (raw) return { ...defaults, ...(JSON.parse(raw) as Partial<Settings>) }
   } catch { /* ignore */ }
-  return { apiBase: '', refreshInterval: 20, autoLocate: false }
+  return defaults
 }
 
 export default function SettingsPage() {
@@ -70,7 +71,7 @@ export default function SettingsPage() {
 
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-sm text-slate-300 font-medium">Otomatik Konum</p>
+            <p id="autoLocate-label" className="text-sm text-slate-300 font-medium">Otomatik Konum</p>
             <p className="text-xs text-slate-500 mt-0.5">
               Yakın Duraklar açılınca GPS'le otomatik konumla (yalnızca izin verilmişse)
             </p>
@@ -78,6 +79,7 @@ export default function SettingsPage() {
           <button
             role="switch"
             aria-checked={settings.autoLocate}
+            aria-labelledby="autoLocate-label"
             onClick={() => setSettings((s) => ({ ...s, autoLocate: !s.autoLocate }))}
             className={`relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors focus:outline-none ${
               settings.autoLocate ? 'bg-brand-600' : 'bg-surface-muted'

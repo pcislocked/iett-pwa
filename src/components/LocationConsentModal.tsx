@@ -6,7 +6,13 @@ interface Props {
 export default function LocationConsentModal({ onConfirm, onDismiss }: Props) {
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm px-4 pb-6 sm:pb-0">
-      <div className="bg-surface-card border border-surface-muted rounded-2xl w-full max-w-sm p-5 flex flex-col gap-4 shadow-xl">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="consent-title"
+        aria-describedby="consent-desc"
+        className="bg-surface-card border border-surface-muted rounded-2xl w-full max-w-sm p-5 flex flex-col gap-4 shadow-xl"
+      >
         {/* Icon */}
         <div className="flex items-center justify-center w-12 h-12 bg-brand-600/20 rounded-2xl mx-auto">
           <svg className="w-6 h-6 text-brand-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -17,8 +23,8 @@ export default function LocationConsentModal({ onConfirm, onDismiss }: Props) {
 
         {/* Text */}
         <div className="text-center">
-          <h2 className="text-base font-bold text-slate-100 mb-1">Konum İzni</h2>
-          <p className="text-xs text-slate-400 leading-relaxed">
+          <h2 id="consent-title" className="text-base font-bold text-slate-100 mb-1">Konum İzni</h2>
+          <p id="consent-desc" className="text-xs text-slate-400 leading-relaxed">
             Yakın durakları listelemek için konumunuza ihtiyaç var. Konumunuz yalnızca
             bu cihazda işlenir; hiçbir sunucuya kaydedilmez.
           </p>
