@@ -12,14 +12,14 @@ import {
 import * as L from 'leaflet'
 import { api, type NearbyStop as ApiNearbyStop } from '@/api/client'
 import { distanceLabel } from '@/utils/distance'
+import { loadSettings } from '@/utils/settings'
+import LocationConsentModal from '@/components/LocationConsentModal'
 
 interface NearbyStop extends ApiNearbyStop {
   routes: string[]
 }
 
-type Phase = 'idle' | 'locating' | 'loading' | 'done' | 'error'
-
-const SETTINGS_KEY = 'iett_settings'
+type Phase = 'idle' | 'consent' | 'locating' | 'loading' | 'done' | 'error'
 
 // ─── Map panner — pans to a coordinate when it changes ────────────────────────
 function MapPanner({ lat, lon }: { lat: number; lon: number }) {
@@ -206,12 +206,7 @@ export default function NearbyPage() {
 
   // ── Auto-locate on mount if permission already granted ─────────────────────
   useEffect(() => {
-    const raw = localStorage.getItem(SETTINGS_KEY)
-    let autoLocate = false
-    if (raw) {
-      try { autoLocate = (JSON.parse(raw) as { autoLocate?: boolean }).autoLocate ?? false }
-      catch { autoLocate = false }
-    }
+    const { autoLocate } = loadSettings()
     if (!autoLocate) return
     const perms = (navigator as Navigator & { permissions?: Permissions }).permissions
     if (!perms || typeof perms.query !== 'function') return
@@ -226,7 +221,7 @@ export default function NearbyPage() {
 
   async function requestLocate() {
     const perms = (navigator as Navigator & { permissions?: Permissions }).permissions
-    if (!perms || typeof perms.query !== 'function') { void locate(); return }
+    if (!perms || typeof perms.query !== 'function') { setPhase('consent'); return }
     try {
       const status = await perms.query({ name: 'geolocation' as PermissionName })
       if (status.state === 'denied') {
@@ -234,8 +229,12 @@ export default function NearbyPage() {
         setErrorMsg('Konum izni reddedildi. Tarayıcı ayarlarından izin verin.')
         return
       }
-      void locate()
-    } catch { void locate() }
+      if (status.state === 'granted') {
+        void locate()
+      } else {
+        setPhase('consent')
+      }
+    } catch { setPhase('consent') }
   }
 
   async function locate() {
@@ -341,6 +340,16 @@ export default function NearbyPage() {
       </div>
     </div>
   )
+
+  // ── Consent phase — modal overlay ──────────────────────────────────────────
+  if (phase === 'consent') {
+    return (
+      <LocationConsentModal
+        onConfirm={() => { void locate() }}
+        onDismiss={() => setPhase('idle')}
+      />
+    )
+  }
 
   // ── Done phase — split layout (map on top, list below) ──────────────────────
   if (phase === 'done' && userLat !== null && userLon !== null) {
