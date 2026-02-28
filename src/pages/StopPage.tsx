@@ -229,12 +229,17 @@ export default function StopPage() {
               />
               <CircleMarker
                 center={[stopDetail.latitude, stopDetail.longitude]}
-                radius={12}
+                radius={14}
                 pathOptions={{ color: '#2563eb', weight: 3, fillColor: '#2563eb', fillOpacity: 1 }}
               >
-                <Popup>
-                  <strong>{stopName}</strong>
-                  <br />#{dcode}
+                <Popup minWidth={160}>
+                  <div className="popup-card">
+                    <p className="popup-stop-name">{stopName}</p>
+                    {stopDetail.direction && (
+                      <span className="popup-direction-badge">&#8594; {stopDetail.direction}</span>
+                    )}
+                    <p className="popup-label">#{dcode}</p>
+                  </div>
                 </Popup>
               </CircleMarker>
               {/* Live bus markers — coloured per route, icons cached by route */}
