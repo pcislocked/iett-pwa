@@ -1,11 +1,24 @@
 # Changelog
 
-All notable changes to iett-pwa are documented here.  
+All notable changes to iett-pwa are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [0.1.3] — 2026-02-28
+## [0.1.4] – 2026-02-28
+
+### Fixed
+- **BUG-14** (backend) – Route stop list (`/v1/routes/{hat_kodu}/stops`) now
+  returns data instead of 502. Coordinates surface in the stops overlay once
+  the backend stop index has finished loading at startup.
+
+### Changed
+- Vitest config imports `defineConfig` from `vitest/config` instead of `vite`
+  to fix the TypeScript error on the `test` field in `vite.config.ts`.
+
+---
+
+## [0.1.3]— 2026-02-28
 
 ### Fixed
 - **BUG-12** — Search result badges now display real domain identifiers in a monospace badge: stop results show `dcode`, route results show `hat_kodu`, and numeric-code direct-jump results show `#dcode`. Previously the badge always showed a static type label ("Durak" / "Hat").
