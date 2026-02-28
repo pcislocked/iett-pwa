@@ -8,23 +8,33 @@ import { api, type Garage } from '@/api/client'
 const garageIcon = L.divIcon({
   className: '',
   html: `<div style="
-    background:#92400e;border-radius:3px;width:12px;height:12px;
-    border:2px solid #fbbf24;
-    box-shadow:0 1px 4px rgba(0,0,0,0.6)">
+    width:28px;height:28px;
+    display:flex;align-items:center;justify-content:center;
+    cursor:pointer">
+    <div style="
+      background:#92400e;border-radius:3px;width:13px;height:13px;
+      border:2px solid #fbbf24;
+      box-shadow:0 2px 6px rgba(0,0,0,0.6)">
+    </div>
   </div>`,
-  iconSize: [12, 12],
-  iconAnchor: [6, 6],
+  iconSize: [28, 28],
+  iconAnchor: [14, 14],
 })
 
 const busIcon = L.divIcon({
   className: '',
   html: `<div style="
-    background:#2563eb;border-radius:50%;width:10px;height:10px;
-    border:1.5px solid rgba(255,255,255,0.7);
-    box-shadow:0 1px 3px rgba(0,0,0,0.5)">
+    width:28px;height:28px;
+    display:flex;align-items:center;justify-content:center;
+    cursor:pointer">
+    <div style="
+      background:#2563eb;border-radius:50%;width:12px;height:12px;
+      border:2px solid rgba(255,255,255,0.85);
+      box-shadow:0 0 0 3px rgba(37,99,235,0.35),0 2px 4px rgba(0,0,0,0.4)">
+    </div>
   </div>`,
-  iconSize: [10, 10],
-  iconAnchor: [5, 5],
+  iconSize: [28, 28],
+  iconAnchor: [14, 14],
 })
 
 /** Parse a comma-separated string into an uppercase Set. */
@@ -110,17 +120,15 @@ export default function MapPage() {
 
         {/* Garage markers */}
         {(garages ?? []).map((g) => (
-          <Marker
+            <Marker
             key={g.code ?? g.name}
             position={[g.latitude, g.longitude]}
             icon={garageIcon}
           >
-            <Popup>
-              <div style={{ minWidth: 120 }}>
-                <strong style={{ fontSize: 13 }}>{g.name}</strong>
-                {g.code && (
-                  <div style={{ color: '#94a3b8', fontSize: 11 }}>#{g.code}</div>
-                )}
+            <Popup minWidth={160}>
+              <div className="popup-card">
+                <p className="popup-stop-name">{g.name}</p>
+                {g.code && <p className="popup-label">#{g.code}</p>}
               </div>
             </Popup>
           </Marker>
@@ -142,25 +150,30 @@ export default function MapPage() {
                 />
               )}
               <Marker position={[b.latitude, b.longitude]} icon={busIcon}>
-                <Popup>
-                  <div style={{ minWidth: 140 }}>
-                    <strong style={{ fontSize: 15 }}>{b.kapino}</strong>
+                <Popup minWidth={170}>
+                  <div className="popup-card">
+                    <div className="popup-route" style={{ background: '#2563eb' }}>
+                      {b.kapino}
+                    </div>
                     {b.plate && (
-                      <div style={{ color: '#94a3b8', fontSize: 11 }}>{b.plate}</div>
+                      <p className="popup-mono">{b.plate}</p>
                     )}
                     {b.route_code && (
-                      <div><span style={{ color: '#94a3b8' }}>Hat: </span>{b.route_code}</div>
+                      <p className="popup-name">
+                        <span className="popup-label">Hat </span>
+                        {b.route_code}
+                      </p>
                     )}
                     {b.direction && (
-                      <div><span style={{ color: '#94a3b8' }}>İstikamet: </span>{b.direction}</div>
+                      <p className="popup-name">
+                        <span className="popup-label">&#8594; </span>
+                        {b.direction}
+                      </p>
                     )}
-                    <div>
-                      <span style={{ color: '#94a3b8' }}>Hız: </span>
+                    <p className="popup-label" style={{ marginTop: 4 }}>
                       {b.speed != null ? `${b.speed} km/h` : '—'}
-                    </div>
-                    {b.last_seen && (
-                      <div style={{ color: '#64748b', fontSize: 10, marginTop: 4 }}>{b.last_seen}</div>
-                    )}
+                      {b.last_seen && ` · ${b.last_seen}`}
+                    </p>
                   </div>
                 </Popup>
               </Marker>
