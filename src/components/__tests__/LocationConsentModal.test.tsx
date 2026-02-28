@@ -39,4 +39,36 @@ describe('LocationConsentModal', () => {
     const dialog = screen.getByRole('dialog')
     expect(dialog).toHaveAttribute('aria-modal', 'true')
   })
+
+  it('traps focus: Tab from last button wraps to first', () => {
+    render(<LocationConsentModal onConfirm={vi.fn()} onDismiss={vi.fn()} />)
+    const buttons = screen.getAllByRole('button')
+    const last = buttons[buttons.length - 1]
+    last.focus()
+    const defaultWasPrevented = !fireEvent.keyDown(document, { key: 'Tab', shiftKey: false })
+    expect(defaultWasPrevented).toBe(true)
+    expect(document.activeElement).toBe(buttons[0])
+  })
+
+  it('traps focus: Shift+Tab from first button wraps to last', () => {
+    render(<LocationConsentModal onConfirm={vi.fn()} onDismiss={vi.fn()} />)
+    const buttons = screen.getAllByRole('button')
+    buttons[0].focus()
+    const defaultWasPrevented = !fireEvent.keyDown(document, { key: 'Tab', shiftKey: true })
+    expect(defaultWasPrevented).toBe(true)
+    expect(document.activeElement).toBe(buttons[buttons.length - 1])
+  })
+
+  it('restores focus to previously focused element on unmount', () => {
+    const trigger = document.createElement('button')
+    document.body.appendChild(trigger)
+    trigger.focus()
+    expect(document.activeElement).toBe(trigger)
+
+    const { unmount } = render(<LocationConsentModal onConfirm={vi.fn()} onDismiss={vi.fn()} />)
+    unmount()
+
+    expect(document.activeElement).toBe(trigger)
+    document.body.removeChild(trigger)
+  })
 })

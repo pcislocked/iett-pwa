@@ -7,16 +7,47 @@ interface Props {
 
 export default function LocationConsentModal({ onConfirm, onDismiss }: Props) {
   const confirmRef = useRef<HTMLButtonElement>(null)
+  const dialogRef = useRef<HTMLDivElement>(null)
+  const previouslyFocused = useRef<Element | null>(null)
 
-  // Auto-focus the primary action on mount
+  // Save the focused element, auto-focus primary action, and restore on unmount
   useEffect(() => {
+    previouslyFocused.current = document.activeElement
     confirmRef.current?.focus()
+    return () => {
+      if (previouslyFocused.current instanceof HTMLElement) {
+        previouslyFocused.current.focus()
+      }
+    }
   }, [])
 
-  // Close on Escape
+  // Close on Escape and trap focus within dialog
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') onDismiss()
+      if (e.key === 'Escape') {
+        onDismiss()
+        return
+      }
+      if (e.key !== 'Tab' || !dialogRef.current) return
+      const focusable = Array.from(
+        dialogRef.current.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ),
+      )
+      if (focusable.length === 0) return
+      const first = focusable[0]
+      const last = focusable[focusable.length - 1]
+      if (e.shiftKey) {
+        if (document.activeElement === first) {
+          e.preventDefault()
+          last.focus()
+        }
+      } else {
+        if (document.activeElement === last) {
+          e.preventDefault()
+          first.focus()
+        }
+      }
     }
     document.addEventListener('keydown', handleKey)
     return () => document.removeEventListener('keydown', handleKey)
@@ -25,6 +56,7 @@ export default function LocationConsentModal({ onConfirm, onDismiss }: Props) {
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm px-4 pb-6 sm:pb-0">
       <div
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="consent-title"
