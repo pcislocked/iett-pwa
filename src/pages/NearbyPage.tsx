@@ -1,6 +1,14 @@
-import { useState } from 'react'
+﻿import { useState, useEffect, useCallback, useRef } from 'react'
 import { Link } from 'react-router-dom'
-import { MapContainer, TileLayer, CircleMarker, Popup, Marker, useMapEvents } from 'react-leaflet'
+import {
+  MapContainer,
+  TileLayer,
+  CircleMarker,
+  Popup,
+  Marker,
+  useMapEvents,
+  useMap,
+} from 'react-leaflet'
 import * as L from 'leaflet'
 import { api, type NearbyStop as ApiNearbyStop } from '@/api/client'
 import { distanceLabel } from '@/utils/distance'
@@ -11,15 +19,199 @@ interface NearbyStop extends ApiNearbyStop {
 
 type Phase = 'idle' | 'locating' | 'loading' | 'done' | 'error'
 
+const SETTINGS_KEY = 'iett_settings'
+
+// ─── Map panner — pans to a coordinate when it changes ────────────────────────
+function MapPanner({ lat, lon }: { lat: number; lon: number }) {
+  const map = useMap()
+  useEffect(() => {
+    map.panTo([lat, lon], { animate: true, duration: 0.35 })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lat, lon])
+  return null
+}
+
+// ─── Location picker (idle phase) ─────────────────────────────────────────────
+function LocationPickerEvents({ onPick }: { onPick: (lat: number, lon: number) => void }) {
+  useMapEvents({
+    click(e) { onPick(e.latlng.lat, e.latlng.lng) },
+  })
+  return null
+}
+
+// ─── Split nearby map component ───────────────────────────────────────────────
+function NearbyMapView({
+  stops,
+  userLat,
+  userLon,
+  selectedCode,
+  onSelect,
+}: {
+  stops: NearbyStop[]
+  userLat: number
+  userLon: number
+  selectedCode: string | null
+  onSelect: (code: string) => void
+}) {
+  const userIcon = L.divIcon({
+    className: '',
+    html: `<div style="
+      background:#2563eb;border-radius:50%;
+      width:18px;height:18px;
+      border:3px solid #fff;
+      box-shadow:0 0 0 4px rgba(37,99,235,0.35)">
+    </div>`,
+    iconSize: [18, 18],
+    iconAnchor: [9, 9],
+  })
+
+  const selectedStop = stops.find((s) => s.stop_code === selectedCode) ?? null
+
+  return (
+    <MapContainer
+      center={[userLat, userLon]}
+      zoom={15}
+      style={{ height: '100%', width: '100%' }}
+    >
+      <TileLayer
+        attribution='&copy; CartoDB'
+        url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+      />
+
+      {/* Smoothly pan to selected stop */}
+      {selectedStop && (
+        <MapPanner lat={selectedStop.latitude} lon={selectedStop.longitude} />
+      )}
+
+      {/* User position */}
+      <Marker position={[userLat, userLon]} icon={userIcon}>
+        <Popup>
+          <div className="popup-card" style={{ minWidth: 120 }}>
+            <p className="popup-name" style={{ fontWeight: 700 }}>Konumunuz</p>
+          </div>
+        </Popup>
+      </Marker>
+
+      {/* Stop markers */}
+      {stops.map((s) => {
+        const isSel = s.stop_code === selectedCode
+        return (
+          <CircleMarker
+            key={s.stop_code}
+            center={[s.latitude, s.longitude]}
+            radius={isSel ? 12 : 7}
+            pathOptions={
+              isSel
+                ? { color: '#f97316', fillColor: '#f97316', fillOpacity: 0.95, weight: 2.5 }
+                : { color: '#3b82f6', fillColor: '#3b82f6', fillOpacity: 0.75, weight: 1.5 }
+            }
+            eventHandlers={{ click: () => { onSelect(s.stop_code) } }}
+          >
+            <Popup minWidth={190}>
+              <div className="popup-card">
+                <p className="popup-stop-name">{s.stop_name}</p>
+                {s.direction && (
+                  <span className="popup-direction-badge">&#8594; {s.direction}</span>
+                )}
+                <div style={{ display: 'block', marginBottom: 6 }}>
+                  <span className="popup-distance-badge">{distanceLabel(s.distance_m)}</span>
+                </div>
+                {s.routes.length > 0 && (
+                  <div className="popup-route-pills">
+                    {s.routes.map((r) => (
+                      <span key={r} className="popup-route-pill">{r}</span>
+                    ))}
+                  </div>
+                )}
+                <Link to={`/stops/${s.stop_code}`} className="popup-link-btn">
+                  Varış Saatleri
+                </Link>
+              </div>
+            </Popup>
+          </CircleMarker>
+        )
+      })}
+    </MapContainer>
+  )
+}
+
+// ─── Main page ─────────────────────────────────────────────────────────────────
 export default function NearbyPage() {
   const [phase, setPhase] = useState<Phase>('idle')
   const [errorMsg, setErrorMsg] = useState('')
   const [userLat, setUserLat] = useState<number | null>(null)
   const [userLon, setUserLon] = useState<number | null>(null)
   const [allStops, setAllStops] = useState<NearbyStop[]>([])
-  const [view, setView] = useState<'list' | 'map'>('list')
   const [pickedLat, setPickedLat] = useState<number | null>(null)
   const [pickedLon, setPickedLon] = useState<number | null>(null)
+
+  // ── Selection state ─────────────────────────────────────────────────────────
+  const [selectedCode, setSelectedCode] = useState<string | null>(null)
+  const listRef = useRef<HTMLDivElement>(null)
+  const itemRefs = useRef<Map<string, HTMLDivElement>>(new Map())
+  const selectSourceRef = useRef<'list' | 'map'>('list')
+
+  // When map click selects a stop, scroll the list to that item
+  useEffect(() => {
+    if (selectSourceRef.current !== 'map') return
+    if (!selectedCode || !listRef.current) return
+    const el = itemRefs.current.get(selectedCode)
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+  }, [selectedCode])
+
+  const handleListScroll = useCallback(() => {
+    selectSourceRef.current = 'list'
+    if (!listRef.current) return
+    const containerTop = listRef.current.getBoundingClientRect().top
+    let bestCode: string | null = null
+    let bestOffset = Infinity
+    for (const [code, el] of itemRefs.current.entries()) {
+      const offsetFromTop = el.getBoundingClientRect().top - containerTop
+      // Select the first element whose top edge is ≥ halfway up the container
+      if (offsetFromTop >= -(el.offsetHeight * 0.5) && offsetFromTop < bestOffset) {
+        bestOffset = offsetFromTop
+        bestCode = code
+      }
+    }
+    if (bestCode && bestCode !== selectedCode) setSelectedCode(bestCode)
+  }, [selectedCode])
+
+  const handleMapSelect = useCallback((code: string) => {
+    selectSourceRef.current = 'map'
+    setSelectedCode(code)
+  }, [])
+
+  // ── Auto-locate on mount if permission already granted ─────────────────────
+  useEffect(() => {
+    const raw = localStorage.getItem(SETTINGS_KEY)
+    let autoLocate = false
+    if (raw) {
+      try { autoLocate = (JSON.parse(raw) as { autoLocate?: boolean }).autoLocate ?? false }
+      catch { autoLocate = false }
+    }
+    if (!autoLocate) return
+    const perms = (navigator as Navigator & { permissions?: Permissions }).permissions
+    if (!perms || typeof perms.query !== 'function') return
+    perms
+      .query({ name: 'geolocation' as PermissionName })
+      .then((status) => { if (status.state === 'granted') locate() })
+      .catch(() => { /* permissions API unavailable */ })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  async function requestLocate() {
+    const perms = (navigator as Navigator & { permissions?: Permissions }).permissions
+    if (!perms || typeof perms.query !== 'function') { void locate(); return }
+    try {
+      const status = await perms.query({ name: 'geolocation' as PermissionName })
+      // For 'prompt' state, calling locate() will trigger the browser's native permission dialog
+      void locate()
+      if (status.state === 'denied') {
+        setPhase('error')
+        setErrorMsg('Konum izni reddedildi. Tarayıcı ayarlarından izin verin.')
+      }
+    } catch { void locate() }
+  }
 
   async function locate() {
     setPhase('locating')
@@ -46,10 +238,12 @@ export default function NearbyPage() {
 
   async function fetchNearby(lat: number, lon: number) {
     setPhase('loading')
+    setSelectedCode(null)
     try {
       const nearby = await api.stops.nearby(lat, lon)
       const base: NearbyStop[] = nearby.map((s) => ({ ...s, routes: [] }))
       setAllStops(base)
+      setSelectedCode(base[0]?.stop_code ?? null)
       setPhase('done')
       // Silently enrich route pills in the background
       const enriched = await Promise.allSettled(
@@ -75,63 +269,166 @@ export default function NearbyPage() {
     }
   }
 
-  return (
-    <div className="flex flex-col min-h-screen">
-      {/* Header */}
-      <div className="bg-surface-card border-b border-surface-muted sticky top-0 z-40">
-        <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div>
-            <h1 className="text-base font-bold text-slate-100">Yakın Duraklar</h1>
-            {userLat && (
-              <p className="text-[11px] text-slate-500">
-                {userLat.toFixed(4)}, {userLon?.toFixed(4)}
-              </p>
-            )}
+  // ── Shared header ────────────────────────────────────────────────────────────
+  const headerBar = (
+    <div className="bg-surface-card border-b border-surface-muted shrink-0 z-40">
+      <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
+        <div>
+          <h1 className="text-base font-bold text-slate-100">Yakın Duraklar</h1>
+          {userLat !== null && (
+            <p className="text-[11px] text-slate-500">
+              {userLat.toFixed(4)}, {userLon?.toFixed(4)}
+            </p>
+          )}
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => { setPhase('idle'); setPickedLat(null); setPickedLon(null) }}
+            disabled={phase === 'locating' || phase === 'loading'}
+            className="p-1.5 text-slate-500 hover:text-slate-300 disabled:opacity-40 transition-colors"
+            aria-label="Konumu Değiştir"
+            title="Konum Seç"
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+            </svg>
+          </button>
+          <button
+            onClick={requestLocate}
+            disabled={phase === 'locating' || phase === 'loading'}
+            className="p-1.5 text-brand-400 hover:text-brand-300 disabled:opacity-40 transition-colors"
+            aria-label="Yenile"
+          >
+            <svg
+              className={`w-5 h-5 ${phase === 'loading' ? 'animate-spin' : ''}`}
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path strokeLinecap="round" strokeLinejoin="round"
+                    d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+
+  // ── Done phase — split layout (map on top, list below) ──────────────────────
+  if (phase === 'done' && userLat !== null && userLon !== null) {
+    return (
+      <div className="flex flex-col h-full overflow-hidden">
+        {headerBar}
+
+        <div className="flex-1 flex flex-col overflow-hidden min-h-0">
+
+          {/* Map — top 45% */}
+          <div className="shrink-0 border-b border-surface-muted" style={{ height: '45%' }}>
+            <NearbyMapView
+              stops={allStops}
+              userLat={userLat}
+              userLon={userLon}
+              selectedCode={selectedCode}
+              onSelect={handleMapSelect}
+            />
           </div>
 
-          <div className="flex items-center gap-2">
-            {/* View toggle */}
-            <div className="flex gap-0.5 bg-surface-muted rounded-lg p-0.5">
-              {(['list', 'map'] as const).map((v) => (
-                <button
-                  key={v}
-                  onClick={() => setView(v)}
-                  className={`px-2.5 py-1 text-xs font-medium rounded-md transition-colors ${
-                    view === v ? 'bg-surface-card text-slate-200' : 'text-slate-500'
-                  }`}
-                >
-                  {v === 'list' ? 'Liste' : 'Harita'}
-                </button>
-              ))}
-            </div>
+          {/* List — remaining 55%, scrollable */}
+          <div
+            ref={listRef}
+            className="flex-1 overflow-y-auto"
+            onScroll={handleListScroll}
+          >
+            {allStops.length === 0 && (
+              <p className="text-center text-slate-500 py-12 text-sm">Yakında durak bulunamadı</p>
+            )}
 
-            <button
-              onClick={() => { setPhase('idle'); setPickedLat(null); setPickedLon(null) }}
-              disabled={phase === 'locating' || phase === 'loading'}
-              className="p-1.5 text-slate-500 hover:text-slate-300 disabled:opacity-40 transition-colors"
-              aria-label="Konumu Değiştir"
-              title="Konum Seç"
-            >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
-                <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
-              </svg>
-            </button>
-            <button
-              onClick={locate}
-              disabled={phase === 'locating' || phase === 'loading'}
-              className="p-1.5 text-brand-400 hover:text-brand-300 disabled:opacity-40 transition-colors"
-              aria-label="Yenile"
-            >
-              <svg className={`w-5 h-5 ${phase === 'loading' ? 'animate-spin' : ''}`}
-                   fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round"
-                      d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
-              </svg>
-            </button>
+            {allStops.map((stop) => {
+              const isSel = stop.stop_code === selectedCode
+              return (
+                <div
+                  key={stop.stop_code}
+                  ref={(el) => {
+                    if (el) itemRefs.current.set(stop.stop_code, el)
+                    else itemRefs.current.delete(stop.stop_code)
+                  }}
+                >
+                  <Link
+                    to={`/stops/${stop.stop_code}`}
+                    className={`flex items-center gap-3 px-4 py-3.5 border-b transition-colors ${
+                      isSel
+                        ? 'bg-orange-950/30 border-orange-800/40'
+                        : 'border-surface-muted active:bg-surface-muted/50'
+                    }`}
+                    onClick={() => {
+                      selectSourceRef.current = 'list'
+                      setSelectedCode(stop.stop_code)
+                    }}
+                  >
+                    {/* Distance badge */}
+                    <div className={`shrink-0 text-xs font-bold px-2.5 py-1.5 rounded-xl min-w-[58px] text-center ${
+                      stop.distance_m < 200
+                        ? 'bg-emerald-500/20 text-emerald-400'
+                        : stop.distance_m < 500
+                        ? 'bg-amber-500/20 text-amber-400'
+                        : 'bg-surface-muted text-slate-400'
+                    }`}>
+                      {distanceLabel(stop.distance_m)}
+                    </div>
+
+                    {/* Stop info */}
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-sm font-semibold truncate ${isSel ? 'text-orange-300' : 'text-slate-200'}`}>
+                        {stop.stop_name}
+                      </p>
+                      <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                        <span className="text-[10px] text-slate-600 font-mono">#{stop.stop_code}</span>
+                        {stop.direction && (
+                          <span className="text-[10px] text-slate-500">&#8594;&nbsp;{stop.direction}</span>
+                        )}
+                        {stop.routes.slice(0, 5).map((r) => (
+                          <span
+                            key={r}
+                            className="text-[10px] bg-brand-900/60 text-brand-300 px-1 py-0.5 rounded"
+                          >
+                            {r}
+                          </span>
+                        ))}
+                        {stop.routes.length > 5 && (
+                          <span className="text-[10px] text-slate-600">+{stop.routes.length - 5}</span>
+                        )}
+                      </div>
+                    </div>
+
+                    <svg
+                      className={`w-4 h-4 shrink-0 ${isSel ? 'text-orange-400' : 'text-slate-600'}`}
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                    </svg>
+                  </Link>
+                </div>
+              )
+            })}
+
+            {/* Spacer for bottom tab bar */}
+            <div className="h-14" aria-hidden="true" />
           </div>
         </div>
       </div>
+    )
+  }
+
+  // ── Non-done phases — standard scrollable layout ────────────────────────────
+  return (
+    <div className="flex flex-col min-h-full">
+      {headerBar}
 
       <div className="flex-1 max-w-2xl w-full mx-auto px-4 pb-28 pt-4">
 
@@ -141,7 +438,10 @@ export default function NearbyPage() {
             <p className="text-xs text-slate-500 text-center">
               Haritaya uzun bas veya tıkla → pin bırak, sonra aramayı başlat
             </p>
-            <div className="relative rounded-2xl overflow-hidden border border-surface-muted" style={{ height: 420 }}>
+            <div
+              className="relative rounded-2xl overflow-hidden border border-surface-muted"
+              style={{ height: 420 }}
+            >
               <MapContainer
                 center={[41.015, 28.98]}
                 zoom={11}
@@ -151,15 +451,22 @@ export default function NearbyPage() {
                   attribution='&copy; CartoDB'
                   url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
                 />
-                <LocationPickerEvents onPick={(lat, lon) => { setPickedLat(lat); setPickedLon(lon) }} />
+                <LocationPickerEvents
+                  onPick={(lat, lon) => { setPickedLat(lat); setPickedLon(lon) }}
+                />
                 {pickedLat !== null && pickedLon !== null && (
                   <Marker
                     position={[pickedLat, pickedLon]}
                     icon={L.divIcon({
                       className: '',
-                      html: `<div style="background:#2563eb;border-radius:50%;width:16px;height:16px;border:3px solid #fff;box-shadow:0 0 0 3px rgba(37,99,235,0.4)"></div>`,
-                      iconSize: [16, 16],
-                      iconAnchor: [8, 8],
+                      html: `<div style="
+                        background:#2563eb;border-radius:50%;
+                        width:18px;height:18px;
+                        border:3px solid #fff;
+                        box-shadow:0 0 0 3px rgba(37,99,235,0.4)">
+                      </div>`,
+                      iconSize: [18, 18],
+                      iconAnchor: [9, 9],
                     })}
                   />
                 )}
@@ -167,7 +474,7 @@ export default function NearbyPage() {
             </div>
             <div className="flex gap-2">
               <button
-                onClick={locate}
+                onClick={requestLocate}
                 className="flex items-center justify-center gap-2 flex-1 bg-surface-muted hover:bg-slate-600 text-slate-200 font-semibold py-3 rounded-2xl transition-colors text-sm"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -209,139 +516,20 @@ export default function NearbyPage() {
             <div className="bg-red-900/30 border border-red-700 rounded-xl px-5 py-4 text-red-300 text-sm w-full">
               {errorMsg}
             </div>
-            <button onClick={() => setPhase('idle')} className="btn-primary">
-              Tekrar Dene
-            </button>
-          </div>
-        )}
-
-        {/* Results */}
-        {phase === 'done' && view === 'list' && (
-          <div className="flex flex-col gap-2">
-            {allStops.length === 0 && (
-              <p className="text-center text-slate-500 py-12 text-sm">Yakında durak bulunamadı</p>
-            )}
-            {allStops.map((stop) => (
-              <Link
-                key={stop.stop_code}
-                to={`/stops/${stop.stop_code}`}
-                className="card flex items-center gap-3 py-3.5 hover:border-slate-500 transition-colors active:scale-[0.99]"
+            <div className="flex gap-2">
+              <button
+                onClick={() => setPhase('idle')}
+                className="bg-surface-muted hover:bg-slate-600 text-slate-300 font-medium px-5 py-2.5 rounded-xl text-sm transition-colors"
               >
-                {/* Distance badge */}
-                <div className={`shrink-0 text-xs font-bold px-2.5 py-1.5 rounded-xl min-w-[58px] text-center ${
-                  stop.distance_m < 200
-                    ? 'bg-emerald-500/20 text-emerald-400'
-                    : stop.distance_m < 500
-                    ? 'bg-amber-500/20 text-amber-400'
-                    : 'bg-surface-muted text-slate-400'
-                }`}>
-                  {distanceLabel(stop.distance_m)}
-                </div>
-
-                {/* Stop info */}
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-slate-200 truncate">{stop.stop_name}</p>
-                  {stop.direction && (
-                    <p className="text-[10px] text-slate-500 truncate leading-tight">{stop.direction}</p>
-                  )}
-                  <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                    <span className="text-[10px] text-slate-600 font-mono">#{stop.stop_code}</span>
-                    {stop.routes.slice(0, 5).map((r) => (
-                      <span key={r}
-                            className="text-[10px] bg-brand-900/60 text-brand-300 px-1 py-0.5 rounded">
-                        {r}
-                      </span>
-                    ))}
-                    {stop.routes.length > 5 && (
-                      <span className="text-[10px] text-slate-600">+{stop.routes.length - 5}</span>
-                    )}
-                  </div>
-                </div>
-
-                <svg className="w-4 h-4 text-slate-600 shrink-0" fill="none" viewBox="0 0 24 24"
-                     stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
-                </svg>
-              </Link>
-            ))}
+                Haritadan Belirt
+              </button>
+              <button onClick={requestLocate} className="btn-primary">
+                Tekrar Dene
+              </button>
+            </div>
           </div>
-        )}
-
-        {/* Map view */}
-        {phase === 'done' && view === 'map' && userLat && userLon && (
-          <NearbyMapView stops={allStops} userLat={userLat} userLon={userLon} />
         )}
       </div>
-    </div>
-  )
-}
-
-// Invisible map layer that fires onPick on every click
-function LocationPickerEvents({ onPick }: { onPick: (lat: number, lon: number) => void }) {
-  useMapEvents({
-    click(e) {
-      onPick(e.latlng.lat, e.latlng.lng)
-    },
-  })
-  return null
-}
-
-// Results map view
-function NearbyMapView({ stops, userLat, userLon }: {
-  stops: NearbyStop[]
-  userLat: number
-  userLon: number
-}) {
-  const userIcon = L.divIcon({
-    className: '',
-    html: `<div style="background:#2563eb;border-radius:50%;width:14px;height:14px;border:3px solid #fff;box-shadow:0 0 0 3px rgba(37,99,235,0.3)"></div>`,
-    iconSize: [14, 14],
-    iconAnchor: [7, 7],
-  })
-
-  return (
-    <div className="rounded-2xl overflow-hidden border border-surface-muted" style={{ height: 480 }}>
-      <MapContainer center={[userLat, userLon]} zoom={15} style={{ height: '100%', width: '100%' }}>
-        <TileLayer
-          attribution='&copy; CartoDB'
-          url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-        />
-        <Marker position={[userLat, userLon]} icon={userIcon}>
-          <Popup>Konumunuz</Popup>
-        </Marker>
-        {stops.slice(0, 20).map((s) => (
-          <CircleMarker
-            key={s.stop_code}
-            center={[s.latitude, s.longitude]}
-            radius={6}
-            pathOptions={{ color: '#3b82f6', fillColor: '#3b82f6', fillOpacity: 0.8 }}
-          >
-            <Popup minWidth={180}>
-              <div style={{ fontFamily: 'inherit', minWidth: 180 }}>
-                <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 4, lineHeight: 1.3 }}>{s.stop_name}</div>
-                {s.direction && (
-                  <div style={{ display: 'inline-block', background: '#1e40af', color: '#fff', borderRadius: 4, padding: '2px 6px', fontSize: 11, marginBottom: 4 }}>
-                    → {s.direction}
-                  </div>
-                )}
-                <div style={{ marginBottom: 4 }}>
-                  <span style={{ background: '#f1f5f9', borderRadius: 4, padding: '1px 6px', fontSize: 11, color: '#475569' }}>
-                    {distanceLabel(s.distance_m)}
-                  </span>
-                </div>
-                {s.routes.length > 0 && (
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3, marginBottom: 6 }}>
-                    {s.routes.map((r) => (
-                      <span key={r} style={{ background: '#0f172a', color: '#38bdf8', borderRadius: 4, padding: '1px 5px', fontSize: 10, fontWeight: 600 }}>{r}</span>
-                    ))}
-                  </div>
-                )}
-                <Link to={`/stops/${s.stop_code}`} style={{ display: 'block', textAlign: 'center', background: '#2563eb', color: '#fff', borderRadius: 6, padding: '4px 8px', fontSize: 11, fontWeight: 600, textDecoration: 'none' }}>Varış Saatleri</Link>
-              </div>
-            </Popup>
-          </CircleMarker>
-        ))}
-      </MapContainer>
     </div>
   )
 }
