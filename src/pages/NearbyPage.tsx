@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import {
   MapContainer,
@@ -92,8 +92,8 @@ function NearbyMapView({
         </Popup>
       </Marker>
 
-      {/* Stop markers */}
-      {stops.map((s) => {
+      {/* Stop markers — capped at 20 to limit Leaflet layer count */}
+      {stops.slice(0, 20).map((s) => {
         const isSel = s.stop_code === selectedCode
         return (
           <CircleMarker
@@ -149,35 +149,58 @@ export default function NearbyPage() {
   const [selectedCode, setSelectedCode] = useState<string | null>(null)
   const listRef = useRef<HTMLDivElement>(null)
   const itemRefs = useRef<Map<string, HTMLDivElement>>(new Map())
-  const selectSourceRef = useRef<'list' | 'map'>('list')
 
-  // When map click selects a stop, scroll the list to that item
+  // Track latest selectedCode in a ref so the RAF scroll callback doesn't
+  // capture stale closure values (stable callback with no deps).
+  const selectedCodeRef = useRef<string | null>(null)
+  selectedCodeRef.current = selectedCode
+
+  // Flag that prevents handleListScroll from overriding a programmatic
+  // selection triggered by a map-marker click (set before scrollIntoView,
+  // cleared after the smooth-scroll animation settles).
+  const isProgrammaticScrollRef = useRef(false)
+
+  // RAF token to deduplicate rapid scroll events.
+  const scrollRafRef = useRef<number | null>(null)
+
+  // When selectedCode changes from a map click, scroll the list to that item.
+  // Guards against running during list-driven changes (isProgrammaticScrollRef
+  // is only true when the change originated from handleMapSelect).
   useEffect(() => {
-    if (selectSourceRef.current !== 'map') return
+    if (!isProgrammaticScrollRef.current) return
     if (!selectedCode || !listRef.current) return
     const el = itemRefs.current.get(selectedCode)
-    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+    if (!el) return
+    el.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+    // Reset flag after smooth-scroll animation settles (~400ms)
+    const t = window.setTimeout(() => { isProgrammaticScrollRef.current = false }, 400)
+    return () => clearTimeout(t)
   }, [selectedCode])
 
+  // Scroll handler: RAF-throttled, blocked during programmatic scroll,
+  // no selectedCode dep needed because we read from a ref.
   const handleListScroll = useCallback(() => {
-    selectSourceRef.current = 'list'
-    if (!listRef.current) return
-    const containerTop = listRef.current.getBoundingClientRect().top
-    let bestCode: string | null = null
-    let bestOffset = Infinity
-    for (const [code, el] of itemRefs.current.entries()) {
-      const offsetFromTop = el.getBoundingClientRect().top - containerTop
-      // Select the first element whose top edge is ≥ halfway up the container
-      if (offsetFromTop >= -(el.offsetHeight * 0.5) && offsetFromTop < bestOffset) {
-        bestOffset = offsetFromTop
-        bestCode = code
+    if (isProgrammaticScrollRef.current) return
+    if (scrollRafRef.current !== null) cancelAnimationFrame(scrollRafRef.current)
+    scrollRafRef.current = requestAnimationFrame(() => {
+      scrollRafRef.current = null
+      if (!listRef.current) return
+      const containerTop = listRef.current.getBoundingClientRect().top
+      let bestCode: string | null = null
+      let bestOffset = Infinity
+      for (const [code, el] of itemRefs.current.entries()) {
+        const offsetFromTop = el.getBoundingClientRect().top - containerTop
+        if (offsetFromTop >= -(el.offsetHeight * 0.5) && offsetFromTop < bestOffset) {
+          bestOffset = offsetFromTop
+          bestCode = code
+        }
       }
-    }
-    if (bestCode && bestCode !== selectedCode) setSelectedCode(bestCode)
-  }, [selectedCode])
+      if (bestCode && bestCode !== selectedCodeRef.current) setSelectedCode(bestCode)
+    })
+  }, []) // stable: reads all state from refs
 
   const handleMapSelect = useCallback((code: string) => {
-    selectSourceRef.current = 'map'
+    isProgrammaticScrollRef.current = true
     setSelectedCode(code)
   }, [])
 
@@ -192,10 +215,12 @@ export default function NearbyPage() {
     if (!autoLocate) return
     const perms = (navigator as Navigator & { permissions?: Permissions }).permissions
     if (!perms || typeof perms.query !== 'function') return
+    let cancelled = false
     perms
       .query({ name: 'geolocation' as PermissionName })
-      .then((status) => { if (status.state === 'granted') locate() })
+      .then((status) => { if (!cancelled && status.state === 'granted') locate() })
       .catch(() => { /* permissions API unavailable */ })
+    return () => { cancelled = true }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -204,12 +229,12 @@ export default function NearbyPage() {
     if (!perms || typeof perms.query !== 'function') { void locate(); return }
     try {
       const status = await perms.query({ name: 'geolocation' as PermissionName })
-      // For 'prompt' state, calling locate() will trigger the browser's native permission dialog
-      void locate()
       if (status.state === 'denied') {
         setPhase('error')
         setErrorMsg('Konum izni reddedildi. Tarayıcı ayarlarından izin verin.')
+        return
       }
+      void locate()
     } catch { void locate() }
   }
 
@@ -271,7 +296,7 @@ export default function NearbyPage() {
 
   // ── Shared header ────────────────────────────────────────────────────────────
   const headerBar = (
-    <div className="bg-surface-card border-b border-surface-muted shrink-0 z-40">
+    <div className="bg-surface-card border-b border-surface-muted shrink-0 sticky top-0 z-40">
       <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
         <div>
           <h1 className="text-base font-bold text-slate-100">Yakın Duraklar</h1>
@@ -364,7 +389,8 @@ export default function NearbyPage() {
                         : 'border-surface-muted active:bg-surface-muted/50'
                     }`}
                     onClick={() => {
-                      selectSourceRef.current = 'list'
+                      // List click: do NOT set isProgrammaticScrollRef —
+                      // no auto-scroll needed and the handler should stay unblocked.
                       setSelectedCode(stop.stop_code)
                     }}
                   >
