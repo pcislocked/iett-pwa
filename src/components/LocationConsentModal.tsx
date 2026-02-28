@@ -1,9 +1,27 @@
+import { useEffect, useRef } from 'react'
+
 interface Props {
   onConfirm: () => void
   onDismiss: () => void
 }
 
 export default function LocationConsentModal({ onConfirm, onDismiss }: Props) {
+  const confirmRef = useRef<HTMLButtonElement>(null)
+
+  // Auto-focus the primary action on mount
+  useEffect(() => {
+    confirmRef.current?.focus()
+  }, [])
+
+  // Close on Escape
+  useEffect(() => {
+    function handleKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') onDismiss()
+    }
+    document.addEventListener('keydown', handleKey)
+    return () => document.removeEventListener('keydown', handleKey)
+  }, [onDismiss])
+
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm px-4 pb-6 sm:pb-0">
       <div
@@ -33,8 +51,9 @@ export default function LocationConsentModal({ onConfirm, onDismiss }: Props) {
         {/* Actions */}
         <div className="flex flex-col gap-2">
           <button
+            ref={confirmRef}
             onClick={onConfirm}
-            className="w-full bg-brand-600 hover:bg-brand-500 text-white font-semibold py-3 rounded-xl text-sm transition-colors"
+            className="w-full bg-brand-600 hover:bg-brand-500 text-white font-semibold py-3 rounded-xl text-sm transition-colors focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus:outline-none"
           >
             Konumumu Kullan
           </button>
