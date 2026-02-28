@@ -84,7 +84,7 @@ export default function SettingsPage() {
 
       <div className="card text-xs text-slate-500 flex flex-col gap-1">
         <p className="font-semibold text-slate-400">Hakkında</p>
-        <p>iett-pwa v0.1.0 · İETT Canlı</p>
+        <p>iett-pwa v0.1.6 · İETT Canlı</p>
         <p>Veri kaynağı: İETT / İBB açık API</p>
         <p>Arka uç: iett-middle (FastAPI)</p>
       </div>
