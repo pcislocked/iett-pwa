@@ -247,7 +247,7 @@ export default function RoutePage() {
   const tabs: { id: Tab; label: string; badge?: number }[] = [
     { id: 'schedule', label: 'Sefer Saatleri' },
     { id: 'map', label: 'Harita', badge: buses?.length },
-    { id: 'stops', label: 'Duraklar', badge: stopsForDir.length || stops?.length },
+    { id: 'stops', label: 'Duraklar', badge: stopsForDir.length ?? stops?.length },
     { id: 'alerts', label: 'Duyurular', badge: announcements?.length ? announcements.length : undefined },
   ]
 
@@ -332,7 +332,7 @@ export default function RoutePage() {
               />
               {stops?.map((s) => (
                 <CircleMarker
-                  key={s.stop_code}
+                  key={`${s.direction}-${s.stop_code}`}
                   center={[s.latitude, s.longitude]}
                   radius={4}
                   pathOptions={{ color: '#94a3b8', fillColor: '#94a3b8', fillOpacity: 1 }}
