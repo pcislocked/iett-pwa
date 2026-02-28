@@ -241,6 +241,9 @@ export default function NearbyPage() {
                 {/* Stop info */}
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-slate-200 truncate">{stop.stop_name}</p>
+                  {stop.direction && (
+                    <p className="text-[10px] text-slate-500 truncate leading-tight">{stop.direction}</p>
+                  )}
                   <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
                     <span className="text-[10px] text-slate-600 font-mono">#{stop.stop_code}</span>
                     {stop.routes.slice(0, 5).map((r) => (
