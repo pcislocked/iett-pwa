@@ -1,15 +1,18 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { MapContainer, TileLayer, CircleMarker, Popup, Marker, useMapEvents } from 'react-leaflet'
 import * as L from 'leaflet'
 import { api, type NearbyStop as ApiNearbyStop } from '@/api/client'
 import { distanceLabel } from '@/utils/distance'
+import LocationConsentModal from '@/components/LocationConsentModal'
 
 interface NearbyStop extends ApiNearbyStop {
   routes: string[]
 }
 
-type Phase = 'idle' | 'locating' | 'loading' | 'done' | 'error'
+type Phase = 'idle' | 'consent' | 'locating' | 'loading' | 'done' | 'error'
+
+const SETTINGS_KEY = 'iett_settings'
 
 export default function NearbyPage() {
   const [phase, setPhase] = useState<Phase>('idle')
@@ -20,6 +23,33 @@ export default function NearbyPage() {
   const [view, setView] = useState<'list' | 'map'>('list')
   const [pickedLat, setPickedLat] = useState<number | null>(null)
   const [pickedLon, setPickedLon] = useState<number | null>(null)
+
+  useEffect(() => {
+    // Auto-locate if user previously granted permission and has autoLocate enabled
+    const raw = localStorage.getItem(SETTINGS_KEY)
+    const autoLocate = raw ? (JSON.parse(raw) as { autoLocate?: boolean }).autoLocate ?? false : false
+    if (!autoLocate) return
+    navigator.permissions
+      .query({ name: 'geolocation' as PermissionName })
+      .then((status) => { if (status.state === 'granted') locate() })
+      .catch(() => { /* permissions API not available */ })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  async function requestLocate() {
+    // Check permission without triggering the browser prompt
+    try {
+      const status = await navigator.permissions.query({ name: 'geolocation' as PermissionName })
+      if (status.state === 'granted') {
+        locate()
+      } else {
+        setPhase('consent')
+      }
+    } catch {
+      // permissions API unavailable — show consent modal to be safe
+      setPhase('consent')
+    }
+  }
 
   async function locate() {
     setPhase('locating')
@@ -118,7 +148,7 @@ export default function NearbyPage() {
               </svg>
             </button>
             <button
-              onClick={locate}
+              onClick={requestLocate}
               disabled={phase === 'locating' || phase === 'loading'}
               className="p-1.5 text-brand-400 hover:text-brand-300 disabled:opacity-40 transition-colors"
               aria-label="Yenile"
@@ -167,7 +197,7 @@ export default function NearbyPage() {
             </div>
             <div className="flex gap-2">
               <button
-                onClick={locate}
+                onClick={requestLocate}
                 className="flex items-center justify-center gap-2 flex-1 bg-surface-muted hover:bg-slate-600 text-slate-200 font-semibold py-3 rounded-2xl transition-colors text-sm"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -203,15 +233,28 @@ export default function NearbyPage() {
           </div>
         )}
 
+        {/* Consent modal */}
+        {phase === 'consent' && (
+          <LocationConsentModal
+            onConfirm={() => locate()}
+            onDismiss={() => setPhase('idle')}
+          />
+        )}
+
         {/* Error */}
         {phase === 'error' && (
           <div className="flex flex-col items-center py-16 gap-4">
             <div className="bg-red-900/30 border border-red-700 rounded-xl px-5 py-4 text-red-300 text-sm w-full">
               {errorMsg}
             </div>
-            <button onClick={() => setPhase('idle')} className="btn-primary">
-              Tekrar Dene
-            </button>
+            <div className="flex gap-2">
+              <button onClick={() => setPhase('idle')} className="bg-surface-muted hover:bg-slate-600 text-slate-300 font-medium px-5 py-2.5 rounded-xl text-sm transition-colors">
+                Haritadan Belirt
+              </button>
+              <button onClick={() => requestLocate()} className="btn-primary">
+                Tekrar Dene
+              </button>
+            </div>
           </div>
         )}
 

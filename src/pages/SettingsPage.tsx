@@ -5,6 +5,7 @@ const STORAGE_KEY = 'iett_settings'
 interface Settings {
   apiBase: string
   refreshInterval: number
+  autoLocate: boolean
 }
 
 function loadSettings(): Settings {
@@ -12,7 +13,7 @@ function loadSettings(): Settings {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (raw) return JSON.parse(raw) as Settings
   } catch { /* ignore */ }
-  return { apiBase: '', refreshInterval: 20 }
+  return { apiBase: '', refreshInterval: 20, autoLocate: false }
 }
 
 export default function SettingsPage() {
@@ -65,6 +66,29 @@ export default function SettingsPage() {
                        px-3 py-2 text-sm text-slate-100
                        focus:outline-none focus:ring-1 focus:ring-brand-500"
           />
+        </div>
+
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm text-slate-300 font-medium">Otomatik Konum</p>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Yakın Duraklar açılınca GPS'le otomatik konumla (yalnızca izin verilmişse)
+            </p>
+          </div>
+          <button
+            role="switch"
+            aria-checked={settings.autoLocate}
+            onClick={() => setSettings((s) => ({ ...s, autoLocate: !s.autoLocate }))}
+            className={`relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors focus:outline-none ${
+              settings.autoLocate ? 'bg-brand-600' : 'bg-surface-muted'
+            }`}
+          >
+            <span
+              className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow ring-0 transition-transform ${
+                settings.autoLocate ? 'translate-x-5' : 'translate-x-0'
+              }`}
+            />
+          </button>
         </div>
       </div>
 
