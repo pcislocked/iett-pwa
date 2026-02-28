@@ -164,12 +164,12 @@ export default function Home() {
                   onClick={() => navigate(r.kind === 'stop' ? `/stops/${r.code}` : `/routes/${r.code}`)}
                   className="w-full flex items-center gap-3 px-4 py-3 hover:bg-surface-muted transition-colors text-left"
                 >
-                  <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded shrink-0 ${
+                  <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded shrink-0 font-mono ${
                     r.kind === 'stop'
                       ? 'bg-brand-900 text-brand-100'
                       : 'bg-amber-900/60 text-amber-200'
                   }`}>
-                    {r.kind === 'stop' ? 'DURAK' : 'HAT'}
+                    {r.code}
                   </span>
                   <span className="flex-1 text-sm text-slate-200 truncate">{r.name}</span>
                   <svg className="w-4 h-4 text-slate-600 shrink-0" fill="none" viewBox="0 0 24 24"

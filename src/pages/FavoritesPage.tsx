@@ -8,15 +8,14 @@ function FavItem({ fav, onRemove }: { fav: Favorite; onRemove: () => void }) {
 
   return (
     <div className="card flex items-center gap-3 py-3">
-      <div className={`shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded ${
+      <div className={`shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded font-mono ${
         isStop ? 'bg-brand-900 text-brand-100' : 'bg-amber-900/60 text-amber-200'
       }`}>
-        {isStop ? 'DURAK' : 'HAT'}
+        {code}
       </div>
 
       <Link to={to} className="flex-1 min-w-0">
         <p className="text-sm font-semibold text-slate-200 truncate">{fav.name}</p>
-        <p className="text-[11px] text-slate-500 font-mono">#{code}</p>
       </Link>
 
       <Link
