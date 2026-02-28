@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback } from 'react'
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { MapContainer, TileLayer, CircleMarker, Popup, Marker } from 'react-leaflet'
 import * as L from 'leaflet'
@@ -86,6 +86,23 @@ export default function StopPage() {
     return result
   }, [arrivals])
 
+  // Stable key for the fetch-effect dep — only changes when route membership changes.
+  // Using a ref for the actual list so the effect closure always reads the latest routes
+  // without needing to re-create the interval. This avoids tearing down the 15s interval
+  // on every 20s arrivals refresh.
+  const arrivalRouteOrderRef = useRef(arrivalRouteOrder)
+  arrivalRouteOrderRef.current = arrivalRouteOrder
+  const routeFetchKey = arrivalRouteOrder.slice(0, MAX_LIVE_ROUTES).join(',')
+
+  // One cached Leaflet DivIcon per route_code — avoids creating a new DOM object every render.
+  const routeIconMap = useMemo(() => {
+    const m = new Map<string, L.DivIcon>()
+    arrivalRouteOrder.forEach((r) => {
+      m.set(r, makeBusIcon(getRouteColor(r, arrivalRouteOrder)))
+    })
+    return m
+  }, [arrivalRouteOrder])
+
   // Announcements for the first selected route
   const firstActive = useMemo(() => Array.from(activeRoutes)[0] ?? null, [activeRoutes])
   const { data: announcements } = usePolling<Announcement[]>(
@@ -121,8 +138,10 @@ export default function StopPage() {
 
   // Fetch live bus positions for ALL routes present in arrivals (up to MAX_LIVE_ROUTES).
   // Refresh every 15 s. Not gated by activeRoutes — all vehicles always visible on map.
+  // Dep is routeFetchKey (a string) so the interval is only recreated when the route set
+  // actually changes, not on every 20 s arrivals refresh.
   useEffect(() => {
-    const routesToFetch = arrivalRouteOrder.slice(0, MAX_LIVE_ROUTES)
+    const routesToFetch = arrivalRouteOrderRef.current.slice(0, MAX_LIVE_ROUTES)
     if (routesToFetch.length === 0) { setRouteBuses([]); return }
 
     let latestReqId = 0
@@ -140,7 +159,8 @@ export default function StopPage() {
     void fetchBuses()
     const id = setInterval(() => { void fetchBuses() }, 15_000)
     return () => { latestReqId = Infinity; clearInterval(id) }
-  }, [arrivalRouteOrder])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [routeFetchKey])
 
   // ETA lookup by kapino (from all arrivals, not just filtered)
   const etaByKapino = useMemo(() => {
@@ -217,11 +237,11 @@ export default function StopPage() {
                   <br />#{dcode}
                 </Popup>
               </CircleMarker>
-              {/* Live bus markers — coloured per route */}
+              {/* Live bus markers — coloured per route, icons cached by route */}
               {routeBuses.map((b) => {
                 const eta = etaByKapino.get(b.kapino) ?? null
                 const color = b.route_code ? getRouteColor(b.route_code, arrivalRouteOrder) : '#6b7280'
-                const icon = makeBusIcon(color)
+                const icon = (b.route_code ? routeIconMap.get(b.route_code) : undefined) ?? makeBusIcon('#6b7280')
                 const vehicleLine = [b.plate, b.kapino].filter(Boolean).join('  ·  ')
                 return (
                   <Marker key={`${b.kapino}-${b.route_code ?? ''}`} position={[b.latitude, b.longitude]} icon={icon}>

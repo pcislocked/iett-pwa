@@ -39,10 +39,12 @@ export default function NearbyPage() {
     if (!autoLocate) return
     const perms = (navigator as Navigator & { permissions?: Permissions }).permissions
     if (!perms || typeof perms.query !== 'function') return
+    let cancelled = false
     perms
       .query({ name: 'geolocation' as PermissionName })
-      .then((status) => { if (status.state === 'granted') locate() })
+      .then((status) => { if (!cancelled && status.state === 'granted') locate() })
       .catch(() => { /* permissions API query failed */ })
+    return () => { cancelled = true }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
