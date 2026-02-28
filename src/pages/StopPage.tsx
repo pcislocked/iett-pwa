@@ -192,6 +192,9 @@ export default function StopPage() {
                 #{dcode}
               </span>
             </div>
+            {stopDetail && stopDetail.direction && (
+              <p className="text-[11px] text-slate-500 truncate leading-tight">{stopDetail.direction}</p>
+            )}
             {stale && <p className="text-[11px] text-amber-400">⚠ Son güncelleme başarısız</p>}
           </div>
 
