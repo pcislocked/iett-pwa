@@ -206,6 +206,7 @@ export default function RoutePage() {
   const { hatKodu } = useParams<{ hatKodu: string }>()
   const navigate = useNavigate()
   const [tab, setTab] = useState<Tab>('schedule')
+  const [stopsDir, setStopsDir] = useState('')
 
   const { data: buses, stale } = useRouteBuses(hatKodu ?? '')
 
@@ -218,6 +219,19 @@ export default function RoutePage() {
   const { data: schedule, error: scheduleError, refresh: refreshSchedule } = usePolling<ScheduledDeparture[]>(scheduleFetcher, 300_000)
   const { data: announcements, error: announcementsError, refresh: refreshAnnouncements } = usePolling<Announcement[]>(announceFetcher, 300_000)
   const { data: metadata } = usePolling<RouteMetadata[]>(metaFetcher, 600_000)
+
+  // Unique direction labels from stops (full terminal names like "YENİ CAMİİ")
+  const stopsDirections = useMemo(
+    () => [...new Set((stops ?? []).map((s) => s.direction))].sort(),
+    [stops],
+  )
+  const effectiveStopsDir = stopsDirections.includes(stopsDir)
+    ? stopsDir
+    : (stopsDirections[0] ?? '')
+  const stopsForDir = useMemo(
+    () => (stops ?? []).filter((s) => !effectiveStopsDir || s.direction === effectiveStopsDir),
+    [stops, effectiveStopsDir],
+  )
 
   const { isFavorite, toggle } = useFavorites()
   const routeName = metadata?.[0]?.full_name ?? hatKodu ?? ''
@@ -233,7 +247,7 @@ export default function RoutePage() {
   const tabs: { id: Tab; label: string; badge?: number }[] = [
     { id: 'schedule', label: 'Sefer Saatleri' },
     { id: 'map', label: 'Harita', badge: buses?.length },
-    { id: 'stops', label: 'Duraklar', badge: stops?.length },
+    { id: 'stops', label: 'Duraklar', badge: stopsForDir.length || stops?.length },
     { id: 'alerts', label: 'Duyurular', badge: announcements?.length ? announcements.length : undefined },
   ]
 
@@ -341,6 +355,24 @@ export default function RoutePage() {
         {/* Stops tab */}
         {tab === 'stops' && (
           <div className="flex flex-col gap-1">
+            {/* Direction filter pills */}
+            {stopsDirections.length > 1 && (
+              <div className="flex gap-1 bg-surface-card rounded-xl p-1 border border-surface-muted mb-2">
+                {stopsDirections.map((dir) => (
+                  <button
+                    key={dir}
+                    onClick={() => setStopsDir(dir)}
+                    className={`flex-1 text-xs py-1.5 px-2 rounded-lg font-medium transition-colors truncate ${
+                      effectiveStopsDir === dir
+                        ? 'bg-brand-600 text-white'
+                        : 'text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    {dir}
+                  </button>
+                ))}
+              </div>
+            )}
             {!stops && !stopsError && (
               <div className="flex flex-col gap-2">
                 {[...Array(6)].map((_, i) => (
@@ -363,9 +395,9 @@ export default function RoutePage() {
                 <p className="text-sm">Bu hat için durak bulunamadı</p>
               </div>
             )}
-            {stops?.map((s) => (
+            {stopsForDir.map((s) => (
               <Link
-                key={s.stop_code}
+                key={`${s.direction}-${s.stop_code}`}
                 to={`/stops/${s.stop_code}`}
                 className="card flex items-center gap-3 py-3 hover:border-slate-500 transition-colors"
               >
