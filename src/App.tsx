@@ -125,16 +125,22 @@ function AnimatedMain() {
     <div className="flex-1 min-h-0 relative overflow-hidden flex flex-col">
       {/* Exit page slides out simultaneously with the entering page */}
       {exitLoc && (
-        <div className={`absolute inset-0 overflow-y-auto flex flex-col transition-transform duration-[220ms] ease-out ${
-          active ? exitFinal : 'translate-x-0'
-        }`}>
+        <div
+          className={`absolute inset-0 bg-black overflow-y-auto flex flex-col transition-transform duration-[220ms] ease-out ${
+            active ? exitFinal : 'translate-x-0'
+          }`}
+          style={{ willChange: 'transform' }}
+        >
           <MainRoutes loc={exitLoc} />
         </div>
       )}
       {/* Enter page: off-screen only while a transition is staged (exitLoc set, active false) */}
-      <div className={`absolute inset-0 overflow-y-auto flex flex-col transition-transform duration-[220ms] ease-out ${
-        (!exitLoc || active) ? 'translate-x-0' : enterInit
-      }`}>
+      <div
+        className={`absolute inset-0 bg-black overflow-y-auto flex flex-col transition-transform duration-[220ms] ease-out ${
+          (!exitLoc || active) ? 'translate-x-0' : enterInit
+        }`}
+        style={{ willChange: 'transform' }}
+      >
         <MainRoutes loc={location} />
       </div>
     </div>

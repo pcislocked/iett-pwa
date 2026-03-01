@@ -17,9 +17,10 @@ interface MetroIconBtnProps {
   label: string
   active?: boolean
   onPress: () => void
+  showLabel?: boolean
 }
 
-function MetroIconBtn({ icon, label, active, onPress }: MetroIconBtnProps) {
+function MetroIconBtn({ icon, label, active, onPress, showLabel }: MetroIconBtnProps) {
   return (
     <motion.button
       onClick={onPress}
@@ -27,24 +28,27 @@ function MetroIconBtn({ icon, label, active, onPress }: MetroIconBtnProps) {
       style={{ perspective: 400 }}
       transition={{ duration: 0.1 }}
       className="flex flex-col items-center gap-1"
+      aria-label={label}
     >
       <div
-        className="w-12 h-12 rounded-full flex items-center justify-center"
+        className="w-12 h-12 flex items-center justify-center"
         style={{
-          border: `2px solid ${active ? '#ffffff' : 'rgba(255,255,255,0.35)'}`,
-          background: active ? 'rgba(255,255,255,0.1)' : 'transparent',
+          border: `2px solid ${active ? '#ffffff' : 'rgba(255,255,255,0.3)'}`,
+          background: active ? 'rgba(255,255,255,0.12)' : 'transparent',
         }}
       >
-        <span style={{ color: active ? '#ffffff' : 'rgba(255,255,255,0.4)' }}>
+        <span style={{ color: active ? '#ffffff' : 'rgba(255,255,255,0.35)' }}>
           {icon}
         </span>
       </div>
-      <span
-        className="text-[9px] lowercase leading-none"
-        style={{ color: active ? '#ffffff' : 'rgba(255,255,255,0.4)' }}
-      >
-        {label}
-      </span>
+      {showLabel && (
+        <span
+          className="text-[9px] lowercase leading-none"
+          style={{ color: active ? '#ffffff' : 'rgba(255,255,255,0.4)' }}
+        >
+          {label}
+        </span>
+      )}
     </motion.button>
   )
 }
@@ -145,6 +149,7 @@ export default function AppBar() {
                 label={tab.label}
                 active={tab.active}
                 onPress={tab.onPress}
+                showLabel
               />
             ))}
           </div>
