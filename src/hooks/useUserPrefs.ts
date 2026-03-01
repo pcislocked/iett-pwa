@@ -24,11 +24,8 @@ export interface UserPrefs {
   exportedAt?: string
 }
 
-const DEFAULT_PREFS: UserPrefs = {
-  pinnedStops: [],
-  favStops: [],
-  favRoutes: [],
-  nicknames: {},
+function createDefaultPrefs(): UserPrefs {
+  return { pinnedStops: [], favStops: [], favRoutes: [], nicknames: {} }
 }
 
 const KEY = 'iett-prefs'
@@ -36,10 +33,10 @@ const KEY = 'iett-prefs'
 function load(): UserPrefs {
   try {
     const raw = localStorage.getItem(KEY)
-    if (!raw) return DEFAULT_PREFS
-    return { ...DEFAULT_PREFS, ...(JSON.parse(raw) as Partial<UserPrefs>) }
+    if (!raw) return createDefaultPrefs()
+    return { ...createDefaultPrefs(), ...(JSON.parse(raw) as Partial<UserPrefs>) }
   } catch {
-    return DEFAULT_PREFS
+    return createDefaultPrefs()
   }
 }
 
@@ -166,14 +163,21 @@ export function useUserPrefs() {
           const raw = JSON.parse(e.target?.result as string) as Partial<UserPrefs>
           // Coerce each field to the correct type to guard against malformed files / old schemas
           const coerced: UserPrefs = {
-            pinnedStops: Array.isArray(raw.pinnedStops)
-              ? raw.pinnedStops
-                  .filter((s): s is PinnedStop =>
-                    s != null && typeof s === 'object' &&
-                    typeof s.dcode === 'string' && typeof s.nick === 'string'
-                  )
-                  .map((s, i) => ({ dcode: s.dcode, nick: s.nick, order: typeof s.order === 'number' ? s.order : i }))
-              : [],
+            pinnedStops: (() => {
+              if (!Array.isArray(raw.pinnedStops)) return []
+              const valid = raw.pinnedStops
+                .filter((s): s is PinnedStop =>
+                  s != null && typeof s === 'object' &&
+                  typeof s.dcode === 'string' && typeof s.nick === 'string'
+                )
+                .map((s, i) => ({ dcode: s.dcode, nick: s.nick, order: typeof s.order === 'number' ? s.order : i }))
+              const seen = new Set<string>()
+              const deduped: PinnedStop[] = []
+              for (const stop of [...valid].sort((a, b) => a.order - b.order)) {
+                if (!seen.has(stop.dcode)) { seen.add(stop.dcode); deduped.push(stop) }
+              }
+              return deduped.slice(0, 3).map((s, i) => ({ ...s, order: i }))
+            })(),
             favStops: Array.isArray(raw.favStops)
               ? raw.favStops.filter((s): s is FavStop =>
                   s != null && typeof s === 'object' &&

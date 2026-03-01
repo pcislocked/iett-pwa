@@ -23,6 +23,8 @@ export default function SwipeableTabs({
   const startX = useRef<number | null>(null)
   const count = children.length
 
+  if (count === 0) return null
+
   function handleTouchStart(e: React.TouchEvent) {
     if (disabled) return
     startX.current = e.touches[0].clientX

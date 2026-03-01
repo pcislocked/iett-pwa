@@ -42,7 +42,7 @@ export default function PinnedStopRow({ dcode, nick, icon = '📌', distLabel }:
             <span className="w-14 h-5 rounded-full bg-surface-muted animate-pulse opacity-50" />
           </>
         ) : top2.length > 0 ? (
-          top2.map((a, i) => {
+          top2.map((a) => {
             const eta = a.eta_minutes !== null ? `${a.eta_minutes}dk` : a.eta_raw
             const color =
               a.eta_minutes !== null && a.eta_minutes < 5
@@ -52,7 +52,7 @@ export default function PinnedStopRow({ dcode, nick, icon = '📌', distLabel }:
                   : 'text-slate-500'
             return (
               <span
-                key={i}
+                key={a.route_code}
                 className={`text-[11px] font-bold font-mono ${color}`}
               >
                 {a.route_code}:{eta}
