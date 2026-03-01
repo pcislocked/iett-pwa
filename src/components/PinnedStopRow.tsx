@@ -52,7 +52,7 @@ export default function PinnedStopRow({ dcode, nick, icon = '📌', distLabel }:
                   : 'text-slate-500'
             return (
               <span
-                key={a.route_code}
+              key={`${a.route_code}-${a.eta_raw ?? ''}`}
                 className={`text-[11px] font-bold font-mono ${color}`}
               >
                 {a.route_code}:{eta}

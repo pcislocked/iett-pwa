@@ -502,7 +502,7 @@ export default function NearbyPage() {
     <div className="flex flex-col flex-1 min-h-0">
       {headerBar}
 
-      <div className="flex-1 max-w-2xl w-full mx-auto px-4 pb-28 pt-4">
+      <div className="flex-1 max-w-2xl w-full mx-auto px-4 pb-6 pt-4">
 
         {/* Idle — map location picker */}
         {phase === 'idle' && (

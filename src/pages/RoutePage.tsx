@@ -315,7 +315,7 @@ export default function RoutePage() {
       </div>
 
       {/* Body */}
-      <div className="flex-1 max-w-2xl w-full mx-auto px-4 pb-28 pt-4">
+      <div className="flex-1 max-w-2xl w-full mx-auto px-4 pb-6 pt-4">
 
         {/* Timetable tab */}
         {tab === 'schedule' && (

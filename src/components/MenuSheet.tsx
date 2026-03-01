@@ -106,12 +106,12 @@ export default function MenuSheet({ onClose }: MenuSheetProps) {
 
           <MenuRow
             icon="📤"
-            label="Veriyi Dışa Aktar"
+            label="Ayarları Dışa Aktar"
             onPress={() => { exportPrefs(); onClose() }}
           />
           <MenuRow
             icon="📥"
-            label="Veriyi İçe Aktar"
+            label="Ayarları İçe Aktar"
             onPress={() => fileRef.current?.click()}
           />
 

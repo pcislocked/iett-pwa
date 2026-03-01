@@ -51,6 +51,8 @@ const DISMISSED_KEY = 'iett-install-dismissed'
  *   - the user has already dismissed it
  *   - on iOS (different install flow)
  */
+// Hook is intentionally co-located with the component it controls.
+// eslint-disable-next-line react-refresh/only-export-components
 export function useInstallBanner() {
   const deferredPrompt = useRef<BeforeInstallPromptEvent | null>(null)
   const timeoutId = useRef<ReturnType<typeof setTimeout> | null>(null)

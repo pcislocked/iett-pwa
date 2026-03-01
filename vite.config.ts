@@ -34,20 +34,6 @@ export default defineConfig({
           },
         ],
       },
-      manifest: {
-        name: 'İETT Canlı',
-        short_name: 'İETT',
-        description: 'İstanbul gerçek zamanlı otobüs takip uygulaması',
-        theme_color: '#000000',
-        background_color: '#000000',
-        display: 'standalone',
-        orientation: 'portrait',
-        start_url: '/',
-        icons: [
-          { src: 'icons/icon-192.png', sizes: '192x192', type: 'image/png' },
-          { src: 'icons/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any maskable' },
-        ],
-      },
     }),
   ],
   server: {

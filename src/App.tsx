@@ -23,6 +23,8 @@ function GlobalSwipe() {
     let startY = 0
 
     function onTouchStart(e: TouchEvent) {
+      const target = e.target as Element
+      if (target.closest('input, textarea, select, [contenteditable]')) return
       startX = e.touches[0].clientX
       startY = e.touches[0].clientY
     }

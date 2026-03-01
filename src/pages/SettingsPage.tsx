@@ -13,7 +13,7 @@ export default function SettingsPage() {
   }, [settings])
 
   return (
-    <div className="max-w-lg mx-auto px-4 py-8 pb-28 flex flex-col gap-6">
+    <div className="max-w-lg mx-auto px-4 py-8 pb-6 flex flex-col gap-6">
       <h1 className="text-xl font-bold">Ayarlar</h1>
 
       <div className="card flex flex-col gap-4">
