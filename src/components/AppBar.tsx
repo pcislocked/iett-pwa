@@ -1,26 +1,26 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useBottomBarContext } from '@/hooks/useBottomBar'
 import { MAIN_PATHS } from '@/routes'
 
-/* ── Ellipsis secondary nav items ────────────────────────────────────────── */
+/* â”€â”€ Ellipsis secondary nav items â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 const MENU_ITEMS = [
   { label: 'favoriler', to: '/favorites' },
   { label: 'harita',    to: '/map' },
   { label: 'ayarlar',  to: '/settings' },
 ]
 
-/* ── Metro circle icon button ────────────────────────────────────────────── */
+const MAIN_TAB_PATHS = MAIN_PATHS as readonly string[]
+
+/* â”€â”€ Metro circle icon button â€” used only for custom (detail page) tabs â”€â”€â”€ */
 interface MetroIconBtnProps {
   icon: React.ReactNode
   label: string
   active?: boolean
   onPress: () => void
-  showLabel?: boolean
 }
-
-function MetroIconBtn({ icon, label, active, onPress, showLabel }: MetroIconBtnProps) {
+function MetroIconBtn({ icon, label, active, onPress }: MetroIconBtnProps) {
   return (
     <motion.button
       onClick={onPress}
@@ -37,65 +37,24 @@ function MetroIconBtn({ icon, label, active, onPress, showLabel }: MetroIconBtnP
           background: active ? 'rgba(255,255,255,0.12)' : 'transparent',
         }}
       >
-        <span style={{ color: active ? '#ffffff' : 'rgba(255,255,255,0.35)' }}>
-          {icon}
-        </span>
+        <span style={{ color: active ? '#ffffff' : 'rgba(255,255,255,0.35)' }}>{icon}</span>
       </div>
-      {showLabel && (
-        <span
-          className="text-[9px] lowercase leading-none"
-          style={{ color: active ? '#ffffff' : 'rgba(255,255,255,0.4)' }}
-        >
-          {label}
-        </span>
-      )}
+      <span className="text-[9px] lowercase leading-none"
+            style={{ color: active ? '#ffffff' : 'rgba(255,255,255,0.4)' }}>
+        {label}
+      </span>
     </motion.button>
   )
 }
 
-/* ── Default main-tab icon definitions ──────────────────────────────────── */
-const DEFAULT_TABS = [
-  {
-    to: '/search',
-    label: 'ara',
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5">
-        <path strokeLinecap="round" strokeLinejoin="round"
-              d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z" />
-      </svg>
-    ),
-  },
-  {
-    to: '/',
-    label: 'ana',
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5">
-        <path strokeLinecap="round" strokeLinejoin="round"
-              d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75" />
-      </svg>
-    ),
-  },
-  {
-    to: '/nearby',
-    label: 'yakın',
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
-        <path strokeLinecap="round" strokeLinejoin="round"
-              d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
-      </svg>
-    ),
-  },
-]
-
 /**
  * Windows Phone 8 Application Bar.
  *
- * Main pages: 3 main-tab circle-icon buttons + ··· ellipsis on right.
- * Ellipsis expands upward to reveal secondary nav (Favoriler, Harita, Ayarlar).
+ * Main pages: 3 flat-square tab indicators (active = solid white tile,
+ * inactive = dim tile) + Â·Â·Â· ellipsis on the right.
+ * No icons/labels on the bar â€” Pivot header at top carries those.
  *
- * Detail pages (customTabs set): renders custom tab icons in the same circle
- * style — preserves the existing useBottomBarContext API.
+ * Detail pages (customTabs set): icon+label circle buttons as before.
  */
 export default function AppBar() {
   const { customTabs } = useBottomBarContext()
@@ -103,12 +62,13 @@ export default function AppBar() {
   const navigate = useNavigate()
   const [menuOpen, setMenuOpen] = useState(false)
 
-  const isMain = (MAIN_PATHS as readonly string[]).includes(location.pathname)
+  const currentIdx = MAIN_TAB_PATHS.indexOf(location.pathname)
+  const isMain = currentIdx !== -1
 
   return (
-    <div className="flex-none relative" style={{ background: 'rgba(0,0,0,0.95)' }}>
+    <div className="flex-none relative" style={{ background: '#000' }}>
 
-      {/* ── Ellipsis secondary menu ─────────────────────────────────────── */}
+      {/* â”€â”€ Ellipsis secondary menu (slides up) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       <AnimatePresence>
         {menuOpen && (
           <motion.div
@@ -117,15 +77,16 @@ export default function AppBar() {
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.18, ease: 'easeOut' }}
-            className="overflow-hidden border-t border-[#111]"
+            className="overflow-hidden"
+            style={{ borderTop: '1px solid #1a1a1a' }}
           >
             {MENU_ITEMS.map(item => (
               <motion.button
                 key={item.to}
                 onClick={() => { navigate(item.to); setMenuOpen(false) }}
-                whileTap={{ x: 8 }}
+                whileTap={{ x: 10 }}
                 transition={{ duration: 0.08 }}
-                className="w-full text-left px-6 py-3 lowercase text-white text-lg"
+                className="w-full text-left px-6 py-3 text-white text-xl lowercase"
                 style={{ borderBottom: '1px solid #111' }}
               >
                 {item.label}
@@ -135,12 +96,13 @@ export default function AppBar() {
         )}
       </AnimatePresence>
 
-      {/* ── Bar ─────────────────────────────────────────────────────────── */}
-      <div className="flex items-center px-6 py-2 safe-area-pb"
-           style={{ borderTop: '1px solid #111' }}>
-
-        {/* Custom tabs (detail pages) */}
+      {/* â”€â”€ Bar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      <div
+        className="flex items-center safe-area-pb"
+        style={{ borderTop: '1px solid #1a1a1a', padding: '10px 20px' }}
+      >
         {customTabs ? (
+          /* Detail pages â€” icon+label circle buttons */
           <div className="flex items-center justify-center gap-6 flex-1">
             {customTabs.map((tab, i) => (
               <MetroIconBtn
@@ -149,35 +111,44 @@ export default function AppBar() {
                 label={tab.label}
                 active={tab.active}
                 onPress={tab.onPress}
-                showLabel
               />
             ))}
           </div>
         ) : (
-          /* Default main-tab buttons */
+          /* Main tabs â€” flat square indicators */
           <>
-            <div className="flex items-center gap-6 flex-1">
-              {DEFAULT_TABS.map(tab => (
-                <MetroIconBtn
-                  key={tab.to}
-                  icon={tab.icon}
-                  label={tab.label}
-                  active={isMain && location.pathname === tab.to}
-                  onPress={() => { setMenuOpen(false); navigate(tab.to) }}
-                />
-              ))}
+            <div className="flex items-center gap-3 flex-1">
+              {MAIN_TAB_PATHS.map((path, i) => {
+                const active = isMain && i === currentIdx
+                return (
+                  <motion.button
+                    key={path}
+                    onClick={() => { setMenuOpen(false); navigate(path) }}
+                    whileTap={{ scale: 0.9 }}
+                    transition={{ duration: 0.08 }}
+                    aria-label={path}
+                    style={{
+                      width: 44,
+                      height: 44,
+                      background: active ? '#ffffff' : 'rgba(255,255,255,0.12)',
+                      border: 'none',
+                      flexShrink: 0,
+                    }}
+                  />
+                )
+              })}
             </div>
 
-            {/* Ellipsis */}
+            {/* Ellipsis Â·Â·Â· */}
             <motion.button
               onClick={() => setMenuOpen(p => !p)}
-              whileTap={{ scale: 0.88 }}
+              whileTap={{ scale: 0.85 }}
               transition={{ duration: 0.1 }}
-              className="flex flex-col items-center justify-center w-10 h-10"
-              style={{ color: menuOpen ? '#00AFF0' : 'rgba(255,255,255,0.6)' }}
-              aria-label="Menü"
+              style={{ color: menuOpen ? '#00AFF0' : 'rgba(255,255,255,0.5)', lineHeight: 1 }}
+              className="text-2xl tracking-widest w-10 text-center"
+              aria-label="MenÃ¼"
             >
-              <span className="text-2xl leading-none tracking-widest">···</span>
+              Â·Â·Â·
             </motion.button>
           </>
         )}
