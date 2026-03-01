@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, useNavigate, useLocation, useNavigationType } from 'react-router-dom'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import BottomTabBar from '@/components/BottomTabBar'
 import InstallBanner, { useInstallBanner } from '@/components/InstallBanner'
 import Home from '@/pages/Home'
@@ -91,7 +91,7 @@ function AnimatedMain() {
   const [navDir, setNavDir] = useState<'left' | 'right'>('left')
   const [active, setActive] = useState(false)
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (location.key === prevLocRef.current.key) return
     const oldLoc = prevLocRef.current
     prevLocRef.current = location
