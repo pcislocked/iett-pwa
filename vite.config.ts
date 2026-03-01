@@ -1,9 +1,10 @@
-import { defineConfig } from 'vitest/config'
+import { defineConfig } from 'vite'
+import { mergeConfig, defineConfig as defineTestConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 import path from 'path'
 
-export default defineConfig({
+const viteConfig = defineConfig({
   resolve: {
     alias: { '@': path.resolve(__dirname, 'src') },
   },
@@ -46,14 +47,20 @@ export default defineConfig({
       },
     },
   },
-  test: {
-    environment: 'jsdom',
-    globals: true,
-    setupFiles: ['./src/test/setup.ts'],
-    alias: { '@': path.resolve(__dirname, 'src') },
-    coverage: {
-      provider: 'v8',
-      reporter: ['text', 'lcov'],
-    },
-  },
 })
+
+export default mergeConfig(
+  viteConfig,
+  defineTestConfig({
+    test: {
+      environment: 'jsdom',
+      globals: true,
+      setupFiles: ['./src/test/setup.ts'],
+      alias: { '@': path.resolve(__dirname, 'src') },
+      coverage: {
+        provider: 'v8',
+        reporter: ['text', 'lcov'],
+      },
+    },
+  }),
+)
