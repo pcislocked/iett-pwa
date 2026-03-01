@@ -8,21 +8,24 @@ interface PinnedStopRowProps {
   nick: string
   icon?: '📌' | '📍'
   distLabel?: string   // e.g. "220m" — for nearby rows
+  direction?: string | null  // optional override — skips the stops.detail() fetch
 }
 
 /**
  * A single pinned-stop or nearby-stop row on the Home page.
  * Shows up to 2 upcoming arrivals inline as `HAT:Xdk` pills.
  */
-export default function PinnedStopRow({ dcode, nick, icon = '📌', distLabel }: PinnedStopRowProps) {
+export default function PinnedStopRow({ dcode, nick, icon = '📌', distLabel, direction: directionProp }: PinnedStopRowProps) {
   const navigate = useNavigate()
   const { data: arrivals, loading } = useArrivals(dcode)
   const [stopDetail, setStopDetail] = useState<StopDetail | null>(null)
 
   useEffect(() => {
+    if (directionProp != null) return  // direction already provided — skip extra fetch
     api.stops.detail(dcode).then(setStopDetail).catch(() => {})
-  }, [dcode])
+  }, [dcode, directionProp])
 
+  const resolvedDirection = directionProp ?? stopDetail?.direction
   const top2 = arrivals?.slice(0, 2) ?? []
 
   return (
@@ -38,8 +41,8 @@ export default function PinnedStopRow({ dcode, nick, icon = '📌', distLabel }:
       <div className="flex-1 min-w-0">
         <span className="text-[13px] font-bold text-white truncate block leading-tight">{nick}</span>
         <span className="text-[10px] text-slate-500 truncate block">
-          {stopDetail?.direction
-            ? `→ ${stopDetail.direction}`
+          {resolvedDirection
+            ? `→ ${resolvedDirection}`
             : distLabel
               ? ''
               : <span className="font-mono text-slate-700">{dcode}</span>}
