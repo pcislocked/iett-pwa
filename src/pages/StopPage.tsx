@@ -220,6 +220,14 @@ export default function StopPage() {
 
         {/* Map — top ~40% */}
         <div className="h-[40%] shrink-0 border-b border-surface-muted relative">
+          {/* Subtle hint when GPS positions haven't loaded yet */}
+          {routeBuses.length === 0 && (arrivals ?? []).length > 0 && (
+            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 z-[400] pointer-events-none">
+              <span className="text-[10px] text-slate-400 bg-surface-card/80 backdrop-blur px-2 py-0.5 rounded-full">
+                Otobüsleri görmek için bir hat seç
+              </span>
+            </div>
+          )}
           {stopDetail && stopDetail.latitude != null && stopDetail.longitude != null ? (
             <MapContainer
               center={[stopDetail.latitude, stopDetail.longitude]}
@@ -289,54 +297,8 @@ export default function StopPage() {
           )}
         </div>
 
-        {/* ── Route pills + direction ─────────────────────────────────────────
-            Placed between map and arrivals list.
-            Pills filter the arrivals list; map always shows buses for all routes. */}
-        {stopDetail?.direction && (
-          <div className="px-4 pt-2 pb-0.5">
-            <span className="inline-flex items-center gap-1 text-[11px] text-slate-400 bg-surface-muted px-2 py-0.5 rounded-md">
-              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-              </svg>
-              {stopDetail.direction}
-            </span>
-          </div>
-        )}
-        {(routes ?? []).length > 0 && (
-          <div className="px-4 py-2 flex gap-2 overflow-x-auto no-scrollbar shrink-0">
-            <button
-              onClick={() => setActiveRoutes(new Set())}
-              className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-bold transition-colors ${
-                activeRoutes.size === 0
-                  ? 'bg-brand-600 text-white'
-                  : 'bg-surface-muted text-slate-300 hover:bg-slate-600'
-              }`}
-            >
-              Tümü
-            </button>
-            {(routes ?? []).map((r) => {
-              const color = getRouteColor(r, arrivalRouteOrder)
-              const isActive = activeRoutes.has(r)
-              return (
-                <button
-                  key={r}
-                  onClick={() => toggleRoute(r)}
-                  style={isActive ? { backgroundColor: color, borderColor: color } : {}}
-                  className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-bold border transition-colors ${
-                    isActive
-                      ? 'text-white border-transparent'
-                      : 'bg-surface-muted text-slate-300 border-transparent hover:bg-slate-600'
-                  }`}
-                >
-                  {r}
-                </button>
-              )
-            })}
-          </div>
-        )}
-
         {/* Arrivals — scrollable */}
-        <div className="flex-1 overflow-y-auto px-4 pt-3 pb-24 flex flex-col gap-2">
+        <div className="flex-1 overflow-y-auto px-4 pt-3 pb-4 flex flex-col gap-2">
           {error && !stale && (
             <div className="bg-red-900/30 border border-red-700 rounded-xl px-4 py-3 text-red-300 text-sm">
               {error}
@@ -367,20 +329,23 @@ export default function StopPage() {
 
           {filteredArrivals.map((a, i) => {
             const vehicleLine = [a.kapino, a.plate].filter(Boolean).join('  ·  ')
+            const routeColor = getRouteColor(a.route_code, arrivalRouteOrder)
             return (
             <Link
               key={`${a.route_code}-${a.destination}-${i}`}
               to={`/routes/${a.route_code}`}
               className="card flex items-center gap-3 py-2 hover:border-slate-500 transition-colors"
             >
-              <div className="bg-brand-600 text-white font-mono font-bold text-xs
+              <div
+                style={{ backgroundColor: routeColor }}
+                className="text-white font-mono font-bold text-xs
                               rounded-xl px-2.5 py-1.5 min-w-[50px] text-center shrink-0 leading-tight">
                 {a.route_code}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-xs text-slate-200 truncate leading-snug">{a.destination}</p>
                 {vehicleLine ? (
-                  <p className="text-[10px] text-slate-500 mt-0.5 font-mono">{vehicleLine}</p>
+                  <p className="text-xs text-slate-400 mt-0.5 font-mono tracking-wide">{vehicleLine}</p>
                 ) : null}
               </div>
               <EtaChip minutes={a.eta_minutes} raw={a.eta_raw} />
@@ -412,6 +377,65 @@ export default function StopPage() {
                   ))}
                 </div>
               )}
+            </div>
+          )}
+        </div>
+
+        {/* ── Bottom strip: route filter chips + direction ──────────────────
+            Persistently visible; top 3 routes carry their palette colour even
+            when not selected.  pb-16 clears the fixed bottom tab bar. */}
+        <div className="shrink-0 border-t border-surface-muted bg-surface-card pb-16">
+          {stopDetail?.direction && (
+            <div className="px-4 pt-2">
+              <span className="inline-flex items-center gap-1 text-[11px] text-slate-400 bg-surface-muted px-2 py-0.5 rounded-md">
+                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                </svg>
+                {stopDetail.direction}
+              </span>
+            </div>
+          )}
+          {(routes ?? []).length > 0 && (
+            <div className="px-4 py-2 flex gap-2 overflow-x-auto no-scrollbar">
+              <button
+                onClick={() => setActiveRoutes(new Set())}
+                className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-bold transition-colors ${
+                  activeRoutes.size === 0
+                    ? 'bg-brand-600 text-white'
+                    : 'bg-surface-muted text-slate-300 hover:bg-slate-600'
+                }`}
+              >
+                Tümü
+              </button>
+              {(routes ?? []).map((r) => {
+                const color = getRouteColor(r, arrivalRouteOrder)
+                const isActive = activeRoutes.has(r)
+                const isTop3 =
+                  arrivalRouteOrder.includes(r) &&
+                  arrivalRouteOrder.indexOf(r) < ROUTE_PALETTE.length
+                return (
+                  <button
+                    key={r}
+                    onClick={() => toggleRoute(r)}
+                    style={
+                      isActive
+                        ? { backgroundColor: color, borderColor: color }
+                        : isTop3
+                        ? { borderColor: color, color, backgroundColor: color + '22' }
+                        : {}
+                    }
+                    className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-bold border transition-colors ${
+                      isActive
+                        ? 'text-white border-transparent'
+                        : isTop3
+                        ? 'border'
+                        : 'bg-surface-muted text-slate-300 border-transparent hover:bg-slate-600'
+                    }`}
+                  >
+                    {r}
+                  </button>
+                )
+              })}
             </div>
           )}
         </div>
