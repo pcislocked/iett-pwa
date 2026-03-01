@@ -8,6 +8,14 @@ export default function SettingsPage() {
   const { exportPrefs, importPrefs } = useUserPrefs()
   const fileRef = useRef<HTMLInputElement>(null)
   const [importStatus, setImportStatus] = useState<'idle' | 'ok' | 'err'>('idle')
+  const reloadTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const statusTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Clean up timers on unmount so stale updates don't fire after navigation
+  useEffect(() => () => {
+    if (reloadTimer.current) clearTimeout(reloadTimer.current)
+    if (statusTimer.current) clearTimeout(statusTimer.current)
+  }, [])
 
   useEffect(() => {
     saveSettings(settings)
@@ -23,10 +31,10 @@ export default function SettingsPage() {
     try {
       await importPrefs(file)
       setImportStatus('ok')
-      setTimeout(() => { window.location.reload() }, 800)
+      reloadTimer.current = setTimeout(() => { window.location.reload() }, 800)
     } catch {
       setImportStatus('err')
-      setTimeout(() => setImportStatus('idle'), 2500)
+      statusTimer.current = setTimeout(() => setImportStatus('idle'), 2500)
     }
   }
 

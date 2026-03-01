@@ -100,7 +100,8 @@ function AnimatedMain() {
     if (!onMainPath) return
 
     // touchRef holds live drag state; written/read without React state to avoid re-renders
-    const touchRef = { startX: 0, startY: 0, locked: false, canceled: false, committed: false }
+    // startX is null when the touch started on an interactive element and should be ignored
+    const touchRef = { startX: null as number | null, startY: 0, locked: false, canceled: false, committed: false }
 
     function stripX(dx = 0, withTransition = false) {
       const el = stripRef.current
@@ -115,7 +116,10 @@ function AnimatedMain() {
 
     function onTouchStart(e: TouchEvent) {
       const target = e.target as Element
-      if (target.closest('input, textarea, select, [contenteditable]')) return
+      if (target.closest('input, textarea, select, [contenteditable]')) {
+        touchRef.startX = null   // mark as ignored so touchend skips it
+        return
+      }
       Object.assign(touchRef, {
         startX: e.touches[0].clientX,
         startY: e.touches[0].clientY,
@@ -142,7 +146,7 @@ function AnimatedMain() {
     }
 
     function onTouchEnd(e: TouchEvent) {
-      if (!touchRef.locked) return
+      if (!touchRef.locked || touchRef.startX === null) return
       const dx = e.changedTouches[0].clientX - touchRef.startX
       const threshold = window.innerWidth * 0.28
 

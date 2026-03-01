@@ -80,14 +80,16 @@ export default function MapPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedRoutes])
 
-  // Fetch autocomplete suggestions when query changes
+  // Fetch autocomplete suggestions when query changes (debounced 300 ms)
   useEffect(() => {
     if (searchQuery.trim().length < 1) { setSearchResults([]); return }
     let cancelled = false
-    api.routes.search(searchQuery)
-      .then((r) => { if (!cancelled) setSearchResults(r.slice(0, 8)) })
-      .catch(() => { if (!cancelled) setSearchResults([]) })
-    return () => { cancelled = true }
+    const t = window.setTimeout(() => {
+      api.routes.search(searchQuery)
+        .then((r) => { if (!cancelled) setSearchResults(r.slice(0, 8)) })
+        .catch(() => { if (!cancelled) setSearchResults([]) })
+    }, 300)
+    return () => { cancelled = true; window.clearTimeout(t) }
   }, [searchQuery])
 
   function addRoute(hatKodu: string) {

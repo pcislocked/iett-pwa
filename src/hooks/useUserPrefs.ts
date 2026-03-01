@@ -151,8 +151,12 @@ export function useUserPrefs() {
     const a = document.createElement('a')
     a.href = url
     a.download = `iett-prefs-${new Date().toISOString().slice(0, 10)}.json`
+    document.body.appendChild(a)
     a.click()
-    setTimeout(() => URL.revokeObjectURL(url), 0)
+    setTimeout(() => {
+      a.parentNode?.removeChild(a)
+      URL.revokeObjectURL(url)
+    }, 3000)
   }, [prefs])
 
   const importPrefs = useCallback((file: File): Promise<void> => {
@@ -176,7 +180,7 @@ export function useUserPrefs() {
               for (const stop of [...valid].sort((a, b) => a.order - b.order)) {
                 if (!seen.has(stop.dcode)) { seen.add(stop.dcode); deduped.push(stop) }
               }
-              return deduped.slice(0, 3).map((s, i) => ({ ...s, order: i }))
+              return deduped.slice(0, 4).map((s, i) => ({ ...s, order: i }))
             })(),
             favStops: Array.isArray(raw.favStops)
               ? raw.favStops.filter((s): s is FavStop =>
