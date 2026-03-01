@@ -1,48 +1,75 @@
-﻿import { useState } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
-import { AnimatePresence, motion } from 'framer-motion'
-import { useBottomBarContext } from '@/hooks/useBottomBar'
+import { useNavigate, useLocation } from 'react-router-dom'
+import { motion } from 'framer-motion'
 import { MAIN_PATHS } from '@/routes'
 
-/* â”€â”€ Ellipsis secondary nav items â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-const MENU_ITEMS = [
-  { label: 'favoriler', to: '/favorites' },
-  { label: 'harita',    to: '/map' },
-  { label: 'ayarlar',  to: '/settings' },
-]
+/* ── SVG icons ─────────────────────────────────────────────────────────────── */
+function IconBack() {
+  return (
+    <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+    </svg>
+  )
+}
+function IconSearch() {
+  return (
+    <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
+      <path strokeLinecap="round" strokeLinejoin="round"
+        d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+    </svg>
+  )
+}
+function IconMap() {
+  return (
+    <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
+      <path strokeLinecap="round" strokeLinejoin="round"
+        d="M9 6.75V15m6-6v8.25m.503-9.498l4.875-2.437a.75.75 0 011.122.65v13.5a.75.75 0 01-1.122.65l-4.875-2.437M9 6.75L3.622 4.313A.75.75 0 003 5.062v13.5c0 .414.336.75.752.65L9 17.25M9 6.75l6 2.25m0 0l-3.75 3" />
+    </svg>
+  )
+}
+function IconSettings() {
+  return (
+    <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
+      <path strokeLinecap="round" strokeLinejoin="round"
+        d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 010 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281z" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+    </svg>
+  )
+}
 
-const MAIN_TAB_PATHS = MAIN_PATHS as readonly string[]
-
-/* â”€â”€ Metro circle icon button â€” used only for custom (detail page) tabs â”€â”€â”€ */
-interface MetroIconBtnProps {
+/* ── Circle button ──────────────────────────────────────────────────────────── */
+interface CircleBtnProps {
   icon: React.ReactNode
   label: string
   active?: boolean
+  dim?: boolean
   onPress: () => void
 }
-function MetroIconBtn({ icon, label, active, onPress }: MetroIconBtnProps) {
+function CircleBtn({ icon, label, active, dim, onPress }: CircleBtnProps) {
+  const borderColor = active
+    ? '#ffffff'
+    : dim
+    ? 'rgba(255,255,255,0.12)'
+    : 'rgba(255,255,255,0.3)'
+  const iconColor = active ? '#ffffff' : dim ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.55)'
   return (
     <motion.button
       onClick={onPress}
-      whileTap={{ scale: 0.88, rotateX: 3 }}
-      style={{ perspective: 400 }}
+      whileTap={dim ? {} : { scale: 0.88 }}
       transition={{ duration: 0.1 }}
-      className="flex flex-col items-center gap-1"
+      disabled={dim}
       aria-label={label}
+      className="flex items-center justify-center"
+      style={{
+        width: 48,
+        height: 48,
+        borderRadius: '50%',
+        border: `2px solid ${borderColor}`,
+        background: active ? 'rgba(255,255,255,0.12)' : 'transparent',
+        color: iconColor,
+        flexShrink: 0,
+      }}
     >
-      <div
-        className="w-12 h-12 flex items-center justify-center"
-        style={{
-          border: `2px solid ${active ? '#ffffff' : 'rgba(255,255,255,0.3)'}`,
-          background: active ? 'rgba(255,255,255,0.12)' : 'transparent',
-        }}
-      >
-        <span style={{ color: active ? '#ffffff' : 'rgba(255,255,255,0.35)' }}>{icon}</span>
-      </div>
-      <span className="text-[9px] lowercase leading-none"
-            style={{ color: active ? '#ffffff' : 'rgba(255,255,255,0.4)' }}>
-        {label}
-      </span>
+      {icon}
     </motion.button>
   )
 }
@@ -50,108 +77,31 @@ function MetroIconBtn({ icon, label, active, onPress }: MetroIconBtnProps) {
 /**
  * Windows Phone 8 Application Bar.
  *
- * Main pages: 3 flat-square tab indicators (active = solid white tile,
- * inactive = dim tile) + Â·Â·Â· ellipsis on the right.
- * No icons/labels on the bar â€” Pivot header at top carries those.
+ * Always shows 4 centered circle buttons:
+ *   [← back]  [search]  [fleet map]  [settings]
  *
- * Detail pages (customTabs set): icon+label circle buttons as before.
+ * Back is dimmed when already on a root main tab.
+ * PivotHeader at top handles ara / ana / yakın switching.
  */
 export default function AppBar() {
-  const { customTabs } = useBottomBarContext()
-  const location = useLocation()
   const navigate = useNavigate()
-  const [menuOpen, setMenuOpen] = useState(false)
+  const location = useLocation()
 
-  const currentIdx = MAIN_TAB_PATHS.indexOf(location.pathname)
-  const isMain = currentIdx !== -1
+  const isMain = (MAIN_PATHS as readonly string[]).includes(location.pathname)
+  const isSearch   = location.pathname === '/search'
+  const isMap      = location.pathname === '/map'
+  const isSettings = location.pathname === '/settings'
 
   return (
-    <div className="flex-none relative" style={{ background: '#000' }}>
-
-      {/* â”€â”€ Ellipsis secondary menu (slides up) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
-      <AnimatePresence>
-        {menuOpen && (
-          <motion.div
-            key="ellipsis-menu"
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.18, ease: 'easeOut' }}
-            className="overflow-hidden"
-            style={{ borderTop: '1px solid #1a1a1a' }}
-          >
-            {MENU_ITEMS.map(item => (
-              <motion.button
-                key={item.to}
-                onClick={() => { navigate(item.to); setMenuOpen(false) }}
-                whileTap={{ x: 10 }}
-                transition={{ duration: 0.08 }}
-                className="w-full text-left px-6 py-3 text-white text-xl lowercase"
-                style={{ borderBottom: '1px solid #111' }}
-              >
-                {item.label}
-              </motion.button>
-            ))}
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* â”€â”€ Bar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
-      <div
-        className="flex items-center safe-area-pb"
-        style={{ borderTop: '1px solid #1a1a1a', padding: '10px 20px' }}
-      >
-        {customTabs ? (
-          /* Detail pages â€” icon+label circle buttons */
-          <div className="flex items-center justify-center gap-6 flex-1">
-            {customTabs.map((tab, i) => (
-              <MetroIconBtn
-                key={i}
-                icon={tab.icon}
-                label={tab.label}
-                active={tab.active}
-                onPress={tab.onPress}
-              />
-            ))}
-          </div>
-        ) : (
-          /* Main tabs â€” flat square indicators */
-          <>
-            <div className="flex items-center gap-3 flex-1">
-              {MAIN_TAB_PATHS.map((path, i) => {
-                const active = isMain && i === currentIdx
-                return (
-                  <motion.button
-                    key={path}
-                    onClick={() => { setMenuOpen(false); navigate(path) }}
-                    whileTap={{ scale: 0.9 }}
-                    transition={{ duration: 0.08 }}
-                    aria-label={path}
-                    style={{
-                      width: 44,
-                      height: 44,
-                      background: active ? '#ffffff' : 'rgba(255,255,255,0.12)',
-                      border: 'none',
-                      flexShrink: 0,
-                    }}
-                  />
-                )
-              })}
-            </div>
-
-            {/* Ellipsis Â·Â·Â· */}
-            <motion.button
-              onClick={() => setMenuOpen(p => !p)}
-              whileTap={{ scale: 0.85 }}
-              transition={{ duration: 0.1 }}
-              style={{ color: menuOpen ? '#00AFF0' : 'rgba(255,255,255,0.5)', lineHeight: 1 }}
-              className="text-2xl tracking-widest w-10 text-center"
-              aria-label="MenÃ¼"
-            >
-              Â·Â·Â·
-            </motion.button>
-          </>
-        )}
+    <div
+      className="flex-none safe-area-pb"
+      style={{ background: '#000', borderTop: '1px solid #1a1a1a' }}
+    >
+      <div className="flex items-center justify-center gap-8 px-6 py-2.5">
+        <CircleBtn icon={<IconBack />}     label="Geri"    dim={isMain}  onPress={() => navigate(-1)} />
+        <CircleBtn icon={<IconSearch />}   label="Ara"     active={isSearch}   onPress={() => navigate('/search')} />
+        <CircleBtn icon={<IconMap />}      label="Harita"  active={isMap}      onPress={() => navigate('/map')} />
+        <CircleBtn icon={<IconSettings />} label="Ayarlar" active={isSettings} onPress={() => navigate('/settings')} />
       </div>
     </div>
   )

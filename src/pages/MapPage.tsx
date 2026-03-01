@@ -132,19 +132,31 @@ export default function MapPage() {
   const filtered = useMemo(() => {
     const all = buses ?? []
     if (!hasFilter) return all
-    // Build set of kapinos from per-route fetches
+    // Build kapino set from per-route fetches (primary)
     const routeKapinos = new Set<string>()
     for (const kapinos of routeBusMap.values()) for (const k of kapinos) routeKapinos.add(k)
     return all.filter((b) => {
       const kUp = b.kapino.toUpperCase()
-      if (routeKapinos.size > 0 && routeKapinos.has(kUp)) return true
+      // Route match: kapino lookup first, then fuzzy route_code fallback
+      if (selectedRoutes.length > 0) {
+        if (routeKapinos.size > 0 && routeKapinos.has(kUp)) return true
+        // fallback: route_code field on bus
+        if (b.route_code) {
+          const rc = b.route_code.toUpperCase()
+          for (const sel of selectedRoutes) {
+            const hk = sel.toUpperCase()
+            if (rc === hk || rc.startsWith(hk + '_') || rc.startsWith(hk + ' ')) return true
+          }
+        }
+      }
+      // Kapino / plate match
       if (selectedEntities.length > 0) {
         if (selectedEntities.some((e) => e.toUpperCase() === kUp)) return true
         if (b.plate && selectedEntities.some((e) => e.toUpperCase() === b.plate!.toUpperCase())) return true
       }
       return false
     })
-  }, [buses, routeBusMap, selectedEntities, hasFilter])
+  }, [buses, routeBusMap, selectedRoutes, selectedEntities, hasFilter])
 
   return (
     <div className="relative flex flex-col overflow-hidden h-full">
@@ -159,19 +171,23 @@ export default function MapPage() {
             onFocus={() => { if (searchQuery.length > 0) setShowDropdown(true) }}
             onBlur={() => setTimeout(() => setShowDropdown(false), 150)}
             placeholder="Hat kodu ara (ör: 500T, 14M)…"
-            className="w-full bg-surface-card/95 backdrop-blur border border-surface-muted
-                       rounded-xl px-4 py-2 text-sm text-slate-100 placeholder-slate-500
-                       focus:outline-none focus:ring-2 focus:ring-brand-500 shadow-xl"
+            className="w-full border border-[#333] px-4 py-2 text-sm text-slate-100 placeholder-slate-500
+                       focus:outline-none focus:border-[#00AFF0] shadow-xl"
+            style={{ background: '#0d0d0d' }}
           />
           {showDropdown && searchResults.length > 0 && (
-            <div className="absolute top-full left-0 right-0 mt-1 bg-surface-card border border-surface-muted
-                            rounded-xl shadow-2xl overflow-hidden z-10 max-h-48 overflow-y-auto">
+            <div className="absolute top-full left-0 right-0 mt-1 border border-[#333]
+                            shadow-2xl overflow-hidden z-10 max-h-48 overflow-y-auto"
+                 style={{ background: '#0d0d0d' }}>
               {searchResults.map((r) => (
                 <button
                   key={r.hat_kodu}
                   onMouseDown={() => addRoute(r.hat_kodu)}
-                  className="w-full text-left px-4 py-2.5 text-sm hover:bg-surface-muted
+                  className="w-full text-left px-4 py-2.5 text-sm
                              flex items-center gap-2 transition-colors"
+                  style={{ borderBottom: '1px solid #1a1a1a' }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = '#1a1a1a')}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
                 >
                   <span className="font-mono font-bold text-brand-400 text-xs shrink-0">{r.hat_kodu}</span>
                   <span className="text-slate-300 truncate">{r.name}</span>
@@ -214,19 +230,23 @@ export default function MapPage() {
             onFocus={() => { if (entityQuery.length > 0) setShowEntityDropdown(true) }}
             onBlur={() => setTimeout(() => setShowEntityDropdown(false), 150)}
             placeholder="Kapı kodu / plaka ara (ör: C-1515)"
-            className="w-full bg-surface-card/95 backdrop-blur border border-surface-muted
-                       rounded-xl px-4 py-2 text-sm text-slate-100 placeholder-slate-500
-                       focus:outline-none focus:ring-2 focus:ring-brand-500 shadow-xl"
+            className="w-full border border-[#333] px-4 py-2 text-sm text-slate-100 placeholder-slate-500
+                       focus:outline-none focus:border-[#00AFF0] shadow-xl"
+            style={{ background: '#0d0d0d' }}
           />
           {showEntityDropdown && entityResults.length > 0 && (
-            <div className="absolute top-full left-0 right-0 mt-1 bg-surface-card border border-surface-muted
-                            rounded-xl shadow-2xl overflow-hidden z-10 max-h-48 overflow-y-auto">
+            <div className="absolute top-full left-0 right-0 mt-1 border border-[#333]
+                            shadow-2xl overflow-hidden z-10 max-h-48 overflow-y-auto"
+                 style={{ background: '#0d0d0d' }}>
               {entityResults.map((b) => (
                 <button
                   key={b.kapino}
                   onMouseDown={() => addEntity(b.kapino)}
-                  className="w-full text-left px-4 py-2.5 text-sm hover:bg-surface-muted
+                  className="w-full text-left px-4 py-2.5 text-sm
                              flex items-center gap-2 transition-colors"
+                  style={{ borderBottom: '1px solid #1a1a1a' }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = '#1a1a1a')}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
                 >
                   <span className="font-mono font-bold text-brand-400 text-xs shrink-0">{b.kapino}</span>
                   {b.plate && <span className="text-slate-500 text-xs shrink-0">{b.plate}</span>}

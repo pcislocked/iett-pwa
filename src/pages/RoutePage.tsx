@@ -212,15 +212,18 @@ export default function RoutePage() {
   const [mapDir, setMapDir] = useState('')
 
   const { data: busesFromRoute, stale } = useRouteBuses(hatKodu ?? '')
-  // Fall back to global fleet filtered by route code when dedicated endpoint returns empty
+  // Fall back to global fleet when dedicated endpoint returns empty
   const { data: allBuses } = useFleet()
   const buses = useMemo(() => {
     if (busesFromRoute && busesFromRoute.length > 0) return busesFromRoute
     if (!allBuses || !hatKodu) return busesFromRoute
-    const filtered = allBuses.filter(
-      (b) => b.route_code?.toUpperCase() === hatKodu.toUpperCase(),
-    )
-    return filtered.length > 0 ? filtered : busesFromRoute
+    const hk = hatKodu.toUpperCase()
+    const filtered = allBuses.filter((b) => {
+      if (!b.route_code) return false
+      const rc = b.route_code.toUpperCase()
+      return rc === hk || rc.startsWith(hk + '_') || rc.startsWith(hk + ' ') || rc === hk.replace(/^0+/, '')
+    })
+    return filtered.length > 0 ? filtered : (busesFromRoute ?? [])
   }, [busesFromRoute, allBuses, hatKodu])
 
   const stopsFetcher = useMemo(() => () => api.routes.stops(hatKodu ?? ''), [hatKodu])
@@ -278,15 +281,6 @@ export default function RoutePage() {
       {/* Header */}
       <div className="bg-surface-card border-b border-surface-muted sticky top-0 z-40">
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
-          <button
-            onClick={() => navigate(-1)}
-            className="text-slate-400 hover:text-slate-200 p-1 -ml-1 rounded-lg transition-colors"
-          >
-            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
-            </svg>
-          </button>
-
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
               <span className="text-lg font-bold text-brand-500 shrink-0">{hatKodu}</span>
