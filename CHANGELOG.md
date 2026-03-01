@@ -5,6 +5,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [0.1.7] – 2026-03-01
+
+### Added
+- **StopPage** – split-tap arrival rows: tap route pill to expand, tap anywhere else for bus detail
+- **BusDetailSheet** – bottom sheet popup showing bus position on mini-map, road distance, ETA to stop, kapino · plate label
+
+---
+
 ## [0.1.4] – 2026-02-28
 
 ### Fixed
