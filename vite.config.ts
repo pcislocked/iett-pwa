@@ -23,6 +23,7 @@ const viteConfig = defineConfig({
       registerType: 'autoUpdate',
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        cleanupOutdatedCaches: true,
         runtimeCaching: [
           {
             // Cache iett-middle API responses for 20 s
