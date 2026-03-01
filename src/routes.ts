@@ -1,2 +1,2 @@
-/** Ordered list of swipeable main tabs — shared between App (swipe) and BottomTabBar (active highlight). */
-export const MAIN_PATHS = ['/search', '/', '/nearby'] as const
+/** Main (home) path — used to detect "at root" for back-button dim logic. */
+export const MAIN_PATHS = ['/'] as const

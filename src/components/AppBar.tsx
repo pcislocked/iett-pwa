@@ -10,19 +10,19 @@ function IconBack() {
     </svg>
   )
 }
+function IconHome() {
+  return (
+    <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
+      <path strokeLinecap="round" strokeLinejoin="round"
+        d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75" />
+    </svg>
+  )
+}
 function IconSearch() {
   return (
     <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
       <path strokeLinecap="round" strokeLinejoin="round"
         d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
-    </svg>
-  )
-}
-function IconMap() {
-  return (
-    <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
-      <path strokeLinecap="round" strokeLinejoin="round"
-        d="M9 6.75V15m6-6v8.25m.503-9.498l4.875-2.437a.75.75 0 011.122.65v13.5a.75.75 0 01-1.122.65l-4.875-2.437M9 6.75L3.622 4.313A.75.75 0 003 5.062v13.5c0 .414.336.75.752.65L9 17.25M9 6.75l6 2.25m0 0l-3.75 3" />
     </svg>
   )
 }
@@ -36,60 +36,69 @@ function IconSettings() {
   )
 }
 
-/* ── Circle button ──────────────────────────────────────────────────────────── */
-interface CircleBtnProps {
+/* ── Labelled icon button ────────────────────────────────────────────────────── */
+interface AppBtnProps {
   icon: React.ReactNode
   label: string
   active?: boolean
   dim?: boolean
   onPress: () => void
 }
-function CircleBtn({ icon, label, active, dim, onPress }: CircleBtnProps) {
+function AppBtn({ icon, label, active, dim, onPress }: AppBtnProps) {
   const borderColor = active
     ? '#ffffff'
     : dim
     ? 'rgba(255,255,255,0.12)'
     : 'rgba(255,255,255,0.3)'
   const iconColor = active ? '#ffffff' : dim ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.55)'
+  const labelColor = active ? '#ffffff' : dim ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.4)'
+
   return (
-    <motion.button
-      onClick={onPress}
-      whileTap={dim ? {} : { scale: 0.88 }}
-      transition={{ duration: 0.1 }}
-      disabled={dim}
-      aria-label={label}
-      className="flex items-center justify-center"
-      style={{
-        width: 48,
-        height: 48,
-        borderRadius: '50%',
-        border: `2px solid ${borderColor}`,
-        background: active ? 'rgba(255,255,255,0.12)' : 'transparent',
-        color: iconColor,
-        flexShrink: 0,
-      }}
-    >
-      {icon}
-    </motion.button>
+    <div className="flex flex-col items-center gap-1">
+      <motion.button
+        onClick={onPress}
+        whileTap={dim ? {} : { scale: 0.88 }}
+        transition={{ duration: 0.1 }}
+        disabled={dim}
+        aria-label={label}
+        className="flex items-center justify-center"
+        style={{
+          width: 46,
+          height: 46,
+          borderRadius: '50%',
+          border: `2px solid ${borderColor}`,
+          background: active ? 'rgba(255,255,255,0.1)' : 'transparent',
+          color: iconColor,
+          flexShrink: 0,
+        }}
+      >
+        {icon}
+      </motion.button>
+      <span
+        className="text-[9px] font-medium leading-none tracking-wide uppercase select-none"
+        style={{ color: labelColor }}
+      >
+        {label}
+      </span>
+    </div>
   )
 }
 
 /**
  * Windows Phone 8 Application Bar.
  *
- * Always shows 4 centered circle buttons:
- *   [← back]  [search]  [fleet map]  [settings]
+ * 4 labelled circle icon buttons:
+ *   [← geri]  [🏠 ana]  [🔍 ara]  [⚙ ayarlar]
  *
- * Back is dimmed when already on a root main tab.
- * PivotHeader at top handles ara / ana / yakın switching.
+ * Back is dimmed on the home screen.
+ * Home navigates to / (back is dimmed there, effectively "skip back/back/back").
  */
 export default function AppBar() {
   const navigate = useNavigate()
   const location = useLocation()
 
-  const isMain = (MAIN_PATHS as readonly string[]).includes(location.pathname)
+  const isHome     = (MAIN_PATHS as readonly string[]).includes(location.pathname)
   const isSearch   = location.pathname === '/search'
-  const isMap      = location.pathname === '/map'
   const isSettings = location.pathname === '/settings'
 
   return (
@@ -97,11 +106,11 @@ export default function AppBar() {
       className="flex-none safe-area-pb"
       style={{ background: '#000', borderTop: '1px solid #1a1a1a' }}
     >
-      <div className="flex items-center justify-center gap-8 px-6 py-2.5">
-        <CircleBtn icon={<IconBack />}     label="Geri"    dim={isMain}  onPress={() => navigate(-1)} />
-        <CircleBtn icon={<IconSearch />}   label="Ara"     active={isSearch}   onPress={() => navigate('/search')} />
-        <CircleBtn icon={<IconMap />}      label="Harita"  active={isMap}      onPress={() => navigate('/map')} />
-        <CircleBtn icon={<IconSettings />} label="Ayarlar" active={isSettings} onPress={() => navigate('/settings')} />
+      <div className="flex items-end justify-center gap-8 px-6 py-2.5">
+        <AppBtn icon={<IconBack />}     label="Geri"    dim={isHome}      onPress={() => navigate(-1)} />
+        <AppBtn icon={<IconHome />}     label="Ana"     active={isHome}   onPress={() => navigate('/')} />
+        <AppBtn icon={<IconSearch />}   label="Ara"     active={isSearch} onPress={() => navigate('/search')} />
+        <AppBtn icon={<IconSettings />} label="Ayarlar" active={isSettings} onPress={() => navigate('/settings')} />
       </div>
     </div>
   )

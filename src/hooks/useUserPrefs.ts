@@ -17,7 +17,7 @@ export interface FavStop {
 }
 
 export interface UserPrefs {
-  pinnedStops: PinnedStop[]        // max 3
+  pinnedStops: PinnedStop[]        // max 4
   favStops: FavStop[]
   favRoutes: string[]              // hat_kodu[]
   nicknames: Record<string, string> // dcode → nick
@@ -65,7 +65,7 @@ export function useUserPrefs() {
 
   const pinStop = useCallback((dcode: string, nick: string) => {
     patch((p) => {
-      if (p.pinnedStops.length >= 3) return p          // enforced in UI
+      if (p.pinnedStops.length >= 4) return p          // enforced in UI
       if (p.pinnedStops.some((s) => s.dcode === dcode)) return p
       return {
         ...p,

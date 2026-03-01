@@ -360,7 +360,10 @@ export default function StopPage() {
           route_code: a.route_code,
           route_name: null,
           direction: null,
+          direction_letter: null,
           nearest_stop: null,
+          stop_sequence: null,
+          trail: [],
         })),
     [arrivals],
   )

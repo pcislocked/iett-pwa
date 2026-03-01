@@ -1,6 +1,5 @@
 ﻿import { BrowserRouter, Routes, Route, useNavigate, useLocation, useNavigationType } from 'react-router-dom'
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
-import PivotHeader from '@/components/PivotHeader'
 import AppBar from '@/components/AppBar'
 import InstallBanner, { useInstallBanner } from '@/components/InstallBanner'
 import Home from '@/pages/Home'
@@ -237,7 +236,6 @@ export default function App() {
     <BrowserRouter>
       <BottomBarContext.Provider value={bottomBarState}>
         <div className="flex flex-col h-dvh bg-black overflow-hidden">
-          <PivotHeader />
           <AnimatedMain />
           <InstallBannerWrapper />
           <AppBar />

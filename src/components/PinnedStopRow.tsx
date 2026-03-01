@@ -27,10 +27,16 @@ export default function PinnedStopRow({ dcode, nick, icon = '📌', distLabel }:
     >
       <span className="text-base shrink-0">{icon}</span>
 
-      {/* Stop name + dcode */}
+      {/* Stop name + direction */}
       <div className="flex-1 min-w-0">
         <span className="text-[13px] font-bold text-white truncate block leading-tight">{nick}</span>
-        <span className="text-[10px] text-slate-600 font-mono">{dcode}</span>
+        <span className="text-[10px] text-slate-500 truncate block">
+          {arrivals?.[0]?.destination
+            ? `→ ${arrivals[0].destination}`
+            : distLabel
+              ? ''
+              : <span className="font-mono text-slate-700">{dcode}</span>}
+        </span>
       </div>
 
       {/* Arrival pills */}
