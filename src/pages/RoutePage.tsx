@@ -252,6 +252,16 @@ export default function RoutePage() {
     return dirStops.filter((s) => { if (seen.has(s.stop_code)) return false; seen.add(s.stop_code); return true })
   }, [stops, effectiveStopsDir])
 
+  // Build set of stop_sequence values for buses currently in the active stops direction
+  const busAtSequence = useMemo(() => {
+    const seqs = new Set<number>()
+    for (const b of (buses ?? [])) {
+      if (b.stop_sequence != null && (!effectiveStopsDir || b.direction_letter === effectiveStopsDir))
+        seqs.add(b.stop_sequence)
+    }
+    return seqs
+  }, [buses, effectiveStopsDir])
+
   // Direction state for the map tab
   const effectiveMapDir = stopsDirections.includes(mapDir)
     ? mapDir
@@ -462,6 +472,10 @@ export default function RoutePage() {
                   {s.sequence}
                 </span>
                 <span className="flex-1 text-sm text-slate-200 truncate">{s.stop_name}</span>
+                {busAtSequence.has(s.sequence) && (
+                  <span title="Otobüs burada" className="w-2.5 h-2.5 rounded-full shrink-0 animate-pulse"
+                        style={{ background: effectiveStopsDir === 'D' ? '#f59e0b' : '#2563eb' }} />
+                )}
                 <span className="text-xs text-slate-600 shrink-0">{s.stop_code}</span>
                 <svg className="w-4 h-4 text-slate-600 shrink-0" fill="none" viewBox="0 0 24 24"
                      stroke="currentColor" strokeWidth={2}>
