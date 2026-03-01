@@ -1,10 +1,11 @@
-import { useState, useMemo, useEffect, useCallback, useRef } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { MapContainer, TileLayer, CircleMarker, Popup, Marker } from 'react-leaflet'
 import * as L from 'leaflet'
 import { useArrivals } from '@/hooks/useArrivals'
 import { usePolling } from '@/hooks/usePolling'
-import { api, type Announcement, type StopDetail, type BusPosition } from '@/api/client'
+import { useFleet } from '@/hooks/useFleet'
+import { api, type Announcement, type StopDetail } from '@/api/client'
 import { useFavorites } from '@/hooks/useFavorites'
 
 /** Fixed palette for the first 3 routes at this stop — orange, violet, cyan */
@@ -29,9 +30,6 @@ function makeBusIcon(color: string): L.DivIcon {
     iconAnchor: [7, 7],
   })
 }
-
-/** Max routes to fetch live bus positions for (avoids hammering API on busy stops). */
-const MAX_LIVE_ROUTES = 5
 
 function EtaChip({ minutes, raw }: { minutes: number | null; raw: string }) {
   if (minutes === null) return <span className="eta-chip eta-far">{raw}</span>
@@ -62,7 +60,6 @@ export default function StopPage() {
   const navigate = useNavigate()
   const [activeRoutes, setActiveRoutes] = useState<Set<string>>(new Set())
   const [showAnnouncements, setShowAnnouncements] = useState(false)
-  const [routeBuses, setRouteBuses] = useState<BusPosition[]>([])
 
   const { data: arrivals, loading, error, stale } = useArrivals(dcode ?? '')
 
@@ -86,13 +83,14 @@ export default function StopPage() {
     return result
   }, [arrivals])
 
-  // Stable key for the fetch-effect dep — only changes when route membership changes.
-  // Using a ref for the actual list so the effect closure always reads the latest routes
-  // without needing to re-create the interval. This avoids tearing down the 15s interval
-  // on every 20s arrivals refresh.
-  const arrivalRouteOrderRef = useRef(arrivalRouteOrder)
-  arrivalRouteOrderRef.current = arrivalRouteOrder
-  const routeFetchKey = arrivalRouteOrder.slice(0, MAX_LIVE_ROUTES).join(',')
+  // Full fleet polled every 30 s via the shared cache — no per-route calls needed.
+  const { data: allBuses } = useFleet()
+
+  // Filter fleet to only buses whose route is present at this stop.
+  const routeBuses = useMemo(
+    () => (allBuses ?? []).filter((b) => b.route_code && arrivalRouteOrder.includes(b.route_code)),
+    [allBuses, arrivalRouteOrder],
+  )
 
   // One cached Leaflet DivIcon per route_code — avoids creating a new DOM object every render.
   const routeIconMap = useMemo(() => {
@@ -137,31 +135,6 @@ export default function StopPage() {
   )
 
   // Fetch live bus positions for ALL routes present in arrivals (up to MAX_LIVE_ROUTES).
-  // Refresh every 15 s. Not gated by activeRoutes — all vehicles always visible on map.
-  // Dep is routeFetchKey (a string) so the interval is only recreated when the route set
-  // actually changes, not on every 20 s arrivals refresh.
-  useEffect(() => {
-    const routesToFetch = arrivalRouteOrderRef.current.slice(0, MAX_LIVE_ROUTES)
-    if (routesToFetch.length === 0) { setRouteBuses([]); return }
-
-    let latestReqId = 0
-    const fetchBuses = async () => {
-      const myReqId = ++latestReqId
-      try {
-        const results = await Promise.all(
-          routesToFetch.map((r) => api.routes.buses(r).catch(() => [] as BusPosition[])),
-        )
-        if (myReqId === latestReqId) setRouteBuses(results.flat())
-      } catch (err) {
-        console.error('Failed to fetch buses', err)
-      }
-    }
-    void fetchBuses()
-    const id = setInterval(() => { void fetchBuses() }, 15_000)
-    return () => { latestReqId = Infinity; clearInterval(id) }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [routeFetchKey])
-
   // ETA lookup by kapino (from all arrivals, not just filtered)
   const etaByKapino = useMemo(() => {
     const m = new Map<string, number | null>()
@@ -220,14 +193,6 @@ export default function StopPage() {
 
         {/* Map — top ~40% */}
         <div className="h-[40%] shrink-0 border-b border-surface-muted relative">
-          {/* Subtle hint when GPS positions haven't loaded yet */}
-          {routeBuses.length === 0 && (arrivals ?? []).length > 0 && (
-            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 z-[400] pointer-events-none">
-              <span className="text-[10px] text-slate-400 bg-surface-card/80 backdrop-blur px-2 py-0.5 rounded-full">
-                Otobüsleri görmek için bir hat seç
-              </span>
-            </div>
-          )}
           {stopDetail && stopDetail.latitude != null && stopDetail.longitude != null ? (
             <MapContainer
               center={[stopDetail.latitude, stopDetail.longitude]}
