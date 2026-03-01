@@ -214,7 +214,7 @@ function BusDetailSheet({
           <div className="flex flex-col items-center gap-0.5">
             <p className="text-[10px] text-slate-500 uppercase tracking-wider">Hız</p>
             <p className="text-base font-bold text-slate-100">
-              {arrival.speed_kmh !== null ? `${arrival.speed_kmh} km/s` : '—'}
+              {arrival.speed_kmh !== null ? `${arrival.speed_kmh} km/h` : '—'}
             </p>
           </div>
           <div className="flex flex-col items-center gap-0.5">
