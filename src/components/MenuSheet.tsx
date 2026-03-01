@@ -55,7 +55,7 @@ export default function MenuSheet({ onClose }: MenuSheetProps) {
 
       {/* Sheet */}
       <div className="fixed bottom-0 left-0 right-0 z-50 bg-surface-card rounded-t-2xl
-                      border-t border-surface-border pb-safe-area-inset-bottom">
+                      border-t border-surface-border safe-area-pb">
         {/* Drag handle */}
         <div className="flex justify-center pt-3 pb-1">
           <div className="w-10 h-1 rounded-full bg-surface-muted" />

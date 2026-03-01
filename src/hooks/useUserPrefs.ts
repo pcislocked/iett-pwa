@@ -155,7 +155,7 @@ export function useUserPrefs() {
     a.href = url
     a.download = `iett-prefs-${new Date().toISOString().slice(0, 10)}.json`
     a.click()
-    URL.revokeObjectURL(url)
+    setTimeout(() => URL.revokeObjectURL(url), 0)
   }, [prefs])
 
   const importPrefs = useCallback((file: File): Promise<void> => {
@@ -166,9 +166,23 @@ export function useUserPrefs() {
           const raw = JSON.parse(e.target?.result as string) as Partial<UserPrefs>
           // Coerce each field to the correct type to guard against malformed files / old schemas
           const coerced: UserPrefs = {
-            pinnedStops: Array.isArray(raw.pinnedStops) ? raw.pinnedStops : [],
-            favStops: Array.isArray(raw.favStops) ? raw.favStops : [],
-            favRoutes: Array.isArray(raw.favRoutes) ? raw.favRoutes : [],
+            pinnedStops: Array.isArray(raw.pinnedStops)
+              ? raw.pinnedStops
+                  .filter((s): s is PinnedStop =>
+                    s != null && typeof s === 'object' &&
+                    typeof s.dcode === 'string' && typeof s.nick === 'string'
+                  )
+                  .map((s, i) => ({ dcode: s.dcode, nick: s.nick, order: typeof s.order === 'number' ? s.order : i }))
+              : [],
+            favStops: Array.isArray(raw.favStops)
+              ? raw.favStops.filter((s): s is FavStop =>
+                  s != null && typeof s === 'object' &&
+                  typeof s.dcode === 'string' && typeof s.name === 'string'
+                )
+              : [],
+            favRoutes: Array.isArray(raw.favRoutes)
+              ? raw.favRoutes.filter((r): r is string => typeof r === 'string')
+              : [],
             nicknames: raw.nicknames && typeof raw.nicknames === 'object' && !Array.isArray(raw.nicknames)
               ? raw.nicknames as Record<string, string>
               : {},

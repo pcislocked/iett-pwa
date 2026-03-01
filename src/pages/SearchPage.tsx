@@ -32,12 +32,16 @@ export default function SearchPage() {
   useEffect(() => {
     const q = query.trim()
     if (q.length < 2) {
+      if (timerRef.current) clearTimeout(timerRef.current)
+      reqIdRef.current++
       setResults([])
       setLoading(false)
       return
     }
     // BUG-09 / numeric shortcut: pure digits ≥ 4 → directly suggest dcode navigate
     if (/^\d{4,}$/.test(q)) {
+      if (timerRef.current) clearTimeout(timerRef.current)
+      reqIdRef.current++
       setResults([{ kind: 'stop-direct', dcode: q }])
       setLoading(false)
       return
@@ -86,7 +90,7 @@ export default function SearchPage() {
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
       {/* ── Search input ─────────────────────────────────────────────────── */}
-      <div className="px-4 pt-safe-top pt-4 pb-3">
+      <div className="px-4 safe-area-pt pt-4 pb-3">
         <div className="relative">
           <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 pointer-events-none"
                fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

@@ -25,7 +25,7 @@ export default function Home() {
   return (
     <div className="flex-1 overflow-y-auto pb-4">
       {/* ── Header ─────────────────────────────────────────────────────────── */}
-      <div className="px-4 pt-safe-top pt-4 pb-3 flex items-center justify-between">
+      <div className="px-4 safe-area-pt pt-4 pb-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <svg className="w-5 h-5 text-brand-500" fill="currentColor" viewBox="0 0 24 24">
             <path d="M12 2c4.42 0 8 .5 8 4v9.5C20 17.43 18.93 18.5 17.5 18.5c0 0-.8 1-1.5 1.5H8c-.7-.5-1.5-1.5-1.5-1.5C5.07 18.5 4 17.43 4 15.5V6c0-3.5 3.58-4 8-4zm0 2c-3.78 0-6 .45-6 2v6h12V6c0-1.55-2.22-2-6-2zM7.5 17a1.5 1.5 0 110-3 1.5 1.5 0 010 3zm9 0a1.5 1.5 0 110-3 1.5 1.5 0 010 3zM6 13V8h12v5H6z" />
