@@ -13,7 +13,6 @@ import * as L from 'leaflet'
 import { api, type NearbyStop as ApiNearbyStop } from '@/api/client'
 import { distanceLabel } from '@/utils/distance'
 import { loadSettings } from '@/utils/settings'
-import LocationConsentModal from '@/components/LocationConsentModal'
 
 interface NearbyStop extends ApiNearbyStop {
   routes: string[]
@@ -341,20 +340,58 @@ export default function NearbyPage() {
     </div>
   )
 
-  // ── Consent phase — modal overlay ──────────────────────────────────────────
+  // ── Consent phase — inline (header + tab bar stay visible) ──────────────────
   if (phase === 'consent') {
     return (
-      <LocationConsentModal
-        onConfirm={() => { void locate() }}
-        onDismiss={() => setPhase('idle')}
-      />
+      <div className="flex flex-col flex-1 min-h-0">
+        {headerBar}
+        <div className="flex-1 flex flex-col items-center justify-center gap-8 px-6 pb-8">
+          {/* Icon */}
+          <div className="flex flex-col items-center gap-4">
+            <div className="w-20 h-20 rounded-3xl bg-brand-600/20 border border-brand-600/30 flex items-center justify-center">
+              <svg className="w-10 h-10 text-brand-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+              </svg>
+            </div>
+            <div className="text-center">
+              <h2 className="text-lg font-bold text-slate-100 mb-1">Konum İzni</h2>
+              <p className="text-sm text-slate-400 leading-relaxed max-w-xs">
+                Yakın durakları listelemek için konumunuza ihtiyaç var.
+                Konumunuz yalnızca bu cihazda işlenir; hiçbir sunucuya kaydedilmez.
+              </p>
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="w-full max-w-xs flex flex-col gap-3">
+            <button
+              autoFocus
+              onClick={() => { void locate() }}
+              className="w-full flex items-center justify-center gap-2 bg-brand-600 hover:bg-brand-500 text-white font-semibold py-3.5 rounded-2xl text-sm transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+              </svg>
+              GPS Konumumu Kullan
+            </button>
+            <button
+              onClick={() => setPhase('idle')}
+              className="w-full bg-surface-muted hover:bg-slate-600 text-slate-300 font-medium py-3.5 rounded-2xl text-sm transition-colors"
+            >
+              Haritadan Seç
+            </button>
+          </div>
+        </div>
+      </div>
     )
   }
 
   // ── Done phase — split layout (map on top, list below) ──────────────────────
   if (phase === 'done' && userLat !== null && userLon !== null) {
     return (
-      <div className="flex flex-col h-full overflow-hidden">
+      <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
         {headerBar}
 
         <div className="flex-1 flex flex-col overflow-hidden min-h-0">
@@ -462,7 +499,7 @@ export default function NearbyPage() {
 
   // ── Non-done phases — standard scrollable layout ────────────────────────────
   return (
-    <div className="flex flex-col min-h-full">
+    <div className="flex flex-col flex-1 min-h-0">
       {headerBar}
 
       <div className="flex-1 max-w-2xl w-full mx-auto px-4 pb-28 pt-4">
