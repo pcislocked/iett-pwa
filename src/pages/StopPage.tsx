@@ -4,7 +4,6 @@ import { MapContainer, TileLayer, CircleMarker, Popup, Marker, Polyline, useMap 
 import * as L from 'leaflet'
 import { useArrivals } from '@/hooks/useArrivals'
 import { usePolling } from '@/hooks/usePolling'
-import { useFleet } from '@/hooks/useFleet'
 import { api, type Announcement, type StopDetail, type BusPosition, type Arrival, type Amenities } from '@/api/client'
 import { useFavorites } from '@/hooks/useFavorites'
 import { useBottomBar } from '@/hooks/useBottomBar'
@@ -343,17 +342,27 @@ export default function StopPage() {
   }, [arrivals])
 
   // Full fleet polled every 30 s via the shared cache — no per-route calls needed.
-  const { data: allBuses } = useFleet()
-
-  // Filter fleet to buses whose route_code is served at this stop:
-  // use arrivalRouteOrder (currently arriving) PLUS routes (all routes at stop)
-  // so markers appear even before arrivals data is available.
-  const routeBuses = useMemo(
-    () => {
-      const routeSet = new Set([...arrivalRouteOrder, ...(routes ?? [])])
-      return (allBuses ?? []).filter((b) => b.route_code && routeSet.has(b.route_code))
-    },
-    [allBuses, arrivalRouteOrder, routes],
+  // Derive bus positions from arrivals (which already carry lat/lon from YBS response).
+  const routeBuses = useMemo<BusPosition[]>(
+    () =>
+      (arrivals ?? [])
+        .filter((a): a is Arrival & { lat: number; lon: number } =>
+          a.lat != null && a.lon != null && a.kapino != null,
+        )
+        .map((a) => ({
+          kapino: a.kapino!,
+          plate: a.plate ?? null,
+          latitude: a.lat,
+          longitude: a.lon,
+          speed: null,
+          operator: null,
+          last_seen: '',
+          route_code: a.route_code,
+          route_name: null,
+          direction: null,
+          nearest_stop: null,
+        })),
+    [arrivals],
   )
 
   // One cached Leaflet DivIcon per route_code — avoids creating a new DOM object every render.

@@ -3,7 +3,6 @@ import { useParams, useNavigate, Link } from 'react-router-dom'
 import { MapContainer, TileLayer, Marker, Popup, CircleMarker } from 'react-leaflet'
 import * as L from 'leaflet'
 import { useRouteBuses } from '@/hooks/useFleet'
-import { useFleet } from '@/hooks/useFleet'
 import { usePolling } from '@/hooks/usePolling'
 import { api, type RouteStop, type ScheduledDeparture, type Announcement, type RouteMetadata } from '@/api/client'
 import { useFavorites } from '@/hooks/useFavorites'
@@ -211,20 +210,7 @@ export default function RoutePage() {
   const [stopsDir, setStopsDir] = useState('')
   const [mapDir, setMapDir] = useState('')
 
-  const { data: busesFromRoute, stale } = useRouteBuses(hatKodu ?? '')
-  // Fall back to global fleet when dedicated endpoint returns empty
-  const { data: allBuses } = useFleet()
-  const buses = useMemo(() => {
-    if (busesFromRoute && busesFromRoute.length > 0) return busesFromRoute
-    if (!allBuses || !hatKodu) return busesFromRoute
-    const hk = hatKodu.toUpperCase()
-    const filtered = allBuses.filter((b) => {
-      if (!b.route_code) return false
-      const rc = b.route_code.toUpperCase()
-      return rc === hk || rc.startsWith(hk + '_') || rc.startsWith(hk + ' ') || rc === hk.replace(/^0+/, '')
-    })
-    return filtered.length > 0 ? filtered : (busesFromRoute ?? [])
-  }, [busesFromRoute, allBuses, hatKodu])
+  const { data: buses, stale } = useRouteBuses(hatKodu ?? '')
 
   const stopsFetcher = useMemo(() => () => api.routes.stops(hatKodu ?? ''), [hatKodu])
   const scheduleFetcher = useMemo(() => () => api.routes.schedule(hatKodu ?? ''), [hatKodu])
@@ -236,27 +222,33 @@ export default function RoutePage() {
   const { data: announcements, error: announcementsError, refresh: refreshAnnouncements } = usePolling<Announcement[]>(announceFetcher, 300_000)
   const { data: metadata } = usePolling<RouteMetadata[]>(metaFetcher, 600_000)
 
-  // Unique direction labels from stops (full terminal names like "YENİ CAMİİ")
+  // Unique direction keys from stops — "G" / "D"
   const stopsDirections = useMemo(
     () => [...new Set((stops ?? []).map((s) => s.direction))].sort(),
     [stops],
   )
+  const dirLabel = (d: string) => d === 'G' ? 'Gidiş' : d === 'D' ? 'Dönüş' : d
+
   const effectiveStopsDir = stopsDirections.includes(stopsDir)
     ? stopsDir
     : (stopsDirections[0] ?? '')
-  const stopsForDir = useMemo(
-    () => (stops ?? []).filter((s) => !effectiveStopsDir || s.direction === effectiveStopsDir),
-    [stops, effectiveStopsDir],
-  )
 
-  // Direction state for the map tab (shares same direction label set as stops)
+  // Deduplicate by stop_code within the selected direction (ntcapi returns multiple variants)
+  const stopsForDir = useMemo(() => {
+    const dirStops = (stops ?? []).filter((s) => !effectiveStopsDir || s.direction === effectiveStopsDir)
+    const seen = new Set<string>()
+    return dirStops.filter((s) => { if (seen.has(s.stop_code)) return false; seen.add(s.stop_code); return true })
+  }, [stops, effectiveStopsDir])
+
+  // Direction state for the map tab
   const effectiveMapDir = stopsDirections.includes(mapDir)
     ? mapDir
     : (stopsDirections[0] ?? '')
-  const stopsForMap = useMemo(
-    () => (stops ?? []).filter((s) => !effectiveMapDir || s.direction === effectiveMapDir),
-    [stops, effectiveMapDir],
-  )
+  const stopsForMap = useMemo(() => {
+    const dirStops = (stops ?? []).filter((s) => !effectiveMapDir || s.direction === effectiveMapDir)
+    const seen = new Set<string>()
+    return dirStops.filter((s) => { if (seen.has(s.stop_code)) return false; seen.add(s.stop_code); return true })
+  }, [stops, effectiveMapDir])
 
   const { isFavorite, toggle } = useFavorites()
   const routeName = metadata?.[0]?.full_name ?? hatKodu ?? ''
@@ -279,7 +271,7 @@ export default function RoutePage() {
   return (
     <div className="flex flex-col min-h-screen">
       {/* Header */}
-      <div className="bg-surface-card border-b border-surface-muted sticky top-0 z-40">
+      <div className="bg-surface-card border-b border-surface-muted">
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
@@ -354,7 +346,7 @@ export default function RoutePage() {
                         : 'border-transparent text-[#404040] hover:text-[#888]'
                     }`}
                   >
-                    {dir}
+                    {dirLabel(dir)}
                   </button>
                 ))}
               </div>
@@ -404,7 +396,7 @@ export default function RoutePage() {
                         : 'border-transparent text-[#404040] hover:text-[#888]'
                     }`}
                   >
-                    {dir}
+                    {dirLabel(dir)}
                   </button>
                 ))}
               </div>
