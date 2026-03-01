@@ -1,6 +1,5 @@
 import { useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useUserPrefs } from '@/hooks/useUserPrefs'
 
 interface MenuSheetProps {
   onClose: () => void
@@ -12,8 +11,6 @@ interface MenuSheetProps {
  */
 export default function MenuSheet({ onClose }: MenuSheetProps) {
   const navigate = useNavigate()
-  const { exportPrefs, importPrefs } = useUserPrefs()
-  const fileRef = useRef<HTMLInputElement>(null)
   const dialogRef = useRef<HTMLDivElement>(null)
   const previouslyFocused = useRef<Element | null>(null)
 
@@ -56,24 +53,6 @@ export default function MenuSheet({ onClose }: MenuSheetProps) {
     navigate(path)
   }
 
-  async function handleImport(e: React.ChangeEvent<HTMLInputElement>) {
-    const input = e.target
-    const file = input.files?.[0]
-    if (!file) {
-      input.value = ''
-      return
-    }
-    try {
-      await importPrefs(file)
-      onClose()
-      window.location.reload()
-    } catch (err) {
-      alert((err as Error).message)
-    } finally {
-      input.value = ''
-    }
-  }
-
   return (
     <>
       {/* Backdrop */}
@@ -98,22 +77,9 @@ export default function MenuSheet({ onClose }: MenuSheetProps) {
 
         <div className="px-4 py-2 divide-y divide-surface-muted">
 
-          <MenuRow icon="⭐" label="Favoriler"         onPress={() => go('/favorites')} />
-          <MenuRow icon="🗺"  label="Filo Haritası"    onPress={() => go('/map')} />
-          <MenuRow icon="⚙"  label="Ayarlar"           onPress={() => go('/settings')} />
-
-          <div className="py-1" />
-
-          <MenuRow
-            icon="📤"
-            label="Ayarları Dışa Aktar"
-            onPress={() => { exportPrefs(); onClose() }}
-          />
-          <MenuRow
-            icon="📥"
-            label="Ayarları İçe Aktar"
-            onPress={() => fileRef.current?.click()}
-          />
+          <MenuRow icon="⭐" label="Favoriler"      onPress={() => go('/favorites')} />
+          <MenuRow icon="🗺"  label="Filo Haritası" onPress={() => go('/map')} />
+          <MenuRow icon="⚙"  label="Ayarlar"        onPress={() => go('/settings')} />
 
           <div className="py-1" />
 
@@ -126,14 +92,6 @@ export default function MenuSheet({ onClose }: MenuSheetProps) {
             }}
           />
         </div>
-
-        <input
-          ref={fileRef}
-          type="file"
-          accept="application/json"
-          className="hidden"
-          onChange={handleImport}
-        />
 
         <div className="h-4" />
       </div>

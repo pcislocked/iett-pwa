@@ -3,8 +3,17 @@ import { mergeConfig, defineConfig as defineTestConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 import path from 'path'
+import { readFileSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
+
+const { version: APP_VERSION } = JSON.parse(
+  readFileSync(fileURLToPath(new URL('./package.json', import.meta.url)), 'utf-8'),
+) as { version: string }
 
 const viteConfig = defineConfig({
+  define: {
+    __APP_VERSION__: JSON.stringify(APP_VERSION),
+  },
   resolve: {
     alias: { '@': path.resolve(__dirname, 'src') },
   },

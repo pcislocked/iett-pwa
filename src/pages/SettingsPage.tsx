@@ -1,9 +1,13 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { type Settings, loadSettings, saveSettings } from '@/utils/settings'
+import { useUserPrefs } from '@/hooks/useUserPrefs'
 
 export default function SettingsPage() {
   const [settings, setSettings] = useState<Settings>(loadSettings)
   const [saved, setSaved] = useState(false)
+  const { exportPrefs, importPrefs } = useUserPrefs()
+  const fileRef = useRef<HTMLInputElement>(null)
+  const [importStatus, setImportStatus] = useState<'idle' | 'ok' | 'err'>('idle')
 
   useEffect(() => {
     saveSettings(settings)
@@ -11,6 +15,20 @@ export default function SettingsPage() {
     const t = setTimeout(() => setSaved(false), 1500)
     return () => clearTimeout(t)
   }, [settings])
+
+  async function handleImport(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    try {
+      await importPrefs(file)
+      setImportStatus('ok')
+      setTimeout(() => { window.location.reload() }, 800)
+    } catch {
+      setImportStatus('err')
+      setTimeout(() => setImportStatus('idle'), 2500)
+    }
+  }
 
   return (
     <div className="max-w-lg mx-auto px-4 py-8 pb-6 flex flex-col gap-6">
@@ -82,9 +100,33 @@ export default function SettingsPage() {
         <p className="text-sm text-eta-soon text-center">✓ Ayarlar kaydedildi</p>
       )}
 
+      {/* Data backup */}
+      <div className="card flex flex-col gap-3">
+        <p className="text-sm font-semibold text-slate-400">Veri Yedekleme</p>
+        <button
+          onClick={exportPrefs}
+          className="flex items-center gap-3 py-2.5 px-3 bg-surface-muted hover:bg-slate-700
+                     rounded-xl text-sm text-slate-200 transition-colors w-full text-left"
+        >
+          <span className="text-base">&#x1F4E4;</span> Ayarları Dışa Aktar
+        </button>
+        <button
+          onClick={() => fileRef.current?.click()}
+          className={`flex items-center gap-3 py-2.5 px-3 rounded-xl text-sm transition-colors w-full text-left ${
+            importStatus === 'ok'  ? 'bg-emerald-900/50 text-emerald-300' :
+            importStatus === 'err' ? 'bg-red-900/50 text-red-300' :
+            'bg-surface-muted hover:bg-slate-700 text-slate-200'
+          }`}
+        >
+          <span className="text-base">&#x1F4E5;</span>
+          {importStatus === 'ok' ? '✓ İçe aktarıldı' : importStatus === 'err' ? '✗ Geçersiz dosya' : 'Ayarları İçe Aktar'}
+        </button>
+        <input ref={fileRef} type="file" accept="application/json" className="hidden" onChange={handleImport} />
+      </div>
+
       <div className="card text-xs text-slate-500 flex flex-col gap-1">
         <p className="font-semibold text-slate-400">Hakkında</p>
-        <p>iett-pwa v0.1.7 · İETT Canlı</p>
+        <p>v{__APP_VERSION__} · İETT Canlı</p>
         <p>Veri kaynağı: İETT / İBB açık API</p>
         <p>Arka uç: iett-middle (FastAPI)</p>
       </div>
