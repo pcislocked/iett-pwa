@@ -5,6 +5,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [0.2.2] – 2026-03-01
+
+### Fixed
+- **BusDetailSheet**: speed unit label corrected from `km/s` to `km/h`
+
+---
+
 ## [0.2.1] – 2026-03-02
 
 ### Added
