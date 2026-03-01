@@ -1,11 +1,11 @@
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { MapContainer, TileLayer, CircleMarker, Popup, Marker } from 'react-leaflet'
+import { MapContainer, TileLayer, CircleMarker, Popup, Marker, Polyline, useMap } from 'react-leaflet'
 import * as L from 'leaflet'
 import { useArrivals } from '@/hooks/useArrivals'
 import { usePolling } from '@/hooks/usePolling'
 import { useFleet } from '@/hooks/useFleet'
-import { api, type Announcement, type StopDetail } from '@/api/client'
+import { api, type Announcement, type StopDetail, type BusPosition, type Arrival } from '@/api/client'
 import { useFavorites } from '@/hooks/useFavorites'
 
 /** Fixed palette for the first 3 routes at this stop — orange, violet, cyan */
@@ -29,6 +29,172 @@ function makeBusIcon(color: string): L.DivIcon {
     iconSize: [14, 14],
     iconAnchor: [7, 7],
   })
+}
+
+/** Haversine distance in metres between two lat/lon points. */
+function haversineM(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6_371_000
+  const rad = Math.PI / 180
+  const dLat = (lat2 - lat1) * rad
+  const dLon = (lon2 - lon1) * rad
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1 * rad) * Math.cos(lat2 * rad) * Math.sin(dLon / 2) ** 2
+  return R * 2 * Math.asin(Math.sqrt(a))
+}
+
+/** Auto-fits map to given bounds on mount. */
+function FitBoundsEffect({ bounds }: { bounds: [[number, number], [number, number]] }) {
+  const map = useMap()
+  useEffect(() => { map.fitBounds(bounds, { padding: [32, 32] }) }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  return null
+}
+
+/** Bottom-sheet showing a single bus relative to the stop. */
+function BusDetailSheet({
+  arrival,
+  busPos,
+  stopLat,
+  stopLon,
+  stopName,
+  onClose,
+}: {
+  arrival: Arrival
+  busPos: BusPosition | null
+  stopLat: number
+  stopLon: number
+  stopName: string
+  onClose: () => void
+}) {
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    document.addEventListener('keydown', handler)
+    return () => document.removeEventListener('keydown', handler)
+  }, [onClose])
+
+  const dist = busPos ? haversineM(busPos.latitude, busPos.longitude, stopLat, stopLon) : null
+  const distLabel =
+    dist !== null
+      ? dist < 1000
+        ? `${Math.round(dist)} m`
+        : `${(dist / 1000).toFixed(1)} km`
+      : null
+
+  const mapCenter: [number, number] = busPos
+    ? [(busPos.latitude + stopLat) / 2, (busPos.longitude + stopLon) / 2]
+    : [stopLat, stopLon]
+
+  const bounds: [[number, number], [number, number]] | null = busPos
+    ? [
+        [Math.min(busPos.latitude, stopLat), Math.min(busPos.longitude, stopLon)],
+        [Math.max(busPos.latitude, stopLat), Math.max(busPos.longitude, stopLon)],
+      ]
+    : null
+
+  const busIcon = L.divIcon({
+    className: '',
+    html: `<div style="background:#f97316;border-radius:50%;width:14px;height:14px;border:2px solid #fff;box-shadow:0 0 0 3px rgba(249,115,22,0.35)"></div>`,
+    iconSize: [14, 14],
+    iconAnchor: [7, 7],
+  })
+  const stopIcon = L.divIcon({
+    className: '',
+    html: `<div style="background:#2563eb;border-radius:50%;width:14px;height:14px;border:2px solid #fff;box-shadow:0 0 0 3px rgba(37,99,235,0.35)"></div>`,
+    iconSize: [14, 14],
+    iconAnchor: [7, 7],
+  })
+
+  return (
+    <div className="fixed inset-0 z-[500] flex items-end" onClick={onClose}>
+      {/* Backdrop */}
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
+
+      <div
+        className="relative w-full max-w-2xl mx-auto bg-surface-card border-t border-surface-muted rounded-t-2xl overflow-hidden shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Drag handle */}
+        <div className="flex justify-center pt-3 pb-1">
+          <div className="w-10 h-1 rounded-full bg-surface-muted" />
+        </div>
+
+        {/* Header */}
+        <div className="flex items-center gap-3 px-4 py-2">
+          <div
+            className="text-white font-mono font-bold text-sm rounded-xl px-3 py-1.5 shrink-0"
+            style={{ backgroundColor: arrival.route_code ? '#f97316' : '#6b7280' }}
+          >
+            {arrival.route_code}
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-slate-100 truncate">{arrival.destination}</p>
+            {(arrival.plate || arrival.kapino) && (
+              <p className="text-xs text-slate-400 font-mono">
+                {[arrival.plate, arrival.kapino].filter(Boolean).join('  ·  ')}
+              </p>
+            )}
+          </div>
+          <button onClick={onClose} className="p-1.5 text-slate-500 hover:text-slate-300 shrink-0">
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Map — bus ↔ stop */}
+        {busPos ? (
+          <div style={{ height: 200 }}>
+            <MapContainer center={mapCenter} zoom={15} style={{ height: '100%', width: '100%' }} zoomControl={false}>
+              <TileLayer
+                attribution='&copy; CartoDB'
+                url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+              />
+              {bounds && <FitBoundsEffect bounds={bounds} />}
+              <Polyline
+                positions={[[busPos.latitude, busPos.longitude], [stopLat, stopLon]]}
+                pathOptions={{ color: '#f97316', weight: 2, dashArray: '6 4', opacity: 0.7 }}
+              />
+              <Marker position={[busPos.latitude, busPos.longitude]} icon={busIcon} />
+              <Marker position={[stopLat, stopLon]} icon={stopIcon} />
+            </MapContainer>
+          </div>
+        ) : (
+          <div className="h-12 flex items-center justify-center">
+            <p className="text-xs text-slate-500">Araç konumu henüz mevcut değil</p>
+          </div>
+        )}
+
+        {/* Info strip */}
+        <div className="px-4 py-3 grid grid-cols-3 gap-2 border-t border-surface-muted">
+          <div className="flex flex-col items-center gap-0.5">
+            <p className="text-[10px] text-slate-500 uppercase tracking-wider">ETA</p>
+            <p className="text-base font-bold text-slate-100">
+              {arrival.eta_minutes !== null ? `${arrival.eta_minutes} dk` : arrival.eta_raw}
+            </p>
+          </div>
+          <div className="flex flex-col items-center gap-0.5">
+            <p className="text-[10px] text-slate-500 uppercase tracking-wider">Mesafe</p>
+            <p className="text-base font-bold text-slate-100">{distLabel ?? '—'}</p>
+          </div>
+          <div className="flex flex-col items-center gap-0.5">
+            <p className="text-[10px] text-slate-500 uppercase tracking-wider">Plaka</p>
+            <p className="text-sm font-bold text-slate-100 font-mono">{arrival.plate ?? '—'}</p>
+          </div>
+        </div>
+
+        {/* CTA */}
+        <div className="px-4 pb-6 pt-2">
+          <Link
+            to={`/routes/${arrival.route_code}`}
+            onClick={onClose}
+            className="block w-full text-center bg-brand-600 hover:bg-brand-500 text-white font-semibold py-3 rounded-xl text-sm transition-colors"
+          >
+            Hattı Aç →
+          </Link>
+        </div>
+      </div>
+    </div>
+  )
 }
 
 function EtaChip({ minutes, raw }: { minutes: number | null; raw: string }) {
@@ -60,6 +226,7 @@ export default function StopPage() {
   const navigate = useNavigate()
   const [activeRoutes, setActiveRoutes] = useState<Set<string>>(new Set())
   const [showAnnouncements, setShowAnnouncements] = useState(false)
+  const [selectedArrival, setSelectedArrival] = useState<Arrival | null>(null)
 
   const { data: arrivals, loading, error, stale } = useArrivals(dcode ?? '')
 
@@ -135,6 +302,13 @@ export default function StopPage() {
   )
 
   // Fetch live bus positions for ALL routes present in arrivals (up to MAX_LIVE_ROUTES).
+  // Index routeBuses by kapino for O(1) lookup in each arrival row.
+  const busByKapino = useMemo(() => {
+    const m = new Map<string, BusPosition>()
+    routeBuses.forEach((b) => m.set(b.kapino, b))
+    return m
+  }, [routeBuses])
+
   // ETA lookup by kapino (from all arrivals, not just filtered)
   const etaByKapino = useMemo(() => {
     const m = new Map<string, number | null>()
@@ -293,28 +467,48 @@ export default function StopPage() {
           )}
 
           {filteredArrivals.map((a, i) => {
-            const vehicleLine = [a.kapino, a.plate].filter(Boolean).join('  ·  ')
             const routeColor = getRouteColor(a.route_code, arrivalRouteOrder)
+            const hasVehicle = !!(a.kapino || a.plate)
             return (
-            <Link
-              key={`${a.route_code}-${a.destination}-${i}`}
-              to={`/routes/${a.route_code}`}
-              className="card flex items-center gap-3 py-2 hover:border-slate-500 transition-colors"
-            >
               <div
-                style={{ backgroundColor: routeColor }}
-                className="text-white font-mono font-bold text-xs
-                              rounded-xl px-2.5 py-1.5 min-w-[50px] text-center shrink-0 leading-tight">
-                {a.route_code}
+                key={`${a.route_code}-${a.destination}-${i}`}
+                className="card flex items-stretch gap-0 py-0 overflow-hidden hover:border-slate-500 transition-colors"
+              >
+                {/* LEFT half — navigate to route page */}
+                <Link
+                  to={`/routes/${a.route_code}`}
+                  className="flex items-center gap-3 flex-1 min-w-0 py-2 px-3"
+                >
+                  <div
+                    style={{ backgroundColor: routeColor }}
+                    className="text-white font-mono font-bold text-xs rounded-xl px-2.5 py-1.5 min-w-[50px] text-center shrink-0 leading-tight"
+                  >
+                    {a.route_code}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-slate-200 truncate leading-snug">{a.destination}</p>
+                    {hasVehicle && (
+                      <p className="text-xs text-slate-400 mt-0.5 font-mono tracking-wide">
+                        {[a.plate, a.kapino].filter(Boolean).join('  ·  ')}
+                      </p>
+                    )}
+                  </div>
+                </Link>
+
+                {/* Divider */}
+                <div className="w-px bg-surface-muted shrink-0 my-2" />
+
+                {/* RIGHT half — open single-bus sheet */}
+                <button
+                  onClick={() => setSelectedArrival(a)}
+                  className="shrink-0 flex flex-col items-center justify-center gap-1 px-3 py-2 hover:bg-surface-muted/50 transition-colors"
+                >
+                  <EtaChip minutes={a.eta_minutes} raw={a.eta_raw} />
+                  <svg className="w-3 h-3 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 6.75V15m6-6v8.25m.503 3.498l4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 00-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0z" />
+                  </svg>
+                </button>
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-xs text-slate-200 truncate leading-snug">{a.destination}</p>
-                {vehicleLine ? (
-                  <p className="text-xs text-slate-400 mt-0.5 font-mono tracking-wide">{vehicleLine}</p>
-                ) : null}
-              </div>
-              <EtaChip minutes={a.eta_minutes} raw={a.eta_raw} />
-            </Link>
             )
           })}
 
@@ -405,6 +599,18 @@ export default function StopPage() {
           )}
         </div>
       </div>
+
+      {/* Bus detail sheet — rendered outside the scroll container so it overlays everything */}
+      {selectedArrival && stopDetail?.latitude != null && stopDetail.longitude != null && (
+        <BusDetailSheet
+          arrival={selectedArrival}
+          busPos={selectedArrival.kapino ? (busByKapino.get(selectedArrival.kapino) ?? null) : null}
+          stopLat={stopDetail.latitude}
+          stopLon={stopDetail.longitude}
+          stopName={stopName}
+          onClose={() => setSelectedArrival(null)}
+        />
+      )}
     </div>
   )
 }
