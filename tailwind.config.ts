@@ -29,8 +29,11 @@ export default {
         },
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
-        mono: ['JetBrains Mono', 'monospace'],
+        sans: ['Segoe UI', 'Segoe WP', 'Arial', 'sans-serif'],
+        mono: ['JetBrains Mono', 'Consolas', 'monospace'],
+      },
+      colors: {
+        accent: '#00AFF0',
       },
     },
   },
