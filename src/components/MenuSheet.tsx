@@ -28,14 +28,20 @@ export default function MenuSheet({ onClose }: MenuSheetProps) {
   }
 
   async function handleImport(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
+    const input = e.target
+    const file = input.files?.[0]
+    if (!file) {
+      input.value = ''
+      return
+    }
     try {
       await importPrefs(file)
       onClose()
       window.location.reload()
     } catch (err) {
       alert((err as Error).message)
+    } finally {
+      input.value = ''
     }
   }
 
@@ -79,7 +85,10 @@ export default function MenuSheet({ onClose }: MenuSheetProps) {
           <MenuRow
             icon="🐱"
             label="GitHub"
-            onPress={() => { window.open('https://github.com/pcislocked/iett-pwa', '_blank'); onClose() }}
+            onPress={() => {
+              window.open('https://github.com/pcislocked/iett-pwa', '_blank', 'noopener,noreferrer')
+              onClose()
+            }}
           />
         </div>
 

@@ -11,9 +11,7 @@ import SettingsPage from '@/pages/SettingsPage'
 import FavoritesPage from '@/pages/FavoritesPage'
 import NearbyPage from '@/pages/NearbyPage'
 import { BottomBarContext, useBottomBarState } from '@/hooks/useBottomBar'
-
-// ── Ordered list of swipeable main tabs ────────────────────────────────────
-const MAIN_PATHS = ['/search', '/', '/nearby']
+import { MAIN_PATHS } from '@/routes'
 
 /** Global horizontal-swipe listener: navigates between main tabs. */
 function GlobalSwipe() {
@@ -34,7 +32,7 @@ function GlobalSwipe() {
       const dy = e.changedTouches[0].clientY - startY
       // Require horizontal intent (|dx|>55, |dx|>|dy|*1.5) and main tab
       if (Math.abs(dx) < 55 || Math.abs(dx) < Math.abs(dy) * 1.5) return
-      const idx = MAIN_PATHS.indexOf(location.pathname)
+      const idx = (MAIN_PATHS as readonly string[]).indexOf(location.pathname)
       if (idx === -1) return
       if (dx < 0 && idx < MAIN_PATHS.length - 1) navigate(MAIN_PATHS[idx + 1])
       if (dx > 0 && idx > 0) navigate(MAIN_PATHS[idx - 1])
@@ -52,9 +50,9 @@ function GlobalSwipe() {
 }
 
 function InstallBannerWrapper() {
-  const { show, dismiss } = useInstallBanner()
+  const { show, dismiss, install } = useInstallBanner()
   if (!show) return null
-  return <InstallBanner onDismiss={dismiss} />
+  return <InstallBanner onDismiss={dismiss} onInstall={install} />
 }
 
 export default function App() {

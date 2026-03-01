@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api, type StopSearchResult, type RouteSearchResult } from '@/api/client'
 import { addRecent, getRecent, type RecentSearch } from '@/hooks/useRecentSearches'
-import { useUserPrefs } from '@/hooks/useUserPrefs'
+import { useFavorites } from '@/hooks/useFavorites'
 
 type SearchResult =
   | ({ kind: 'stop' } & StopSearchResult)
@@ -13,12 +13,14 @@ export default function SearchPage() {
   const navigate = useNavigate()
   const inputRef = useRef<HTMLInputElement>(null)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const reqIdRef = useRef(0)
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<SearchResult[]>([])
   const [loading, setLoading] = useState(false)
   const [recents, setRecents] = useState<RecentSearch[]>([])
-  const { prefs } = useUserPrefs()
-  const { favStops, favRoutes } = prefs
+  const { favorites } = useFavorites()
+  const favStops = favorites.filter((f) => f.kind === 'stop')
+  const favRoutes = favorites.filter((f) => f.kind === 'route')
 
   useEffect(() => {
     setRecents(getRecent())
@@ -42,21 +44,24 @@ export default function SearchPage() {
     }
     setLoading(true)
     if (timerRef.current) clearTimeout(timerRef.current)
+    const myId = ++reqIdRef.current
     timerRef.current = setTimeout(async () => {
       try {
         const [stops, routes] = await Promise.all([
           api.stops.search(q),
           api.routes.search(q),
         ])
+        if (myId !== reqIdRef.current) return   // stale — a newer query is in flight
         const combined: SearchResult[] = [
           ...stops.map((s) => ({ kind: 'stop' as const, ...s })),
           ...routes.map((r) => ({ kind: 'route' as const, ...r })),
         ]
         setResults(combined)
       } catch {
+        if (myId !== reqIdRef.current) return
         setResults([])
       } finally {
-        setLoading(false)
+        if (myId === reqIdRef.current) setLoading(false)
       }
     }, 300)
     return () => { if (timerRef.current) clearTimeout(timerRef.current) }
@@ -127,9 +132,9 @@ export default function SearchPage() {
             <p className="text-center text-slate-600 mt-10 text-sm">Sonuç bulunamadı</p>
           ) : (
             <div className="rounded-2xl overflow-hidden border border-surface-border divide-y divide-surface-border bg-surface-card mt-1">
-              {results.map((r, i) => (
+              {results.map((r) => (
                 <button
-                  key={i}
+                  key={r.kind === 'stop-direct' ? `stop-direct-${r.dcode}` : r.kind === 'stop' ? `stop-${r.dcode}` : `route-${r.hat_kodu}`}
                   onClick={() => handleSelect(r)}
                   className="w-full flex items-center gap-3 px-4 py-3.5 hover:bg-surface-muted
                              active:bg-surface-muted transition-colors text-left"
@@ -204,7 +209,7 @@ export default function SearchPage() {
                       <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-brand-900 text-brand-100 font-mono">
                         {stop.dcode}
                       </span>
-                      <span className="flex-1 text-sm text-slate-200 truncate">{stop.name || stop.dcode}</span>
+                      <span className="flex-1 text-sm text-slate-200 truncate">{stop.name}</span>
                       <svg viewBox="0 0 24 24" fill="currentColor" stroke="none" className="w-4 h-4 text-rose-500 shrink-0">
                         <path d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
                       </svg>
@@ -214,23 +219,23 @@ export default function SearchPage() {
               </section>
             )}
 
-            {(favRoutes as string[]).length > 0 && (
+            {favRoutes.length > 0 && (
               <section>
                 <h2 className="text-[11px] font-semibold uppercase tracking-widest text-slate-500 mb-2">
                   Favori Hatlar
                 </h2>
                 <div className="rounded-2xl overflow-hidden border border-surface-border divide-y divide-surface-border bg-surface-card">
-                  {favRoutes.map((hatKodu) => (
+                  {favRoutes.map((fav) => (
                     <button
-                      key={hatKodu}
-                      onClick={() => navigate(`/routes/${hatKodu}`)}
+                      key={fav.hat_kodu}
+                      onClick={() => navigate(`/routes/${fav.hat_kodu}`)}
                       className="w-full flex items-center gap-3 px-4 py-3 hover:bg-surface-muted
                                  active:bg-surface-muted transition-colors text-left"
                     >
                       <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-900/60 text-amber-200 font-mono">
-                        {hatKodu}
+                        {fav.hat_kodu}
                       </span>
-                      <span className="flex-1 text-sm text-slate-200 truncate">{hatKodu}</span>
+                      <span className="flex-1 text-sm text-slate-200 truncate">{fav.name}</span>
                       <svg viewBox="0 0 24 24" fill="currentColor" stroke="none" className="w-4 h-4 text-rose-500 shrink-0">
                         <path d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
                       </svg>

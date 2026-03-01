@@ -47,11 +47,10 @@ export function useBottomBarState() {
 
 export function useBottomBar(tabs: BottomBarTab[]) {
   const { setCustomTabs } = useContext(BottomBarContext)
-  // Stringify to get stable identity for the effect dep
-  const key = tabs.map((t) => `${t.label}:${t.active}`).join(',')
+  // Callers must memoize their tabs array (e.g. useMemo) so this effect
+  // fires only when tab content actually changes — not on every render.
   useEffect(() => {
     setCustomTabs(tabs)
     return () => setCustomTabs(null)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key, setCustomTabs])
+  }, [tabs, setCustomTabs])
 }

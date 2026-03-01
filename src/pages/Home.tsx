@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import PinnedStopRow from '@/components/PinnedStopRow'
-import { useUserPrefs } from '@/hooks/useUserPrefs'
+import { useUserPrefs, type PinnedStop } from '@/hooks/useUserPrefs'
 
 /** Format current time HH:MM */
 function useClock() {
@@ -50,7 +50,7 @@ export default function Home() {
             </button>
           </div>
           <div className="rounded-2xl overflow-hidden border border-surface-border divide-y divide-surface-border bg-surface-card">
-            {pinnedStops.map((p: import('@/hooks/useUserPrefs').PinnedStop) => (
+            {pinnedStops.map((p: PinnedStop) => (
               <PinnedStopRow key={p.dcode} dcode={p.dcode} nick={p.nick} icon="📌" />
             ))}
           </div>

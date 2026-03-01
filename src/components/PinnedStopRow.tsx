@@ -22,7 +22,7 @@ export default function PinnedStopRow({ dcode, nick, icon = '📌', distLabel }:
     <button
       onClick={() => navigate(`/stops/${dcode}`)}
       className="w-full flex items-center gap-3 px-4 py-3 min-h-[52px]
-                 bg-surface-card border-b border-surface-border
+                 bg-surface-card
                  active:bg-surface-muted transition-colors text-left"
     >
       <span className="text-base shrink-0">{icon}</span>

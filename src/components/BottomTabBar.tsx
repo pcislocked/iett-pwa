@@ -2,9 +2,7 @@ import { useState } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import { useBottomBarContext } from '@/hooks/useBottomBar'
 import MenuSheet from '@/components/MenuSheet'
-
-// The 3 swipeable main pages in order
-const MAIN_PATHS = ['/search', '/', '/nearby']
+import { MAIN_PATHS } from '@/routes'
 
 const DEFAULT_TABS_CFG = [
   {
@@ -74,7 +72,7 @@ export default function BottomTabBar() {
   }
 
   // ── Default 4-tab bar: Ara / Ana / Yakın / ≡ ─────────────────────────────
-  const isMain = MAIN_PATHS.includes(location.pathname)
+  const isMain = (MAIN_PATHS as readonly string[]).includes(location.pathname)
 
   return (
     <>

@@ -273,21 +273,21 @@ export default function StopPage() {
   const [activeRoutes, setActiveRoutes] = useState<Set<string>>(new Set())
   const [showAnnouncements, setShowAnnouncements] = useState(false)
   const [selectedArrival, setSelectedArrival] = useState<Arrival | null>(null)
-  const [activeTab, setActiveTab] = useState<'gelir' | 'hatlar' | 'bilgi'>('gelir')
+  const [activeTab, setActiveTab] = useState<'gelis' | 'hatlar' | 'bilgi'>('gelis')
 
-  // Context-aware bottom bar: replaces the main 4-tab nav while on this page
-  useBottomBar([
+  // Memoised so useBottomBar’s effect only fires when tab active-state actually changes
+  const bottomBarTabs = useMemo(() => [
     {
       label: 'Geliş',
       icon: (
-        <svg viewBox="0 0 24 24" fill={activeTab === 'gelir' ? 'currentColor' : 'none'}
+        <svg viewBox="0 0 24 24" fill={activeTab === 'gelis' ? 'currentColor' : 'none'}
              stroke="currentColor" strokeWidth={2} className="w-5 h-5">
           <path strokeLinecap="round" strokeLinejoin="round"
                 d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12" />
         </svg>
       ),
-      onPress: () => setActiveTab('gelir'),
-      active: activeTab === 'gelir',
+      onPress: () => setActiveTab('gelis'),
+      active: activeTab === 'gelis',
     },
     {
       label: 'Hatlar',
@@ -313,7 +313,9 @@ export default function StopPage() {
       onPress: () => setActiveTab('bilgi'),
       active: activeTab === 'bilgi',
     },
-  ])
+  ], [activeTab])
+
+  useBottomBar(bottomBarTabs)
 
   const { data: arrivals, loading, error, stale } = useArrivals(dcode ?? '')
 
@@ -450,11 +452,18 @@ export default function StopPage() {
           </button>
 
           <button
-            onClick={() => pinned ? unpinStop(dcode ?? '') : pinStop(dcode ?? '', stopName)}
-            className={`p-1.5 rounded-xl transition-colors shrink-0 ${
+            onClick={() => {
+              if (!dcode) return
+              if (pinned) unpinStop(dcode)
+              else pinStop(dcode, stopName)
+            }}
+            disabled={!dcode}
+            aria-label={pinned ? 'Sabitlemeyi kaldır' : 'Ana sayfaya sabitle'}
+            aria-pressed={pinned}
+            title={pinned ? 'Sabitlemeyi kaldır' : 'Ana sayfaya sabitle'}
+            className={`p-1.5 rounded-xl transition-colors shrink-0 disabled:opacity-40 ${
               pinned ? 'text-amber-400' : 'text-slate-500 hover:text-slate-300'
             }`}
-            title={pinned ? 'Sabitlemeyi kaldır' : 'Ana sayfaya sabitle'}
           >
             <span className="text-base leading-none">{pinned ? '📌' : '📍'}</span>
           </button>
@@ -464,8 +473,10 @@ export default function StopPage() {
 {/* ── Hatlar tab ────────────────────────────────────────────────────── */}
       {activeTab === 'hatlar' && (
         <div className="flex-1 overflow-y-auto px-4 py-3">
-          {(routes ?? []).length === 0 ? (
-            <p className="text-center text-slate-500 mt-10 text-sm">Hat bilgisi yükleniyor...</p>
+          {routes === null ? (
+            <p className="text-center text-slate-500 mt-10 text-sm">Yükleniyor...</p>
+          ) : routes.length === 0 ? (
+            <p className="text-center text-slate-500 mt-10 text-sm">Bu durakta kayıtlı hat bulunamadı.</p>
           ) : (
             <div className="rounded-2xl overflow-hidden border border-surface-border divide-y divide-surface-border bg-surface-card">
               {(routes ?? []).map((r) => (
@@ -527,7 +538,7 @@ export default function StopPage() {
       )}
 
 {/* Split-screen body — shown on Geliş tab */}
-      {activeTab === 'gelir' && (
+      {activeTab === 'gelis' && (
       <div className="flex-1 flex flex-col overflow-hidden max-w-2xl w-full mx-auto">
 
         {/* Map — top ~40% */}

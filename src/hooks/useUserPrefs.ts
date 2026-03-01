@@ -163,8 +163,17 @@ export function useUserPrefs() {
       const reader = new FileReader()
       reader.onload = (e) => {
         try {
-          const parsed = JSON.parse(e.target?.result as string) as Partial<UserPrefs>
-          patch(() => ({ ...DEFAULT_PREFS, ...parsed }))
+          const raw = JSON.parse(e.target?.result as string) as Partial<UserPrefs>
+          // Coerce each field to the correct type to guard against malformed files / old schemas
+          const coerced: UserPrefs = {
+            pinnedStops: Array.isArray(raw.pinnedStops) ? raw.pinnedStops : [],
+            favStops: Array.isArray(raw.favStops) ? raw.favStops : [],
+            favRoutes: Array.isArray(raw.favRoutes) ? raw.favRoutes : [],
+            nicknames: raw.nicknames && typeof raw.nicknames === 'object' && !Array.isArray(raw.nicknames)
+              ? raw.nicknames as Record<string, string>
+              : {},
+          }
+          patch(() => coerced)
           resolve()
         } catch {
           reject(new Error('Geçersiz dosya formatı'))
