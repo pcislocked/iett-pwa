@@ -275,6 +275,9 @@ export default function StopPage() {
   const [selectedArrival, setSelectedArrival] = useState<Arrival | null>(null)
   const [activeTab, setActiveTab] = useState<'gelis' | 'hatlar' | 'bilgi'>('gelis')
 
+  // Reset to default tab whenever the stop changes (React Router may reuse this component)
+  useEffect(() => { setActiveTab('gelis') }, [dcode])
+
   // Memoised so useBottomBar’s effect only fires when tab active-state actually changes
   const bottomBarTabs = useMemo(() => [
     {
@@ -368,7 +371,7 @@ export default function StopPage() {
   )
 
   const { isFavorite, toggle } = useFavorites()
-  const { isPinned, pinStop, unpinStop } = useUserPrefs()
+  const { prefs, isPinned, pinStop, unpinStop } = useUserPrefs()
   const stopName = stopDetail?.name ?? `Durak ${dcode}`
   const favItem = { kind: 'stop' as const, dcode: dcode ?? '', name: stopName }
   const favorited = isFavorite(favItem)
@@ -454,13 +457,23 @@ export default function StopPage() {
           <button
             onClick={() => {
               if (!dcode) return
+              const atLimit = !pinned && (prefs?.pinnedStops.length ?? 0) >= 3
+              if (atLimit) return
               if (pinned) unpinStop(dcode)
               else pinStop(dcode, stopName)
             }}
-            disabled={!dcode}
-            aria-label={pinned ? 'Sabitlemeyi kaldır' : 'Ana sayfaya sabitle'}
+            disabled={!dcode || (!pinned && (prefs?.pinnedStops.length ?? 0) >= 3)}
+            aria-label={
+              (!pinned && (prefs?.pinnedStops.length ?? 0) >= 3)
+                ? 'En fazla 3 durak sabitlenebilir'
+                : pinned ? 'Sabitlemeyi kaldır' : 'Ana sayfaya sabitle'
+            }
             aria-pressed={pinned}
-            title={pinned ? 'Sabitlemeyi kaldır' : 'Ana sayfaya sabitle'}
+            title={
+              (!pinned && (prefs?.pinnedStops.length ?? 0) >= 3)
+                ? 'En fazla 3 durak ana sayfaya sabitlenebilir'
+                : pinned ? 'Sabitlemeyi kaldır' : 'Ana sayfaya sabitle'
+            }
             className={`p-1.5 rounded-xl transition-colors shrink-0 disabled:opacity-40 ${
               pinned ? 'text-amber-400' : 'text-slate-500 hover:text-slate-300'
             }`}

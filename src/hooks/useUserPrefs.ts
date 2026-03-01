@@ -184,7 +184,10 @@ export function useUserPrefs() {
               ? raw.favRoutes.filter((r): r is string => typeof r === 'string')
               : [],
             nicknames: raw.nicknames && typeof raw.nicknames === 'object' && !Array.isArray(raw.nicknames)
-              ? raw.nicknames as Record<string, string>
+              ? Object.fromEntries(
+                  Object.entries(raw.nicknames as Record<string, unknown>)
+                    .filter(([, v]) => typeof v === 'string')
+                ) as Record<string, string>
               : {},
           }
           patch(() => coerced)

@@ -57,7 +57,7 @@ export function useInstallBanner() {
   const [show, setShow] = useState(false)
 
   useEffect(() => {
-    if (localStorage.getItem(DISMISSED_KEY)) return
+    try { if (localStorage.getItem(DISMISSED_KEY)) return } catch { return }
 
     // Don't show on iOS (Safari has its own share-sheet install flow)
     const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent)
@@ -86,7 +86,7 @@ export function useInstallBanner() {
 
   function dismiss() {
     setShow(false)
-    localStorage.setItem(DISMISSED_KEY, '1')
+    try { localStorage.setItem(DISMISSED_KEY, '1') } catch { /* storage disabled */ }
   }
 
   async function install() {
