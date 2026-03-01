@@ -130,9 +130,9 @@ function AnimatedMain() {
           <MainRoutes loc={exitLoc} />
         </div>
       )}
-      {/* Enter page */}
+      {/* Enter page: off-screen only while a transition is staged (exitLoc set, active false) */}
       <div className={`absolute inset-0 overflow-y-auto flex flex-col transition-transform duration-[220ms] ease-out ${
-        active ? 'translate-x-0' : enterInit
+        (!exitLoc || active) ? 'translate-x-0' : enterInit
       }`}>
         <MainRoutes loc={location} />
       </div>
