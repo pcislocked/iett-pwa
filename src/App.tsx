@@ -10,6 +10,7 @@ import MapPage from '@/pages/MapPage'
 import SettingsPage from '@/pages/SettingsPage'
 import FavoritesPage from '@/pages/FavoritesPage'
 import NearbyPage from '@/pages/NearbyPage'
+import PinnedManagePage from '@/pages/PinnedManagePage'
 import { BottomBarContext, useBottomBarState } from '@/hooks/useBottomBar'
 import { MAIN_PATHS } from '@/routes'
 
@@ -33,6 +34,7 @@ function MainRoutes({ loc }: { loc: ReturnType<typeof useLocation> | ReturnType<
       <Route path="/map"             element={<MapPage />} />
       <Route path="/favorites"       element={<FavoritesPage />} />
       <Route path="/settings"        element={<SettingsPage />} />
+      <Route path="/pinned"          element={<PinnedManagePage />} />
     </Routes>
   )
 }

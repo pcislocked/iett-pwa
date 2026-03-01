@@ -94,8 +94,8 @@ export default function Home() {
     <div className="flex-1 overflow-y-auto pb-4">
 
       {/* ── Title bar ────────────────────────────────────────────────────────── */}
-      <div className="px-4 safe-area-pt pt-4 pb-3 flex items-center justify-between border-b border-[#111]">
-        <span className="text-xl font-bold text-white tracking-tight">your title here</span>
+      <div className="px-4 safe-area-pt mt-8 pt-4 pb-3 flex items-center justify-between border-b border-[#111]">
+        <span className="text-xl font-bold text-white tracking-tight">iettnin amina koyum</span>
         <span className="text-[#666] tabular-nums text-xs">{clock}</span>
       </div>
 
@@ -103,15 +103,20 @@ export default function Home() {
       <section className="mb-4">
         <div className="flex items-center justify-between px-4 pt-4 pb-1">
           <span className="metro-section p-0">Sabitlenmiş Duraklar</span>
-          {pinnedStops.length < 4 && (
-            <button
-              onClick={() => navigate('/search')}
-              className="text-[11px] metro-tilt"
-              style={{ color: 'var(--wp-accent)' }}
-            >
-              + Ekle
-            </button>
-          )}
+          <div className="flex items-center gap-3">
+            {pinnedStops.length > 0 && (
+              <Link to="/pinned" className="text-[11px] metro-tilt" style={{ color: '#888' }}>Yönet →</Link>
+            )}
+            {pinnedStops.length < 4 && (
+              <button
+                onClick={() => navigate('/search')}
+                className="text-[11px] metro-tilt"
+                style={{ color: 'var(--wp-accent)' }}
+              >
+                + Ekle
+              </button>
+            )}
+          </div>
         </div>
 
         {pinnedStops.length > 0 ? (
@@ -293,9 +298,9 @@ export default function Home() {
             }
           />
           <QuickRow
-            onPress={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-            label="Sabitlenmiş Duraklar"
-            sub="Sayfanın üstündeki sabitlenmiş duraklara git"
+            to="/pinned"
+            label="Sabitlenmiş Durakları Yönet"
+            sub="Sabitleme ekle, kaldır veya düzenle"
             icon={
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5">
                 <path strokeLinecap="round" strokeLinejoin="round"

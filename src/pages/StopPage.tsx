@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect } from 'react'
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { MapContainer, TileLayer, CircleMarker, Popup, Marker, Polyline, useMap } from 'react-leaflet'
 import * as L from 'leaflet'
@@ -48,6 +48,40 @@ function haversineM(lat1: number, lon1: number, lat2: number, lon2: number): num
 function FitBoundsEffect({ bounds }: { bounds: [[number, number], [number, number]] }) {
   const map = useMap()
   useEffect(() => { map.fitBounds(bounds, { padding: [32, 32] }) }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  return null
+}
+
+/**
+ * Fits the map to include the stop marker + up to 3 nearest buses (those
+ * already present in `buses`).  Only fires once — the first time buses
+ * contains at least one entry.  Falls back to the default center/zoom when
+ * no buses have live positions.
+ */
+function FitToBusesOnLoad({
+  stopLat,
+  stopLon,
+  buses,
+}: {
+  stopLat: number
+  stopLon: number
+  buses: BusPosition[]
+}) {
+  const map = useMap()
+  const firedRef = useRef(false)
+
+  useEffect(() => {
+    if (firedRef.current) return
+    const withPos = buses.filter((b) => b.latitude != null && b.longitude != null).slice(0, 3)
+    if (withPos.length === 0) return  // wait for data
+    firedRef.current = true
+    const points: L.LatLngExpression[] = [
+      [stopLat, stopLon],
+      ...withPos.map((b): L.LatLngExpression => [b.latitude, b.longitude]),
+    ]
+    const bounds = L.latLngBounds(points)
+    map.fitBounds(bounds, { padding: [48, 48], maxZoom: 16 })
+  }, [buses, stopLat, stopLon, map])
+
   return null
 }
 
@@ -580,10 +614,16 @@ export default function StopPage() {
               center={[stopDetail.latitude, stopDetail.longitude]}
               zoom={16}
               style={{ height: '100%', width: '100%' }}
+              key={dcode}
             >
               <TileLayer
                 attribution='&copy; <a href="https://carto.com/">CartoDB</a>'
                 url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+              />
+              <FitToBusesOnLoad
+                stopLat={stopDetail.latitude}
+                stopLon={stopDetail.longitude}
+                buses={routeBuses}
               />
               <CircleMarker
                 center={[stopDetail.latitude, stopDetail.longitude]}

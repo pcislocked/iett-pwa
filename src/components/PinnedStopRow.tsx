@@ -1,5 +1,7 @@
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useArrivals } from '@/hooks/useArrivals'
+import { api, type StopDetail } from '@/api/client'
 
 interface PinnedStopRowProps {
   dcode: string
@@ -15,6 +17,11 @@ interface PinnedStopRowProps {
 export default function PinnedStopRow({ dcode, nick, icon = '📌', distLabel }: PinnedStopRowProps) {
   const navigate = useNavigate()
   const { data: arrivals, loading } = useArrivals(dcode)
+  const [stopDetail, setStopDetail] = useState<StopDetail | null>(null)
+
+  useEffect(() => {
+    api.stops.detail(dcode).then(setStopDetail).catch(() => {})
+  }, [dcode])
 
   const top2 = arrivals?.slice(0, 2) ?? []
 
@@ -31,8 +38,8 @@ export default function PinnedStopRow({ dcode, nick, icon = '📌', distLabel }:
       <div className="flex-1 min-w-0">
         <span className="text-[13px] font-bold text-white truncate block leading-tight">{nick}</span>
         <span className="text-[10px] text-slate-500 truncate block">
-          {arrivals?.[0]?.destination
-            ? `→ ${arrivals[0].destination}`
+          {stopDetail?.direction
+            ? `→ ${stopDetail.direction}`
             : distLabel
               ? ''
               : <span className="font-mono text-slate-700">{dcode}</span>}
