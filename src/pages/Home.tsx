@@ -170,35 +170,13 @@ export default function Home() {
 
         {/* Stops list */}
         {gpsPhase === 'done' && nearbyStops.map((s) => (
-          <button
+          <PinnedStopRow
             key={s.stop_code}
-            onClick={() => navigate(`/stops/${s.stop_code}`)}
-            className="w-full flex items-center gap-3 px-4 py-3 min-h-[52px]
-                       bg-surface-card active:bg-surface-muted transition-colors text-left"
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}
-                 className="w-4 h-4 shrink-0" style={{ color: 'var(--wp-accent)' }}>
-              <path strokeLinecap="round" strokeLinejoin="round"
-                d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
-              <path strokeLinecap="round" strokeLinejoin="round"
-                d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
-            </svg>
-            <div className="flex-1 min-w-0">
-              <span className="text-[13px] font-bold text-white truncate block leading-tight">
-                {s.stop_name}
-              </span>
-              <span className="text-[10px] text-slate-500 truncate block">
-                {s.direction ? `→ ${s.direction}` : s.stop_code}
-              </span>
-            </div>
-            <span className="text-[10px] text-slate-600 bg-surface-muted px-1.5 py-0.5 rounded-full shrink-0">
-              {distanceLabel(s.distance_m)}
-            </span>
-            <svg className="w-3.5 h-3.5 text-slate-700 shrink-0 ml-1" fill="none"
-                 viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-            </svg>
-          </button>
+            dcode={s.stop_code}
+            nick={s.stop_name}
+            icon="📍"
+            distLabel={distanceLabel(s.distance_m)}
+          />
         ))}
 
         {/* GPS denied */}
