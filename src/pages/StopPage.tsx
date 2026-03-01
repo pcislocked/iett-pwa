@@ -345,20 +345,27 @@ export default function StopPage() {
   // Full fleet polled every 30 s via the shared cache — no per-route calls needed.
   const { data: allBuses } = useFleet()
 
-  // Filter fleet to only buses whose route is present at this stop.
+  // Filter fleet to buses whose route_code is served at this stop:
+  // use arrivalRouteOrder (currently arriving) PLUS routes (all routes at stop)
+  // so markers appear even before arrivals data is available.
   const routeBuses = useMemo(
-    () => (allBuses ?? []).filter((b) => b.route_code && arrivalRouteOrder.includes(b.route_code)),
-    [allBuses, arrivalRouteOrder],
+    () => {
+      const routeSet = new Set([...arrivalRouteOrder, ...(routes ?? [])])
+      return (allBuses ?? []).filter((b) => b.route_code && routeSet.has(b.route_code))
+    },
+    [allBuses, arrivalRouteOrder, routes],
   )
 
   // One cached Leaflet DivIcon per route_code — avoids creating a new DOM object every render.
+  // Build for ALL routes at this stop (arrivalRouteOrder + routes fallback).
   const routeIconMap = useMemo(() => {
     const m = new Map<string, L.DivIcon>()
-    arrivalRouteOrder.forEach((r) => {
+    const allRouteSet = new Set([...arrivalRouteOrder, ...(routes ?? [])])
+    allRouteSet.forEach((r) => {
       m.set(r, makeBusIcon(getRouteColor(r, arrivalRouteOrder)))
     })
     return m
-  }, [arrivalRouteOrder])
+  }, [arrivalRouteOrder, routes])
 
   // Announcements for the first selected route
   const firstActive = useMemo(() => Array.from(activeRoutes)[0] ?? null, [activeRoutes])

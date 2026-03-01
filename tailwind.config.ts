@@ -32,6 +32,20 @@ export default {
         sans: ['Inter', 'system-ui', 'sans-serif'],
         mono: ['JetBrains Mono', 'monospace'],
       },
+      animation: {
+        'page-in-right': 'pageInRight 0.22s ease-out',
+        'page-in-left':  'pageInLeft  0.22s ease-out',
+      },
+      keyframes: {
+        pageInRight: {
+          '0%':   { transform: 'translateX(100%)' },
+          '100%': { transform: 'translateX(0)' },
+        },
+        pageInLeft: {
+          '0%':   { transform: 'translateX(-100%)' },
+          '100%': { transform: 'translateX(0)' },
+        },
+      },
     },
   },
   plugins: [],

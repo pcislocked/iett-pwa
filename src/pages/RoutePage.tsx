@@ -207,6 +207,7 @@ export default function RoutePage() {
   const navigate = useNavigate()
   const [tab, setTab] = useState<Tab>('schedule')
   const [stopsDir, setStopsDir] = useState('')
+  const [mapDir, setMapDir] = useState('')
 
   const { data: buses, stale } = useRouteBuses(hatKodu ?? '')
 
@@ -231,6 +232,15 @@ export default function RoutePage() {
   const stopsForDir = useMemo(
     () => (stops ?? []).filter((s) => !effectiveStopsDir || s.direction === effectiveStopsDir),
     [stops, effectiveStopsDir],
+  )
+
+  // Direction state for the map tab (shares same direction label set as stops)
+  const effectiveMapDir = stopsDirections.includes(mapDir)
+    ? mapDir
+    : (stopsDirections[0] ?? '')
+  const stopsForMap = useMemo(
+    () => (stops ?? []).filter((s) => !effectiveMapDir || s.direction === effectiveMapDir),
+    [stops, effectiveMapDir],
   )
 
   const { isFavorite, toggle } = useFavorites()
@@ -324,31 +334,51 @@ export default function RoutePage() {
 
         {/* Map tab */}
         {tab === 'map' && (
-          <div className="rounded-2xl overflow-hidden border border-surface-muted" style={{ height: 420 }}>
-            <MapContainer center={center} zoom={13} style={{ height: '100%', width: '100%' }}>
-              <TileLayer
-                attribution='&copy; <a href="https://carto.com/">CartoDB</a>'
-                url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-              />
-              {stops?.map((s) => (
-                <CircleMarker
-                  key={`${s.direction}-${s.stop_code}`}
-                  center={[s.latitude, s.longitude]}
-                  radius={4}
-                  pathOptions={{ color: '#94a3b8', fillColor: '#94a3b8', fillOpacity: 1 }}
-                >
-                  <Popup>{s.stop_name}</Popup>
-                </CircleMarker>
-              ))}
-              {buses?.map((b) => (
-                <Marker key={b.kapino} position={[b.latitude, b.longitude]} icon={busIcon}>
-                  <Popup>
-                    <strong>{b.kapino}</strong><br />
-                    {b.direction}
-                  </Popup>
-                </Marker>
-              ))}
-            </MapContainer>
+          <div className="flex flex-col gap-2">
+            {/* Direction pills — BUG-24 */}
+            {stopsDirections.length > 1 && (
+              <div className="flex gap-1 bg-surface-card rounded-xl p-1 border border-surface-muted">
+                {stopsDirections.map((dir) => (
+                  <button
+                    key={dir}
+                    onClick={() => setMapDir(dir)}
+                    className={`flex-1 text-xs py-1.5 px-2 rounded-lg font-medium transition-colors truncate ${
+                      effectiveMapDir === dir
+                        ? 'bg-brand-600 text-white'
+                        : 'text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    {dir}
+                  </button>
+                ))}
+              </div>
+            )}
+            <div className="rounded-2xl overflow-hidden border border-surface-muted" style={{ height: 420 }}>
+              <MapContainer center={center} zoom={13} style={{ height: '100%', width: '100%' }}>
+                <TileLayer
+                  attribution='&copy; <a href="https://carto.com/">CartoDB</a>'
+                  url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+                />
+                {/* BUG-23: navigate to stop on click instead of showing popup */}
+                {stopsForMap.map((s) => (
+                  <CircleMarker
+                    key={`${s.direction}-${s.stop_code}`}
+                    center={[s.latitude, s.longitude]}
+                    radius={5}
+                    pathOptions={{ color: '#94a3b8', fillColor: '#94a3b8', fillOpacity: 1, weight: 2 }}
+                    eventHandlers={{ click: () => { navigate(`/stops/${s.stop_code}`) } }}
+                  />
+                ))}
+                {buses?.map((b) => (
+                  <Marker key={b.kapino} position={[b.latitude, b.longitude]} icon={busIcon}>
+                    <Popup>
+                      <strong>{b.kapino}</strong><br />
+                      {b.direction}
+                    </Popup>
+                  </Marker>
+                ))}
+              </MapContainer>
+            </div>
           </div>
         )}
 

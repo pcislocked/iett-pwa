@@ -1,9 +1,9 @@
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect, useRef } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet'
 import * as L from 'leaflet'
 import { useFleet } from '@/hooks/useFleet'
 import { usePolling } from '@/hooks/usePolling'
-import { api, type Garage } from '@/api/client'
+import { api, type Garage, type RouteSearchResult } from '@/api/client'
 
 const garageIcon = L.divIcon({
   className: '',
@@ -50,10 +50,43 @@ export default function MapPage() {
     () => api.garages.list(),
     86_400_000, // 24 h — garages rarely change
   )
-  const [routeInput, setRouteInput] = useState('')
+
+  // ── Route filter: autocomplete search + chips ──────────────────────────────
+  const [selectedRoutes, setSelectedRoutes] = useState<string[]>([])
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchResults, setSearchResults] = useState<RouteSearchResult[]>([])
+  const [showDropdown, setShowDropdown] = useState(false)
+  const dropdownRef = useRef<HTMLDivElement>(null)
+
+  // Fetch autocomplete suggestions when query changes
+  useEffect(() => {
+    if (searchQuery.trim().length < 1) { setSearchResults([]); return }
+    let cancelled = false
+    api.routes.search(searchQuery)
+      .then((r) => { if (!cancelled) setSearchResults(r.slice(0, 8)) })
+      .catch(() => { if (!cancelled) setSearchResults([]) })
+    return () => { cancelled = true }
+  }, [searchQuery])
+
+  function addRoute(hatKodu: string) {
+    if (!selectedRoutes.includes(hatKodu)) {
+      setSelectedRoutes((prev) => [...prev, hatKodu])
+    }
+    setSearchQuery('')
+    setSearchResults([])
+    setShowDropdown(false)
+  }
+
+  function removeRoute(hatKodu: string) {
+    setSelectedRoutes((prev) => prev.filter((r) => r !== hatKodu))
+  }
+
   const [entityInput, setEntityInput] = useState('')
 
-  const routeSet = useMemo(() => parseSet(routeInput), [routeInput])
+  const routeSet = useMemo(
+    () => new Set(selectedRoutes.map((r) => r.toUpperCase())),
+    [selectedRoutes],
+  )
   const entitySet = useMemo(() => parseSet(entityInput), [entityInput])
   const hasFilter = routeSet.size > 0 || entitySet.size > 0
 
@@ -74,20 +107,67 @@ export default function MapPage() {
     <div className="relative flex flex-col overflow-hidden h-full">
       {/* Filter panel */}
       <div className="absolute top-16 left-1/2 -translate-x-1/2 z-[1000] w-full max-w-sm px-4 flex flex-col gap-2">
-        <input
-          type="text"
-          value={routeInput}
-          onChange={(e) => setRouteInput(e.target.value)}
-          placeholder="Hat kodu (virgülle ayır: 500T, 14M)"
-          className="w-full bg-surface-card/95 backdrop-blur border border-surface-muted
-                     rounded-xl px-4 py-2 text-sm text-slate-100 placeholder-slate-500
-                     focus:outline-none focus:ring-2 focus:ring-brand-500 shadow-xl"
-        />
+        {/* Route autocomplete search bar */}
+        <div className="relative" ref={dropdownRef}>
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => { setSearchQuery(e.target.value); setShowDropdown(true) }}
+            onFocus={() => { if (searchQuery.length > 0) setShowDropdown(true) }}
+            onBlur={() => setTimeout(() => setShowDropdown(false), 150)}
+            placeholder="Hat kodu ara (ör: 500T, 14M)…"
+            className="w-full bg-surface-card/95 backdrop-blur border border-surface-muted
+                       rounded-xl px-4 py-2 text-sm text-slate-100 placeholder-slate-500
+                       focus:outline-none focus:ring-2 focus:ring-brand-500 shadow-xl"
+          />
+          {showDropdown && searchResults.length > 0 && (
+            <div className="absolute top-full left-0 right-0 mt-1 bg-surface-card border border-surface-muted
+                            rounded-xl shadow-2xl overflow-hidden z-10 max-h-48 overflow-y-auto">
+              {searchResults.map((r) => (
+                <button
+                  key={r.hat_kodu}
+                  onMouseDown={() => addRoute(r.hat_kodu)}
+                  className="w-full text-left px-4 py-2.5 text-sm hover:bg-surface-muted
+                             flex items-center gap-2 transition-colors"
+                >
+                  <span className="font-mono font-bold text-brand-400 text-xs shrink-0">{r.hat_kodu}</span>
+                  <span className="text-slate-300 truncate">{r.name}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Selected route chips */}
+        {selectedRoutes.length > 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            {selectedRoutes.map((route) => (
+              <span
+                key={route}
+                className="inline-flex items-center gap-1 bg-brand-900/90 backdrop-blur
+                           border border-brand-600/40 text-brand-300 text-xs font-mono
+                           font-bold px-2.5 py-1 rounded-full shadow-lg"
+              >
+                {route}
+                <button
+                  onClick={() => removeRoute(route)}
+                  className="ml-0.5 text-brand-400 hover:text-brand-100 transition-colors
+                             leading-none text-sm font-normal"
+                  aria-label={`${route} filtresini kaldır`}
+                >
+                  ×
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
+
+        {/* Entity filter (kapino / plate) */}
         <input
           type="text"
           value={entityInput}
           onChange={(e) => setEntityInput(e.target.value)}
-          placeholder="Kapı kodu / plaka (virgülle ayır: C-1515, 34AB123)"
+          placeholder="Kapı kodu / plaka (virgülle ayır: C-1515)"
           className="w-full bg-surface-card/95 backdrop-blur border border-surface-muted
                      rounded-xl px-4 py-2 text-sm text-slate-100 placeholder-slate-500
                      focus:outline-none focus:ring-2 focus:ring-brand-500 shadow-xl"
