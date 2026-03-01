@@ -11,6 +11,11 @@ function makeArrival(override: Partial<Arrival> = {}): Arrival {
     eta_raw: '4 dk',
     plate: null,
     kapino: null,
+    lat: null,
+    lon: null,
+    speed_kmh: null,
+    last_seen_ts: null,
+    amenities: null,
     ...override,
   }
 }

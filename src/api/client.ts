@@ -37,6 +37,13 @@ export interface BusPosition {
   trail: TrailPoint[]
 }
 
+export interface Amenities {
+  usb: boolean | null
+  wifi: boolean | null
+  ac: boolean | null
+  accessible: boolean | null
+}
+
 export interface Arrival {
   route_code: string
   destination: string
@@ -44,6 +51,14 @@ export interface Arrival {
   eta_raw: string
   plate: string | null
   kapino: string | null
+  /** Live position from ntcapi ybs — null when sourced from IETT HTML fallback */
+  lat: number | null
+  lon: number | null
+  /** Speed in km/h from ntcapi ybs — null when sourced from IETT HTML fallback */
+  speed_kmh: number | null
+  last_seen_ts: string | null
+  /** Amenity flags — null when source does not provide them */
+  amenities: Amenities | null
 }
 
 export interface StopSearchResult {

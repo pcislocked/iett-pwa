@@ -5,7 +5,7 @@ import * as L from 'leaflet'
 import { useArrivals } from '@/hooks/useArrivals'
 import { usePolling } from '@/hooks/usePolling'
 import { useFleet } from '@/hooks/useFleet'
-import { api, type Announcement, type StopDetail, type BusPosition, type Arrival } from '@/api/client'
+import { api, type Announcement, type StopDetail, type BusPosition, type Arrival, type Amenities } from '@/api/client'
 import { useFavorites } from '@/hooks/useFavorites'
 
 /** Fixed palette for the first 3 routes at this stop — orange, violet, cyan */
@@ -50,13 +50,42 @@ function FitBoundsEffect({ bounds }: { bounds: [[number, number], [number, numbe
   return null
 }
 
+/** Amenity icon row — rendered below the info strip when amenities data is present. */
+function AmenityIcons({ amenities }: { amenities: Amenities | null }) {
+  if (!amenities) return null
+  const items: { label: string; icon: string; value: boolean | null }[] = [
+    { label: 'USB', icon: '🔌', value: amenities.usb },
+    { label: 'Wi-Fi', icon: '📶', value: amenities.wifi },
+    { label: 'Klima', icon: '❄️', value: amenities.ac },
+    { label: 'Engelli', icon: '♿', value: amenities.accessible },
+  ]
+  const known = items.filter((i) => i.value !== null)
+  if (known.length === 0) return null
+  return (
+    <div className="px-4 pb-2 flex gap-3 justify-center flex-wrap">
+      {known.map((item) => (
+        <span
+          key={item.label}
+          className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full ${
+            item.value
+              ? 'bg-emerald-900/50 text-emerald-400'
+              : 'bg-surface-muted text-slate-600 line-through'
+          }`}
+        >
+          {item.icon} {item.label}
+        </span>
+      ))}
+    </div>
+  )
+}
+
 /** Bottom-sheet showing a single bus relative to the stop. */
 function BusDetailSheet({
   arrival,
   busPos,
   stopLat,
   stopLon,
-  stopName,
+  stopName: _stopName,
   onClose,
 }: {
   arrival: Arrival
@@ -72,7 +101,13 @@ function BusDetailSheet({
     return () => document.removeEventListener('keydown', handler)
   }, [onClose])
 
-  const dist = busPos ? haversineM(busPos.latitude, busPos.longitude, stopLat, stopLon) : null
+  // Prefer live position from ntcapi ybs arrival; fall back to fleet-store busPos.
+  const effectiveLat = arrival.lat ?? busPos?.latitude ?? null
+  const effectiveLon = arrival.lon ?? busPos?.longitude ?? null
+  const hasPosition = effectiveLat !== null && effectiveLon !== null
+
+  const dist =
+    hasPosition ? haversineM(effectiveLat!, effectiveLon!, stopLat, stopLon) : null
   const distLabel =
     dist !== null
       ? dist < 1000
@@ -80,14 +115,14 @@ function BusDetailSheet({
         : `${(dist / 1000).toFixed(1)} km`
       : null
 
-  const mapCenter: [number, number] = busPos
-    ? [(busPos.latitude + stopLat) / 2, (busPos.longitude + stopLon) / 2]
+  const mapCenter: [number, number] = hasPosition
+    ? [(effectiveLat! + stopLat) / 2, (effectiveLon! + stopLon) / 2]
     : [stopLat, stopLon]
 
-  const bounds: [[number, number], [number, number]] | null = busPos
+  const bounds: [[number, number], [number, number]] | null = hasPosition
     ? [
-        [Math.min(busPos.latitude, stopLat), Math.min(busPos.longitude, stopLon)],
-        [Math.max(busPos.latitude, stopLat), Math.max(busPos.longitude, stopLon)],
+        [Math.min(effectiveLat!, stopLat), Math.min(effectiveLon!, stopLon)],
+        [Math.max(effectiveLat!, stopLat), Math.max(effectiveLon!, stopLon)],
       ]
     : null
 
@@ -142,7 +177,7 @@ function BusDetailSheet({
         </div>
 
         {/* Map — bus ↔ stop */}
-        {busPos ? (
+        {hasPosition ? (
           <div style={{ height: 200 }}>
             <MapContainer center={mapCenter} zoom={15} style={{ height: '100%', width: '100%' }} zoomControl={false}>
               <TileLayer
@@ -151,10 +186,10 @@ function BusDetailSheet({
               />
               {bounds && <FitBoundsEffect bounds={bounds} />}
               <Polyline
-                positions={[[busPos.latitude, busPos.longitude], [stopLat, stopLon]]}
+                positions={[[effectiveLat!, effectiveLon!], [stopLat, stopLon]]}
                 pathOptions={{ color: '#f97316', weight: 2, dashArray: '6 4', opacity: 0.7 }}
               />
-              <Marker position={[busPos.latitude, busPos.longitude]} icon={busIcon} />
+              <Marker position={[effectiveLat!, effectiveLon!]} icon={busIcon} />
               <Marker position={[stopLat, stopLon]} icon={stopIcon} />
             </MapContainer>
           </div>
@@ -164,8 +199,8 @@ function BusDetailSheet({
           </div>
         )}
 
-        {/* Info strip */}
-        <div className="px-4 py-3 grid grid-cols-3 gap-2 border-t border-surface-muted">
+        {/* Info strip — 4 cols: ETA · Mesafe · Hız · Plaka */}
+        <div className="px-4 py-3 grid grid-cols-4 gap-2 border-t border-surface-muted">
           <div className="flex flex-col items-center gap-0.5">
             <p className="text-[10px] text-slate-500 uppercase tracking-wider">ETA</p>
             <p className="text-base font-bold text-slate-100">
@@ -177,10 +212,19 @@ function BusDetailSheet({
             <p className="text-base font-bold text-slate-100">{distLabel ?? '—'}</p>
           </div>
           <div className="flex flex-col items-center gap-0.5">
+            <p className="text-[10px] text-slate-500 uppercase tracking-wider">Hız</p>
+            <p className="text-base font-bold text-slate-100">
+              {arrival.speed_kmh !== null ? `${arrival.speed_kmh} km/s` : '—'}
+            </p>
+          </div>
+          <div className="flex flex-col items-center gap-0.5">
             <p className="text-[10px] text-slate-500 uppercase tracking-wider">Plaka</p>
             <p className="text-sm font-bold text-slate-100 font-mono">{arrival.plate ?? '—'}</p>
           </div>
         </div>
+
+        {/* Amenity icons */}
+        <AmenityIcons amenities={arrival.amenities} />
 
         {/* CTA */}
         <div className="px-4 pb-6 pt-2">
