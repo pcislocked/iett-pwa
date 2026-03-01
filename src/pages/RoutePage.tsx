@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom'
 import { MapContainer, TileLayer, Marker, Popup, CircleMarker } from 'react-leaflet'
 import * as L from 'leaflet'
 import { useRouteBuses } from '@/hooks/useFleet'
+import { useFleet } from '@/hooks/useFleet'
 import { usePolling } from '@/hooks/usePolling'
 import { api, type RouteStop, type ScheduledDeparture, type Announcement, type RouteMetadata } from '@/api/client'
 import { useFavorites } from '@/hooks/useFavorites'
@@ -118,19 +119,20 @@ function TimetableView({ schedule, scheduleError, onRetry, metadata }: {
     return new Set(schedule.map((d) => d.day_type))
   }, [schedule])
 
+  /* ── Metro-style day type selector ── */
   return (
     <div className="flex flex-col gap-4">
       {/* Day type selector */}
-      <div className="flex gap-1 bg-surface-card rounded-xl p-1 border border-surface-muted">
+      <div className="flex border-b border-[#222]">
         {DAY_TYPES.map(({ key, label }) => (
           <button
             key={key}
             onClick={() => { setDayType(key); setDirection('') }}
             disabled={!availableDays.has(key)}
-            className={`flex-1 text-sm py-1.5 rounded-lg font-medium transition-colors disabled:opacity-30 ${
+            className={`flex-1 text-sm py-2.5 font-medium transition-colors disabled:opacity-25 border-b-2 -mb-px ${
               dayType === key
-                ? 'bg-brand-600 text-white'
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'border-white text-white'
+                : 'border-transparent text-[#404040] hover:text-[#888]'
             }`}
           >
             {label}
@@ -138,17 +140,17 @@ function TimetableView({ schedule, scheduleError, onRetry, metadata }: {
         ))}
       </div>
 
-      {/* Direction pill toggle — replaces native <select> */}
+      {/* Direction pill toggle — flat Metro style */}
       {availableDirections.length > 1 && (
-        <div className="flex gap-1 bg-surface-card rounded-xl p-1 border border-surface-muted">
+        <div className="flex gap-0 border-b border-[#222]">
           {availableDirections.map((dir) => (
             <button
               key={dir}
               onClick={() => setDirection(dir)}
-              className={`flex-1 text-xs py-1.5 px-2 rounded-lg font-medium transition-colors truncate ${
+              className={`flex-1 text-xs py-2 px-2 font-medium transition-colors truncate border-b-2 -mb-px ${
                 effectiveDirection === dir
-                  ? 'bg-brand-600 text-white'
-                  : 'text-slate-400 hover:text-slate-200'
+                  ? 'border-[#00AFF0] text-[#00AFF0]'
+                  : 'border-transparent text-[#404040] hover:text-[#888]'
               }`}
             >
               {dirLabel(dir)}
@@ -209,7 +211,17 @@ export default function RoutePage() {
   const [stopsDir, setStopsDir] = useState('')
   const [mapDir, setMapDir] = useState('')
 
-  const { data: buses, stale } = useRouteBuses(hatKodu ?? '')
+  const { data: busesFromRoute, stale } = useRouteBuses(hatKodu ?? '')
+  // Fall back to global fleet filtered by route code when dedicated endpoint returns empty
+  const { data: allBuses } = useFleet()
+  const buses = useMemo(() => {
+    if (busesFromRoute && busesFromRoute.length > 0) return busesFromRoute
+    if (!allBuses || !hatKodu) return busesFromRoute
+    const filtered = allBuses.filter(
+      (b) => b.route_code?.toUpperCase() === hatKodu.toUpperCase(),
+    )
+    return filtered.length > 0 ? filtered : busesFromRoute
+  }, [busesFromRoute, allBuses, hatKodu])
 
   const stopsFetcher = useMemo(() => () => api.routes.stops(hatKodu ?? ''), [hatKodu])
   const scheduleFetcher = useMemo(() => () => api.routes.schedule(hatKodu ?? ''), [hatKodu])
@@ -302,22 +314,22 @@ export default function RoutePage() {
           </button>
         </div>
 
-        {/* Tab bar */}
-        <div className="max-w-2xl mx-auto px-4 pb-0 flex gap-0 overflow-x-auto no-scrollbar">
+        {/* Tab bar — Metro flat style */}
+        <div className="max-w-2xl mx-auto px-4 pb-0 flex gap-0 overflow-x-auto no-scrollbar border-b border-[#111]">
           {tabs.map(({ id, label, badge }) => (
             <button
               key={id}
               onClick={() => setTab(id)}
-              className={`flex-1 shrink-0 text-sm py-2.5 px-2 font-medium border-b-2 transition-colors
+              className={`flex-1 shrink-0 text-sm py-2.5 px-2 font-medium border-b-2 -mb-px transition-colors
                           flex items-center justify-center gap-1 ${
                 tab === id
-                  ? 'border-brand-500 text-brand-400'
-                  : 'border-transparent text-slate-500 hover:text-slate-300'
+                  ? 'border-white text-white'
+                  : 'border-transparent text-[#404040] hover:text-[#888]'
               }`}
             >
               {label}
               {badge !== undefined && badge > 0 && (
-                <span className="text-[10px] bg-brand-900 text-brand-300 px-1 rounded-full">{badge}</span>
+                <span className="text-[10px] bg-[#111] text-[#a6a6a6] px-1 rounded">{badge}</span>
               )}
             </button>
           ))}
@@ -335,17 +347,17 @@ export default function RoutePage() {
         {/* Map tab */}
         {tab === 'map' && (
           <div className="flex flex-col gap-2">
-            {/* Direction pills — BUG-24 */}
+            {/* Direction pills — map tab, Metro flat */}
             {stopsDirections.length > 1 && (
-              <div className="flex gap-1 bg-surface-card rounded-xl p-1 border border-surface-muted">
+              <div className="flex border-b border-[#222]">
                 {stopsDirections.map((dir) => (
                   <button
                     key={dir}
                     onClick={() => setMapDir(dir)}
-                    className={`flex-1 text-xs py-1.5 px-2 rounded-lg font-medium transition-colors truncate ${
+                    className={`flex-1 text-xs py-2 px-2 font-medium transition-colors truncate border-b-2 -mb-px ${
                       effectiveMapDir === dir
-                        ? 'bg-brand-600 text-white'
-                        : 'text-slate-400 hover:text-slate-200'
+                        ? 'border-[#00AFF0] text-[#00AFF0]'
+                        : 'border-transparent text-[#404040] hover:text-[#888]'
                     }`}
                   >
                     {dir}
@@ -385,17 +397,17 @@ export default function RoutePage() {
         {/* Stops tab */}
         {tab === 'stops' && (
           <div className="flex flex-col gap-1">
-            {/* Direction filter pills */}
+            {/* Direction filter pills — stops tab, Metro flat */}
             {stopsDirections.length > 1 && (
-              <div className="flex gap-1 bg-surface-card rounded-xl p-1 border border-surface-muted mb-2">
+              <div className="flex border-b border-[#222] mb-1">
                 {stopsDirections.map((dir) => (
                   <button
                     key={dir}
                     onClick={() => setStopsDir(dir)}
-                    className={`flex-1 text-xs py-1.5 px-2 rounded-lg font-medium transition-colors truncate ${
+                    className={`flex-1 text-xs py-2 px-2 font-medium transition-colors truncate border-b-2 -mb-px ${
                       effectiveStopsDir === dir
-                        ? 'bg-brand-600 text-white'
-                        : 'text-slate-400 hover:text-slate-200'
+                        ? 'border-[#00AFF0] text-[#00AFF0]'
+                        : 'border-transparent text-[#404040] hover:text-[#888]'
                     }`}
                   >
                     {dir}

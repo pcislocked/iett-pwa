@@ -25,9 +25,9 @@
   .metro-section { @apply px-4 pt-4 pb-1 text-[11px] uppercase tracking-[0.12em] text-[#a6a6a6]; }
   .card { @apply bg-[#0d0d0d] border border-[#111] p-4; }
   .eta-badge   { @apply inline-block text-xs font-mono font-bold px-2 py-0.5; }
-  .eta-soon    { @apply eta-badge bg-eta-soon/20 text-eta-soon; }
-  .eta-coming  { @apply eta-badge bg-eta-coming/20 text-eta-coming; }
-  .eta-far     { @apply eta-badge bg-eta-far/20  text-eta-far; }
+  .eta-soon    { @apply eta-badge; background: rgba(34,197,94,0.2); color: #22c55e; }
+  .eta-coming  { @apply eta-badge; background: rgba(245,158,11,0.2); color: #f59e0b; }
+  .eta-far     { @apply eta-badge; background: rgba(85,85,85,0.2); color: #555555; }
 }
 
 @layer utilities {

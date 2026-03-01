@@ -3,7 +3,7 @@ import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet'
 import * as L from 'leaflet'
 import { useFleet } from '@/hooks/useFleet'
 import { usePolling } from '@/hooks/usePolling'
-import { api, type Garage, type RouteSearchResult } from '@/api/client'
+import { api, type Garage, type RouteSearchResult, type BusPosition } from '@/api/client'
 
 const garageIcon = L.divIcon({
   className: '',
@@ -37,12 +37,7 @@ const busIcon = L.divIcon({
   iconAnchor: [14, 14],
 })
 
-/** Parse a comma-separated string into an uppercase Set. */
-function parseSet(raw: string): Set<string> {
-  return new Set(
-    raw.split(',').map((s) => s.trim().toUpperCase()).filter(Boolean),
-  )
-}
+
 
 export default function MapPage() {
   const { data: buses, loading, error, refresh } = useFleet()
@@ -57,6 +52,33 @@ export default function MapPage() {
   const [searchResults, setSearchResults] = useState<RouteSearchResult[]>([])
   const [showDropdown, setShowDropdown] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
+
+  // Per-route bus fetch: hat_kodu → kapino set (fleet route_code is unreliable)
+  const [routeBusMap, setRouteBusMap] = useState<Map<string, string[]>>(new Map())
+
+  useEffect(() => {
+    let alive = true
+    for (const route of selectedRoutes) {
+      if (routeBusMap.has(route)) continue
+      api.routes.buses(route)
+        .then((bs: BusPosition[]) => {
+          if (!alive) return
+          setRouteBusMap((prev) => new Map(prev).set(route, bs.map((b) => b.kapino.toUpperCase())))
+        })
+        .catch(() => {
+          if (!alive) return
+          setRouteBusMap((prev) => new Map(prev).set(route, []))
+        })
+    }
+    // prune deselected routes
+    setRouteBusMap((prev) => {
+      const next = new Map(prev)
+      for (const key of next.keys()) if (!selectedRoutes.includes(key)) next.delete(key)
+      return next
+    })
+    return () => { alive = false }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedRoutes])
 
   // Fetch autocomplete suggestions when query changes
   useEffect(() => {
@@ -79,29 +101,50 @@ export default function MapPage() {
 
   function removeRoute(hatKodu: string) {
     setSelectedRoutes((prev) => prev.filter((r) => r !== hatKodu))
+    setRouteBusMap((prev) => { const n = new Map(prev); n.delete(hatKodu); return n })
   }
 
-  const [entityInput, setEntityInput] = useState('')
+  // ── Kapino / plate chip filter ─────────────────────────────────────────────
+  const [selectedEntities, setSelectedEntities] = useState<string[]>([])
+  const [entityQuery, setEntityQuery] = useState('')
+  const [showEntityDropdown, setShowEntityDropdown] = useState(false)
+  const entityDropdownRef = useRef<HTMLDivElement>(null)
 
-  const routeSet = useMemo(
-    () => new Set(selectedRoutes.map((r) => r.toUpperCase())),
-    [selectedRoutes],
-  )
-  const entitySet = useMemo(() => parseSet(entityInput), [entityInput])
-  const hasFilter = routeSet.size > 0 || entitySet.size > 0
+  const entityResults = useMemo(() => {
+    const q = entityQuery.trim().toUpperCase()
+    if (q.length < 2 || !buses) return [] as BusPosition[]
+    return buses
+      .filter((b) => b.kapino.toUpperCase().includes(q) || (b.plate?.toUpperCase().includes(q) ?? false))
+      .slice(0, 8)
+  }, [entityQuery, buses])
+
+  function addEntity(kapino: string) {
+    if (!selectedEntities.includes(kapino)) setSelectedEntities((prev) => [...prev, kapino])
+    setEntityQuery('')
+    setShowEntityDropdown(false)
+  }
+  function removeEntity(kapino: string) {
+    setSelectedEntities((prev) => prev.filter((e) => e !== kapino))
+  }
+
+  const hasFilter = selectedRoutes.length > 0 || selectedEntities.length > 0
 
   const filtered = useMemo(() => {
     const all = buses ?? []
     if (!hasFilter) return all
+    // Build set of kapinos from per-route fetches
+    const routeKapinos = new Set<string>()
+    for (const kapinos of routeBusMap.values()) for (const k of kapinos) routeKapinos.add(k)
     return all.filter((b) => {
-      if (routeSet.size > 0 && b.route_code && routeSet.has(b.route_code.toUpperCase())) return true
-      if (entitySet.size > 0) {
-        if (entitySet.has(b.kapino.toUpperCase())) return true
-        if (b.plate && entitySet.has(b.plate.toUpperCase())) return true
+      const kUp = b.kapino.toUpperCase()
+      if (routeKapinos.size > 0 && routeKapinos.has(kUp)) return true
+      if (selectedEntities.length > 0) {
+        if (selectedEntities.some((e) => e.toUpperCase() === kUp)) return true
+        if (b.plate && selectedEntities.some((e) => e.toUpperCase() === b.plate!.toUpperCase())) return true
       }
       return false
     })
-  }, [buses, routeSet, entitySet, hasFilter])
+  }, [buses, routeBusMap, selectedEntities, hasFilter])
 
   return (
     <div className="relative flex flex-col overflow-hidden h-full">
@@ -162,16 +205,59 @@ export default function MapPage() {
           </div>
         )}
 
-        {/* Entity filter (kapino / plate) */}
-        <input
-          type="text"
-          value={entityInput}
-          onChange={(e) => setEntityInput(e.target.value)}
-          placeholder="Kapı kodu / plaka (virgülle ayır: C-1515)"
-          className="w-full bg-surface-card/95 backdrop-blur border border-surface-muted
-                     rounded-xl px-4 py-2 text-sm text-slate-100 placeholder-slate-500
-                     focus:outline-none focus:ring-2 focus:ring-brand-500 shadow-xl"
-        />
+        {/* Kapino / plate chip filter */}
+        <div className="relative" ref={entityDropdownRef}>
+          <input
+            type="text"
+            value={entityQuery}
+            onChange={(e) => { setEntityQuery(e.target.value); setShowEntityDropdown(true) }}
+            onFocus={() => { if (entityQuery.length > 0) setShowEntityDropdown(true) }}
+            onBlur={() => setTimeout(() => setShowEntityDropdown(false), 150)}
+            placeholder="Kapı kodu / plaka ara (ör: C-1515)"
+            className="w-full bg-surface-card/95 backdrop-blur border border-surface-muted
+                       rounded-xl px-4 py-2 text-sm text-slate-100 placeholder-slate-500
+                       focus:outline-none focus:ring-2 focus:ring-brand-500 shadow-xl"
+          />
+          {showEntityDropdown && entityResults.length > 0 && (
+            <div className="absolute top-full left-0 right-0 mt-1 bg-surface-card border border-surface-muted
+                            rounded-xl shadow-2xl overflow-hidden z-10 max-h-48 overflow-y-auto">
+              {entityResults.map((b) => (
+                <button
+                  key={b.kapino}
+                  onMouseDown={() => addEntity(b.kapino)}
+                  className="w-full text-left px-4 py-2.5 text-sm hover:bg-surface-muted
+                             flex items-center gap-2 transition-colors"
+                >
+                  <span className="font-mono font-bold text-brand-400 text-xs shrink-0">{b.kapino}</span>
+                  {b.plate && <span className="text-slate-500 text-xs shrink-0">{b.plate}</span>}
+                  {b.route_code && <span className="text-slate-400 truncate text-xs">→ {b.route_code}</span>}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+        {selectedEntities.length > 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            {selectedEntities.map((kapino) => (
+              <span
+                key={kapino}
+                className="inline-flex items-center gap-1 bg-brand-900/90 backdrop-blur
+                           border border-brand-600/40 text-brand-300 text-xs font-mono
+                           font-bold px-2.5 py-1 rounded-full shadow-lg"
+              >
+                {kapino}
+                <button
+                  onClick={() => removeEntity(kapino)}
+                  className="ml-0.5 text-brand-400 hover:text-brand-100 transition-colors
+                             leading-none text-sm font-normal"
+                  aria-label={`${kapino} filtresini kaldır`}
+                >
+                  ×
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
       </div>
 
       {loading && !buses && (
