@@ -128,7 +128,7 @@ function AnimatedMain() {
     }
 
     function onTouchMove(e: TouchEvent) {
-      if (touchRef.canceled || touchRef.committed) return
+      if (touchRef.canceled || touchRef.committed || touchRef.startX === null) return
       const dx = e.touches[0].clientX - touchRef.startX
       const dy = e.touches[0].clientY - touchRef.startY
 

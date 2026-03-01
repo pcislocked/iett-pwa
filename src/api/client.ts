@@ -39,6 +39,13 @@ export interface BusPosition {
   trail: TrailPoint[]
 }
 
+export interface BusDetail extends BusPosition {
+  /** Best-guess route code: live route_code → last known since server start. */
+  resolved_route_code: string | null
+  /** Ordered stop list for all directions — filter by direction to draw polyline. */
+  route_stops: RouteStop[]
+}
+
 export interface Amenities {
   usb: boolean | null
   wifi: boolean | null
@@ -157,6 +164,7 @@ export const api = {
   fleet: {
     all: () => get<BusPosition[]>('/v1/fleet'),
     byPlate: (kapino: string) => get<BusPosition>(`/v1/fleet/${encodeURIComponent(kapino)}`),
+    detail: (kapino: string) => get<BusDetail>(`/v1/fleet/${encodeURIComponent(kapino)}/detail`),
     meta: () => get<{ bus_count: number; updated_at: string | null }>('/v1/fleet/meta'),
     refresh: () =>
       fetch(`${BASE}/v1/fleet/refresh`, { method: 'POST' }).then((r) => r.json()),

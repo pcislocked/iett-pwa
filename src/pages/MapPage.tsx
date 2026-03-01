@@ -3,7 +3,7 @@ import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet'
 import * as L from 'leaflet'
 import { useFleet } from '@/hooks/useFleet'
 import { usePolling } from '@/hooks/usePolling'
-import { api, type Garage, type RouteSearchResult, type BusPosition } from '@/api/client'
+import { api, type BusDetail, type Garage, type RouteSearchResult, type BusPosition } from '@/api/client'
 
 const garageIcon = L.divIcon({
   className: '',
@@ -130,6 +130,22 @@ export default function MapPage() {
   }
 
   const hasFilter = selectedRoutes.length > 0 || selectedEntities.length > 0
+
+  // ── Selected bus detail (fetched on marker click) ────────────────────────────────
+  const [selectedKapino, setSelectedKapino] = useState<string | null>(null)
+  const [selectedDetail, setSelectedDetail] = useState<BusDetail | null>(null)
+  const [detailLoading, setDetailLoading] = useState(false)
+
+  useEffect(() => {
+    if (!selectedKapino) { setSelectedDetail(null); return }
+    let alive = true
+    setDetailLoading(true)
+    setSelectedDetail(null)
+    api.fleet.detail(selectedKapino)
+      .then((d) => { if (alive) { setSelectedDetail(d); setDetailLoading(false) } })
+      .catch(() => { if (alive) { setDetailLoading(false) } })
+    return () => { alive = false }
+  }, [selectedKapino])
 
   const filtered = useMemo(() => {
     const all = buses ?? []
@@ -322,6 +338,22 @@ export default function MapPage() {
           </Marker>
         ))}
 
+        {/* Selected bus route polyline */}
+        {selectedDetail && selectedDetail.route_stops.length > 1 && (() => {
+          const dir = selectedDetail.direction_letter ?? 'G'
+          const pts = selectedDetail.route_stops
+            .filter((s) => s.direction === dir)
+            .sort((a, b) => a.sequence - b.sequence)
+            .filter((s) => s.latitude && s.longitude)
+            .map((s): [number, number] => [s.latitude, s.longitude])
+          return pts.length > 1 ? (
+            <Polyline
+              positions={pts}
+              pathOptions={{ color: '#f97316', weight: 3.5, opacity: 0.85 }}
+            />
+          ) : null
+        })()}
+
         {filtered.map((b) => {
           // Build full trail: historical points + current position
           const trailPositions: [number, number][] = [
@@ -337,7 +369,9 @@ export default function MapPage() {
                   pathOptions={{ color: '#60a5fa', weight: 2, opacity: 0.55 }}
                 />
               )}
-              <Marker position={[b.latitude, b.longitude]} icon={busIcon}>
+              <Marker position={[b.latitude, b.longitude]} icon={busIcon}
+                eventHandlers={{ click: () => setSelectedKapino(b.kapino) }}
+              >
                 <Popup minWidth={170}>
                   <div className="popup-card">
                     <div className="popup-route" style={{ background: '#2563eb' }}>
@@ -354,7 +388,7 @@ export default function MapPage() {
                     )}
                     {b.direction && (
                       <p className="popup-name">
-                        <span className="popup-label">&#8594; </span>
+                        <span className="popup-label">→ </span>
                         {b.direction}
                       </p>
                     )}
@@ -369,6 +403,49 @@ export default function MapPage() {
           )
         })}
       </MapContainer>
+
+      {/* Selected bus detail card */}
+      {selectedKapino && (
+        <div className="absolute bottom-16 left-4 right-4 z-[1001] pointer-events-none">
+          <div
+            className="pointer-events-auto rounded-xl border border-[#333] px-4 py-3 shadow-2xl"
+            style={{ background: '#0d0d0d' }}
+          >
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-0.5">
+                  <span className="font-mono font-bold text-brand-400 text-sm">{selectedKapino}</span>
+                  {(selectedDetail?.resolved_route_code ?? selectedDetail?.route_code) && (
+                    <span
+                      className="px-2 py-0.5 rounded-full text-xs font-bold font-mono"
+                      style={{ background: '#f97316', color: '#000' }}
+                    >
+                      {selectedDetail!.resolved_route_code ?? selectedDetail!.route_code}
+                    </span>
+                  )}
+                  {detailLoading && (
+                    <span className="text-[10px] text-slate-500">yükleniyor…</span>
+                  )}
+                </div>
+                {selectedDetail?.direction && (
+                  <p className="text-xs text-slate-400 truncate">→ {selectedDetail.direction}</p>
+                )}
+                {selectedDetail?.route_stops && selectedDetail.route_stops.length > 0 && (
+                  <p className="text-[10px] text-slate-600 mt-0.5">
+                    {selectedDetail.route_stops.filter(s => s.direction === (selectedDetail.direction_letter ?? 'G')).length} durak
+                  </p>
+                )}
+              </div>
+              <button
+                onClick={() => { setSelectedKapino(null); setSelectedDetail(null) }}
+                className="text-slate-500 hover:text-slate-300 text-lg leading-none shrink-0"
+              >
+                ×
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Bottom status bar */}
       <div className="absolute bottom-4 right-4 z-[1000] flex items-center gap-2">
