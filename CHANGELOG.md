@@ -5,6 +5,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [0.2.1] – 2026-03-02
+
+### Added
+- **`Amenities` interface** in `client.ts` — mirrors iett-middle v0.2.0 canonical model
+- **`Arrival` interface** extended: `lat`, `lon`, `speed_kmh`, `last_seen_ts`, `amenities`
+- **`AmenityIcons` component** — renders USB/WiFi/Klima/Engelli icons with present/absent (strikethrough) styling
+- **`BusDetailSheet`** — 4-column info strip (ETA · Mesafe · Hız · Plaka); prefers live `arrival.lat/lon` from ntcapi ybs over fleet-store position
+
+---
+
 ## [0.1.7] – 2026-03-01
 
 ### Added
