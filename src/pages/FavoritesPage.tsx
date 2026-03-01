@@ -57,7 +57,7 @@ export default function FavoritesPage() {
         </div>
       </div>
 
-      <div className="flex-1 max-w-2xl w-full mx-auto px-4 pt-4 pb-28 flex flex-col gap-6">
+      <div className="flex-1 max-w-2xl w-full mx-auto px-4 pt-4 pb-6 flex flex-col gap-6">
         {favorites.length === 0 && (
           <div className="flex flex-col items-center justify-center py-20 text-slate-500">
             <svg className="w-14 h-14 mb-4 opacity-30" fill="none" viewBox="0 0 24 24"

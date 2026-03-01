@@ -7,9 +7,21 @@ import { usePolling } from '@/hooks/usePolling'
 import { api, type RouteStop, type ScheduledDeparture, type Announcement, type RouteMetadata } from '@/api/client'
 import { useFavorites } from '@/hooks/useFavorites'
 
-const busIcon = L.divIcon({
+const busIconG = L.divIcon({
   className: '',
   html: `<div style="background:#2563eb;border-radius:50%;width:14px;height:14px;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.6)"></div>`,
+  iconSize: [14, 14],
+  iconAnchor: [7, 7],
+})
+const busIconD = L.divIcon({
+  className: '',
+  html: `<div style="background:#f59e0b;border-radius:50%;width:14px;height:14px;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.6)"></div>`,
+  iconSize: [14, 14],
+  iconAnchor: [7, 7],
+})
+const busIconUnknown = L.divIcon({
+  className: '',
+  html: `<div style="background:#6b7280;border-radius:50%;width:14px;height:14px;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.6)"></div>`,
   iconSize: [14, 14],
   iconAnchor: [7, 7],
 })
@@ -118,19 +130,20 @@ function TimetableView({ schedule, scheduleError, onRetry, metadata }: {
     return new Set(schedule.map((d) => d.day_type))
   }, [schedule])
 
+  /* ── Metro-style day type selector ── */
   return (
     <div className="flex flex-col gap-4">
       {/* Day type selector */}
-      <div className="flex gap-1 bg-surface-card rounded-xl p-1 border border-surface-muted">
+      <div className="flex border-b border-[#222]">
         {DAY_TYPES.map(({ key, label }) => (
           <button
             key={key}
             onClick={() => { setDayType(key); setDirection('') }}
             disabled={!availableDays.has(key)}
-            className={`flex-1 text-sm py-1.5 rounded-lg font-medium transition-colors disabled:opacity-30 ${
+            className={`flex-1 text-sm py-2.5 font-medium transition-colors disabled:opacity-25 border-b-2 -mb-px ${
               dayType === key
-                ? 'bg-brand-600 text-white'
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'border-white text-white'
+                : 'border-transparent text-[#404040] hover:text-[#888]'
             }`}
           >
             {label}
@@ -138,17 +151,17 @@ function TimetableView({ schedule, scheduleError, onRetry, metadata }: {
         ))}
       </div>
 
-      {/* Direction pill toggle — replaces native <select> */}
+      {/* Direction pill toggle — flat Metro style */}
       {availableDirections.length > 1 && (
-        <div className="flex gap-1 bg-surface-card rounded-xl p-1 border border-surface-muted">
+        <div className="flex gap-0 border-b border-[#222]">
           {availableDirections.map((dir) => (
             <button
               key={dir}
               onClick={() => setDirection(dir)}
-              className={`flex-1 text-xs py-1.5 px-2 rounded-lg font-medium transition-colors truncate ${
+              className={`flex-1 text-xs py-2 px-2 font-medium transition-colors truncate border-b-2 -mb-px ${
                 effectiveDirection === dir
-                  ? 'bg-brand-600 text-white'
-                  : 'text-slate-400 hover:text-slate-200'
+                  ? 'border-[#00AFF0] text-[#00AFF0]'
+                  : 'border-transparent text-[#404040] hover:text-[#888]'
               }`}
             >
               {dirLabel(dir)}
@@ -207,6 +220,7 @@ export default function RoutePage() {
   const navigate = useNavigate()
   const [tab, setTab] = useState<Tab>('schedule')
   const [stopsDir, setStopsDir] = useState('')
+  const [mapDir, setMapDir] = useState('')
 
   const { data: buses, stale } = useRouteBuses(hatKodu ?? '')
 
@@ -220,18 +234,43 @@ export default function RoutePage() {
   const { data: announcements, error: announcementsError, refresh: refreshAnnouncements } = usePolling<Announcement[]>(announceFetcher, 300_000)
   const { data: metadata } = usePolling<RouteMetadata[]>(metaFetcher, 600_000)
 
-  // Unique direction labels from stops (full terminal names like "YENİ CAMİİ")
+  // Unique direction keys from stops — "G" / "D"
   const stopsDirections = useMemo(
     () => [...new Set((stops ?? []).map((s) => s.direction))].sort(),
     [stops],
   )
+  const dirLabel = (d: string) => d === 'G' ? 'Gidiş' : d === 'D' ? 'Dönüş' : d
+
   const effectiveStopsDir = stopsDirections.includes(stopsDir)
     ? stopsDir
     : (stopsDirections[0] ?? '')
-  const stopsForDir = useMemo(
-    () => (stops ?? []).filter((s) => !effectiveStopsDir || s.direction === effectiveStopsDir),
-    [stops, effectiveStopsDir],
-  )
+
+  // Deduplicate by stop_code within the selected direction (ntcapi returns multiple variants)
+  const stopsForDir = useMemo(() => {
+    const dirStops = (stops ?? []).filter((s) => !effectiveStopsDir || s.direction === effectiveStopsDir)
+    const seen = new Set<string>()
+    return dirStops.filter((s) => { if (seen.has(s.stop_code)) return false; seen.add(s.stop_code); return true })
+  }, [stops, effectiveStopsDir])
+
+  // Build set of stop_sequence values for buses currently in the active stops direction
+  const busAtSequence = useMemo(() => {
+    const seqs = new Set<number>()
+    for (const b of (buses ?? [])) {
+      if (b.stop_sequence != null && (!effectiveStopsDir || b.direction_letter === effectiveStopsDir))
+        seqs.add(b.stop_sequence)
+    }
+    return seqs
+  }, [buses, effectiveStopsDir])
+
+  // Direction state for the map tab
+  const effectiveMapDir = stopsDirections.includes(mapDir)
+    ? mapDir
+    : (stopsDirections[0] ?? '')
+  const stopsForMap = useMemo(() => {
+    const dirStops = (stops ?? []).filter((s) => !effectiveMapDir || s.direction === effectiveMapDir)
+    const seen = new Set<string>()
+    return dirStops.filter((s) => { if (seen.has(s.stop_code)) return false; seen.add(s.stop_code); return true })
+  }, [stops, effectiveMapDir])
 
   const { isFavorite, toggle } = useFavorites()
   const routeName = metadata?.[0]?.full_name ?? hatKodu ?? ''
@@ -254,17 +293,8 @@ export default function RoutePage() {
   return (
     <div className="flex flex-col min-h-screen">
       {/* Header */}
-      <div className="bg-surface-card border-b border-surface-muted sticky top-0 z-40">
+      <div className="bg-surface-card border-b border-surface-muted">
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
-          <button
-            onClick={() => navigate(-1)}
-            className="text-slate-400 hover:text-slate-200 p-1 -ml-1 rounded-lg transition-colors"
-          >
-            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
-            </svg>
-          </button>
-
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
               <span className="text-lg font-bold text-brand-500 shrink-0">{hatKodu}</span>
@@ -292,22 +322,22 @@ export default function RoutePage() {
           </button>
         </div>
 
-        {/* Tab bar */}
-        <div className="max-w-2xl mx-auto px-4 pb-0 flex gap-0 overflow-x-auto no-scrollbar">
+        {/* Tab bar — Metro flat style */}
+        <div className="max-w-2xl mx-auto px-4 pb-0 flex gap-0 overflow-x-auto no-scrollbar border-b border-[#111]">
           {tabs.map(({ id, label, badge }) => (
             <button
               key={id}
               onClick={() => setTab(id)}
-              className={`flex-1 shrink-0 text-sm py-2.5 px-2 font-medium border-b-2 transition-colors
+              className={`flex-1 shrink-0 text-sm py-2.5 px-2 font-medium border-b-2 -mb-px transition-colors
                           flex items-center justify-center gap-1 ${
                 tab === id
-                  ? 'border-brand-500 text-brand-400'
-                  : 'border-transparent text-slate-500 hover:text-slate-300'
+                  ? 'border-white text-white'
+                  : 'border-transparent text-[#404040] hover:text-[#888]'
               }`}
             >
               {label}
               {badge !== undefined && badge > 0 && (
-                <span className="text-[10px] bg-brand-900 text-brand-300 px-1 rounded-full">{badge}</span>
+                <span className="text-[10px] bg-[#111] text-[#a6a6a6] px-1 rounded">{badge}</span>
               )}
             </button>
           ))}
@@ -315,7 +345,7 @@ export default function RoutePage() {
       </div>
 
       {/* Body */}
-      <div className="flex-1 max-w-2xl w-full mx-auto px-4 pb-28 pt-4">
+      <div className="flex-1 max-w-2xl w-full mx-auto px-4 pb-6 pt-4">
 
         {/* Timetable tab */}
         {tab === 'schedule' && (
@@ -324,51 +354,88 @@ export default function RoutePage() {
 
         {/* Map tab */}
         {tab === 'map' && (
-          <div className="rounded-2xl overflow-hidden border border-surface-muted" style={{ height: 420 }}>
-            <MapContainer center={center} zoom={13} style={{ height: '100%', width: '100%' }}>
-              <TileLayer
-                attribution='&copy; <a href="https://carto.com/">CartoDB</a>'
-                url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-              />
-              {stops?.map((s) => (
-                <CircleMarker
-                  key={`${s.direction}-${s.stop_code}`}
-                  center={[s.latitude, s.longitude]}
-                  radius={4}
-                  pathOptions={{ color: '#94a3b8', fillColor: '#94a3b8', fillOpacity: 1 }}
-                >
-                  <Popup>{s.stop_name}</Popup>
-                </CircleMarker>
-              ))}
-              {buses?.map((b) => (
-                <Marker key={b.kapino} position={[b.latitude, b.longitude]} icon={busIcon}>
-                  <Popup>
-                    <strong>{b.kapino}</strong><br />
-                    {b.direction}
-                  </Popup>
-                </Marker>
-              ))}
-            </MapContainer>
+          <div className="flex flex-col gap-2">
+            {/* Direction pills — map tab, Metro flat */}
+            {stopsDirections.length > 1 && (
+              <div className="flex border-b border-[#222]">
+                {stopsDirections.map((dir) => (
+                  <button
+                    key={dir}
+                    onClick={() => setMapDir(dir)}
+                    className={`flex-1 text-xs py-2 px-2 font-medium transition-colors truncate border-b-2 -mb-px ${
+                      effectiveMapDir === dir
+                        ? 'border-[#00AFF0] text-[#00AFF0]'
+                        : 'border-transparent text-[#404040] hover:text-[#888]'
+                    }`}
+                  >
+                    {dirLabel(dir)}
+                  </button>
+                ))}
+              </div>
+            )}
+            {/* Bus direction legend */}
+            {buses && buses.length > 0 && (
+              <div className="flex items-center gap-4 px-1">
+                {[...new Map(buses.filter(b => b.direction_letter).map(b => [b.direction_letter, b])).values()].map((b) => (
+                  <div key={b.direction_letter} className="flex items-center gap-1.5">
+                    <div className="w-3 h-3 rounded-full border border-white/40 shrink-0" style={{ background: b.direction_letter === 'G' ? '#2563eb' : '#f59e0b' }} />
+                    <span className="text-[10px] text-[#888] truncate">{b.direction ?? b.direction_letter}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="rounded-2xl overflow-hidden border border-surface-muted" style={{ height: 420 }}>
+              <MapContainer center={center} zoom={13} style={{ height: '100%', width: '100%' }}>
+                <TileLayer
+                  attribution='&copy; <a href="https://carto.com/">CartoDB</a>'
+                  url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+                />
+                {/* BUG-23: navigate to stop on click instead of showing popup */}
+                {stopsForMap.map((s) => (
+                  <CircleMarker
+                    key={`${s.direction}-${s.stop_code}`}
+                    center={[s.latitude, s.longitude]}
+                    radius={5}
+                    pathOptions={{ color: '#94a3b8', fillColor: '#94a3b8', fillOpacity: 1, weight: 2 }}
+                    eventHandlers={{ click: () => { navigate(`/stops/${s.stop_code}`) } }}
+                  />
+                ))}
+                {buses
+                  ?.filter((b) => !effectiveMapDir || b.direction_letter === effectiveMapDir)
+                  .map((b) => (
+                    <Marker
+                      key={b.kapino}
+                      position={[b.latitude, b.longitude]}
+                      icon={b.direction_letter === 'G' ? busIconG : b.direction_letter === 'D' ? busIconD : busIconUnknown}
+                    >
+                      <Popup>
+                        <strong>{b.kapino}</strong><br />
+                        {b.direction}
+                      </Popup>
+                    </Marker>
+                  ))}
+              </MapContainer>
+            </div>
           </div>
         )}
 
         {/* Stops tab */}
         {tab === 'stops' && (
           <div className="flex flex-col gap-1">
-            {/* Direction filter pills */}
+            {/* Direction filter pills — stops tab, Metro flat */}
             {stopsDirections.length > 1 && (
-              <div className="flex gap-1 bg-surface-card rounded-xl p-1 border border-surface-muted mb-2">
+              <div className="flex border-b border-[#222] mb-1">
                 {stopsDirections.map((dir) => (
                   <button
                     key={dir}
                     onClick={() => setStopsDir(dir)}
-                    className={`flex-1 text-xs py-1.5 px-2 rounded-lg font-medium transition-colors truncate ${
+                    className={`flex-1 text-xs py-2 px-2 font-medium transition-colors truncate border-b-2 -mb-px ${
                       effectiveStopsDir === dir
-                        ? 'bg-brand-600 text-white'
-                        : 'text-slate-400 hover:text-slate-200'
+                        ? 'border-[#00AFF0] text-[#00AFF0]'
+                        : 'border-transparent text-[#404040] hover:text-[#888]'
                     }`}
                   >
-                    {dir}
+                    {dirLabel(dir)}
                   </button>
                 ))}
               </div>
@@ -405,6 +472,10 @@ export default function RoutePage() {
                   {s.sequence}
                 </span>
                 <span className="flex-1 text-sm text-slate-200 truncate">{s.stop_name}</span>
+                {busAtSequence.has(s.sequence) && (
+                  <span title="Otobüs burada" className="w-2.5 h-2.5 rounded-full shrink-0 animate-pulse"
+                        style={{ background: effectiveStopsDir === 'D' ? '#f59e0b' : '#2563eb' }} />
+                )}
                 <span className="text-xs text-slate-600 shrink-0">{s.stop_code}</span>
                 <svg className="w-4 h-4 text-slate-600 shrink-0" fill="none" viewBox="0 0 24 24"
                      stroke="currentColor" strokeWidth={2}>

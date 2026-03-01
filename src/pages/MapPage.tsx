@@ -1,9 +1,9 @@
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect, useRef } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet'
 import * as L from 'leaflet'
 import { useFleet } from '@/hooks/useFleet'
 import { usePolling } from '@/hooks/usePolling'
-import { api, type Garage } from '@/api/client'
+import { api, type Garage, type RouteSearchResult, type BusPosition } from '@/api/client'
 
 const garageIcon = L.divIcon({
   className: '',
@@ -37,12 +37,7 @@ const busIcon = L.divIcon({
   iconAnchor: [14, 14],
 })
 
-/** Parse a comma-separated string into an uppercase Set. */
-function parseSet(raw: string): Set<string> {
-  return new Set(
-    raw.split(',').map((s) => s.trim().toUpperCase()).filter(Boolean),
-  )
-}
+
 
 export default function MapPage() {
   const { data: buses, loading, error, refresh } = useFleet()
@@ -50,48 +45,241 @@ export default function MapPage() {
     () => api.garages.list(),
     86_400_000, // 24 h — garages rarely change
   )
-  const [routeInput, setRouteInput] = useState('')
-  const [entityInput, setEntityInput] = useState('')
 
-  const routeSet = useMemo(() => parseSet(routeInput), [routeInput])
-  const entitySet = useMemo(() => parseSet(entityInput), [entityInput])
-  const hasFilter = routeSet.size > 0 || entitySet.size > 0
+  // ── Route filter: autocomplete search + chips ──────────────────────────────
+  const [selectedRoutes, setSelectedRoutes] = useState<string[]>([])
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchResults, setSearchResults] = useState<RouteSearchResult[]>([])
+  const [showDropdown, setShowDropdown] = useState(false)
+  const dropdownRef = useRef<HTMLDivElement>(null)
+
+  // Per-route bus fetch: hat_kodu → kapino set (fleet route_code is unreliable)
+  const [routeBusMap, setRouteBusMap] = useState<Map<string, string[]>>(new Map())
+
+  useEffect(() => {
+    let alive = true
+    for (const route of selectedRoutes) {
+      if (routeBusMap.has(route)) continue
+      api.routes.buses(route)
+        .then((bs: BusPosition[]) => {
+          if (!alive) return
+          setRouteBusMap((prev) => new Map(prev).set(route, bs.map((b) => b.kapino.toUpperCase())))
+        })
+        .catch(() => {
+          if (!alive) return
+          setRouteBusMap((prev) => new Map(prev).set(route, []))
+        })
+    }
+    // prune deselected routes
+    setRouteBusMap((prev) => {
+      const next = new Map(prev)
+      for (const key of next.keys()) if (!selectedRoutes.includes(key)) next.delete(key)
+      return next
+    })
+    return () => { alive = false }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedRoutes])
+
+  // Fetch autocomplete suggestions when query changes (debounced 300 ms)
+  useEffect(() => {
+    if (searchQuery.trim().length < 1) { setSearchResults([]); return }
+    let cancelled = false
+    const t = window.setTimeout(() => {
+      api.routes.search(searchQuery)
+        .then((r) => { if (!cancelled) setSearchResults(r.slice(0, 8)) })
+        .catch(() => { if (!cancelled) setSearchResults([]) })
+    }, 300)
+    return () => { cancelled = true; window.clearTimeout(t) }
+  }, [searchQuery])
+
+  function addRoute(hatKodu: string) {
+    if (!selectedRoutes.includes(hatKodu)) {
+      setSelectedRoutes((prev) => [...prev, hatKodu])
+    }
+    setSearchQuery('')
+    setSearchResults([])
+    setShowDropdown(false)
+  }
+
+  function removeRoute(hatKodu: string) {
+    setSelectedRoutes((prev) => prev.filter((r) => r !== hatKodu))
+    setRouteBusMap((prev) => { const n = new Map(prev); n.delete(hatKodu); return n })
+  }
+
+  // ── Kapino / plate chip filter ─────────────────────────────────────────────
+  const [selectedEntities, setSelectedEntities] = useState<string[]>([])
+  const [entityQuery, setEntityQuery] = useState('')
+  const [showEntityDropdown, setShowEntityDropdown] = useState(false)
+  const entityDropdownRef = useRef<HTMLDivElement>(null)
+
+  const entityResults = useMemo(() => {
+    const q = entityQuery.trim().toUpperCase()
+    if (q.length < 2 || !buses) return [] as BusPosition[]
+    return buses
+      .filter((b) => b.kapino.toUpperCase().includes(q) || (b.plate?.toUpperCase().includes(q) ?? false))
+      .slice(0, 8)
+  }, [entityQuery, buses])
+
+  function addEntity(kapino: string) {
+    if (!selectedEntities.includes(kapino)) setSelectedEntities((prev) => [...prev, kapino])
+    setEntityQuery('')
+    setShowEntityDropdown(false)
+  }
+  function removeEntity(kapino: string) {
+    setSelectedEntities((prev) => prev.filter((e) => e !== kapino))
+  }
+
+  const hasFilter = selectedRoutes.length > 0 || selectedEntities.length > 0
 
   const filtered = useMemo(() => {
     const all = buses ?? []
     if (!hasFilter) return all
+    // Build kapino set from per-route fetches (primary)
+    const routeKapinos = new Set<string>()
+    for (const kapinos of routeBusMap.values()) for (const k of kapinos) routeKapinos.add(k)
     return all.filter((b) => {
-      if (routeSet.size > 0 && b.route_code && routeSet.has(b.route_code.toUpperCase())) return true
-      if (entitySet.size > 0) {
-        if (entitySet.has(b.kapino.toUpperCase())) return true
-        if (b.plate && entitySet.has(b.plate.toUpperCase())) return true
+      const kUp = b.kapino.toUpperCase()
+      // Route match: kapino lookup first, then fuzzy route_code fallback
+      if (selectedRoutes.length > 0) {
+        if (routeKapinos.size > 0 && routeKapinos.has(kUp)) return true
+        // fallback: route_code field on bus
+        if (b.route_code) {
+          const rc = b.route_code.toUpperCase()
+          for (const sel of selectedRoutes) {
+            const hk = sel.toUpperCase()
+            if (rc === hk || rc.startsWith(hk + '_') || rc.startsWith(hk + ' ')) return true
+          }
+        }
+      }
+      // Kapino / plate match
+      if (selectedEntities.length > 0) {
+        if (selectedEntities.some((e) => e.toUpperCase() === kUp)) return true
+        if (b.plate && selectedEntities.some((e) => e.toUpperCase() === b.plate!.toUpperCase())) return true
       }
       return false
     })
-  }, [buses, routeSet, entitySet, hasFilter])
+  }, [buses, routeBusMap, selectedRoutes, selectedEntities, hasFilter])
 
   return (
-    <div className="relative flex flex-col overflow-hidden h-[calc(100dvh-3.5rem)]">
+    <div className="relative flex flex-col overflow-hidden h-full">
       {/* Filter panel */}
       <div className="absolute top-16 left-1/2 -translate-x-1/2 z-[1000] w-full max-w-sm px-4 flex flex-col gap-2">
-        <input
-          type="text"
-          value={routeInput}
-          onChange={(e) => setRouteInput(e.target.value)}
-          placeholder="Hat kodu (virgülle ayır: 500T, 14M)"
-          className="w-full bg-surface-card/95 backdrop-blur border border-surface-muted
-                     rounded-xl px-4 py-2 text-sm text-slate-100 placeholder-slate-500
-                     focus:outline-none focus:ring-2 focus:ring-brand-500 shadow-xl"
-        />
-        <input
-          type="text"
-          value={entityInput}
-          onChange={(e) => setEntityInput(e.target.value)}
-          placeholder="Kapı kodu / plaka (virgülle ayır: C-1515, 34AB123)"
-          className="w-full bg-surface-card/95 backdrop-blur border border-surface-muted
-                     rounded-xl px-4 py-2 text-sm text-slate-100 placeholder-slate-500
-                     focus:outline-none focus:ring-2 focus:ring-brand-500 shadow-xl"
-        />
+        {/* Route autocomplete search bar */}
+        <div className="relative" ref={dropdownRef}>
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => { setSearchQuery(e.target.value); setShowDropdown(true) }}
+            onFocus={() => { if (searchQuery.length > 0) setShowDropdown(true) }}
+            onBlur={() => setTimeout(() => setShowDropdown(false), 150)}
+            placeholder="Hat kodu ara (ör: 500T, 14M)…"
+            className="w-full border border-[#333] px-4 py-2 text-sm text-slate-100 placeholder-slate-500
+                       focus:outline-none focus:border-[#00AFF0] shadow-xl"
+            style={{ background: '#0d0d0d' }}
+          />
+          {showDropdown && searchResults.length > 0 && (
+            <div className="absolute top-full left-0 right-0 mt-1 border border-[#333]
+                            shadow-2xl overflow-hidden z-10 max-h-48 overflow-y-auto"
+                 style={{ background: '#0d0d0d' }}>
+              {searchResults.map((r) => (
+                <button
+                  key={r.hat_kodu}
+                  onMouseDown={() => addRoute(r.hat_kodu)}
+                  className="w-full text-left px-4 py-2.5 text-sm
+                             flex items-center gap-2 transition-colors"
+                  style={{ borderBottom: '1px solid #1a1a1a' }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = '#1a1a1a')}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                >
+                  <span className="font-mono font-bold text-brand-400 text-xs shrink-0">{r.hat_kodu}</span>
+                  <span className="text-slate-300 truncate">{r.name}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Selected route chips */}
+        {selectedRoutes.length > 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            {selectedRoutes.map((route) => (
+              <span
+                key={route}
+                className="inline-flex items-center gap-1 bg-brand-900/90 backdrop-blur
+                           border border-brand-600/40 text-brand-300 text-xs font-mono
+                           font-bold px-2.5 py-1 rounded-full shadow-lg"
+              >
+                {route}
+                <button
+                  onClick={() => removeRoute(route)}
+                  className="ml-0.5 text-brand-400 hover:text-brand-100 transition-colors
+                             leading-none text-sm font-normal"
+                  aria-label={`${route} filtresini kaldır`}
+                >
+                  ×
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
+
+        {/* Kapino / plate chip filter */}
+        <div className="relative" ref={entityDropdownRef}>
+          <input
+            type="text"
+            value={entityQuery}
+            onChange={(e) => { setEntityQuery(e.target.value); setShowEntityDropdown(true) }}
+            onFocus={() => { if (entityQuery.length > 0) setShowEntityDropdown(true) }}
+            onBlur={() => setTimeout(() => setShowEntityDropdown(false), 150)}
+            placeholder="Kapı kodu / plaka ara (ör: C-1515)"
+            className="w-full border border-[#333] px-4 py-2 text-sm text-slate-100 placeholder-slate-500
+                       focus:outline-none focus:border-[#00AFF0] shadow-xl"
+            style={{ background: '#0d0d0d' }}
+          />
+          {showEntityDropdown && entityResults.length > 0 && (
+            <div className="absolute top-full left-0 right-0 mt-1 border border-[#333]
+                            shadow-2xl overflow-hidden z-10 max-h-48 overflow-y-auto"
+                 style={{ background: '#0d0d0d' }}>
+              {entityResults.map((b) => (
+                <button
+                  key={b.kapino}
+                  onMouseDown={() => addEntity(b.kapino)}
+                  className="w-full text-left px-4 py-2.5 text-sm
+                             flex items-center gap-2 transition-colors"
+                  style={{ borderBottom: '1px solid #1a1a1a' }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = '#1a1a1a')}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                >
+                  <span className="font-mono font-bold text-brand-400 text-xs shrink-0">{b.kapino}</span>
+                  {b.plate && <span className="text-slate-500 text-xs shrink-0">{b.plate}</span>}
+                  {b.route_code && <span className="text-slate-400 truncate text-xs">→ {b.route_code}</span>}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+        {selectedEntities.length > 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            {selectedEntities.map((kapino) => (
+              <span
+                key={kapino}
+                className="inline-flex items-center gap-1 bg-brand-900/90 backdrop-blur
+                           border border-brand-600/40 text-brand-300 text-xs font-mono
+                           font-bold px-2.5 py-1 rounded-full shadow-lg"
+              >
+                {kapino}
+                <button
+                  onClick={() => removeEntity(kapino)}
+                  className="ml-0.5 text-brand-400 hover:text-brand-100 transition-colors
+                             leading-none text-sm font-normal"
+                  aria-label={`${kapino} filtresini kaldır`}
+                >
+                  ×
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
       </div>
 
       {loading && !buses && (

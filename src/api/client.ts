@@ -32,8 +32,10 @@ export interface BusPosition {
   last_seen: string
   route_code: string | null
   route_name: string | null
-  direction: string | null
+  direction: string | null        // terminal name, e.g. "YENİ CAMİİ"
+  direction_letter: string | null // "G" or "D"
   nearest_stop: string | null
+  stop_sequence: number | null    // current stop index along the route
   trail: TrailPoint[]
 }
 
@@ -97,6 +99,7 @@ export interface RouteMetadata {
   variant_code: string
   direction: number
   depar_no: number
+  hat_id?: number | null          // ntcapi internal numeric ID (for ybs point-passing)
 }
 
 export interface RouteStop {

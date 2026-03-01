@@ -12,7 +12,6 @@ import {
 import * as L from 'leaflet'
 import { api, type NearbyStop as ApiNearbyStop } from '@/api/client'
 import { distanceLabel } from '@/utils/distance'
-import { loadSettings } from '@/utils/settings'
 
 interface NearbyStop extends ApiNearbyStop {
   routes: string[]
@@ -136,7 +135,7 @@ function NearbyMapView({
 
 // ─── Main page ─────────────────────────────────────────────────────────────────
 export default function NearbyPage() {
-  const [phase, setPhase] = useState<Phase>('idle')
+  const [phase, setPhase] = useState<Phase>('consent')
   const [errorMsg, setErrorMsg] = useState('')
   const [userLat, setUserLat] = useState<number | null>(null)
   const [userLon, setUserLon] = useState<number | null>(null)
@@ -203,17 +202,26 @@ export default function NearbyPage() {
     setSelectedCode(code)
   }, [])
 
-  // ── Auto-locate on mount if permission already granted ─────────────────────
+  // ── Check geolocation permission on mount ─────────────────────────────────
+  // If already granted → skip consent/map-picker and locate immediately.
+  // If denied         → show error.
+  // If prompt / no API → show consent screen (default phase).
   useEffect(() => {
-    const { autoLocate } = loadSettings()
-    if (!autoLocate) return
     const perms = (navigator as Navigator & { permissions?: Permissions }).permissions
     if (!perms || typeof perms.query !== 'function') return
     let cancelled = false
     perms
       .query({ name: 'geolocation' as PermissionName })
-      .then((status) => { if (!cancelled && status.state === 'granted') locate() })
-      .catch(() => { /* permissions API unavailable */ })
+      .then((status) => {
+        if (cancelled) return
+        if (status.state === 'granted') void locate()
+        else if (status.state === 'denied') {
+          setPhase('error')
+          setErrorMsg('Konum izni reddedildi. Tarayıcı ayarlarından izin verin.')
+        }
+        // 'prompt' → stay in 'consent' (default)
+      })
+      .catch(() => { /* permissions API unavailable — stay in consent */ })
     return () => { cancelled = true }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -502,7 +510,7 @@ export default function NearbyPage() {
     <div className="flex flex-col flex-1 min-h-0">
       {headerBar}
 
-      <div className="flex-1 max-w-2xl w-full mx-auto px-4 pb-28 pt-4">
+      <div className="flex-1 max-w-2xl w-full mx-auto px-4 pb-6 pt-4">
 
         {/* Idle — map location picker */}
         {phase === 'idle' && (

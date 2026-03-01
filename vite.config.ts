@@ -1,9 +1,19 @@
-import { defineConfig } from 'vitest/config'
+import { defineConfig } from 'vite'
+import { mergeConfig, defineConfig as defineTestConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 import path from 'path'
+import { readFileSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
 
-export default defineConfig({
+const { version: APP_VERSION } = JSON.parse(
+  readFileSync(fileURLToPath(new URL('./package.json', import.meta.url)), 'utf-8'),
+) as { version: string }
+
+const viteConfig = defineConfig({
+  define: {
+    __APP_VERSION__: JSON.stringify(APP_VERSION),
+  },
   resolve: {
     alias: { '@': path.resolve(__dirname, 'src') },
   },
@@ -34,20 +44,6 @@ export default defineConfig({
           },
         ],
       },
-      manifest: {
-        name: 'İETT Canlı',
-        short_name: 'İETT',
-        description: 'İstanbul gerçek zamanlı otobüs takip uygulaması',
-        theme_color: '#0f172a',
-        background_color: '#0f172a',
-        display: 'standalone',
-        orientation: 'portrait',
-        start_url: '/',
-        icons: [
-          { src: 'icons/icon-192.png', sizes: '192x192', type: 'image/png' },
-          { src: 'icons/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any maskable' },
-        ],
-      },
     }),
   ],
   server: {
@@ -60,14 +56,20 @@ export default defineConfig({
       },
     },
   },
-  test: {
-    environment: 'jsdom',
-    globals: true,
-    setupFiles: ['./src/test/setup.ts'],
-    alias: { '@': path.resolve(__dirname, 'src') },
-    coverage: {
-      provider: 'v8',
-      reporter: ['text', 'lcov'],
-    },
-  },
 })
+
+export default mergeConfig(
+  viteConfig,
+  defineTestConfig({
+    test: {
+      environment: 'jsdom',
+      globals: true,
+      setupFiles: ['./src/test/setup.ts'],
+      alias: { '@': path.resolve(__dirname, 'src') },
+      coverage: {
+        provider: 'v8',
+        reporter: ['text', 'lcov'],
+      },
+    },
+  }),
+)

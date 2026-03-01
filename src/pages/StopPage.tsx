@@ -1,12 +1,13 @@
-import { useState, useMemo, useCallback, useEffect } from 'react'
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { MapContainer, TileLayer, CircleMarker, Popup, Marker, Polyline, useMap } from 'react-leaflet'
 import * as L from 'leaflet'
 import { useArrivals } from '@/hooks/useArrivals'
 import { usePolling } from '@/hooks/usePolling'
-import { useFleet } from '@/hooks/useFleet'
 import { api, type Announcement, type StopDetail, type BusPosition, type Arrival, type Amenities } from '@/api/client'
 import { useFavorites } from '@/hooks/useFavorites'
+import { useBottomBar } from '@/hooks/useBottomBar'
+import { useUserPrefs } from '@/hooks/useUserPrefs'
 
 /** Fixed palette for the first 3 routes at this stop — orange, violet, cyan */
 const ROUTE_PALETTE = ['#f97316', '#a855f7', '#22d3ee'] as const
@@ -47,6 +48,40 @@ function haversineM(lat1: number, lon1: number, lat2: number, lon2: number): num
 function FitBoundsEffect({ bounds }: { bounds: [[number, number], [number, number]] }) {
   const map = useMap()
   useEffect(() => { map.fitBounds(bounds, { padding: [32, 32] }) }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  return null
+}
+
+/**
+ * Fits the map to include the stop marker + up to 3 nearest buses (those
+ * already present in `buses`).  Only fires once — the first time buses
+ * contains at least one entry.  Falls back to the default center/zoom when
+ * no buses have live positions.
+ */
+function FitToBusesOnLoad({
+  stopLat,
+  stopLon,
+  buses,
+}: {
+  stopLat: number
+  stopLon: number
+  buses: BusPosition[]
+}) {
+  const map = useMap()
+  const firedRef = useRef(false)
+
+  useEffect(() => {
+    if (firedRef.current) return
+    const withPos = buses.filter((b) => b.latitude != null && b.longitude != null).slice(0, 3)
+    if (withPos.length === 0) return  // wait for data
+    firedRef.current = true
+    const points: L.LatLngExpression[] = [
+      [stopLat, stopLon],
+      ...withPos.map((b): L.LatLngExpression => [b.latitude, b.longitude]),
+    ]
+    const bounds = L.latLngBounds(points)
+    map.fitBounds(bounds, { padding: [48, 48], maxZoom: 16 })
+  }, [buses, stopLat, stopLon, map])
+
   return null
 }
 
@@ -271,6 +306,52 @@ export default function StopPage() {
   const [activeRoutes, setActiveRoutes] = useState<Set<string>>(new Set())
   const [showAnnouncements, setShowAnnouncements] = useState(false)
   const [selectedArrival, setSelectedArrival] = useState<Arrival | null>(null)
+  const [activeTab, setActiveTab] = useState<'gelis' | 'hatlar' | 'bilgi'>('gelis')
+
+  // Reset to default tab whenever the stop changes (React Router may reuse this component)
+  useEffect(() => { setActiveTab('gelis') }, [dcode])
+
+  // Memoised so useBottomBar’s effect only fires when tab active-state actually changes
+  const bottomBarTabs = useMemo(() => [
+    {
+      label: 'Geliş',
+      icon: (
+        <svg viewBox="0 0 24 24" fill={activeTab === 'gelis' ? 'currentColor' : 'none'}
+             stroke="currentColor" strokeWidth={2} className="w-5 h-5">
+          <path strokeLinecap="round" strokeLinejoin="round"
+                d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12" />
+        </svg>
+      ),
+      onPress: () => setActiveTab('gelis'),
+      active: activeTab === 'gelis',
+    },
+    {
+      label: 'Hatlar',
+      icon: (
+        <svg viewBox="0 0 24 24" fill={activeTab === 'hatlar' ? 'currentColor' : 'none'}
+             stroke="currentColor" strokeWidth={2} className="w-5 h-5">
+          <path strokeLinecap="round" strokeLinejoin="round"
+                d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM3.75 12h.007v.008H3.75V12zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm-.375 5.25h.007v.008H3.75v-.008zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+        </svg>
+      ),
+      onPress: () => setActiveTab('hatlar'),
+      active: activeTab === 'hatlar',
+    },
+    {
+      label: 'Bilgi',
+      icon: (
+        <svg viewBox="0 0 24 24" fill={activeTab === 'bilgi' ? 'currentColor' : 'none'}
+             stroke="currentColor" strokeWidth={2} className="w-5 h-5">
+          <path strokeLinecap="round" strokeLinejoin="round"
+                d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
+        </svg>
+      ),
+      onPress: () => setActiveTab('bilgi'),
+      active: activeTab === 'bilgi',
+    },
+  ], [activeTab])
+
+  useBottomBar(bottomBarTabs)
 
   const { data: arrivals, loading, error, stale } = useArrivals(dcode ?? '')
 
@@ -295,22 +376,42 @@ export default function StopPage() {
   }, [arrivals])
 
   // Full fleet polled every 30 s via the shared cache — no per-route calls needed.
-  const { data: allBuses } = useFleet()
-
-  // Filter fleet to only buses whose route is present at this stop.
-  const routeBuses = useMemo(
-    () => (allBuses ?? []).filter((b) => b.route_code && arrivalRouteOrder.includes(b.route_code)),
-    [allBuses, arrivalRouteOrder],
+  // Derive bus positions from arrivals (which already carry lat/lon from YBS response).
+  const routeBuses = useMemo<BusPosition[]>(
+    () =>
+      (arrivals ?? [])
+        .filter((a): a is Arrival & { lat: number; lon: number } =>
+          a.lat != null && a.lon != null && a.kapino != null,
+        )
+        .map((a) => ({
+          kapino: a.kapino!,
+          plate: a.plate ?? null,
+          latitude: a.lat,
+          longitude: a.lon,
+          speed: null,
+          operator: null,
+          last_seen: '',
+          route_code: a.route_code,
+          route_name: null,
+          direction: null,
+          direction_letter: null,
+          nearest_stop: null,
+          stop_sequence: null,
+          trail: [],
+        })),
+    [arrivals],
   )
 
   // One cached Leaflet DivIcon per route_code — avoids creating a new DOM object every render.
+  // Build for ALL routes at this stop (arrivalRouteOrder + routes fallback).
   const routeIconMap = useMemo(() => {
     const m = new Map<string, L.DivIcon>()
-    arrivalRouteOrder.forEach((r) => {
+    const allRouteSet = new Set([...arrivalRouteOrder, ...(routes ?? [])])
+    allRouteSet.forEach((r) => {
       m.set(r, makeBusIcon(getRouteColor(r, arrivalRouteOrder)))
     })
     return m
-  }, [arrivalRouteOrder])
+  }, [arrivalRouteOrder, routes])
 
   // Announcements for the first selected route
   const firstActive = useMemo(() => Array.from(activeRoutes)[0] ?? null, [activeRoutes])
@@ -323,9 +424,11 @@ export default function StopPage() {
   )
 
   const { isFavorite, toggle } = useFavorites()
+  const { prefs, isPinned, pinStop, unpinStop } = useUserPrefs()
   const stopName = stopDetail?.name ?? `Durak ${dcode}`
   const favItem = { kind: 'stop' as const, dcode: dcode ?? '', name: stopName }
   const favorited = isFavorite(favItem)
+  const pinned = isPinned(dcode ?? '')
 
   const toggleRoute = useCallback((r: string) => {
     setActiveRoutes((prev) => {
@@ -403,10 +506,105 @@ export default function StopPage() {
                     d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
             </svg>
           </button>
+
+          <button
+            onClick={() => {
+              if (!dcode) return
+              const atLimit = !pinned && (prefs?.pinnedStops.length ?? 0) >= 3
+              if (atLimit) return
+              if (pinned) unpinStop(dcode)
+              else pinStop(dcode, stopName)
+            }}
+            disabled={!dcode || (!pinned && (prefs?.pinnedStops.length ?? 0) >= 3)}
+            aria-label={
+              (!pinned && (prefs?.pinnedStops.length ?? 0) >= 3)
+                ? 'En fazla 3 durak sabitlenebilir'
+                : pinned ? 'Sabitlemeyi kaldır' : 'Ana sayfaya sabitle'
+            }
+            aria-pressed={pinned}
+            title={
+              (!pinned && (prefs?.pinnedStops.length ?? 0) >= 3)
+                ? 'En fazla 3 durak ana sayfaya sabitlenebilir'
+                : pinned ? 'Sabitlemeyi kaldır' : 'Ana sayfaya sabitle'
+            }
+            className={`p-1.5 rounded-xl transition-colors shrink-0 disabled:opacity-40 ${
+              pinned ? 'text-amber-400' : 'text-slate-500 hover:text-slate-300'
+            }`}
+          >
+            <span className="text-base leading-none">{pinned ? '📌' : '📍'}</span>
+          </button>
         </div>
       </div>
 
-{/* Split-screen body */}
+{/* ── Hatlar tab ────────────────────────────────────────────────────── */}
+      {activeTab === 'hatlar' && (
+        <div className="flex-1 overflow-y-auto px-4 py-3">
+          {routes === null ? (
+            <p className="text-center text-slate-500 mt-10 text-sm">Yükleniyor...</p>
+          ) : routes.length === 0 ? (
+            <p className="text-center text-slate-500 mt-10 text-sm">Bu durakta kayıtlı hat bulunamadı.</p>
+          ) : (
+            <div className="rounded-2xl overflow-hidden border border-surface-border divide-y divide-surface-border bg-surface-card">
+              {(routes ?? []).map((r) => (
+                <button
+                  key={r}
+                  onClick={() => navigate(`/routes/${r}`)}
+                  className="w-full flex items-center gap-3 px-4 py-3.5 hover:bg-surface-muted
+                             active:bg-surface-muted transition-colors text-left"
+                >
+                  <span
+                    className="text-[11px] font-bold px-2 py-0.5 rounded font-mono text-white"
+                    style={{ backgroundColor: getRouteColor(r, arrivalRouteOrder) }}
+                  >
+                    {r}
+                  </span>
+                  <span className="flex-1 text-sm text-slate-300">Hat detayı</span>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}
+                       className="w-4 h-4 text-slate-600 shrink-0">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                  </svg>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Bilgi tab ────────────────────────────────────────────────────── */}
+      {activeTab === 'bilgi' && (
+        <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
+          <div className="rounded-2xl border border-surface-border bg-surface-card divide-y divide-surface-border overflow-hidden">
+            <div className="px-4 py-3 flex items-center justify-between">
+              <span className="text-xs text-slate-500">Durak Kodu</span>
+              <span className="font-mono text-sm text-slate-100">{dcode}</span>
+            </div>
+            {stopDetail?.name && (
+              <div className="px-4 py-3 flex items-center justify-between">
+                <span className="text-xs text-slate-500">Ad</span>
+                <span className="text-sm text-slate-100 text-right max-w-[60%]">{stopDetail.name}</span>
+              </div>
+            )}
+            {stopDetail?.direction && (
+              <div className="px-4 py-3 flex items-center justify-between">
+                <span className="text-xs text-slate-500">Yön</span>
+                <span className="text-sm text-slate-100 text-right max-w-[60%]">{stopDetail.direction}</span>
+              </div>
+            )}
+            {stopDetail?.latitude != null && stopDetail?.longitude != null && (
+              <div className="px-4 py-3 flex items-center justify-between">
+                <span className="text-xs text-slate-500">Konum</span>
+                <span className="font-mono text-xs text-slate-400">
+                  {stopDetail.latitude.toFixed(5)}, {stopDetail.longitude.toFixed(5)}
+                </span>
+              </div>
+            )}
+          </div>
+          {stopDetail && <AmenityIcons amenities={(stopDetail as StopDetail & { amenities?: Amenities }).amenities ?? null} />}
+        </div>
+      )}
+
+{/* Split-screen body — shown on Geliş tab */}
+      {activeTab === 'gelis' && (
       <div className="flex-1 flex flex-col overflow-hidden max-w-2xl w-full mx-auto">
 
         {/* Map — top ~40% */}
@@ -416,10 +614,16 @@ export default function StopPage() {
               center={[stopDetail.latitude, stopDetail.longitude]}
               zoom={16}
               style={{ height: '100%', width: '100%' }}
+              key={dcode}
             >
               <TileLayer
                 attribution='&copy; <a href="https://carto.com/">CartoDB</a>'
                 url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+              />
+              <FitToBusesOnLoad
+                stopLat={stopDetail.latitude}
+                stopLon={stopDetail.longitude}
+                buses={routeBuses}
               />
               <CircleMarker
                 center={[stopDetail.latitude, stopDetail.longitude]}
@@ -643,6 +847,7 @@ export default function StopPage() {
           )}
         </div>
       </div>
+      )}
 
       {/* Bus detail sheet — rendered outside the scroll container so it overlays everything */}
       {selectedArrival && stopDetail?.latitude != null && stopDetail.longitude != null && (
