@@ -7,6 +7,8 @@ import { usePolling } from '@/hooks/usePolling'
 import { useFleet } from '@/hooks/useFleet'
 import { api, type Announcement, type StopDetail, type BusPosition, type Arrival, type Amenities } from '@/api/client'
 import { useFavorites } from '@/hooks/useFavorites'
+import { useBottomBar } from '@/hooks/useBottomBar'
+import { useUserPrefs } from '@/hooks/useUserPrefs'
 
 /** Fixed palette for the first 3 routes at this stop — orange, violet, cyan */
 const ROUTE_PALETTE = ['#f97316', '#a855f7', '#22d3ee'] as const
@@ -271,6 +273,47 @@ export default function StopPage() {
   const [activeRoutes, setActiveRoutes] = useState<Set<string>>(new Set())
   const [showAnnouncements, setShowAnnouncements] = useState(false)
   const [selectedArrival, setSelectedArrival] = useState<Arrival | null>(null)
+  const [activeTab, setActiveTab] = useState<'gelir' | 'hatlar' | 'bilgi'>('gelir')
+
+  // Context-aware bottom bar: replaces the main 4-tab nav while on this page
+  useBottomBar([
+    {
+      label: 'Geliş',
+      icon: (
+        <svg viewBox="0 0 24 24" fill={activeTab === 'gelir' ? 'currentColor' : 'none'}
+             stroke="currentColor" strokeWidth={2} className="w-5 h-5">
+          <path strokeLinecap="round" strokeLinejoin="round"
+                d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12" />
+        </svg>
+      ),
+      onPress: () => setActiveTab('gelir'),
+      active: activeTab === 'gelir',
+    },
+    {
+      label: 'Hatlar',
+      icon: (
+        <svg viewBox="0 0 24 24" fill={activeTab === 'hatlar' ? 'currentColor' : 'none'}
+             stroke="currentColor" strokeWidth={2} className="w-5 h-5">
+          <path strokeLinecap="round" strokeLinejoin="round"
+                d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM3.75 12h.007v.008H3.75V12zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm-.375 5.25h.007v.008H3.75v-.008zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+        </svg>
+      ),
+      onPress: () => setActiveTab('hatlar'),
+      active: activeTab === 'hatlar',
+    },
+    {
+      label: 'Bilgi',
+      icon: (
+        <svg viewBox="0 0 24 24" fill={activeTab === 'bilgi' ? 'currentColor' : 'none'}
+             stroke="currentColor" strokeWidth={2} className="w-5 h-5">
+          <path strokeLinecap="round" strokeLinejoin="round"
+                d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
+        </svg>
+      ),
+      onPress: () => setActiveTab('bilgi'),
+      active: activeTab === 'bilgi',
+    },
+  ])
 
   const { data: arrivals, loading, error, stale } = useArrivals(dcode ?? '')
 
@@ -323,9 +366,11 @@ export default function StopPage() {
   )
 
   const { isFavorite, toggle } = useFavorites()
+  const { isPinned, pinStop, unpinStop } = useUserPrefs()
   const stopName = stopDetail?.name ?? `Durak ${dcode}`
   const favItem = { kind: 'stop' as const, dcode: dcode ?? '', name: stopName }
   const favorited = isFavorite(favItem)
+  const pinned = isPinned(dcode ?? '')
 
   const toggleRoute = useCallback((r: string) => {
     setActiveRoutes((prev) => {
@@ -403,10 +448,86 @@ export default function StopPage() {
                     d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
             </svg>
           </button>
+
+          <button
+            onClick={() => pinned ? unpinStop(dcode ?? '') : pinStop(dcode ?? '', stopName)}
+            className={`p-1.5 rounded-xl transition-colors shrink-0 ${
+              pinned ? 'text-amber-400' : 'text-slate-500 hover:text-slate-300'
+            }`}
+            title={pinned ? 'Sabitlemeyi kaldır' : 'Ana sayfaya sabitle'}
+          >
+            <span className="text-base leading-none">{pinned ? '📌' : '📍'}</span>
+          </button>
         </div>
       </div>
 
-{/* Split-screen body */}
+{/* ── Hatlar tab ────────────────────────────────────────────────────── */}
+      {activeTab === 'hatlar' && (
+        <div className="flex-1 overflow-y-auto px-4 py-3">
+          {(routes ?? []).length === 0 ? (
+            <p className="text-center text-slate-500 mt-10 text-sm">Hat bilgisi yükleniyor...</p>
+          ) : (
+            <div className="rounded-2xl overflow-hidden border border-surface-border divide-y divide-surface-border bg-surface-card">
+              {(routes ?? []).map((r) => (
+                <button
+                  key={r}
+                  onClick={() => navigate(`/routes/${r}`)}
+                  className="w-full flex items-center gap-3 px-4 py-3.5 hover:bg-surface-muted
+                             active:bg-surface-muted transition-colors text-left"
+                >
+                  <span
+                    className="text-[11px] font-bold px-2 py-0.5 rounded font-mono text-white"
+                    style={{ backgroundColor: getRouteColor(r, arrivalRouteOrder) }}
+                  >
+                    {r}
+                  </span>
+                  <span className="flex-1 text-sm text-slate-300">Hat detayı</span>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}
+                       className="w-4 h-4 text-slate-600 shrink-0">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                  </svg>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Bilgi tab ────────────────────────────────────────────────────── */}
+      {activeTab === 'bilgi' && (
+        <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
+          <div className="rounded-2xl border border-surface-border bg-surface-card divide-y divide-surface-border overflow-hidden">
+            <div className="px-4 py-3 flex items-center justify-between">
+              <span className="text-xs text-slate-500">Durak Kodu</span>
+              <span className="font-mono text-sm text-slate-100">{dcode}</span>
+            </div>
+            {stopDetail?.name && (
+              <div className="px-4 py-3 flex items-center justify-between">
+                <span className="text-xs text-slate-500">Ad</span>
+                <span className="text-sm text-slate-100 text-right max-w-[60%]">{stopDetail.name}</span>
+              </div>
+            )}
+            {stopDetail?.direction && (
+              <div className="px-4 py-3 flex items-center justify-between">
+                <span className="text-xs text-slate-500">Yön</span>
+                <span className="text-sm text-slate-100 text-right max-w-[60%]">{stopDetail.direction}</span>
+              </div>
+            )}
+            {stopDetail?.latitude != null && stopDetail?.longitude != null && (
+              <div className="px-4 py-3 flex items-center justify-between">
+                <span className="text-xs text-slate-500">Konum</span>
+                <span className="font-mono text-xs text-slate-400">
+                  {stopDetail.latitude.toFixed(5)}, {stopDetail.longitude.toFixed(5)}
+                </span>
+              </div>
+            )}
+          </div>
+          {stopDetail && <AmenityIcons amenities={(stopDetail as StopDetail & { amenities?: Amenities }).amenities ?? null} />}
+        </div>
+      )}
+
+{/* Split-screen body — shown on Geliş tab */}
+      {activeTab === 'gelir' && (
       <div className="flex-1 flex flex-col overflow-hidden max-w-2xl w-full mx-auto">
 
         {/* Map — top ~40% */}
@@ -643,6 +764,7 @@ export default function StopPage() {
           )}
         </div>
       </div>
+      )}
 
       {/* Bus detail sheet — rendered outside the scroll container so it overlays everything */}
       {selectedArrival && stopDetail?.latitude != null && stopDetail.longitude != null && (
