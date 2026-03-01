@@ -42,6 +42,8 @@ export interface BusPosition {
 export interface BusDetail extends BusPosition {
   /** Best-guess route code: live route_code → last known since server start. */
   resolved_route_code: string | null
+  /** True = bus currently serving this route. False = last known, bus currently inactive/parked. */
+  route_is_live: boolean
   /** Ordered stop list for all directions — filter by direction to draw polyline. */
   route_stops: RouteStop[]
 }

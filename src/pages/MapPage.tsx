@@ -339,7 +339,7 @@ export default function MapPage() {
         ))}
 
         {/* Selected bus route polyline */}
-        {selectedDetail && selectedDetail.route_stops.length > 1 && (() => {
+        {selectedDetail && selectedDetail.route_stops.length > 1 && selectedDetail.route_is_live && (() => {
           const dir = selectedDetail.direction_letter ?? 'G'
           const pts = selectedDetail.route_stops
             .filter((s) => s.direction === dir)
@@ -415,13 +415,19 @@ export default function MapPage() {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-0.5">
                   <span className="font-mono font-bold text-brand-400 text-sm">{selectedKapino}</span>
-                  {(selectedDetail?.resolved_route_code ?? selectedDetail?.route_code) && (
-                    <span
-                      className="px-2 py-0.5 rounded-full text-xs font-bold font-mono"
-                      style={{ background: '#f97316', color: '#000' }}
-                    >
-                      {selectedDetail!.resolved_route_code ?? selectedDetail!.route_code}
-                    </span>
+                  {selectedDetail?.resolved_route_code && (
+                    selectedDetail.route_is_live ? (
+                      <span
+                        className="px-2 py-0.5 rounded-full text-xs font-bold font-mono"
+                        style={{ background: '#f97316', color: '#000' }}
+                      >
+                        {selectedDetail.resolved_route_code}
+                      </span>
+                    ) : (
+                      <span className="text-[11px] text-slate-500 font-mono">
+                        Son: {selectedDetail.resolved_route_code}
+                      </span>
+                    )
                   )}
                   {detailLoading && (
                     <span className="text-[10px] text-slate-500">yükleniyor…</span>
