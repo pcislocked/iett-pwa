@@ -341,10 +341,10 @@ export default function MapPage() {
         {/* Selected bus route polyline */}
         {selectedDetail && selectedDetail.route_stops.length > 1 && selectedDetail.route_is_live && (() => {
           const dir = selectedDetail.direction_letter ?? 'G'
-          const pts = selectedDetail.route_stops
+          const pts = [...selectedDetail.route_stops]
             .filter((s) => s.direction === dir)
             .sort((a, b) => a.sequence - b.sequence)
-            .filter((s) => s.latitude && s.longitude)
+            .filter((s) => Number.isFinite(s.latitude) && Number.isFinite(s.longitude))
             .map((s): [number, number] => [s.latitude, s.longitude])
           return pts.length > 1 ? (
             <Polyline
@@ -445,6 +445,8 @@ export default function MapPage() {
               <button
                 onClick={() => { setSelectedKapino(null); setSelectedDetail(null) }}
                 className="text-slate-500 hover:text-slate-300 text-lg leading-none shrink-0"
+                aria-label="Detayları kapat"
+                title="Detayları kapat"
               >
                 ×
               </button>
