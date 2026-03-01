@@ -7,9 +7,21 @@ import { usePolling } from '@/hooks/usePolling'
 import { api, type RouteStop, type ScheduledDeparture, type Announcement, type RouteMetadata } from '@/api/client'
 import { useFavorites } from '@/hooks/useFavorites'
 
-const busIcon = L.divIcon({
+const busIconG = L.divIcon({
   className: '',
   html: `<div style="background:#2563eb;border-radius:50%;width:14px;height:14px;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.6)"></div>`,
+  iconSize: [14, 14],
+  iconAnchor: [7, 7],
+})
+const busIconD = L.divIcon({
+  className: '',
+  html: `<div style="background:#f59e0b;border-radius:50%;width:14px;height:14px;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.6)"></div>`,
+  iconSize: [14, 14],
+  iconAnchor: [7, 7],
+})
+const busIconUnknown = L.divIcon({
+  className: '',
+  html: `<div style="background:#6b7280;border-radius:50%;width:14px;height:14px;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.6)"></div>`,
   iconSize: [14, 14],
   iconAnchor: [7, 7],
 })
@@ -351,6 +363,17 @@ export default function RoutePage() {
                 ))}
               </div>
             )}
+            {/* Bus direction legend */}
+            {buses && buses.length > 0 && (
+              <div className="flex items-center gap-4 px-1">
+                {[...new Map(buses.filter(b => b.direction_letter).map(b => [b.direction_letter, b])).values()].map((b) => (
+                  <div key={b.direction_letter} className="flex items-center gap-1.5">
+                    <div className="w-3 h-3 rounded-full border border-white/40 shrink-0" style={{ background: b.direction_letter === 'G' ? '#2563eb' : '#f59e0b' }} />
+                    <span className="text-[10px] text-[#888] truncate">{b.direction ?? b.direction_letter}</span>
+                  </div>
+                ))}
+              </div>
+            )}
             <div className="rounded-2xl overflow-hidden border border-surface-muted" style={{ height: 420 }}>
               <MapContainer center={center} zoom={13} style={{ height: '100%', width: '100%' }}>
                 <TileLayer
@@ -367,14 +390,20 @@ export default function RoutePage() {
                     eventHandlers={{ click: () => { navigate(`/stops/${s.stop_code}`) } }}
                   />
                 ))}
-                {buses?.map((b) => (
-                  <Marker key={b.kapino} position={[b.latitude, b.longitude]} icon={busIcon}>
-                    <Popup>
-                      <strong>{b.kapino}</strong><br />
-                      {b.direction}
-                    </Popup>
-                  </Marker>
-                ))}
+                {buses
+                  ?.filter((b) => !effectiveMapDir || b.direction_letter === effectiveMapDir)
+                  .map((b) => (
+                    <Marker
+                      key={b.kapino}
+                      position={[b.latitude, b.longitude]}
+                      icon={b.direction_letter === 'G' ? busIconG : b.direction_letter === 'D' ? busIconD : busIconUnknown}
+                    >
+                      <Popup>
+                        <strong>{b.kapino}</strong><br />
+                        {b.direction}
+                      </Popup>
+                    </Marker>
+                  ))}
               </MapContainer>
             </div>
           </div>
