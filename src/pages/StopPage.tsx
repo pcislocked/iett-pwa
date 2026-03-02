@@ -456,10 +456,10 @@ export default function StopPage() {
     return m
   }, [routeBuses])
 
-  // ETA lookup by kapino (from all arrivals, not just filtered)
-  const etaByKapino = useMemo(() => {
-    const m = new Map<string, number | null>()
-    ;(arrivals ?? []).forEach((a) => { if (a.kapino) m.set(a.kapino, a.eta_minutes) })
+  // O(1) arrival lookup by kapino — used by bus map markers to open BusDetailSheet
+  const arrivalByKapino = useMemo(() => {
+    const m = new Map<string, Arrival>()
+    ;(arrivals ?? []).forEach((a) => { if (a.kapino) m.set(a.kapino, a) })
     return m
   }, [arrivals])
 
@@ -640,33 +640,21 @@ export default function StopPage() {
                   </div>
                 </Popup>
               </CircleMarker>
-              {/* Live bus markers — coloured per route, icons cached by route */}
+              {/* Live bus markers — clicking opens the rich BusDetailSheet */}
               {routeBuses.map((b) => {
-                const eta = etaByKapino.get(b.kapino) ?? null
-                const color = b.route_code ? getRouteColor(b.route_code, arrivalRouteOrder) : '#6b7280'
                 const icon = (b.route_code ? routeIconMap.get(b.route_code) : undefined) ?? makeBusIcon('#6b7280')
-                const vehicleLine = [b.plate, b.kapino].filter(Boolean).join('  ·  ')
                 return (
-                  <Marker key={`${b.kapino}-${b.route_code ?? ''}`} position={[b.latitude, b.longitude]} icon={icon}>
-                    <Popup minWidth={160}>
-                      <div className="popup-card">
-                        <div className="popup-route" style={{ background: color }}>
-                          {b.route_code ?? '—'}
-                        </div>
-                        {b.route_name && <p className="popup-name">{b.route_name}</p>}
-                        {eta !== null && (
-                          <p className="popup-eta">
-                            <span className="popup-label">ETA </span>
-                            <strong>{eta} dk</strong>
-                          </p>
-                        )}
-                        <p className="popup-mono">{vehicleLine}</p>
-                        {b.direction && (
-                          <p className="popup-label" style={{ marginTop: 4 }}>→ {b.direction}</p>
-                        )}
-                      </div>
-                    </Popup>
-                  </Marker>
+                  <Marker
+                    key={`${b.kapino}-${b.route_code ?? ''}`}
+                    position={[b.latitude, b.longitude]}
+                    icon={icon}
+                    eventHandlers={{
+                      click: () => {
+                        const matched = arrivalByKapino.get(b.kapino) ?? null
+                        if (matched) setSelectedArrival(matched)
+                      },
+                    }}
+                  />
                 )
               })}
             </MapContainer>

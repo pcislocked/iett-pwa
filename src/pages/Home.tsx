@@ -5,6 +5,9 @@ import { useUserPrefs, type PinnedStop } from '@/hooks/useUserPrefs'
 import { getRecent, type RecentSearch } from '@/hooks/useRecentSearches'
 import { api, type NearbyStop } from '@/api/client'
 import { distanceLabel } from '@/utils/distance'
+import LocationConsentModal from '@/components/LocationConsentModal'
+
+const LOCATION_CONSENT_KEY = 'location-consent'
 
 /** Format current time HH:MM */
 function useClock() {
@@ -66,9 +69,10 @@ export default function Home() {
   const [recents, setRecents] = useState<RecentSearch[]>([])
   useEffect(() => { setRecents(getRecent()) }, [])
 
-  // ── Nearest stops (auto-GPS) ───────────────────────────────────────────────
+  // ── Nearest stops (consent-gated GPS) ─────────────────────────────────────
   const [gpsPhase, setGpsPhase] = useState<GpsPhase>('locating')
   const [nearbyStops, setNearbyStops] = useState<NearbyStop[]>([])
+  const [showConsentModal, setShowConsentModal] = useState(false)
 
   const requestGps = useCallback(() => {
     if (!navigator.geolocation) { setGpsPhase('unavailable'); return }
@@ -77,7 +81,7 @@ export default function Home() {
       async (pos) => {
         try {
           const stops = await api.stops.nearby(pos.coords.latitude, pos.coords.longitude)
-          setNearbyStops(stops.slice(0, 5))
+          setNearbyStops([...stops].sort((a, b) => a.distance_m - b.distance_m).slice(0, 5))
           setGpsPhase('done')
         } catch {
           setGpsPhase('unavailable')
@@ -88,7 +92,30 @@ export default function Home() {
     )
   }, [])
 
-  useEffect(() => { requestGps() }, [requestGps])
+  const handleConsentConfirm = useCallback(() => {
+    try { localStorage.setItem(LOCATION_CONSENT_KEY, 'granted') } catch { /* storage unavailable */ }
+    setShowConsentModal(false)
+    requestGps()
+  }, [requestGps])
+
+  const handleConsentDismiss = useCallback(() => {
+    try { localStorage.setItem(LOCATION_CONSENT_KEY, 'dismissed') } catch { /* storage unavailable */ }
+    setShowConsentModal(false)
+    setGpsPhase('denied')
+  }, [])
+
+  useEffect(() => {
+    let consent: string | null = null
+    try { consent = localStorage.getItem(LOCATION_CONSENT_KEY) } catch { /* storage unavailable */ }
+    if (consent === 'granted') {
+      requestGps()
+    } else if (consent === 'dismissed') {
+      setGpsPhase('denied')
+    } else {
+      // First visit (or storage unavailable) — show consent modal
+      setShowConsentModal(true)
+    }
+  }, [requestGps])
 
   return (
     <div className="flex-1 overflow-y-auto pb-4">
@@ -140,8 +167,8 @@ export default function Home() {
         )}
       </section>
 
-      {/* ── Nearest stops ────────────────────────────────────────────────────── */}
-      <section className="mb-4">
+      {/* ── Nearest stops ─ hidden when location permission revoked ────────── */}
+      {gpsPhase !== 'denied' && <section className="mb-4">
         <div className="flex items-center justify-between px-4 pt-2 pb-1">
           <span className="metro-section p-0">Yakın Duraklar</span>
           <Link
@@ -180,10 +207,10 @@ export default function Home() {
           />
         ))}
 
-        {/* GPS denied */}
-        {(gpsPhase === 'denied' || gpsPhase === 'unavailable') && (
+        {/* GPS unavailable — retry */}
+        {gpsPhase === 'unavailable' && (
           <button
-            onClick={() => gpsPhase === 'unavailable' ? requestGps() : navigate('/nearby')}
+            onClick={requestGps}
             className="mx-4 w-[calc(100%-2rem)] py-5 flex flex-col items-center gap-2 metro-tilt"
             style={{ border: '1px solid #222', color: '#444' }}
           >
@@ -193,17 +220,11 @@ export default function Home() {
               <path strokeLinecap="round" strokeLinejoin="round"
                 d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
             </svg>
-            <span className="text-sm">
-              {gpsPhase === 'denied' ? 'Konum izni yok' : 'Konum alınamadı'}
-            </span>
-            <span className="text-xs" style={{ color: '#333' }}>
-              {gpsPhase === 'denied'
-                ? 'Tarayıcı ayarlarından konuma izin ver'
-                : 'Yakın durağa manüel git →'}
-            </span>
+            <span className="text-sm">Konum alınamadı</span>
+            <span className="text-xs" style={{ color: '#333' }}>Tekrar dene →</span>
           </button>
         )}
-      </section>
+      </section>}
 
       {/* ── Last searches ────────────────────────────────────────────────────── */}
       {recents.length > 0 && (
@@ -335,6 +356,12 @@ export default function Home() {
         </div>
       </section>
 
+      {showConsentModal && (
+        <LocationConsentModal
+          onConfirm={handleConsentConfirm}
+          onDismiss={handleConsentDismiss}
+        />
+      )}
     </div>
   )
 }
