@@ -5,6 +5,9 @@ import { useUserPrefs, type PinnedStop } from '@/hooks/useUserPrefs'
 import { getRecent, type RecentSearch } from '@/hooks/useRecentSearches'
 import { api, type NearbyStop } from '@/api/client'
 import { distanceLabel } from '@/utils/distance'
+import LocationConsentModal from '@/components/LocationConsentModal'
+
+const LOCATION_CONSENT_KEY = 'location-consent'
 
 /** Format current time HH:MM */
 function useClock() {
@@ -66,9 +69,10 @@ export default function Home() {
   const [recents, setRecents] = useState<RecentSearch[]>([])
   useEffect(() => { setRecents(getRecent()) }, [])
 
-  // ── Nearest stops (auto-GPS) ───────────────────────────────────────────────
+  // ── Nearest stops (consent-gated GPS) ─────────────────────────────────────
   const [gpsPhase, setGpsPhase] = useState<GpsPhase>('locating')
   const [nearbyStops, setNearbyStops] = useState<NearbyStop[]>([])
+  const [showConsentModal, setShowConsentModal] = useState(false)
 
   const requestGps = useCallback(() => {
     if (!navigator.geolocation) { setGpsPhase('unavailable'); return }
@@ -77,7 +81,7 @@ export default function Home() {
       async (pos) => {
         try {
           const stops = await api.stops.nearby(pos.coords.latitude, pos.coords.longitude)
-          setNearbyStops(stops.slice(0, 5))
+          setNearbyStops([...stops].sort((a, b) => a.distance_m - b.distance_m).slice(0, 5))
           setGpsPhase('done')
         } catch {
           setGpsPhase('unavailable')
@@ -88,7 +92,29 @@ export default function Home() {
     )
   }, [])
 
-  useEffect(() => { requestGps() }, [requestGps])
+  const handleConsentConfirm = useCallback(() => {
+    localStorage.setItem(LOCATION_CONSENT_KEY, 'granted')
+    setShowConsentModal(false)
+    requestGps()
+  }, [requestGps])
+
+  const handleConsentDismiss = useCallback(() => {
+    localStorage.setItem(LOCATION_CONSENT_KEY, 'dismissed')
+    setShowConsentModal(false)
+    setGpsPhase('denied')
+  }, [])
+
+  useEffect(() => {
+    const consent = localStorage.getItem(LOCATION_CONSENT_KEY)
+    if (consent === 'granted') {
+      requestGps()
+    } else if (consent === 'dismissed') {
+      setGpsPhase('denied')
+    } else {
+      // First visit — show consent modal; skeleton renders in background
+      setShowConsentModal(true)
+    }
+  }, [requestGps])
 
   return (
     <div className="flex-1 overflow-y-auto pb-4">
@@ -335,6 +361,12 @@ export default function Home() {
         </div>
       </section>
 
+      {showConsentModal && (
+        <LocationConsentModal
+          onConfirm={handleConsentConfirm}
+          onDismiss={handleConsentDismiss}
+        />
+      )}
     </div>
   )
 }

@@ -355,20 +355,8 @@ export default function MapPage() {
         })()}
 
         {filtered.map((b) => {
-          // Build full trail: historical points + current position
-          const trailPositions: [number, number][] = [
-            ...(b.trail ?? []).map((p): [number, number] => [p.lat, p.lon]),
-            [b.latitude, b.longitude],
-          ]
           return (
             <React.Fragment key={b.kapino}>
-              {/* Trail polyline — only render if we have history */}
-              {trailPositions.length > 1 && (
-                <Polyline
-                  positions={trailPositions}
-                  pathOptions={{ color: '#60a5fa', weight: 2, opacity: 0.55 }}
-                />
-              )}
               <Marker position={[b.latitude, b.longitude]} icon={busIcon}
                 eventHandlers={{ click: () => setSelectedKapino(b.kapino) }}
               >
