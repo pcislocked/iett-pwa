@@ -5,6 +5,44 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [0.3.1] – 2026-03-02
+
+### Added
+- **MapPage** — tap a bus marker to show detail card with route polyline overlay
+  (`GET /v1/fleet/{kapino}/detail`); polyline skipped for inactive buses
+- **Home — Nearby stops** show live arrivals via `PinnedStopRow` with distance
+  badge; `direction` prop added to `PinnedStopRow` to skip the redundant
+  `stops.detail()` fetch when direction is already known (eliminates burst of
+  up to 5 extra requests per page load)
+- `api.fleet.detail(kapino)` client function for the new backend endpoint
+- `api.fleet.detail` test coverage in `src/api/__tests__/client.test.ts`
+
+### Fixed
+- Service worker: `hasReloadedForSWUpdate` guard prevents multiple rapid
+  reloads when `controllerchange` fires more than once during SW activation
+- `route_stops.sort()` now spreads into a copy (`[...route_stops]`) before
+  sorting to avoid mutating React state
+- Coordinate filter uses `Number.isFinite()` instead of truthiness so that
+  stops at coordinate `0` are not incorrectly filtered out
+- Bus detail close button has `aria-label` + `title` for accessibility
+
+### Chore
+- `coverage/` added to `.gitignore`
+
+---
+
+## [0.3.0] – 2026-03-02
+
+### Added
+- Full AMOLED UI redesign (v0.3 design system)
+- **MapPage** — fleet map with bus markers, trail polylines, stop clusters
+- **`BusDetail`** model: `resolved_route_code`, `route_is_live`, `route_stops`,
+  `direction_letter`, `stop_sequence`
+- **Inactive bus badge** — `Son: X` dim badge when bus has not reported
+  recently; route polyline suppressed for inactive buses
+
+---
+
 ## [0.2.2] – 2026-03-01
 
 ### Fixed
