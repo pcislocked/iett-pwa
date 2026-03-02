@@ -166,8 +166,8 @@ export default function Home() {
         )}
       </section>
 
-      {/* ── Nearest stops ────────────────────────────────────────────────────── */}
-      <section className="mb-4">
+      {/* ── Nearest stops ─ hidden when location permission revoked ────────── */}
+      {gpsPhase !== 'denied' && <section className="mb-4">
         <div className="flex items-center justify-between px-4 pt-2 pb-1">
           <span className="metro-section p-0">Yakın Duraklar</span>
           <Link
@@ -206,10 +206,10 @@ export default function Home() {
           />
         ))}
 
-        {/* GPS denied */}
-        {(gpsPhase === 'denied' || gpsPhase === 'unavailable') && (
+        {/* GPS unavailable — retry */}
+        {gpsPhase === 'unavailable' && (
           <button
-            onClick={() => gpsPhase === 'unavailable' ? requestGps() : navigate('/nearby')}
+            onClick={requestGps}
             className="mx-4 w-[calc(100%-2rem)] py-5 flex flex-col items-center gap-2 metro-tilt"
             style={{ border: '1px solid #222', color: '#444' }}
           >
@@ -219,17 +219,11 @@ export default function Home() {
               <path strokeLinecap="round" strokeLinejoin="round"
                 d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
             </svg>
-            <span className="text-sm">
-              {gpsPhase === 'denied' ? 'Konum izni yok' : 'Konum alınamadı'}
-            </span>
-            <span className="text-xs" style={{ color: '#333' }}>
-              {gpsPhase === 'denied'
-                ? 'Tarayıcı ayarlarından konuma izin ver'
-                : 'Yakın durağa manüel git →'}
-            </span>
+            <span className="text-sm">Konum alınamadı</span>
+            <span className="text-xs" style={{ color: '#333' }}>Tekrar dene →</span>
           </button>
         )}
-      </section>
+      </section>}
 
       {/* ── Last searches ────────────────────────────────────────────────────── */}
       {recents.length > 0 && (

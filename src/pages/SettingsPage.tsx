@@ -1,11 +1,18 @@
 import { useState, useEffect, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { type Settings, loadSettings, saveSettings } from '@/utils/settings'
 import { useUserPrefs } from '@/hooks/useUserPrefs'
 
+const LOCATION_CONSENT_KEY = 'location-consent'
+
 export default function SettingsPage() {
+  const navigate = useNavigate()
   const [settings, setSettings] = useState<Settings>(loadSettings)
   const [saved, setSaved] = useState(false)
   const { exportPrefs, importPrefs } = useUserPrefs()
+  const [locationConsent, setLocationConsent] = useState<string | null>(
+    () => localStorage.getItem(LOCATION_CONSENT_KEY),
+  )
   const fileRef = useRef<HTMLInputElement>(null)
   const [importStatus, setImportStatus] = useState<'idle' | 'ok' | 'err'>('idle')
   const reloadTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -107,6 +114,45 @@ export default function SettingsPage() {
       {saved && (
         <p className="text-sm text-eta-soon text-center">✓ Ayarlar kaydedildi</p>
       )}
+
+      {/* Location consent */}
+      <div className="card flex flex-col gap-3">
+        <p className="text-sm font-semibold text-slate-400">Konum İzni</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm text-slate-300 font-medium">
+              {locationConsent === 'granted' ? 'Konum etkin' : 'Konum devre dışı'}
+            </p>
+            <p className="text-xs text-slate-500 mt-0.5">
+              {locationConsent === 'granted'
+                ? 'Yakın Duraklar konum kullanıyor'
+                : 'Yakın Duraklar ana sayfada gizlenir'}
+            </p>
+          </div>
+          {locationConsent === 'granted' ? (
+            <button
+              onClick={() => {
+                localStorage.setItem(LOCATION_CONSENT_KEY, 'dismissed')
+                setLocationConsent('dismissed')
+              }}
+              className="shrink-0 px-3 py-1.5 rounded-xl text-xs font-semibold bg-red-900/40 text-red-400 hover:bg-red-900/60 transition-colors"
+            >
+              Konumu İptal Et
+            </button>
+          ) : (
+            <button
+              onClick={() => {
+                localStorage.removeItem(LOCATION_CONSENT_KEY)
+                setLocationConsent(null)
+                navigate('/')
+              }}
+              className="shrink-0 px-3 py-1.5 rounded-xl text-xs font-semibold bg-brand-600/40 text-brand-400 hover:bg-brand-600/60 transition-colors"
+            >
+              Konumu Etkinleştir
+            </button>
+          )}
+        </div>
+      </div>
 
       {/* Data backup */}
       <div className="card flex flex-col gap-3">
