@@ -10,9 +10,9 @@ export default function SettingsPage() {
   const [settings, setSettings] = useState<Settings>(loadSettings)
   const [saved, setSaved] = useState(false)
   const { exportPrefs, importPrefs } = useUserPrefs()
-  const [locationConsent, setLocationConsent] = useState<string | null>(
-    () => localStorage.getItem(LOCATION_CONSENT_KEY),
-  )
+  const [locationConsent, setLocationConsent] = useState<string | null>(() => {
+    try { return localStorage.getItem(LOCATION_CONSENT_KEY) } catch { return null }
+  })
   const fileRef = useRef<HTMLInputElement>(null)
   const [importStatus, setImportStatus] = useState<'idle' | 'ok' | 'err'>('idle')
   const reloadTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -132,7 +132,7 @@ export default function SettingsPage() {
           {locationConsent === 'granted' ? (
             <button
               onClick={() => {
-                localStorage.setItem(LOCATION_CONSENT_KEY, 'dismissed')
+                try { localStorage.setItem(LOCATION_CONSENT_KEY, 'dismissed') } catch { /* storage unavailable */ }
                 setLocationConsent('dismissed')
               }}
               className="shrink-0 px-3 py-1.5 rounded-xl text-xs font-semibold bg-red-900/40 text-red-400 hover:bg-red-900/60 transition-colors"
@@ -142,7 +142,7 @@ export default function SettingsPage() {
           ) : (
             <button
               onClick={() => {
-                localStorage.removeItem(LOCATION_CONSENT_KEY)
+                try { localStorage.removeItem(LOCATION_CONSENT_KEY) } catch { /* storage unavailable */ }
                 setLocationConsent(null)
                 navigate('/')
               }}

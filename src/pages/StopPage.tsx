@@ -456,6 +456,13 @@ export default function StopPage() {
     return m
   }, [routeBuses])
 
+  // O(1) arrival lookup by kapino — used by bus map markers to open BusDetailSheet
+  const arrivalByKapino = useMemo(() => {
+    const m = new Map<string, Arrival>()
+    ;(arrivals ?? []).forEach((a) => { if (a.kapino) m.set(a.kapino, a) })
+    return m
+  }, [arrivals])
+
   if (!dcode) return null
 
   return (
@@ -636,14 +643,16 @@ export default function StopPage() {
               {/* Live bus markers — clicking opens the rich BusDetailSheet */}
               {routeBuses.map((b) => {
                 const icon = (b.route_code ? routeIconMap.get(b.route_code) : undefined) ?? makeBusIcon('#6b7280')
-                const matchedArrival = arrivals?.find((a) => a.kapino === b.kapino) ?? null
                 return (
                   <Marker
                     key={`${b.kapino}-${b.route_code ?? ''}`}
                     position={[b.latitude, b.longitude]}
                     icon={icon}
                     eventHandlers={{
-                      click: () => { if (matchedArrival) setSelectedArrival(matchedArrival) },
+                      click: () => {
+                        const matched = arrivalByKapino.get(b.kapino) ?? null
+                        if (matched) setSelectedArrival(matched)
+                      },
                     }}
                   />
                 )

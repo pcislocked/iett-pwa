@@ -93,25 +93,26 @@ export default function Home() {
   }, [])
 
   const handleConsentConfirm = useCallback(() => {
-    localStorage.setItem(LOCATION_CONSENT_KEY, 'granted')
+    try { localStorage.setItem(LOCATION_CONSENT_KEY, 'granted') } catch { /* storage unavailable */ }
     setShowConsentModal(false)
     requestGps()
   }, [requestGps])
 
   const handleConsentDismiss = useCallback(() => {
-    localStorage.setItem(LOCATION_CONSENT_KEY, 'dismissed')
+    try { localStorage.setItem(LOCATION_CONSENT_KEY, 'dismissed') } catch { /* storage unavailable */ }
     setShowConsentModal(false)
     setGpsPhase('denied')
   }, [])
 
   useEffect(() => {
-    const consent = localStorage.getItem(LOCATION_CONSENT_KEY)
+    let consent: string | null = null
+    try { consent = localStorage.getItem(LOCATION_CONSENT_KEY) } catch { /* storage unavailable */ }
     if (consent === 'granted') {
       requestGps()
     } else if (consent === 'dismissed') {
       setGpsPhase('denied')
     } else {
-      // First visit — show consent modal; skeleton renders in background
+      // First visit (or storage unavailable) — show consent modal
       setShowConsentModal(true)
     }
   }, [requestGps])
