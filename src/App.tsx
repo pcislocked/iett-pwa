@@ -190,7 +190,7 @@ function AnimatedMain() {
           {(MAIN_PATHS as readonly string[]).map(path => (
             <div
               key={path}
-              className="h-full overflow-y-auto bg-black flex flex-col"
+              className="h-full overflow-y-auto overscroll-none bg-black flex flex-col"
               style={{ width: `${100 / N}%` }}
             >
               <MainRoutes loc={makeLoc(path)} />
@@ -209,7 +209,7 @@ function AnimatedMain() {
     <div className="flex-1 min-h-0 relative overflow-hidden flex flex-col">
       {exitLoc && (
         <div
-          className={`absolute inset-0 bg-black overflow-y-auto flex flex-col transition-transform duration-[220ms] ease-out ${
+          className={`absolute inset-0 bg-black overflow-y-auto overscroll-none flex flex-col transition-transform duration-[220ms] ease-out ${
             active ? exitFinal : 'translate-x-0'
           }`}
           style={{ willChange: 'transform' }}
@@ -218,7 +218,7 @@ function AnimatedMain() {
         </div>
       )}
       <div
-        className={`absolute inset-0 bg-black overflow-y-auto flex flex-col transition-transform duration-[220ms] ease-out ${
+        className={`absolute inset-0 bg-black overflow-y-auto overscroll-none flex flex-col transition-transform duration-[220ms] ease-out ${
           (!exitLoc || active) ? 'translate-x-0' : enterInit
         }`}
         style={{ willChange: 'transform' }}
@@ -241,7 +241,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <BottomBarContext.Provider value={bottomBarState}>
-        <div className="flex flex-col h-dvh bg-black overflow-hidden">
+        <div className="flex flex-col h-svh bg-black overflow-hidden">
           <AnimatedMain />
           <InstallBannerWrapper />
           <AppBar />

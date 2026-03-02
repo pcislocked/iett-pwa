@@ -272,7 +272,9 @@ export default function NearbyPage() {
     setSelectedCode(null)
     try {
       const nearby = await api.stops.nearby(lat, lon)
-      const base: NearbyStop[] = nearby.map((s) => ({ ...s, routes: [] }))
+      const base: NearbyStop[] = [...nearby]
+        .sort((a, b) => (Number(a.distance_m) || 0) - (Number(b.distance_m) || 0))
+        .map((s) => ({ ...s, routes: [] }))
       setAllStops(base)
       setSelectedCode(base[0]?.stop_code ?? null)
       setPhase('done')
@@ -280,11 +282,20 @@ export default function NearbyPage() {
       const enriched = await Promise.allSettled(
         nearby.map((s) => api.stops.routes(s.stop_code)),
       )
+      // Build stop_code → routes map (enriched is indexed by original nearby order)
+      const routeMap = new Map(
+        nearby.map((s, i) => [
+          s.stop_code,
+          enriched[i].status === 'fulfilled' ? enriched[i].value : [],
+        ]),
+      )
       setAllStops(
-        nearby.map((s, i) => ({
-          ...s,
-          routes: enriched[i].status === 'fulfilled' ? enriched[i].value : [],
-        })),
+        [...nearby]
+          .sort((a, b) => (Number(a.distance_m) || 0) - (Number(b.distance_m) || 0))
+          .map((s) => ({
+            ...s,
+            routes: routeMap.get(s.stop_code) ?? [],
+          })),
       )
     } catch {
       setPhase('error')

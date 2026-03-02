@@ -466,8 +466,8 @@ export default function StopPage() {
   if (!dcode) return null
 
   return (
-    <div className="h-screen flex flex-col">
-      {/* Header */}
+    <div className="h-full flex flex-col">
+      {/* Header */
       <div className="bg-surface-card border-b border-surface-muted shrink-0 sticky top-0 z-40">
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
           <button
@@ -778,8 +778,8 @@ export default function StopPage() {
 
         {/* ── Bottom strip: route filter chips + direction ──────────────────
             Persistently visible; top 3 routes carry their palette colour even
-            when not selected.  pb-16 clears the fixed bottom tab bar. */}
-        <div className="shrink-0 border-t border-surface-muted bg-surface-card pb-16">
+            when not selected. AppBar is a flex sibling outside this container. */}
+        <div className="shrink-0 border-t border-surface-muted bg-surface-card pb-2">
           {stopDetail?.direction && (
             <div className="px-4 pt-2">
               <span className="inline-flex items-center gap-1 text-[11px] text-slate-400 bg-surface-muted px-2 py-0.5 rounded-md">

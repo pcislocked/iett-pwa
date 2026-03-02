@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import PinnedStopRow from '@/components/PinnedStopRow'
 import { useUserPrefs, type PinnedStop } from '@/hooks/useUserPrefs'
@@ -59,6 +59,31 @@ function QuickRow({
   return <button onClick={onPress} className="metro-row w-full text-left">{inner}</button>
 }
 
+/** Animated "Konum alınıyor" dots: cycles ·  ··  ···  ····  every 400 ms */
+function GpsLocatingDots() {
+  const [frame, setFrame] = useState(0)
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  useEffect(() => {
+    timerRef.current = setInterval(() => setFrame(f => (f + 1) % 4), 400)
+    return () => { if (timerRef.current) clearInterval(timerRef.current) }
+  }, [])
+  const dots = ['·', '··', '···', '····'][frame]
+  return (
+    <div className="flex items-center gap-2.5 px-4 py-3 min-h-[52px]">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}
+           className="w-4 h-4 shrink-0 text-slate-500">
+        <path strokeLinecap="round" strokeLinejoin="round"
+          d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+        <path strokeLinecap="round" strokeLinejoin="round"
+          d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+      </svg>
+      <span className="text-[13px] text-slate-500">
+        Konum alınıyor<span className="font-mono">{dots}</span>
+      </span>
+    </div>
+  )
+}
+
 export default function Home() {
   const navigate = useNavigate()
   const clock = useClock()
@@ -81,7 +106,11 @@ export default function Home() {
       async (pos) => {
         try {
           const stops = await api.stops.nearby(pos.coords.latitude, pos.coords.longitude)
-          setNearbyStops([...stops].sort((a, b) => a.distance_m - b.distance_m).slice(0, 5))
+          setNearbyStops(
+            [...stops]
+              .sort((a, b) => (Number(a.distance_m) || 0) - (Number(b.distance_m) || 0))
+              .slice(0, 5),
+          )
           setGpsPhase('done')
         } catch {
           setGpsPhase('unavailable')
@@ -180,20 +209,8 @@ export default function Home() {
           </Link>
         </div>
 
-        {/* Loading skeleton */}
-        {gpsPhase === 'locating' && (
-          <div className="flex flex-col gap-1 px-0">
-            {[...Array(3)].map((_, i) => (
-              <div key={i} className="flex items-center gap-3 px-4 py-3 min-h-[52px]">
-                <div className="w-4 h-4 rounded-full bg-surface-muted animate-pulse shrink-0" />
-                <div className="flex-1 flex flex-col gap-1.5">
-                  <div className="h-3 w-40 bg-surface-muted rounded animate-pulse" />
-                  <div className="h-2.5 w-24 bg-surface-muted rounded animate-pulse opacity-60" />
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+        {/* Locating animation */}
+        {gpsPhase === 'locating' && <GpsLocatingDots />}
 
         {/* Stops list */}
         {gpsPhase === 'done' && nearbyStops.map((s) => (

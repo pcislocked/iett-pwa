@@ -15,7 +15,7 @@
 
 @layer base {
   html { font-family: "Segoe UI", "Segoe WP", Arial, sans-serif; }
-  body { background: #000; color: #fff; }
+  body { background: #000; color: #fff; overscroll-behavior-y: none; }
 }
 
 @layer components {
