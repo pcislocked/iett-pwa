@@ -176,6 +176,7 @@ export default function Home() {
             nick={s.stop_name}
             icon="📍"
             distLabel={distanceLabel(s.distance_m)}
+            direction={s.direction}
           />
         ))}
 

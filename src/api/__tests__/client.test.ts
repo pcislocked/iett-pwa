@@ -106,6 +106,34 @@ describe('api.stops.arrivals', () => {
 })
 
 // ---------------------------------------------------------------------------
+// api.fleet (detail)
+// ---------------------------------------------------------------------------
+
+describe('api.fleet.detail', () => {
+  it('calls the correct URL and returns BusDetail shape', async () => {
+    const payload = {
+      kapino: 'A-001', plate: null, latitude: 41.0, longitude: 29.0,
+      speed: null, operator: null, last_seen: '2026-03-02T00:00:00Z',
+      route_code: '500T', route_name: null, direction: null,
+      direction_letter: 'G', nearest_stop: null, stop_sequence: null,
+      trail: [], resolved_route_code: '500T', route_is_live: true, route_stops: [],
+    }
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 200, json: () => Promise.resolve(payload) })
+    vi.stubGlobal('fetch', fetchMock)
+    const result = await api.fleet.detail('A-001')
+    const url = fetchMock.mock.calls[0][0] as string
+    expect(url).toContain('/v1/fleet/A-001/detail')
+    expect(result.resolved_route_code).toBe('500T')
+    expect(result.route_is_live).toBe(true)
+  })
+
+  it('throws on non-200 response', async () => {
+    mockFetch('Not Found', 404)
+    await expect(api.fleet.detail('NOTEXIST')).rejects.toThrow('HTTP 404')
+  })
+})
+
+// ---------------------------------------------------------------------------
 // api.routes
 // ---------------------------------------------------------------------------
 
