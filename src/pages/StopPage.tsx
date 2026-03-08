@@ -9,6 +9,15 @@ import { useFavorites } from '@/hooks/useFavorites'
 import { useBottomBar } from '@/hooks/useBottomBar'
 import { useUserPrefs } from '@/hooks/useUserPrefs'
 
+/** Calls map.invalidateSize() whenever the container height percentage changes. */
+function MapResizer({ heightPct }: { heightPct: number }) {
+  const map = useMap()
+  useEffect(() => {
+    requestAnimationFrame(() => { map.invalidateSize() })
+  }, [heightPct, map])
+  return null
+}
+
 /** Fixed palette for the first 3 routes at this stop — orange, violet, cyan */
 const ROUTE_PALETTE = ['#f97316', '#a855f7', '#22d3ee'] as const
 
@@ -652,6 +661,7 @@ export default function StopPage() {
               style={{ height: '100%', width: '100%' }}
               key={dcode}
             >
+              <MapResizer heightPct={mapHeightPct} />
               <TileLayer
                 attribution='&copy; <a href="https://carto.com/">CartoDB</a>'
                 url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"

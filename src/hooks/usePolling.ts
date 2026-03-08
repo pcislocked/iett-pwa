@@ -25,6 +25,8 @@ export function usePolling<T>(
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
   const fetcherRef = useRef(fetcher)
   fetcherRef.current = fetcher
+  const dataRef = useRef(data)
+  dataRef.current = data
 
   const doFetch = useCallback(async () => {
     try {
@@ -35,11 +37,11 @@ export function usePolling<T>(
       setLastUpdated(new Date())
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e))
-      if (data !== null) setStale(true)  // keep showing old data
+      if (dataRef.current !== null) setStale(true)  // keep showing old data
     } finally {
       setLoading(false)
     }
-  }, [data])
+  }, [])
 
   const refresh = useCallback(() => {
     setLoading(true)
@@ -50,8 +52,7 @@ export function usePolling<T>(
     void doFetch()
     const id = setInterval(() => { void doFetch() }, intervalMs)
     return () => clearInterval(id)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [intervalMs])
+  }, [doFetch, intervalMs])
 
   return { data, loading, error, refresh, stale, lastUpdated }
 }
