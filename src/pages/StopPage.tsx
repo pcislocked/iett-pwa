@@ -277,24 +277,37 @@ function BusDetailSheet({
 }
 
 function EtaChip({ minutes, raw }: { minutes: number | null; raw: string }) {
-  if (minutes === null) return <span className="eta-chip eta-far">{raw}</span>
-  if (minutes < 5)
+  if (minutes === null)
     return (
-      <span className="inline-flex items-center gap-1 bg-emerald-500 text-white text-xs font-bold
-                        px-2.5 py-1 rounded-full min-w-[52px] justify-center">
+      <span className="inline-flex items-center justify-center bg-surface-muted text-slate-400 text-xs font-semibold
+                        px-2.5 py-1 rounded-full min-w-[52px]">
+        {raw}
+      </span>
+    )
+  if (minutes <= 3)
+    return (
+      <span className="inline-flex items-center justify-center bg-emerald-500 text-white text-xs font-bold
+                        px-2.5 py-1 rounded-full min-w-[52px]">
         {minutes} dk
       </span>
     )
-  if (minutes < 15)
+  if (minutes <= 10)
     return (
-      <span className="inline-flex items-center gap-1 bg-amber-500 text-white text-xs font-bold
-                        px-2.5 py-1 rounded-full min-w-[52px] justify-center">
+      <span className="inline-flex items-center justify-center bg-amber-400 text-black text-xs font-bold
+                        px-2.5 py-1 rounded-full min-w-[52px]">
+        {minutes} dk
+      </span>
+    )
+  if (minutes <= 25)
+    return (
+      <span className="inline-flex items-center justify-center bg-orange-500 text-white text-xs font-bold
+                        px-2.5 py-1 rounded-full min-w-[52px]">
         {minutes} dk
       </span>
     )
   return (
-    <span className="inline-flex items-center gap-1 bg-surface-muted text-slate-300 text-xs font-semibold
-                      px-2.5 py-1 rounded-full min-w-[52px] justify-center">
+    <span className="inline-flex items-center justify-center bg-slate-700 text-slate-300 text-xs font-semibold
+                      px-2.5 py-1 rounded-full min-w-[52px]">
       {minutes} dk
     </span>
   )
@@ -307,6 +320,27 @@ export default function StopPage() {
   const [showAnnouncements, setShowAnnouncements] = useState(false)
   const [selectedArrival, setSelectedArrival] = useState<Arrival | null>(null)
   const [activeTab, setActiveTab] = useState<'gelis' | 'hatlar' | 'bilgi'>('gelis')
+
+  // Sliding panel state — map height as percentage of split container
+  const [mapHeightPct, setMapHeightPct] = useState(40)
+  const splitContainerRef = useRef<HTMLDivElement>(null)
+  const dragState = useRef<{ startY: number; startPct: number } | null>(null)
+
+  const onHandlePointerDown = useCallback((e: React.PointerEvent) => {
+    e.currentTarget.setPointerCapture(e.pointerId)
+    dragState.current = { startY: e.clientY, startPct: mapHeightPct }
+  }, [mapHeightPct])
+
+  const onHandlePointerMove = useCallback((e: React.PointerEvent) => {
+    if (!dragState.current || !splitContainerRef.current) return
+    const containerH = splitContainerRef.current.offsetHeight
+    const dy = e.clientY - dragState.current.startY
+    const deltaPct = (dy / containerH) * 100
+    const newPct = Math.min(65, Math.max(15, dragState.current.startPct + deltaPct))
+    setMapHeightPct(newPct)
+  }, [])
+
+  const onHandlePointerUp = useCallback(() => { dragState.current = null }, [])
 
   // Reset to default tab whenever the stop changes (React Router may reuse this component)
   useEffect(() => { setActiveTab('gelis') }, [dcode])
@@ -353,7 +387,7 @@ export default function StopPage() {
 
   useBottomBar(bottomBarTabs)
 
-  const { data: arrivals, loading, error, stale } = useArrivals(dcode ?? '')
+  const { data: arrivals, loading, error, stale, refresh: refreshArrivals, lastUpdated } = useArrivals(dcode ?? '')
 
   const { data: routes } = usePolling<string[]>(
     useMemo(() => () => api.stops.routes(dcode ?? ''), [dcode]),
@@ -439,12 +473,14 @@ export default function StopPage() {
     })
   }, [])
 
-  // Arrivals filtered by selected routes (pills only affect the list, not the map)
+  // Arrivals filtered by selected routes, sorted ascending by ETA
   const filteredArrivals = useMemo(
-    () =>
-      activeRoutes.size > 0
+    () => {
+      const base = activeRoutes.size > 0
         ? (arrivals ?? []).filter((a) => activeRoutes.has(a.route_code))
-        : (arrivals ?? []),
+        : (arrivals ?? [])
+      return [...base].sort((a, b) => (a.eta_minutes ?? 9999) - (b.eta_minutes ?? 9999))
+    },
     [arrivals, activeRoutes],
   )
 
@@ -605,10 +641,10 @@ export default function StopPage() {
 
 {/* Split-screen body — shown on Geliş tab */}
       {activeTab === 'gelis' && (
-      <div className="flex-1 flex flex-col overflow-hidden max-w-2xl w-full mx-auto">
+      <div ref={splitContainerRef} className="flex-1 flex flex-col overflow-hidden max-w-2xl w-full mx-auto min-h-0">
 
-        {/* Map — top ~40% */}
-        <div className="h-[40%] shrink-0 border-b border-surface-muted relative">
+        {/* Map — dynamically sized via drag */}
+        <div className="shrink-0 border-b border-surface-muted relative" style={{ height: `${mapHeightPct}%` }}>
           {stopDetail && stopDetail.latitude != null && stopDetail.longitude != null ? (
             <MapContainer
               center={[stopDetail.latitude, stopDetail.longitude]}
@@ -672,8 +708,19 @@ export default function StopPage() {
           )}
         </div>
 
-        {/* Arrivals — scrollable */}
-        <div className="flex-1 overflow-y-auto px-4 pt-3 pb-4 flex flex-col gap-2">
+        {/* ── Drag handle ──────────────────────────────────────────────── */}
+        <div
+          className="shrink-0 flex items-center justify-center h-5 cursor-row-resize select-none touch-none bg-surface-card border-b border-surface-muted active:bg-surface-muted"
+          onPointerDown={onHandlePointerDown}
+          onPointerMove={onHandlePointerMove}
+          onPointerUp={onHandlePointerUp}
+          onPointerCancel={onHandlePointerUp}
+        >
+          <div className="w-10 h-1 rounded-full bg-slate-600" />
+        </div>
+
+        {/* Arrivals — scrollable, items must not shrink */}
+        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 pt-2 pb-4">
           {error && !stale && (
             <div className="bg-red-900/30 border border-red-700 rounded-xl px-4 py-3 text-red-300 text-sm">
               {error}
@@ -708,7 +755,7 @@ export default function StopPage() {
             return (
               <div
                 key={`${a.route_code}-${a.destination}-${i}`}
-                className="card flex items-stretch gap-0 py-0 overflow-hidden hover:border-slate-500 transition-colors"
+                className="mb-2 shrink-0 card flex items-stretch gap-0 py-0 overflow-hidden hover:border-slate-500 transition-colors"
               >
                 {/* LEFT half — navigate to route page */}
                 <Link
@@ -776,10 +823,25 @@ export default function StopPage() {
           )}
         </div>
 
-        {/* ── Bottom strip: route filter chips + direction ──────────────────
-            Persistently visible; top 3 routes carry their palette colour even
-            when not selected. AppBar is a flex sibling outside this container. */}
+        {/* ── Bottom strip: last updated + refresh + route filter chips ────── */}
         <div className="shrink-0 border-t border-surface-muted bg-surface-card pb-2">
+          {/* Last updated row */}
+          <div className="px-4 pt-2 pb-1 flex items-center justify-between">
+            <span className="text-[11px] text-slate-600">
+              {lastUpdated
+                ? `güncellendi: ${lastUpdated.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`
+                : 'yükleniyor...'}
+            </span>
+            <button
+              onClick={refreshArrivals}
+              className="flex items-center gap-1 text-[11px] text-slate-400 hover:text-white transition-colors active:scale-95"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+              </svg>
+              Yenile
+            </button>
+          </div>
           {stopDetail?.direction && (
             <div className="px-4 pt-2">
               <span className="inline-flex items-center gap-1 text-[11px] text-slate-400 bg-surface-muted px-2 py-0.5 rounded-md">
