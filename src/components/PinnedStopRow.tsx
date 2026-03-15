@@ -76,10 +76,12 @@ export default function PinnedStopRow({ dcode, nick, icon = '📌', distLabel, d
             const eta = a.eta_minutes !== null ? `${a.eta_minutes}dk` : a.eta_raw
             const color =
               a.eta_minutes !== null && a.eta_minutes < 5
-                ? 'text-eta-soon'
-                : a.eta_minutes !== null && a.eta_minutes < 15
-                  ? 'text-eta-coming'
-                  : 'text-slate-500'
+                ? 'text-eta-soon'    // red
+                : a.eta_minutes !== null && a.eta_minutes < 10
+                  ? 'text-eta-coming'  // orange
+                  : a.eta_minutes !== null && a.eta_minutes < 20
+                    ? 'text-eta-close'  // green
+                    : 'text-eta-far'    // gray
             return (
               <span
                 key={`${a.route_code}-${a.eta_raw ?? ''}`}

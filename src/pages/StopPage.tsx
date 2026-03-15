@@ -293,23 +293,23 @@ function EtaChip({ minutes, raw }: { minutes: number | null; raw: string }) {
         {raw}
       </span>
     )
-  if (minutes <= 3)
+  if (minutes < 5)
     return (
-      <span className="inline-flex items-center justify-center bg-emerald-500 text-white text-xs font-bold
+      <span className="inline-flex items-center justify-center bg-red-500 text-white text-xs font-bold
                         px-2.5 py-1 rounded-full min-w-[52px]">
         {minutes} dk
       </span>
     )
-  if (minutes <= 10)
-    return (
-      <span className="inline-flex items-center justify-center bg-amber-400 text-black text-xs font-bold
-                        px-2.5 py-1 rounded-full min-w-[52px]">
-        {minutes} dk
-      </span>
-    )
-  if (minutes <= 25)
+  if (minutes < 10)
     return (
       <span className="inline-flex items-center justify-center bg-orange-500 text-white text-xs font-bold
+                        px-2.5 py-1 rounded-full min-w-[52px]">
+        {minutes} dk
+      </span>
+    )
+  if (minutes < 20)
+    return (
+      <span className="inline-flex items-center justify-center bg-emerald-500 text-white text-xs font-bold
                         px-2.5 py-1 rounded-full min-w-[52px]">
         {minutes} dk
       </span>
