@@ -42,6 +42,7 @@ const viteConfig = defineConfig({
     react(),
     emitVersionManifest,
     VitePWA({
+      injectRegister: false,
       registerType: 'autoUpdate',
       workbox: {
         clientsClaim: true,
@@ -49,6 +50,11 @@ const viteConfig = defineConfig({
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
         cleanupOutdatedCaches: true,
         runtimeCaching: [
+          {
+            // Version manifest must always come from network to detect new deploys.
+            urlPattern: ({ url }) => url.pathname.endsWith('/version.json'),
+            handler: 'NetworkOnly',
+          },
           {
             // Cache iett-middle API responses for 20 s
             urlPattern: /\/v1\//,

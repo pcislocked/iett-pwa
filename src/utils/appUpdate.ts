@@ -1,4 +1,4 @@
-const VERSION_ENDPOINT = '/version.json'
+const VERSION_ENDPOINT = `${import.meta.env.BASE_URL}version.json`
 const VERSION_CHECK_INTERVAL_MS = 60_000
 const VERSION_RELOAD_FLAG_KEY = 'iett:update-reloaded-version'
 
@@ -35,8 +35,9 @@ async function clearOriginCaches(): Promise<void> {
   }
 }
 
-async function refreshServiceWorkers(): Promise<void> {
+async function refreshServiceWorkers(options?: { activateWaiting?: boolean }): Promise<void> {
   if (!('serviceWorker' in navigator)) return
+  const activateWaiting = options?.activateWaiting === true
   try {
     const registrations = await navigator.serviceWorker.getRegistrations()
     await Promise.all(
@@ -47,8 +48,10 @@ async function refreshServiceWorkers(): Promise<void> {
           // Ignore single registration update failure.
         }
 
-        registration.waiting?.postMessage({ type: 'SKIP_WAITING' })
-        registration.installing?.postMessage({ type: 'SKIP_WAITING' })
+        if (activateWaiting) {
+          registration.waiting?.postMessage({ type: 'SKIP_WAITING' })
+          registration.installing?.postMessage({ type: 'SKIP_WAITING' })
+        }
       }),
     )
   } catch {
@@ -62,7 +65,7 @@ async function forceReloadForNewVersion(nextVersion: string): Promise<void> {
 
   sessionStorage.setItem(VERSION_RELOAD_FLAG_KEY, nextVersion)
 
-  await refreshServiceWorkers()
+  await refreshServiceWorkers({ activateWaiting: true })
   await clearOriginCaches()
 
   const nextUrl = new URL(window.location.href)
@@ -84,6 +87,8 @@ export function setupAppUpdateChecks(): void {
     if (checking) return
     checking = true
     try {
+      // Force a SW update check first, then compare deployed manifest version.
+      await refreshServiceWorkers()
       const deployedVersion = await fetchDeployedVersion()
       if (!deployedVersion || deployedVersion === currentVersion) return
       await forceReloadForNewVersion(deployedVersion)
