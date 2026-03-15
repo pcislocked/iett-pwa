@@ -57,10 +57,10 @@ function AnimatedMain() {
 
   const currentIdx = (MAIN_PATHS as readonly string[]).indexOf(location.pathname)
   const onMainPath = currentIdx !== -1
-  // Number of pages Ã— 100% = strip width expressed as percentage of itself
+  // Number of pages * 100% = strip width expressed as percentage of itself
   const N = MAIN_PATHS.length  // 1
 
-  /* â”€â”€ Programmatic transition (back button or AppBar taps) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /* Programmatic transition (back button or AppBar taps) */
   useLayoutEffect(() => {
     if (location.key === prevLocRef.current.key) return
     if (_swipeNav) {
@@ -72,7 +72,7 @@ function AnimatedMain() {
     const oldLoc = prevLocRef.current
     prevLocRef.current = location
 
-    // On mainâ†’main programmatic: strip will reposition itself via inline style; no extra transition needed
+    // On main->main programmatic navigation, strip repositions via inline style.
     const newIdx = (MAIN_PATHS as readonly string[]).indexOf(location.pathname)
     const oldIdx = (MAIN_PATHS as readonly string[]).indexOf(oldLoc.pathname)
     if (newIdx !== -1 && oldIdx !== -1) {
@@ -95,7 +95,7 @@ function AnimatedMain() {
     return () => window.clearTimeout(t)
   }, [location.key, navType]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  /* â”€â”€ Live-swipe touch handler (main-path strip only) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /* Live-swipe touch handler (main-path strip only) */
   useEffect(() => {
     if (!onMainPath) return
 
@@ -110,7 +110,7 @@ function AnimatedMain() {
         ? 'transform 280ms cubic-bezier(0.25,0.46,0.45,0.94)'
         : 'none'
       // Each page occupies (100/N)% of the strip; strip is N*100vw wide
-      // Normal position: -currentIdx * (100/N)% â€” same as -currentIdx * 100vw
+      // Normal position: -currentIdx * (100/N)% -- same as -currentIdx * 100vw
       el.style.transform = `translateX(calc(${-currentIdx} * ${100 / N}% + ${dx}px))`
     }
 
@@ -174,7 +174,7 @@ function AnimatedMain() {
     }
   }, [onMainPath, currentIdx, N, navigate])
 
-  /* â”€â”€ Render: strip on main paths, overlay slide elsewhere â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /* Render: strip on main paths, overlay slide elsewhere */
   if (onMainPath) {
     return (
       <div className="flex-1 min-h-0 relative overflow-hidden">
@@ -201,7 +201,7 @@ function AnimatedMain() {
     )
   }
 
-  // Off main paths â€” classic exit/enter overlay transition
+  // Off main paths -- classic exit/enter overlay transition
   const enterInit = navDir === 'left' ? 'translate-x-full' : '-translate-x-full'
   const exitFinal = navDir === 'left' ? '-translate-x-full' : 'translate-x-full'
 

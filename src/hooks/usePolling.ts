@@ -58,10 +58,19 @@ export function usePolling<T>(
 
   useEffect(() => {
     mountedRef.current = true
+    return () => {
+      mountedRef.current = false
+      // Invalidate any in-flight request on unmount.
+      fetchIdRef.current += 1
+    }
+  }, [])
+
+  useEffect(() => {
     void doFetch()
     const id = setInterval(() => { void doFetch() }, intervalMs)
     return () => {
-      mountedRef.current = false
+      // Invalidate in-flight requests from the previous polling cycle.
+      fetchIdRef.current += 1
       clearInterval(id)
     }
   }, [doFetch, intervalMs])

@@ -4,14 +4,42 @@
  */
 
 const BASE = import.meta.env.VITE_API_BASE_URL ?? ''
+const REQUEST_TIMEOUT_MS = 15_000
+
+type TimeoutSignal = {
+  signal?: AbortSignal
+  clear: () => void
+}
+
+function createTimeoutSignal(timeoutMs: number): TimeoutSignal {
+  if (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function') {
+    return { signal: AbortSignal.timeout(timeoutMs), clear: () => {} }
+  }
+
+  if (typeof AbortController === 'undefined') {
+    return { signal: undefined, clear: () => {} }
+  }
+
+  const controller = new AbortController()
+  const timerId = globalThis.setTimeout(() => controller.abort(), timeoutMs)
+  return {
+    signal: controller.signal,
+    clear: () => globalThis.clearTimeout(timerId),
+  }
+}
 
 async function get<T>(path: string): Promise<T> {
-  const res = await fetch(`${BASE}${path}`, { signal: AbortSignal.timeout(15_000) })
-  if (!res.ok) {
-    const text = await res.text().catch(() => '')
-    throw new Error(`API ${path} → HTTP ${res.status}: ${text}`)
+  const { signal, clear } = createTimeoutSignal(REQUEST_TIMEOUT_MS)
+  try {
+    const res = await fetch(`${BASE}${path}`, signal ? { signal } : undefined)
+    if (!res.ok) {
+      const text = await res.text().catch(() => '')
+      throw new Error(`API ${path} → HTTP ${res.status}: ${text}`)
+    }
+    return res.json() as Promise<T>
+  } finally {
+    clear()
   }
-  return res.json() as Promise<T>
 }
 
 // ─── Model types ──────────────────────────────────────────────────────────────
