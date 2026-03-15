@@ -52,7 +52,7 @@ const viteConfig = defineConfig({
         runtimeCaching: [
           {
             // Version manifest must always come from network to detect new deploys.
-            urlPattern: /\/version\.json$/,
+            urlPattern: ({ url }) => url.pathname.endsWith('/version.json'),
             handler: 'NetworkOnly',
           },
           {
