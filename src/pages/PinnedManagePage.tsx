@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useUserPrefs } from '@/hooks/useUserPrefs'
 import { useArrivals } from '@/hooks/useArrivals'
 import { api, type StopDetail } from '@/api/client'
+import { etaTextClass } from '@/utils/etaColor'
 
 /* ── Jiggle keyframe injected once ─────────────────────────────────────── */
 const JIGGLE_STYLE = `
@@ -100,12 +101,7 @@ function PinnedRow({
             ) : top2.length > 0 ? (
               top2.map((a) => {
                 const eta = a.eta_minutes !== null ? `${a.eta_minutes}dk` : a.eta_raw
-                const color =
-                  a.eta_minutes !== null && a.eta_minutes < 5
-                    ? 'text-eta-soon'
-                    : a.eta_minutes !== null && a.eta_minutes < 15
-                      ? 'text-eta-coming'
-                      : 'text-slate-500'
+                const color = etaTextClass(a.eta_minutes)
                 return (
                   <span key={`${a.route_code}-${a.eta_raw ?? ''}`}
                         className={`text-[11px] font-bold font-mono ${color}`}>

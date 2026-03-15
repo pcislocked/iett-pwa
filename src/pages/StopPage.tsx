@@ -8,6 +8,7 @@ import { api, type Announcement, type StopDetail, type BusPosition, type Arrival
 import { useFavorites } from '@/hooks/useFavorites'
 import { useBottomBar } from '@/hooks/useBottomBar'
 import { useUserPrefs } from '@/hooks/useUserPrefs'
+import { etaChipClass } from '@/utils/etaColor'
 
 /** Calls map.invalidateSize() whenever the container height percentage changes. */
 function MapResizer({ heightPct }: { heightPct: number }) {
@@ -286,6 +287,7 @@ function BusDetailSheet({
 }
 
 function EtaChip({ minutes, raw }: { minutes: number | null; raw: string }) {
+  const chipCls = etaChipClass(minutes)
   if (minutes === null)
     return (
       <span className="inline-flex items-center justify-center bg-surface-muted text-slate-400 text-xs font-semibold
@@ -293,30 +295,9 @@ function EtaChip({ minutes, raw }: { minutes: number | null; raw: string }) {
         {raw}
       </span>
     )
-  if (minutes <= 3)
-    return (
-      <span className="inline-flex items-center justify-center bg-emerald-500 text-white text-xs font-bold
-                        px-2.5 py-1 rounded-full min-w-[52px]">
-        {minutes} dk
-      </span>
-    )
-  if (minutes <= 10)
-    return (
-      <span className="inline-flex items-center justify-center bg-amber-400 text-black text-xs font-bold
-                        px-2.5 py-1 rounded-full min-w-[52px]">
-        {minutes} dk
-      </span>
-    )
-  if (minutes <= 25)
-    return (
-      <span className="inline-flex items-center justify-center bg-orange-500 text-white text-xs font-bold
-                        px-2.5 py-1 rounded-full min-w-[52px]">
-        {minutes} dk
-      </span>
-    )
   return (
-    <span className="inline-flex items-center justify-center bg-slate-700 text-slate-300 text-xs font-semibold
-                      px-2.5 py-1 rounded-full min-w-[52px]">
+    <span className={`inline-flex items-center justify-center text-xs font-bold
+                      px-2.5 py-1 rounded-full min-w-[52px] ${chipCls}`}>
       {minutes} dk
     </span>
   )

@@ -1,11 +1,5 @@
 import { type Arrival } from '@/api/client'
-
-function etaClass(minutes: number | null) {
-  if (minutes === null) return 'eta-far'
-  if (minutes < 5) return 'eta-soon'
-  if (minutes < 15) return 'eta-coming'
-  return 'eta-far'
-}
+import { etaBadgeClass } from '@/utils/etaColor'
 
 interface Props {
   arrival: Arrival
@@ -30,7 +24,7 @@ export default function ArrivalCard({ arrival, highlighted = false }: Props) {
 
       {/* ETA */}
       <div className="shrink-0 text-right">
-        <span className={etaClass(arrival.eta_minutes)}>
+        <span className={etaBadgeClass(arrival.eta_minutes)}>
           {arrival.eta_minutes !== null ? `${arrival.eta_minutes} dk` : arrival.eta_raw}
         </span>
       </div>

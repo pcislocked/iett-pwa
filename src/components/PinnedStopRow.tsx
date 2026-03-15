@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useArrivals } from '@/hooks/useArrivals'
 import { api, type StopDetail } from '@/api/client'
+import { etaTextClass } from '@/utils/etaColor'
 
 interface PinnedStopRowProps {
   dcode: string
@@ -74,12 +75,7 @@ export default function PinnedStopRow({ dcode, nick, icon = '📌', distLabel, d
         ) : top4.length > 0 ? (
           top4.map((a) => {
             const eta = a.eta_minutes !== null ? `${a.eta_minutes}dk` : a.eta_raw
-            const color =
-              a.eta_minutes !== null && a.eta_minutes < 5
-                ? 'text-eta-soon'
-                : a.eta_minutes !== null && a.eta_minutes < 15
-                  ? 'text-eta-coming'
-                  : 'text-slate-500'
+            const color = etaTextClass(a.eta_minutes)
             return (
               <span
                 key={`${a.route_code}-${a.eta_raw ?? ''}`}

@@ -24,9 +24,10 @@ export default {
           secondary: '#888888',
         },
         eta: {
-          soon:   '#22c55e',  // < 5 min
-          coming: '#f59e0b',  // 5-15 min
-          far:    '#555555',  // > 15 min
+          soon:   '#ef4444',  // < 5 min   — red
+          coming: '#f97316',  // 5–10 min  — orange
+          close:  '#22c55e',  // 10–19 min — green
+          far:    '#555555',  // ≥ 20 min  — gray
         },
       },
       fontFamily: {
