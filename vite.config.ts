@@ -10,6 +10,27 @@ const { version: APP_VERSION } = JSON.parse(
   readFileSync(fileURLToPath(new URL('./package.json', import.meta.url)), 'utf-8'),
 ) as { version: string }
 
+const BUILD_TIMESTAMP = new Date().toISOString()
+
+const emitVersionManifest = {
+  name: 'emit-version-manifest',
+  apply: 'build' as const,
+  generateBundle() {
+    this.emitFile({
+      type: 'asset',
+      fileName: 'version.json',
+      source: JSON.stringify(
+        {
+          version: APP_VERSION,
+          builtAt: BUILD_TIMESTAMP,
+        },
+        null,
+        2,
+      ),
+    })
+  },
+}
+
 const viteConfig = defineConfig({
   define: {
     __APP_VERSION__: JSON.stringify(APP_VERSION),
@@ -19,9 +40,12 @@ const viteConfig = defineConfig({
   },
   plugins: [
     react(),
+    emitVersionManifest,
     VitePWA({
       registerType: 'autoUpdate',
       workbox: {
+        clientsClaim: true,
+        skipWaiting: true,
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
         cleanupOutdatedCaches: true,
         runtimeCaching: [
