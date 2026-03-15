@@ -27,7 +27,7 @@
   .eta-badge   { @apply inline-block text-xs font-mono font-bold px-2 py-0.5; }
   .eta-soon    { @apply eta-badge; background: rgba(239,68,68,0.2);   color: #ef4444; }  /* < 5 min  — red    */
   .eta-coming  { @apply eta-badge; background: rgba(249,115,22,0.2);  color: #f97316; }  /* 5–10 min — orange */
-  .eta-close   { @apply eta-badge; background: rgba(34,197,94,0.2);   color: #22c55e; }  /* 10–20 min — green */
+    .eta-close   { @apply eta-badge; background: rgba(34,197,94,0.2);   color: #22c55e; }  /* 10–19 min — green */
   .eta-far     { @apply eta-badge; background: rgba(85,85,85,0.2);    color: #555555; }  /* ≥ 20 min  — gray  */
 }
 

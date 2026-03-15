@@ -26,7 +26,7 @@ export default {
         eta: {
           soon:   '#ef4444',  // < 5 min   — red
           coming: '#f97316',  // 5–10 min  — orange
-          close:  '#22c55e',  // 10–20 min — green
+          close:  '#22c55e',  // 10–19 min — green
           far:    '#555555',  // ≥ 20 min  — gray
         },
       },
