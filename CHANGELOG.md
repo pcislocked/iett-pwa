@@ -5,6 +5,27 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [0.3.7] – 2026-03-15
+
+### Fixed
+- Home startup geolocation flow hardened for installed/mobile PWA behavior:
+  permissions-state check, two-stage position attempt (fresh then cached
+  fallback), and watchdog timeout to avoid stuck "Konum alınıyor" state
+- ETA color reliability tightened so imminent arrivals (e.g. `1 dk`) are
+  consistently red across views; explicit class mapping added with regression
+  coverage
+- PWA update detection and cache invalidation hardened:
+  explicit SW registration with `updateViaCache: 'none'`, SW update check
+  before version compare, and forced reload when deployed version changes
+- `version.json` update path hardened against cache staleness:
+  fetched via `BASE_URL` with cache-busting query; Workbox route now matches
+  by `url.pathname` and serves `version.json` as `NetworkOnly`
+
+### Changed
+- App version bumped to `0.3.7`
+
+---
+
 ## [0.3.6] – 2026-03-15
 
 ### Added
