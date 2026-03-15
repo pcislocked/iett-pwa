@@ -8,14 +8,28 @@ export function etaBucket(minutes: number | null): EtaBucket {
   return 'close'
 }
 
+const BADGE_CLASSES: Record<EtaBucket, string> = {
+  soon: 'eta-soon',
+  coming: 'eta-coming',
+  close: 'eta-close',
+  far: 'eta-far',
+}
+
 /** CSS class for inline badge (.eta-* from index.css) */
 export function etaBadgeClass(minutes: number | null): string {
-  return `eta-${etaBucket(minutes)}`
+  return BADGE_CLASSES[etaBucket(minutes)]
+}
+
+const TEXT_CLASSES: Record<EtaBucket, string> = {
+  soon: 'text-eta-soon',
+  coming: 'text-eta-coming',
+  close: 'text-eta-close',
+  far: 'text-eta-far',
 }
 
 /** Tailwind text-color class for plain text labels */
 export function etaTextClass(minutes: number | null): string {
-  return `text-eta-${etaBucket(minutes)}`
+  return TEXT_CLASSES[etaBucket(minutes)]
 }
 
 /**
@@ -23,10 +37,10 @@ export function etaTextClass(minutes: number | null): string {
  * Note: orange uses text-black for WCAG AA contrast (~4.5:1).
  */
 const CHIP_CLASSES: Record<EtaBucket, string> = {
-  soon:   'bg-red-500 text-white',
-  coming: 'bg-orange-500 text-black',
-  close:  'bg-emerald-500 text-white',
-  far:    'bg-slate-700 text-slate-300',
+  soon: 'bg-eta-soon text-white',
+  coming: 'bg-eta-coming text-black',
+  close: 'bg-eta-close text-white',
+  far: 'bg-eta-far text-slate-300',
 }
 
 export function etaChipClass(minutes: number | null): string {
