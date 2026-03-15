@@ -6,7 +6,7 @@
 const BASE = import.meta.env.VITE_API_BASE_URL ?? ''
 
 async function get<T>(path: string): Promise<T> {
-  const res = await fetch(`${BASE}${path}`)
+  const res = await fetch(`${BASE}${path}`, { signal: AbortSignal.timeout(15_000) })
   if (!res.ok) {
     const text = await res.text().catch(() => '')
     throw new Error(`API ${path} → HTTP ${res.status}: ${text}`)
