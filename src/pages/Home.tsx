@@ -26,6 +26,18 @@ function useClock() {
 
 type GpsPhase = 'locating' | 'done' | 'denied' | 'unavailable'
 
+function getGeoErrorCode(err: unknown): number | undefined {
+  if (typeof err !== 'object' || err === null || !('code' in err)) return undefined
+  const code = (err as { code?: unknown }).code
+  return typeof code === 'number' ? code : undefined
+}
+
+function getCurrentPositionPromise(options: PositionOptions): Promise<GeolocationPosition> {
+  return new Promise((resolve, reject) => {
+    navigator.geolocation.getCurrentPosition(resolve, reject, options)
+  })
+}
+
 // ── Quick-access item ──────────────────────────────────────────────────────────
 function QuickRow({
   to,
@@ -95,30 +107,53 @@ export default function Home() {
   useEffect(() => { setRecents(getRecent()) }, [])
 
   // ── Nearest stops (consent-gated GPS) ─────────────────────────────────────
-  const [gpsPhase, setGpsPhase] = useState<GpsPhase>('locating')
+  const [gpsPhase, setGpsPhase] = useState<GpsPhase>('unavailable')
   const [nearbyStops, setNearbyStops] = useState<NearbyStop[]>([])
   const [showConsentModal, setShowConsentModal] = useState(false)
 
-  const requestGps = useCallback(() => {
+  const requestGps = useCallback(async () => {
     if (!navigator.geolocation) { setGpsPhase('unavailable'); return }
     setGpsPhase('locating')
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        try {
-          const stops = await api.stops.nearby(pos.coords.latitude, pos.coords.longitude)
-          setNearbyStops(
-            [...stops]
-              .sort((a, b) => (Number(a.distance_m) || 0) - (Number(b.distance_m) || 0))
-              .slice(0, 5),
-          )
-          setGpsPhase('done')
-        } catch {
-          setGpsPhase('unavailable')
-        }
-      },
-      (err) => { setGpsPhase(err.code === 1 ? 'denied' : 'unavailable') },
-      { enableHighAccuracy: false, timeout: 8_000, maximumAge: 60_000 },
-    )
+
+    // Some mobile WebView/PWA contexts can intermittently fail to invoke either
+    // callback on background/foreground transitions; guard against endless locating.
+    const watchdogId = window.setTimeout(() => {
+      setGpsPhase((phase) => (phase === 'locating' ? 'unavailable' : phase))
+    }, 20_000)
+
+    try {
+      let pos: GeolocationPosition
+      try {
+        // Prefer a fresh fix first so startup behaves like explicit Nearby actions.
+        pos = await getCurrentPositionPromise({
+          enableHighAccuracy: true,
+          timeout: 12_000,
+          maximumAge: 0,
+        })
+      } catch (firstErr) {
+        // Permission denied should not fall back.
+        if (getGeoErrorCode(firstErr) === 1) throw firstErr
+
+        // Fallback to a cached/low-power position if fresh GPS is unavailable.
+        pos = await getCurrentPositionPromise({
+          enableHighAccuracy: false,
+          timeout: 8_000,
+          maximumAge: 120_000,
+        })
+      }
+
+      const stops = await api.stops.nearby(pos.coords.latitude, pos.coords.longitude)
+      setNearbyStops(
+        [...stops]
+          .sort((a, b) => (Number(a.distance_m) || 0) - (Number(b.distance_m) || 0))
+          .slice(0, 5),
+      )
+      setGpsPhase('done')
+    } catch (err) {
+      setGpsPhase(getGeoErrorCode(err) === 1 ? 'denied' : 'unavailable')
+    } finally {
+      window.clearTimeout(watchdogId)
+    }
   }, [])
 
   const handleConsentConfirm = useCallback(() => {
@@ -134,16 +169,49 @@ export default function Home() {
   }, [])
 
   useEffect(() => {
+    let cancelled = false
     let consent: string | null = null
     try { consent = localStorage.getItem(LOCATION_CONSENT_KEY) } catch { /* storage unavailable */ }
-    if (consent === 'granted') {
-      requestGps()
-    } else if (consent === 'dismissed') {
+
+    if (consent === 'dismissed') {
       setGpsPhase('denied')
-    } else {
-      // First visit (or storage unavailable) — show consent modal
-      setShowConsentModal(true)
+      return () => { cancelled = true }
     }
+
+    if (consent !== 'granted') {
+      // First visit (or storage unavailable) — show consent modal.
+      // Do not show locating until an actual GPS request begins.
+      setShowConsentModal(true)
+      return () => { cancelled = true }
+    }
+
+    // Consent is locally granted; verify real browser permission state.
+    const perms = (navigator as Navigator & { permissions?: Permissions }).permissions
+    if (!perms || typeof perms.query !== 'function') {
+      void requestGps()
+      return () => { cancelled = true }
+    }
+
+    perms
+      .query({ name: 'geolocation' as PermissionName })
+      .then((status) => {
+        if (cancelled) return
+        if (status.state === 'granted') {
+          void requestGps()
+          return
+        }
+        if (status.state === 'denied') {
+          setGpsPhase('denied')
+          return
+        }
+        // prompt: avoid silent auto-locate hangs; require explicit user confirmation.
+        setShowConsentModal(true)
+      })
+      .catch(() => {
+        if (!cancelled) void requestGps()
+      })
+
+    return () => { cancelled = true }
   }, [requestGps])
 
   return (
