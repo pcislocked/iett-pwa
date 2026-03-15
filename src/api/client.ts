@@ -4,14 +4,51 @@
  */
 
 const BASE = import.meta.env.VITE_API_BASE_URL ?? ''
+const REQUEST_TIMEOUT_MS = 15_000
+
+type TimeoutSignal = {
+  signal?: AbortSignal
+  clear: () => void
+}
+
+function createTimeoutSignal(timeoutMs: number): TimeoutSignal {
+  if (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function') {
+    return { signal: AbortSignal.timeout(timeoutMs), clear: () => {} }
+  }
+
+  if (typeof AbortController === 'undefined') {
+    return { signal: undefined, clear: () => {} }
+  }
+
+  const controller = new AbortController()
+  const timerId = globalThis.setTimeout(() => controller.abort(), timeoutMs)
+  return {
+    signal: controller.signal,
+    clear: () => globalThis.clearTimeout(timerId),
+  }
+}
+
+async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const { signal, clear } = createTimeoutSignal(REQUEST_TIMEOUT_MS)
+  try {
+    const requestInit = signal ? { ...init, signal } : init
+    const res = await fetch(`${BASE}${path}`, requestInit)
+    if (!res.ok) {
+      const text = await res.text().catch(() => '')
+      throw new Error(`API ${path} → HTTP ${res.status}: ${text}`)
+    }
+    return res.json() as Promise<T>
+  } finally {
+    clear()
+  }
+}
 
 async function get<T>(path: string): Promise<T> {
-  const res = await fetch(`${BASE}${path}`)
-  if (!res.ok) {
-    const text = await res.text().catch(() => '')
-    throw new Error(`API ${path} → HTTP ${res.status}: ${text}`)
-  }
-  return res.json() as Promise<T>
+  return request<T>(path)
+}
+
+async function post<T>(path: string): Promise<T> {
+  return request<T>(path, { method: 'POST' })
 }
 
 // ─── Model types ──────────────────────────────────────────────────────────────
@@ -168,8 +205,7 @@ export const api = {
     byPlate: (kapino: string) => get<BusPosition>(`/v1/fleet/${encodeURIComponent(kapino)}`),
     detail: (kapino: string) => get<BusDetail>(`/v1/fleet/${encodeURIComponent(kapino)}/detail`),
     meta: () => get<{ bus_count: number; updated_at: string | null }>('/v1/fleet/meta'),
-    refresh: () =>
-      fetch(`${BASE}/v1/fleet/refresh`, { method: 'POST' }).then((r) => r.json()),
+    refresh: () => post<Record<string, unknown>>('/v1/fleet/refresh'),
   },
   stops: {
     search: (q: string) => get<StopSearchResult[]>(`/v1/stops/search?q=${encodeURIComponent(q)}`),

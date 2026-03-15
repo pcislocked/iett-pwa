@@ -223,6 +223,11 @@ describe('api.fleet.refresh', () => {
     await api.fleet.refresh()
     expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('/v1/fleet/refresh'), expect.objectContaining({ method: 'POST' }))
   })
+
+  it('throws on non-2xx response', async () => {
+    mockFetch('Bad Gateway', 502)
+    await expect(api.fleet.refresh()).rejects.toThrow('HTTP 502')
+  })
 })
 
 // ---------------------------------------------------------------------------
