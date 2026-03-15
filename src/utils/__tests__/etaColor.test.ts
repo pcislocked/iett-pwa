@@ -7,6 +7,7 @@ describe('etaBucket', () => {
   })
 
   it('maps <5 to soon', () => {
+    expect(etaBucket(1)).toBe('soon')
     expect(etaBucket(4)).toBe('soon')
   })
 
@@ -35,16 +36,18 @@ describe('eta class helpers', () => {
   })
 
   it('returns static text classes', () => {
-    expect(etaTextClass(4)).toBe('text-eta-soon')
-    expect(etaTextClass(7)).toBe('text-eta-coming')
-    expect(etaTextClass(12)).toBe('text-eta-close')
-    expect(etaTextClass(25)).toBe('text-eta-far')
+    expect(etaTextClass(1)).toBe('text-red-500')
+    expect(etaTextClass(4)).toBe('text-red-500')
+    expect(etaTextClass(7)).toBe('text-orange-500')
+    expect(etaTextClass(12)).toBe('text-emerald-500')
+    expect(etaTextClass(25)).toBe('text-slate-500')
   })
 
-  it('returns chip classes aligned to eta tokens', () => {
-    expect(etaChipClass(4)).toBe('bg-eta-soon text-white')
-    expect(etaChipClass(7)).toBe('bg-eta-coming text-black')
-    expect(etaChipClass(12)).toBe('bg-eta-close text-white')
-    expect(etaChipClass(25)).toBe('bg-eta-far text-slate-300')
+  it('returns chip classes with explicit eta colors', () => {
+    expect(etaChipClass(1)).toBe('bg-red-500 text-white')
+    expect(etaChipClass(4)).toBe('bg-red-500 text-white')
+    expect(etaChipClass(7)).toBe('bg-orange-500 text-black')
+    expect(etaChipClass(12)).toBe('bg-emerald-500 text-white')
+    expect(etaChipClass(25)).toBe('bg-slate-600 text-slate-300')
   })
 })
