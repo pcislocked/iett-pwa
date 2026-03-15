@@ -5,6 +5,28 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [0.3.6] – 2026-03-15
+
+### Added
+- New hook test suites for `usePolling`, `useFavorites`, and `useUserPrefs`
+  (+39 tests overall; suite total now 109)
+
+### Fixed
+- `usePolling` hardened against stale/out-of-order response writes and
+  setState-after-unmount via mount guard + monotonic fetch-id logic
+- API request timeout support now includes browser-safe fallback:
+  `AbortSignal.timeout()` when available, otherwise
+  `AbortController + setTimeout`
+- `api.fleet.refresh()` now uses the same timeout and non-2xx error handling
+  wrapper as other API methods
+- Corrupted/mojibake comments cleaned in `App.tsx` for readability
+
+### Changed
+- App version bumped to `0.3.6`; About section version badge follows this via
+  `__APP_VERSION__` injected from `package.json`
+
+---
+
 ## [0.3.1] – 2026-03-02
 
 ### Added
