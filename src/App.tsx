@@ -58,7 +58,7 @@ function AnimatedMain() {
   const currentIdx = (MAIN_PATHS as readonly string[]).indexOf(location.pathname)
   const onMainPath = currentIdx !== -1
   // Number of pages Ã— 100% = strip width expressed as percentage of itself
-  const N = MAIN_PATHS.length  // 3
+  const N = MAIN_PATHS.length  // 1
 
   /* â”€â”€ Programmatic transition (back button or AppBar taps) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   useLayoutEffect(() => {
