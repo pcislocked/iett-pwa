@@ -2,10 +2,9 @@ import { type Arrival } from '@/api/client'
 
 function etaClass(minutes: number | null) {
   if (minutes === null) return 'eta-far'
-  if (minutes < 5)  return 'eta-soon'    // red
-  if (minutes < 10) return 'eta-coming'  // orange
-  if (minutes < 20) return 'eta-close'   // green
-  return 'eta-far'                       // gray
+  if (minutes < 5) return 'eta-soon'
+  if (minutes < 15) return 'eta-coming'
+  return 'eta-far'
 }
 
 interface Props {
