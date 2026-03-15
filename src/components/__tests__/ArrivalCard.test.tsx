@@ -57,13 +57,19 @@ describe('ArrivalCard', () => {
     expect(eta).toHaveClass('eta-soon')
   })
 
-  it('shows coming class for eta 5-14 min', () => {
-    render(<ArrivalCard arrival={makeArrival({ eta_minutes: 10 })} />)
-    const eta = screen.getByText('10 dk')
+  it('shows coming class for eta 5-9 min', () => {
+    render(<ArrivalCard arrival={makeArrival({ eta_minutes: 7 })} />)
+    const eta = screen.getByText('7 dk')
     expect(eta).toHaveClass('eta-coming')
   })
 
-  it('shows far class for eta >= 15 min', () => {
+  it('shows close class for eta 10-19 min', () => {
+    render(<ArrivalCard arrival={makeArrival({ eta_minutes: 10 })} />)
+    const eta = screen.getByText('10 dk')
+    expect(eta).toHaveClass('eta-close')
+  })
+
+  it('shows far class for eta >= 20 min', () => {
     render(<ArrivalCard arrival={makeArrival({ eta_minutes: 20 })} />)
     const eta = screen.getByText('20 dk')
     expect(eta).toHaveClass('eta-far')
