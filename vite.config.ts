@@ -44,6 +44,31 @@ const viteConfig = defineConfig({
     VitePWA({
       injectRegister: false,
       registerType: 'autoUpdate',
+      manifest: {
+        name: 'IETT Canli',
+        short_name: 'IETT',
+        description: 'Istanbul otobuslerini gercek zamanli takip et',
+        theme_color: '#000000',
+        background_color: '#000000',
+        display: 'standalone',
+        orientation: 'portrait',
+        start_url: '/',
+        scope: '/',
+        icons: [
+          {
+            src: '/icons/icon-192.png',
+            sizes: '192x192',
+            type: 'image/png',
+            purpose: 'any maskable',
+          },
+          {
+            src: '/icons/icon-512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'any maskable',
+          },
+        ],
+      },
       workbox: {
         clientsClaim: true,
         skipWaiting: true,
