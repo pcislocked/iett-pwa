@@ -5,6 +5,21 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [0.3.8] – 2026-04-07
+
+### Fixed
+- Home title bar text sanitized to `İETT Canlı`
+- App update checker now applies progressive cooldown/backoff when version
+  manifest fetch fails, preventing repeated hammering during outages
+
+### Changed
+- PWA manifest metadata normalized with Turkish strings (`name`, `short_name`,
+  `description`)
+- App version bumped to `0.3.8`
+- README version badge/link updated to `v0.3.8`
+
+---
+
 ## [0.3.7] – 2026-03-15
 
 ### Fixed

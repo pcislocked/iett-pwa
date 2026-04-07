@@ -219,7 +219,7 @@ export default function Home() {
 
       {/* ── Title bar ────────────────────────────────────────────────────────── */}
       <div className="px-4 safe-area-pt mt-8 pt-4 pb-3 flex items-center justify-between border-b border-[#111]">
-        <span className="text-xl font-bold text-white tracking-tight">iettnin amina koyum</span>
+        <span className="text-xl font-bold text-white tracking-tight">İETT Canlı</span>
         <span className="text-[#666] tabular-nums text-xs">{clock}</span>
       </div>
 

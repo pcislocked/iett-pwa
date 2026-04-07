@@ -45,9 +45,9 @@ const viteConfig = defineConfig({
       injectRegister: false,
       registerType: 'autoUpdate',
       manifest: {
-        name: 'IETT Canli',
-        short_name: 'IETT',
-        description: 'Istanbul otobuslerini gercek zamanli takip et',
+        name: 'İETT Canlı',
+        short_name: 'İETT',
+        description: 'İstanbul otobüslerini gerçek zamanlı takip et',
         theme_color: '#000000',
         background_color: '#000000',
         display: 'standalone',

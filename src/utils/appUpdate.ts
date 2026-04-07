@@ -1,6 +1,8 @@
 const VERSION_ENDPOINT = `${import.meta.env.BASE_URL}version.json`
 const VERSION_CHECK_INTERVAL_MS = 60_000
 const VERSION_RELOAD_FLAG_KEY = 'iett:update-reloaded-version'
+const VERSION_CHECK_FAILURE_BASE_DELAY_MS = 15_000
+const VERSION_CHECK_FAILURE_MAX_DELAY_MS = 5 * 60_000
 
 type VersionManifest = {
   version?: string
@@ -82,15 +84,30 @@ async function forceReloadForNewVersion(nextVersion: string): Promise<void> {
 export function setupAppUpdateChecks(): void {
   const currentVersion = __APP_VERSION__
   let checking = false
+  let consecutiveFailures = 0
+  let nextAllowedCheckAt = 0
 
   const checkForUpdate = async () => {
     if (checking) return
+    if (Date.now() < nextAllowedCheckAt) return
     checking = true
     try {
       // Force a SW update check first, then compare deployed manifest version.
       await refreshServiceWorkers()
       const deployedVersion = await fetchDeployedVersion()
-      if (!deployedVersion || deployedVersion === currentVersion) return
+      if (!deployedVersion) {
+        consecutiveFailures += 1
+        const delay = Math.min(
+          VERSION_CHECK_FAILURE_MAX_DELAY_MS,
+          VERSION_CHECK_FAILURE_BASE_DELAY_MS * consecutiveFailures,
+        )
+        nextAllowedCheckAt = Date.now() + delay
+        return
+      }
+
+      consecutiveFailures = 0
+      nextAllowedCheckAt = 0
+      if (deployedVersion === currentVersion) return
       await forceReloadForNewVersion(deployedVersion)
     } finally {
       checking = false
