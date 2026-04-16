@@ -39,5 +39,5 @@ export function getDirectionLabelMap(metadata: RouteMetadata[] | null): Record<s
  */
 export function getDirectionLabel(code: string, metadata: RouteMetadata[] | null, hasMetadata: boolean = !!metadata?.length): string {
   const map = getDirectionLabelMap(metadata)
-  return map[code] ?? (hasMetadata ? code : code === 'D' ? 'Gidiş' : code === 'G' ? 'Dönüş' : code)
+  return map[code] ?? (hasMetadata ? code : code === 'G' ? 'Gidiş' : code === 'D' ? 'Dönüş' : code)
 }

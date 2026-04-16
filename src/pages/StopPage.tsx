@@ -537,8 +537,7 @@ export default function StopPage() {
           <button
             onClick={() => {
               if (!dcode) return
-              const atLimit = !pinned && (prefs?.pinnedStops.length ?? 0) >= PINNED_STOPS_MAX
-              if (atLimit) return
+              if (pinAtLimit) return
               if (pinned) unpinStop(dcode)
               else pinStop(dcode, stopName)
             }}
