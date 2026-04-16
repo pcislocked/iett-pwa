@@ -64,14 +64,15 @@ export function useArrivals(dcode: string, via?: string) {
   )
 
   const polling = usePolling<Arrival[]>(fetcher, ARRIVALS_CACHE_TTL)
+  const { refresh: pollingRefresh, ...pollingRest } = polling
 
   const refresh = useCallback(() => {
     forceNetworkRef.current = true
-    polling.refresh()
+    pollingRefresh()
     Promise.resolve().then(() => {
       forceNetworkRef.current = false
     })
-  }, [polling])
+  }, [pollingRefresh])
 
-  return { ...polling, refresh }
+  return { ...pollingRest, refresh }
 }
