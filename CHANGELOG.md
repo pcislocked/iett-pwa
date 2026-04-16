@@ -11,6 +11,9 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Home title bar text sanitized to `İETT Canlı`
 - App update checker now applies progressive cooldown/backoff when version
   manifest fetch fails, preventing repeated hammering during outages
+- Filo (fleet/map) data staleness capped at 15 minutes: backend now forces
+  fresh data poll even if source API returns old data, solving 6h+ stale
+  location issues
 
 ### Changed
 - PWA manifest metadata normalized with Turkish strings (`name`, `short_name`,
