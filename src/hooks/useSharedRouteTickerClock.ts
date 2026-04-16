@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react'
  */
 let sharedRouteTickerNowMs = Date.now()
 let sharedRouteTickerInterval: ReturnType<typeof setInterval> | null = null
+let sharedRouteTickerAlignTimeout: ReturnType<typeof setTimeout> | null = null
 const sharedRouteTickerSubscribers = new Set<() => void>()
 
 function notifySharedRouteTickerNow() {
@@ -14,17 +15,29 @@ function notifySharedRouteTickerNow() {
 }
 
 function startSharedRouteTickerClock() {
-  if (sharedRouteTickerInterval !== null) return
+  if (sharedRouteTickerInterval !== null || sharedRouteTickerAlignTimeout !== null) return
   notifySharedRouteTickerNow()
-  sharedRouteTickerInterval = setInterval(() => {
+
+  const msUntilNextMinute = 60_000 - (sharedRouteTickerNowMs % 60_000)
+  sharedRouteTickerAlignTimeout = setTimeout(() => {
+    sharedRouteTickerAlignTimeout = null
     notifySharedRouteTickerNow()
-  }, 60_000)
+    sharedRouteTickerInterval = setInterval(() => {
+      notifySharedRouteTickerNow()
+    }, 60_000)
+  }, msUntilNextMinute)
 }
 
 function stopSharedRouteTickerClock() {
-  if (sharedRouteTickerInterval === null || sharedRouteTickerSubscribers.size > 0) return
-  clearInterval(sharedRouteTickerInterval)
-  sharedRouteTickerInterval = null
+  if (sharedRouteTickerSubscribers.size > 0) return
+  if (sharedRouteTickerAlignTimeout !== null) {
+    clearTimeout(sharedRouteTickerAlignTimeout)
+    sharedRouteTickerAlignTimeout = null
+  }
+  if (sharedRouteTickerInterval !== null) {
+    clearInterval(sharedRouteTickerInterval)
+    sharedRouteTickerInterval = null
+  }
 }
 
 function subscribeToSharedRouteTickerClock(notify: () => void) {
