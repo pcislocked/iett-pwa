@@ -1,11 +1,16 @@
-import { useEffect, useState, useCallback, useRef } from 'react'
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import PinnedStopRow from '@/components/PinnedStopRow'
-import { useUserPrefs, type PinnedStop } from '@/hooks/useUserPrefs'
+import { PINNED_STOPS_MAX, useUserPrefs, type PinnedStop } from '@/hooks/useUserPrefs'
 import { getRecent, type RecentSearch } from '@/hooks/useRecentSearches'
-import { api, type NearbyStop } from '@/api/client'
+import { api, type NearbyStop, type ScheduledDeparture } from '@/api/client'
 import { distanceLabel } from '@/utils/distance'
 import LocationConsentModal from '@/components/LocationConsentModal'
+import { etaTextClass } from '@/utils/etaColor'
+import { useFavorites } from '@/hooks/useFavorites'
+import { getDirectionLabel } from '@/utils/routeDirectionLabels'
+import { useSharedRouteTickerNowMs } from '@/hooks/useSharedRouteTickerClock'
+import { useRouteTickerData } from '@/hooks/useRouteTickerData'
 
 const LOCATION_CONSENT_KEY = 'location-consent'
 
@@ -96,11 +101,96 @@ function GpsLocatingDots() {
   )
 }
 
+function getScheduleDayType(date: Date): 'H' | 'C' | 'P' {
+  const day = date.getDay()
+  if (day === 0) return 'P'
+  if (day === 6) return 'C'
+  return 'H'
+}
+
+function minutesToNextDeparture(schedule: ScheduledDeparture[], dayType: 'H' | 'C' | 'P', direction: string, now: Date): number | null {
+  const minutesNow = now.getHours() * 60 + now.getMinutes()
+  let best: number | null = null
+  for (const row of schedule) {
+    if (row.day_type !== dayType || row.direction !== direction) continue
+    const [h, m] = row.departure_time.split(':').map(Number)
+    if (!Number.isFinite(h) || !Number.isFinite(m)) continue
+    const delta = (h * 60 + m) - minutesNow
+    if (delta < 0) continue
+    if (best === null || delta < best) best = delta
+  }
+  return best
+}
+
+function RouteTickerRow({ code, name, icon }: { code: string; name: string; icon: string }) {
+  const navigate = useNavigate()
+  const nowMs = useSharedRouteTickerNowMs()
+  const { data, loading } = useRouteTickerData(code)
+
+  const ticker = useMemo(() => {
+    if (!data) return [] as Array<{ dir: string; label: string; eta: string; etaMinutes: number | null }>
+    const { schedule, metadata } = data
+    const dayType = getScheduleDayType(new Date(nowMs))
+    const hasMetadata = !!metadata?.length
+    const dirs = [...new Set(schedule.filter((s) => s.day_type === dayType).map((s) => s.direction))]
+      .sort((a, b) => (a === 'D' ? -1 : b === 'D' ? 1 : a.localeCompare(b)))
+      .slice(0, 2)
+
+    return dirs.map((dir) => {
+      const mins = minutesToNextDeparture(schedule, dayType, dir, new Date(nowMs))
+      const eta = mins === null ? '--' : mins > 30 ? '30+' : `${mins}dk`
+      return { dir, label: getDirectionLabel(dir, metadata, hasMetadata), eta, etaMinutes: mins }
+    })
+  }, [data, nowMs])
+
+  return (
+    <button
+      onClick={() => navigate(`/routes/${code}`)}
+      className="w-full px-4 py-2.5 min-h-[64px] bg-surface-card active:bg-surface-muted transition-colors text-left"
+    >
+      <div className="flex items-center gap-2.5">
+        <span className="text-base shrink-0 leading-none">{icon}</span>
+        <span className="flex-1 text-[13px] font-bold text-white truncate leading-tight">{name}</span>
+        <svg className="w-3.5 h-3.5 text-slate-700 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+        </svg>
+      </div>
+
+      <div className="mt-0.5 pl-[26px]">
+        <span className="text-[10px] font-mono text-slate-700">{code}</span>
+      </div>
+
+      <div className="mt-1 pl-[26px] flex items-center gap-x-2.5 min-h-[18px] overflow-hidden whitespace-nowrap">
+        {loading && ticker.length === 0 ? (
+          <>
+            <span className="w-20 h-4 rounded-full bg-surface-muted animate-pulse" />
+            <span className="w-20 h-4 rounded-full bg-surface-muted animate-pulse opacity-50" />
+          </>
+        ) : ticker.length > 0 ? (
+          ticker.map((t) => {
+            const color = t.etaMinutes === null ? 'text-slate-700' : etaTextClass(Math.min(t.etaMinutes, 30))
+            return (
+              <span key={`${code}-${t.dir}`} className={`text-[11px] font-bold font-mono ${color} max-w-[48%] truncate`}>
+                {t.label}:{t.eta}
+              </span>
+            )
+          })
+        ) : (
+          <span className="text-[11px] text-slate-700">—</span>
+        )}
+      </div>
+    </button>
+  )
+}
+
 export default function Home() {
   const navigate = useNavigate()
   const clock = useClock()
   const { prefs } = useUserPrefs()
   const { pinnedStops } = prefs
+  const { favorites } = useFavorites()
+  const favStops = favorites.filter((f) => f.kind === 'stop')
+  const favRoutes = favorites.filter((f) => f.kind === 'route')
 
   // ── Recent searches ───────────────────────────────────────────────────────
   const [recents, setRecents] = useState<RecentSearch[]>([])
@@ -231,7 +321,7 @@ export default function Home() {
             {pinnedStops.length > 0 && (
               <Link to="/pinned" className="text-[11px] metro-tilt" style={{ color: '#888' }}>Yönet →</Link>
             )}
-            {pinnedStops.length < 4 && (
+            {pinnedStops.length < PINNED_STOPS_MAX && (
               <button
                 onClick={() => navigate('/search')}
                 className="text-[11px] metro-tilt"
@@ -311,6 +401,37 @@ export default function Home() {
         )}
       </section>}
 
+      {/* ── Favorites ───────────────────────────────────────────────────────── */}
+      {(favStops.length > 0 || favRoutes.length > 0) && (
+        <section className="mb-4">
+          <div className="flex items-center justify-between px-4 pt-2 pb-1">
+            <span className="metro-section p-0">Favoriler</span>
+            <Link to="/favorites" className="text-[11px] metro-tilt" style={{ color: 'var(--wp-accent)' }}>
+              Tümünü Gör →
+            </Link>
+          </div>
+
+          <div>
+            {favStops.slice(0, 3).map((s) => (
+              <PinnedStopRow
+                key={`fav-stop-${s.dcode}`}
+                dcode={s.dcode}
+                nick={s.name}
+                icon="❤"
+              />
+            ))}
+            {favRoutes.slice(0, 3).map((r) => (
+              <RouteTickerRow
+                key={`fav-route-${r.hat_kodu}`}
+                code={r.hat_kodu}
+                name={r.name}
+                icon="🚌"
+              />
+            ))}
+          </div>
+        </section>
+      )}
+
       {/* ── Last searches ────────────────────────────────────────────────────── */}
       {recents.length > 0 && (
         <section className="mb-4">
@@ -326,41 +447,21 @@ export default function Home() {
           </div>
           <div>
             {recents.slice(0, 5).map((r) => (
-              <button
-                key={`${r.kind}-${r.code}`}
-                onClick={() =>
-                  navigate(r.kind === 'stop' ? `/stops/${r.code}` : `/routes/${r.code}`)
-                }
-                className="w-full flex items-center gap-3 px-4 py-3 min-h-[48px]
-                           bg-surface-card active:bg-surface-muted transition-colors text-left"
-              >
-                {r.kind === 'stop' ? (
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}
-                       className="w-4 h-4 shrink-0 text-slate-600">
-                    <path strokeLinecap="round" strokeLinejoin="round"
-                      d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round"
-                      d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
-                  </svg>
-                ) : (
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}
-                       className="w-4 h-4 shrink-0 text-slate-600">
-                    <path strokeLinecap="round" strokeLinejoin="round"
-                      d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12" />
-                  </svg>
-                )}
-                <div className="flex-1 min-w-0">
-                  <span className="text-[13px] font-medium text-white truncate block">{r.name}</span>
-                  <span className="text-[10px] text-slate-600 font-mono">{r.code}</span>
-                </div>
-                <span className="text-[10px] text-slate-700 shrink-0">
-                  {r.kind === 'stop' ? 'Durak' : 'Hat'}
-                </span>
-                <svg className="w-3.5 h-3.5 text-slate-700 shrink-0 ml-1" fill="none"
-                     viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-                </svg>
-              </button>
+              r.kind === 'stop' ? (
+                <PinnedStopRow
+                  key={`${r.kind}-${r.code}`}
+                  dcode={r.code}
+                  nick={r.name}
+                  icon="📍"
+                />
+              ) : (
+                <RouteTickerRow
+                  key={`${r.kind}-${r.code}`}
+                  code={r.code}
+                  name={r.name}
+                  icon="🚌"
+                />
+              )
             ))}
           </div>
         </section>

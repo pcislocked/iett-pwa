@@ -17,12 +17,14 @@ export interface FavStop {
 }
 
 export interface UserPrefs {
-  pinnedStops: PinnedStop[]        // max 4
+  pinnedStops: PinnedStop[]
   favStops: FavStop[]
   favRoutes: string[]              // hat_kodu[]
   nicknames: Record<string, string> // dcode → nick
   exportedAt?: string
 }
+
+export const PINNED_STOPS_MAX = 7
 
 function createDefaultPrefs(): UserPrefs {
   return { pinnedStops: [], favStops: [], favRoutes: [], nicknames: {} }
@@ -65,7 +67,7 @@ export function useUserPrefs() {
 
   const pinStop = useCallback((dcode: string, nick: string) => {
     patch((p) => {
-      if (p.pinnedStops.length >= 4) return p          // enforced in UI
+      if (p.pinnedStops.length >= PINNED_STOPS_MAX) return p
       if (p.pinnedStops.some((s) => s.dcode === dcode)) return p
       return {
         ...p,
@@ -180,7 +182,7 @@ export function useUserPrefs() {
               for (const stop of [...valid].sort((a, b) => a.order - b.order)) {
                 if (!seen.has(stop.dcode)) { seen.add(stop.dcode); deduped.push(stop) }
               }
-              return deduped.slice(0, 4).map((s, i) => ({ ...s, order: i }))
+              return deduped.slice(0, PINNED_STOPS_MAX).map((s, i) => ({ ...s, order: i }))
             })(),
             favStops: Array.isArray(raw.favStops)
               ? raw.favStops.filter((s): s is FavStop =>

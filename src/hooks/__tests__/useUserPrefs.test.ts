@@ -1,6 +1,6 @@
 import { renderHook, act } from '@testing-library/react'
 import { describe, it, expect, beforeEach } from 'vitest'
-import { useUserPrefs } from '../useUserPrefs'
+import { useUserPrefs, PINNED_STOPS_MAX } from '../useUserPrefs'
 
 describe('useUserPrefs', () => {
   beforeEach(() => {
@@ -48,16 +48,14 @@ describe('useUserPrefs', () => {
       expect(result.current.prefs.pinnedStops).toHaveLength(1)
     })
 
-    it('enforces a max of 4 pinned stops', () => {
+    it('enforces a max of 7 pinned stops', () => {
       const { result } = renderHook(() => useUserPrefs())
       act(() => {
-        result.current.pinStop('s1', 'A')
-        result.current.pinStop('s2', 'B')
-        result.current.pinStop('s3', 'C')
-        result.current.pinStop('s4', 'D')
-        result.current.pinStop('s5', 'E')  // should be ignored
+        for (let i = 1; i <= PINNED_STOPS_MAX + 1; i++) {
+          result.current.pinStop(`s${i}`, String.fromCharCode(64 + i))
+        }
       })
-      expect(result.current.prefs.pinnedStops).toHaveLength(4)
+      expect(result.current.prefs.pinnedStops).toHaveLength(PINNED_STOPS_MAX)
     })
 
     it('unpins a stop and re-indexes order', () => {

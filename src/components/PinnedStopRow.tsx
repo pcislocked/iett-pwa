@@ -7,7 +7,7 @@ import { etaTextClass } from '@/utils/etaColor'
 interface PinnedStopRowProps {
   dcode: string
   nick: string
-  icon?: '📌' | '📍'
+  icon?: string
   distLabel?: string   // e.g. "220m" — for nearby rows
   direction?: string | null  // optional override — skips the stops.detail() fetch
 }
