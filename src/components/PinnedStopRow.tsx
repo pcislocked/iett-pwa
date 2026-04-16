@@ -18,7 +18,10 @@ function setStopDetailCache(dcode: string, detail: StopDetail) {
 
 function fetchStopDetailShared(dcode: string): Promise<StopDetail> {
   const cached = stopDetailCache.get(dcode)
-  if (cached) return Promise.resolve(cached)
+  if (cached) {
+    setStopDetailCache(dcode, cached)
+    return Promise.resolve(cached)
+  }
 
   const inflight = stopDetailInFlight.get(dcode)
   if (inflight) return inflight

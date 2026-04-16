@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useCallback, useMemo, useRef } from 'react'
 import { usePolling } from './usePolling'
 import { api, type Arrival } from '@/api/client'
 
@@ -26,13 +26,13 @@ function pruneArrivalsCache(now: number) {
   }
 }
 
-function fetchArrivalsShared(dcode: string, via?: string): Promise<Arrival[]> {
+function fetchArrivalsShared(dcode: string, via?: string, forceNetwork = false): Promise<Arrival[]> {
   const key = makeArrivalsKey(dcode, via)
   const now = Date.now()
   pruneArrivalsCache(now)
 
   const cached = arrivalsCache.get(key)
-  if (cached && now - cached.timestamp < ARRIVALS_CACHE_TTL) {
+  if (!forceNetwork && cached && now - cached.timestamp < ARRIVALS_CACHE_TTL) {
     cached.lastAccess = now
     return Promise.resolve(cached.data)
   }
@@ -47,13 +47,6 @@ function fetchArrivalsShared(dcode: string, via?: string): Promise<Arrival[]> {
       pruneArrivalsCache(ts)
       return data
     })
-    .catch((err) => {
-      if (cached) {
-        arrivalsCache.set(key, { data: cached.data, timestamp: now, lastAccess: now })
-        return cached.data
-      }
-      throw err
-    })
     .finally(() => {
       arrivalsInFlight.delete(key)
     })
@@ -63,9 +56,22 @@ function fetchArrivalsShared(dcode: string, via?: string): Promise<Arrival[]> {
 }
 
 export function useArrivals(dcode: string, via?: string) {
+  const forceNetworkRef = useRef(false)
+
   const fetcher = useMemo(
-    () => () => fetchArrivalsShared(dcode, via),
+    () => () => fetchArrivalsShared(dcode, via, forceNetworkRef.current),
     [dcode, via],
   )
-  return usePolling<Arrival[]>(fetcher, ARRIVALS_CACHE_TTL)
+
+  const polling = usePolling<Arrival[]>(fetcher, ARRIVALS_CACHE_TTL)
+
+  const refresh = useCallback(() => {
+    forceNetworkRef.current = true
+    polling.refresh()
+    Promise.resolve().then(() => {
+      forceNetworkRef.current = false
+    })
+  }, [polling])
+
+  return { ...polling, refresh }
 }
