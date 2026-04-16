@@ -5,6 +5,22 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [0.3.9] - 2026-04-16
+
+### Added
+- Shared route ticker data/clock hooks to dedupe route-level polling and keep card timers aligned.
+- Regression tests for shared ticker clock alignment, route ticker data caching, and route direction label normalization.
+
+### Fixed
+- Favorites/home pinned-stop refresh behavior now avoids duplicate background fetches and stale row updates.
+- Route and stop pages now share stabilized ticker behavior and tighter refresh ownership rules.
+
+### Changed
+- App version bumped to `0.3.9`.
+- README version badge/link updated to `v0.3.9`.
+
+---
+
 ## [0.3.8] – 2026-04-07
 
 ### Fixed
