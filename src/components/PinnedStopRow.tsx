@@ -4,23 +4,30 @@ import { useArrivals } from '@/hooks/useArrivals'
 import { api, type StopDetail } from '@/api/client'
 import { etaTextClass } from '@/utils/etaColor'
 
-const stopDetailCache = new Map<string, StopDetail>()
+type StopDetailCacheRecord = { detail: StopDetail; timestamp: number }
+
+const stopDetailCache = new Map<string, StopDetailCacheRecord>()
 const stopDetailInFlight = new Map<string, Promise<StopDetail>>()
 const STOP_DETAIL_CACHE_MAX_ENTRIES = 240
+const STOP_DETAIL_CACHE_TTL = 10 * 60 * 1000 // 10 minutes
 
-function setStopDetailCache(dcode: string, detail: StopDetail) {
+function setStopDetailCache(dcode: string, detail: StopDetail, timestamp: number = Date.now()) {
   stopDetailCache.delete(dcode)
-  stopDetailCache.set(dcode, detail)
+  stopDetailCache.set(dcode, { detail, timestamp })
   if (stopDetailCache.size <= STOP_DETAIL_CACHE_MAX_ENTRIES) return
   const firstKey = stopDetailCache.keys().next().value
   if (firstKey) stopDetailCache.delete(firstKey)
 }
 
 function fetchStopDetailShared(dcode: string): Promise<StopDetail> {
+  const now = Date.now()
   const cached = stopDetailCache.get(dcode)
   if (cached) {
-    setStopDetailCache(dcode, cached)
-    return Promise.resolve(cached)
+    if (now - cached.timestamp < STOP_DETAIL_CACHE_TTL) {
+      setStopDetailCache(dcode, cached.detail, cached.timestamp)
+      return Promise.resolve(cached.detail)
+    }
+    stopDetailCache.delete(dcode)
   }
 
   const inflight = stopDetailInFlight.get(dcode)
