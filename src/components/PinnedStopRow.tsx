@@ -4,6 +4,38 @@ import { useArrivals } from '@/hooks/useArrivals'
 import { api, type StopDetail } from '@/api/client'
 import { etaTextClass } from '@/utils/etaColor'
 
+const stopDetailCache = new Map<string, StopDetail>()
+const stopDetailInFlight = new Map<string, Promise<StopDetail>>()
+const STOP_DETAIL_CACHE_MAX_ENTRIES = 240
+
+function setStopDetailCache(dcode: string, detail: StopDetail) {
+  stopDetailCache.delete(dcode)
+  stopDetailCache.set(dcode, detail)
+  if (stopDetailCache.size <= STOP_DETAIL_CACHE_MAX_ENTRIES) return
+  const firstKey = stopDetailCache.keys().next().value
+  if (firstKey) stopDetailCache.delete(firstKey)
+}
+
+function fetchStopDetailShared(dcode: string): Promise<StopDetail> {
+  const cached = stopDetailCache.get(dcode)
+  if (cached) return Promise.resolve(cached)
+
+  const inflight = stopDetailInFlight.get(dcode)
+  if (inflight) return inflight
+
+  const request = api.stops.detail(dcode)
+    .then((detail) => {
+      setStopDetailCache(dcode, detail)
+      return detail
+    })
+    .finally(() => {
+      stopDetailInFlight.delete(dcode)
+    })
+
+  stopDetailInFlight.set(dcode, request)
+  return request
+}
+
 interface PinnedStopRowProps {
   dcode: string
   nick: string
@@ -26,7 +58,15 @@ export default function PinnedStopRow({ dcode, nick, icon = '📌', distLabel, d
 
   useEffect(() => {
     if (directionProp != null) return  // direction already provided — skip extra fetch
-    api.stops.detail(dcode).then(setStopDetail).catch(() => {})
+    let cancelled = false
+    fetchStopDetailShared(dcode)
+      .then((detail) => {
+        if (!cancelled) setStopDetail(detail)
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
   }, [dcode, directionProp])
 
   const resolvedDirection = directionProp ?? stopDetail?.direction
