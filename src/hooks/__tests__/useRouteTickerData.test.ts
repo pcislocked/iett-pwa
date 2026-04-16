@@ -3,6 +3,12 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { api, type RouteMetadata, type ScheduledDeparture } from '@/api/client'
 import { useRouteTickerData } from '../useRouteTickerData'
 
+let codeSeq = 0
+function uniqueCode(prefix: string): string {
+  codeSeq += 1
+  return `${prefix}-${codeSeq}`
+}
+
 function makeSchedule(code: string): ScheduledDeparture[] {
   return [
     {
@@ -44,7 +50,7 @@ describe('useRouteTickerData', () => {
   })
 
   it('reuses a single in-flight request for concurrent consumers of the same route', async () => {
-    const code = `INF-${Date.now()}`
+    const code = uniqueCode('INF')
 
     let resolveSchedule!: (value: ScheduledDeparture[]) => void
     let resolveMetadata!: (value: RouteMetadata[]) => void
@@ -80,7 +86,7 @@ describe('useRouteTickerData', () => {
   })
 
   it('serves cached data within TTL without re-fetching', async () => {
-    const code = `HIT-${Date.now()}`
+    const code = uniqueCode('HIT')
     const scheduleSpy = vi.spyOn(api.routes, 'schedule').mockResolvedValue(makeSchedule(code))
     const metadataSpy = vi.spyOn(api.routes, 'metadata').mockResolvedValue(makeMetadata(code))
 
@@ -98,7 +104,7 @@ describe('useRouteTickerData', () => {
   })
 
   it('re-fetches after TTL expires', async () => {
-    const code = `TTL-${Date.now()}`
+    const code = uniqueCode('TTL')
     let now = 1_000_000
     vi.spyOn(Date, 'now').mockImplementation(() => now)
 
@@ -121,7 +127,7 @@ describe('useRouteTickerData', () => {
   })
 
   it('evicts oldest entries when cache exceeds max size', async () => {
-    const prefix = `PRUNE-${Date.now()}-`
+    const prefix = `${uniqueCode('PRUNE')}-`
     let now = 2_000_000
     vi.spyOn(Date, 'now').mockImplementation(() => now)
 

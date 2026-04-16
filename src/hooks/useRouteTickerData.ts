@@ -55,14 +55,6 @@ export function useRouteTickerData(code: string) {
           pruneRouteCache(ts)
           return data
         })
-        .catch((err) => {
-          // On error, keep cached data alive if available
-          if (cached) {
-            routeCache.set(code, { data: cached.data, timestamp: now, lastAccess: now })
-            return cached.data
-          }
-          throw err
-        })
         .finally(() => {
           routeInFlight.delete(code)
         })
@@ -74,7 +66,6 @@ export function useRouteTickerData(code: string) {
   )
 
   // Poll every 5 minutes; reuses cache during interval
-  const { data, loading } = usePolling(fetcher, 300_000)
-  return { data, loading }
+  return usePolling(fetcher, 300_000)
 }
 
