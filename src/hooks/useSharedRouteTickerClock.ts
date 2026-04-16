@@ -8,11 +8,16 @@ let sharedRouteTickerNowMs = Date.now()
 let sharedRouteTickerInterval: ReturnType<typeof setInterval> | null = null
 const sharedRouteTickerSubscribers = new Set<() => void>()
 
+function notifySharedRouteTickerNow() {
+  sharedRouteTickerNowMs = Date.now()
+  sharedRouteTickerSubscribers.forEach((notify) => notify())
+}
+
 function startSharedRouteTickerClock() {
   if (sharedRouteTickerInterval !== null) return
+  notifySharedRouteTickerNow()
   sharedRouteTickerInterval = setInterval(() => {
-    sharedRouteTickerNowMs = Date.now()
-    sharedRouteTickerSubscribers.forEach((notify) => notify())
+    notifySharedRouteTickerNow()
   }, 60_000)
 }
 

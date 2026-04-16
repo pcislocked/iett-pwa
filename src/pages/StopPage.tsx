@@ -7,7 +7,7 @@ import { usePolling } from '@/hooks/usePolling'
 import { api, type Announcement, type StopDetail, type BusPosition, type Arrival, type Amenities } from '@/api/client'
 import { useFavorites } from '@/hooks/useFavorites'
 import { useBottomBar } from '@/hooks/useBottomBar'
-import { useUserPrefs } from '@/hooks/useUserPrefs'
+import { PINNED_STOPS_MAX, useUserPrefs } from '@/hooks/useUserPrefs'
 import { etaChipClass } from '@/utils/etaColor'
 
 /** Calls map.invalidateSize() whenever the container height percentage changes. */
@@ -453,6 +453,7 @@ export default function StopPage() {
   const favItem = { kind: 'stop' as const, dcode: dcode ?? '', name: stopName }
   const favorited = isFavorite(favItem)
   const pinned = isPinned(dcode ?? '')
+  const pinAtLimit = !pinned && (prefs?.pinnedStops.length ?? 0) >= PINNED_STOPS_MAX
 
   const toggleRoute = useCallback((r: string) => {
     setActiveRoutes((prev) => {
@@ -536,21 +537,21 @@ export default function StopPage() {
           <button
             onClick={() => {
               if (!dcode) return
-              const atLimit = !pinned && (prefs?.pinnedStops.length ?? 0) >= 3
+              const atLimit = !pinned && (prefs?.pinnedStops.length ?? 0) >= PINNED_STOPS_MAX
               if (atLimit) return
               if (pinned) unpinStop(dcode)
               else pinStop(dcode, stopName)
             }}
-            disabled={!dcode || (!pinned && (prefs?.pinnedStops.length ?? 0) >= 3)}
+            disabled={!dcode || pinAtLimit}
             aria-label={
-              (!pinned && (prefs?.pinnedStops.length ?? 0) >= 3)
-                ? 'En fazla 3 durak sabitlenebilir'
+              pinAtLimit
+                ? `En fazla ${PINNED_STOPS_MAX} durak sabitlenebilir`
                 : pinned ? 'Sabitlemeyi kaldır' : 'Ana sayfaya sabitle'
             }
             aria-pressed={pinned}
             title={
-              (!pinned && (prefs?.pinnedStops.length ?? 0) >= 3)
-                ? 'En fazla 3 durak ana sayfaya sabitlenebilir'
+              pinAtLimit
+                ? `En fazla ${PINNED_STOPS_MAX} durak ana sayfaya sabitlenebilir`
                 : pinned ? 'Sabitlemeyi kaldır' : 'Ana sayfaya sabitle'
             }
             className={`p-1.5 rounded-xl transition-colors shrink-0 disabled:opacity-40 ${
