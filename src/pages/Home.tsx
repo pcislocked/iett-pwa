@@ -3,12 +3,14 @@ import { Link, useNavigate } from 'react-router-dom'
 import PinnedStopRow from '@/components/PinnedStopRow'
 import { PINNED_STOPS_MAX, useUserPrefs, type PinnedStop } from '@/hooks/useUserPrefs'
 import { getRecent, type RecentSearch } from '@/hooks/useRecentSearches'
-import { api, type NearbyStop, type RouteMetadata, type ScheduledDeparture } from '@/api/client'
+import { api, type NearbyStop, type ScheduledDeparture } from '@/api/client'
 import { distanceLabel } from '@/utils/distance'
 import LocationConsentModal from '@/components/LocationConsentModal'
 import { etaTextClass } from '@/utils/etaColor'
-import { usePolling } from '@/hooks/usePolling'
 import { useFavorites } from '@/hooks/useFavorites'
+import { getDirectionLabelMap } from '@/utils/routeDirectionLabels'
+import { useSharedRouteTickerNowMs } from '@/hooks/useSharedRouteTickerClock'
+import { useRouteTickerData } from '@/hooks/useRouteTickerData'
 
 const LOCATION_CONSENT_KEY = 'location-consent'
 
@@ -106,33 +108,6 @@ function getScheduleDayType(date: Date): 'H' | 'C' | 'P' {
   return 'H'
 }
 
-function toDirectionLabelMap(metadata: RouteMetadata[] | null): Record<string, string> {
-  const map: Record<string, string> = {}
-  const fullNameByDir: Record<string, string> = {}
-  if (!metadata) return map
-
-  for (const m of metadata) {
-    if (!m.variant_code || !m.direction_name) continue
-    const dir = m.variant_code.includes('_D_') ? 'D'
-      : m.variant_code.includes('_G_') ? 'G'
-        : null
-    if (!dir) continue
-    const parts = m.direction_name.split(' - ')
-    map[dir] = parts[0].trim()
-    fullNameByDir[dir] = m.direction_name
-  }
-
-  if (map.D && !map.G) {
-    const parts = fullNameByDir.D?.split(' - ') ?? []
-    if (parts.length >= 2) map.G = parts[parts.length - 1].trim()
-  } else if (map.G && !map.D) {
-    const parts = fullNameByDir.G?.split(' - ') ?? []
-    if (parts.length >= 2) map.D = parts[parts.length - 1].trim()
-  }
-
-  return map
-}
-
 function minutesToNextDeparture(schedule: ScheduledDeparture[], dayType: 'H' | 'C' | 'P', direction: string, now: Date): number | null {
   const minutesNow = now.getHours() * 60 + now.getMinutes()
   let best: number | null = null
@@ -149,23 +124,14 @@ function minutesToNextDeparture(schedule: ScheduledDeparture[], dayType: 'H' | '
 
 function RouteTickerRow({ code, name, icon }: { code: string; name: string; icon: string }) {
   const navigate = useNavigate()
-  const [nowMs, setNowMs] = useState(() => Date.now())
-  useEffect(() => {
-    const id = setInterval(() => setNowMs(Date.now()), 60_000)
-    return () => clearInterval(id)
-  }, [])
-
-  const fetcher = useMemo(
-    () => () => Promise.all([api.routes.schedule(code), api.routes.metadata(code)]).then(([schedule, metadata]) => ({ schedule, metadata })),
-    [code],
-  )
-  const { data, loading } = usePolling(fetcher, 300_000)
+  const nowMs = useSharedRouteTickerNowMs()
+  const { data, loading } = useRouteTickerData(code)
 
   const ticker = useMemo(() => {
     if (!data) return [] as Array<{ dir: string; label: string; eta: string; etaMinutes: number | null }>
     const { schedule, metadata } = data
     const dayType = getScheduleDayType(new Date(nowMs))
-    const labels = toDirectionLabelMap(metadata)
+    const labels = getDirectionLabelMap(metadata)
     const dirs = [...new Set(schedule.filter((s) => s.day_type === dayType).map((s) => s.direction))]
       .sort((a, b) => (a === 'D' ? -1 : b === 'D' ? 1 : a.localeCompare(b)))
       .slice(0, 2)
@@ -441,12 +407,12 @@ export default function Home() {
           <div className="flex items-center justify-between px-4 pt-2 pb-1">
             <span className="metro-section p-0">Favoriler</span>
             <Link to="/favorites" className="text-[11px] metro-tilt" style={{ color: 'var(--wp-accent)' }}>
-              Yönet →
+              Tümünü Gör →
             </Link>
           </div>
 
           <div>
-            {favStops.map((s) => (
+            {favStops.slice(0, 3).map((s) => (
               <PinnedStopRow
                 key={`fav-stop-${s.dcode}`}
                 dcode={s.dcode}
@@ -454,7 +420,7 @@ export default function Home() {
                 icon="❤"
               />
             ))}
-            {favRoutes.map((r) => (
+            {favRoutes.slice(0, 3).map((r) => (
               <RouteTickerRow
                 key={`fav-route-${r.hat_kodu}`}
                 code={r.hat_kodu}
