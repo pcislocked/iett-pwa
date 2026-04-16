@@ -4,7 +4,8 @@ import type { RouteMetadata } from '@/api/client'
  * Extract direction labels (D/G) from route metadata.
  * Handles cases where only one direction has metadata by deriving the other
  * terminal name from the full "A - B" direction_name string.
- * Falls back to Turkish labels only when metadata is absent entirely.
+ * Returns an empty map when metadata is absent; Turkish fallback labels are
+ * applied by `getDirectionLabel()`.
  */
 export function getDirectionLabelMap(metadata: RouteMetadata[] | null): Record<string, string> {
   const map: Record<string, string> = {}

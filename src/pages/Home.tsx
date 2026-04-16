@@ -8,7 +8,7 @@ import { distanceLabel } from '@/utils/distance'
 import LocationConsentModal from '@/components/LocationConsentModal'
 import { etaTextClass } from '@/utils/etaColor'
 import { useFavorites } from '@/hooks/useFavorites'
-import { getDirectionLabelMap } from '@/utils/routeDirectionLabels'
+import { getDirectionLabel } from '@/utils/routeDirectionLabels'
 import { useSharedRouteTickerNowMs } from '@/hooks/useSharedRouteTickerClock'
 import { useRouteTickerData } from '@/hooks/useRouteTickerData'
 
@@ -131,7 +131,7 @@ function RouteTickerRow({ code, name, icon }: { code: string; name: string; icon
     if (!data) return [] as Array<{ dir: string; label: string; eta: string; etaMinutes: number | null }>
     const { schedule, metadata } = data
     const dayType = getScheduleDayType(new Date(nowMs))
-    const labels = getDirectionLabelMap(metadata)
+    const hasMetadata = !!metadata?.length
     const dirs = [...new Set(schedule.filter((s) => s.day_type === dayType).map((s) => s.direction))]
       .sort((a, b) => (a === 'D' ? -1 : b === 'D' ? 1 : a.localeCompare(b)))
       .slice(0, 2)
@@ -139,7 +139,7 @@ function RouteTickerRow({ code, name, icon }: { code: string; name: string; icon
     return dirs.map((dir) => {
       const mins = minutesToNextDeparture(schedule, dayType, dir, new Date(nowMs))
       const eta = mins === null ? '--' : mins > 30 ? '30+' : `${mins}dk`
-      return { dir, label: labels[dir] ?? dir, eta, etaMinutes: mins }
+      return { dir, label: getDirectionLabel(dir, metadata, hasMetadata), eta, etaMinutes: mins }
     })
   }, [data, nowMs])
 
