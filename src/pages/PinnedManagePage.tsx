@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useUserPrefs } from '@/hooks/useUserPrefs'
+import { PINNED_STOPS_MAX, useUserPrefs } from '@/hooks/useUserPrefs'
 import { useArrivals } from '@/hooks/useArrivals'
 import { api, type StopDetail } from '@/api/client'
 import { etaTextClass } from '@/utils/etaColor'
@@ -180,7 +180,7 @@ export default function PinnedManagePage() {
       )}
 
       {/* Add button */}
-      {pinnedStops.length < 4 && (
+      {pinnedStops.length < PINNED_STOPS_MAX && (
         <button
           onClick={() => navigate('/search')}
           className="w-full flex items-center gap-3 px-4 py-4 border-t border-[#111]
@@ -191,7 +191,7 @@ export default function PinnedManagePage() {
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
           </svg>
           <span className="text-sm font-semibold">Durak Ekle</span>
-          <span className="text-xs ml-auto" style={{ color: '#333' }}>{pinnedStops.length} / 4</span>
+          <span className="text-xs ml-auto" style={{ color: '#333' }}>{pinnedStops.length} / {PINNED_STOPS_MAX}</span>
         </button>
       )}
 

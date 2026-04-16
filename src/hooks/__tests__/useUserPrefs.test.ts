@@ -48,16 +48,19 @@ describe('useUserPrefs', () => {
       expect(result.current.prefs.pinnedStops).toHaveLength(1)
     })
 
-    it('enforces a max of 4 pinned stops', () => {
+    it('enforces a max of 7 pinned stops', () => {
       const { result } = renderHook(() => useUserPrefs())
       act(() => {
         result.current.pinStop('s1', 'A')
         result.current.pinStop('s2', 'B')
         result.current.pinStop('s3', 'C')
         result.current.pinStop('s4', 'D')
-        result.current.pinStop('s5', 'E')  // should be ignored
+        result.current.pinStop('s5', 'E')
+        result.current.pinStop('s6', 'F')
+        result.current.pinStop('s7', 'G')
+        result.current.pinStop('s8', 'H')  // should be ignored
       })
-      expect(result.current.prefs.pinnedStops).toHaveLength(4)
+      expect(result.current.prefs.pinnedStops).toHaveLength(7)
     })
 
     it('unpins a stop and re-indexes order', () => {
