@@ -4,27 +4,51 @@ import { useArrivals } from '@/hooks/useArrivals'
 import { api, type StopDetail } from '@/api/client'
 import { etaTextClass } from '@/utils/etaColor'
 
-type StopDetailCacheRecord = { detail: StopDetail; timestamp: number }
+type StopDetailCacheRecord = {
+  detail: StopDetail
+  timestamp: number
+  lastAccess: number
+}
 
 const stopDetailCache = new Map<string, StopDetailCacheRecord>()
 const stopDetailInFlight = new Map<string, Promise<StopDetail>>()
 const STOP_DETAIL_CACHE_MAX_ENTRIES = 240
 const STOP_DETAIL_CACHE_TTL = 10 * 60 * 1000 // 10 minutes
 
-function setStopDetailCache(dcode: string, detail: StopDetail, timestamp: number = Date.now()) {
-  stopDetailCache.delete(dcode)
-  stopDetailCache.set(dcode, { detail, timestamp })
+function pruneStopDetailCache(now: number) {
+  for (const [key, record] of stopDetailCache.entries()) {
+    if (now - record.timestamp >= STOP_DETAIL_CACHE_TTL) {
+      stopDetailCache.delete(key)
+    }
+  }
+
   if (stopDetailCache.size <= STOP_DETAIL_CACHE_MAX_ENTRIES) return
-  const firstKey = stopDetailCache.keys().next().value
-  if (firstKey) stopDetailCache.delete(firstKey)
+  const oldestFirst = [...stopDetailCache.entries()].sort((a, b) => a[1].lastAccess - b[1].lastAccess)
+  const overflow = stopDetailCache.size - STOP_DETAIL_CACHE_MAX_ENTRIES
+  for (let i = 0; i < overflow; i++) {
+    stopDetailCache.delete(oldestFirst[i][0])
+  }
+}
+
+function setStopDetailCache(
+  dcode: string,
+  detail: StopDetail,
+  timestamp: number = Date.now(),
+  lastAccess: number = timestamp,
+) {
+  stopDetailCache.delete(dcode)
+  stopDetailCache.set(dcode, { detail, timestamp, lastAccess })
+  pruneStopDetailCache(lastAccess)
 }
 
 function fetchStopDetailShared(dcode: string): Promise<StopDetail> {
   const now = Date.now()
+  pruneStopDetailCache(now)
+
   const cached = stopDetailCache.get(dcode)
   if (cached) {
     if (now - cached.timestamp < STOP_DETAIL_CACHE_TTL) {
-      setStopDetailCache(dcode, cached.detail, cached.timestamp)
+      setStopDetailCache(dcode, cached.detail, cached.timestamp, now)
       return Promise.resolve(cached.detail)
     }
     stopDetailCache.delete(dcode)
