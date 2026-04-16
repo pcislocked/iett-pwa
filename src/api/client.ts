@@ -197,6 +197,10 @@ export interface TrafficSegment {
   timestamp: string
 }
 
+export type FleetRefreshResponse =
+  | { status: 'queued' }
+  | { status: 'cooldown'; retry_after_seconds: number }
+
 // ─── API calls ────────────────────────────────────────────────────────────────
 
 export const api = {
@@ -205,7 +209,7 @@ export const api = {
     byPlate: (kapino: string) => get<BusPosition>(`/v1/fleet/${encodeURIComponent(kapino)}`),
     detail: (kapino: string) => get<BusDetail>(`/v1/fleet/${encodeURIComponent(kapino)}/detail`),
     meta: () => get<{ bus_count: number; updated_at: string | null }>('/v1/fleet/meta'),
-    refresh: () => post<Record<string, unknown>>('/v1/fleet/refresh'),
+    refresh: () => post<FleetRefreshResponse>('/v1/fleet/refresh'),
   },
   stops: {
     search: (q: string) => get<StopSearchResult[]>(`/v1/stops/search?q=${encodeURIComponent(q)}`),

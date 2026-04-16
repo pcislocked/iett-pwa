@@ -217,11 +217,18 @@ describe('api.fleet.detail', () => {
 })
 
 describe('api.fleet.refresh', () => {
-  it('calls POST /v1/fleet/refresh', async () => {
-    const fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 202, json: () => Promise.resolve({}) })
+  it('calls POST /v1/fleet/refresh and returns queued status', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 202, json: () => Promise.resolve({ status: 'queued' }) })
     vi.stubGlobal('fetch', fetchMock)
-    await api.fleet.refresh()
+    const result = await api.fleet.refresh()
+    expect(result).toEqual({ status: 'queued' })
     expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('/v1/fleet/refresh'), expect.objectContaining({ method: 'POST' }))
+  })
+
+  it('returns cooldown payload when backend throttles refresh', async () => {
+    mockFetch({ status: 'cooldown', retry_after_seconds: 7 }, 202)
+    const result = await api.fleet.refresh()
+    expect(result).toEqual({ status: 'cooldown', retry_after_seconds: 7 })
   })
 
   it('throws on non-2xx response', async () => {
