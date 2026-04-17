@@ -197,6 +197,7 @@ export default function AracBusOverlayPage() {
 
       setAutoAttempt(attempt)
       const challenge = await fetchCaptcha()
+      if (!aliveRef.current) return
 
       const solved = await api.arac.autoSolve({
         captchaId: challenge.captchaId,
