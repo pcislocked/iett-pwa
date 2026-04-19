@@ -68,30 +68,19 @@ describe('AracBusOverlayPage', () => {
     )
   }
 
-  it('shows manual captcha input with an accessible label after auto-solve retries fail', async () => {
+  it('shows manual captcha input first and does not auto-solve automatically', async () => {
     mocks.loadAracSession.mockReturnValue(null)
     mocks.captcha.mockResolvedValue({
       captchaId: 'cid-1',
       captchaImageBase64: 'AAAA',
-    })
-    mocks.autoSolve.mockResolvedValue({
-      captchaId: 'cid-1',
-      captchaImageBase64: 'AAAA',
-      solved: false,
-      strategy: 'ocr-candidates',
-      candidatesTried: ['ABCD'],
-      selectedCandidate: null,
-      sessionId: null,
-      sessionKey: null,
-      error: 'Wrong CAPTCHA',
     })
 
     renderPage()
 
     await screen.findByRole('heading', { name: /captcha manuel dogrulama/i })
     expect(screen.getByRole('textbox', { name: /captcha cevabi/i })).toBeInTheDocument()
-    expect(mocks.captcha).toHaveBeenCalledTimes(3)
-    expect(mocks.autoSolve).toHaveBeenCalledTimes(3)
+    expect(mocks.captcha).toHaveBeenCalledTimes(1)
+    expect(mocks.autoSolve).not.toHaveBeenCalled()
   })
 
   it('renders profile and mission sections when an existing session is valid', async () => {
@@ -146,17 +135,6 @@ describe('AracBusOverlayPage', () => {
       captchaId: 'cid-1',
       captchaImageBase64: 'AAAA',
     })
-    mocks.autoSolve.mockResolvedValue({
-      captchaId: 'cid-1',
-      captchaImageBase64: 'AAAA',
-      solved: false,
-      strategy: 'ocr-candidates',
-      candidatesTried: ['ABCD'],
-      selectedCandidate: null,
-      sessionId: null,
-      sessionKey: null,
-      error: 'Wrong CAPTCHA',
-    })
 
     renderPage()
 
@@ -172,17 +150,6 @@ describe('AracBusOverlayPage', () => {
     mocks.captcha.mockResolvedValue({
       captchaId: 'cid-1',
       captchaImageBase64: 'AAAA',
-    })
-    mocks.autoSolve.mockResolvedValue({
-      captchaId: 'cid-1',
-      captchaImageBase64: 'AAAA',
-      solved: false,
-      strategy: 'ocr-candidates',
-      candidatesTried: ['ABCD'],
-      selectedCandidate: null,
-      sessionId: null,
-      sessionKey: null,
-      error: 'Wrong CAPTCHA',
     })
     mocks.createSession.mockResolvedValue({
       sessionId: 'sid-1',
@@ -241,17 +208,6 @@ describe('AracBusOverlayPage', () => {
       captchaId: 'cid-1',
       captchaImageBase64: 'AAAA',
     })
-    mocks.autoSolve.mockResolvedValue({
-      captchaId: 'cid-1',
-      captchaImageBase64: 'AAAA',
-      solved: false,
-      strategy: 'ocr-candidates',
-      candidatesTried: ['ABCD'],
-      selectedCandidate: null,
-      sessionId: null,
-      sessionKey: null,
-      error: 'Wrong CAPTCHA',
-    })
     mocks.createSession.mockRejectedValue(new Error('Wrong CAPTCHA'))
 
     renderPage()
@@ -264,7 +220,36 @@ describe('AracBusOverlayPage', () => {
 
     await screen.findByText(/captcha dogrulanamadi: wrong captcha/i)
     expect(mocks.createSession).toHaveBeenCalledOnce()
-    expect(mocks.captcha).toHaveBeenCalledTimes(4)
+    expect(mocks.captcha).toHaveBeenCalledTimes(2)
+  })
+
+  it('attempts auto-solve only after user clicks the auto-solve button', async () => {
+    mocks.loadAracSession.mockReturnValue(null)
+    mocks.captcha.mockResolvedValue({
+      captchaId: 'cid-1',
+      captchaImageBase64: 'AAAA',
+    })
+    mocks.autoSolve.mockResolvedValue({
+      captchaId: 'cid-1',
+      captchaImageBase64: 'AAAA',
+      solved: false,
+      strategy: 'ocr-candidates',
+      candidatesTried: ['ABCD'],
+      selectedCandidate: null,
+      sessionId: null,
+      sessionKey: null,
+      error: 'Wrong CAPTCHA',
+    })
+
+    renderPage()
+
+    await screen.findByRole('heading', { name: /captcha manuel dogrulama/i })
+    expect(mocks.autoSolve).not.toHaveBeenCalled()
+
+    fireEvent.click(screen.getByRole('button', { name: /oto coz dene/i }))
+
+    await screen.findByText(/otomatik cozum 3 denemede basarisiz oldu/i)
+    expect(mocks.autoSolve).toHaveBeenCalledTimes(3)
   })
 
   it('shows fatal error when kapino param is missing', async () => {
