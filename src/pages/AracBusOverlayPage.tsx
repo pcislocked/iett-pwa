@@ -265,13 +265,16 @@ export default function AracBusOverlayPage() {
     }
 
     try {
-      await runAutoSolveFlow()
+      await fetchCaptcha()
+      if (!aliveRef.current) return
+      setManualAnswer('')
+      setViewState('manual-required')
     } catch (error) {
       if (!aliveRef.current) return
       setViewState('error')
       setFatalError(errorText(error))
     }
-  }, [fetchBusData, kapino, runAutoSolveFlow])
+  }, [fetchBusData, fetchCaptcha, kapino])
 
   useEffect(() => {
     void startFlow()
@@ -392,7 +395,7 @@ export default function AracBusOverlayPage() {
           <div className="border border-[#111] bg-[#0d0d0d] p-4 space-y-4">
             <div>
               <h2 className="text-sm font-semibold text-white">Captcha manuel dogrulama</h2>
-              <p className="text-xs text-[#888] mt-1">Otomatik cozum siniri asildi. Captcha kodunu yazarak devam edin.</p>
+              <p className="text-xs text-[#888] mt-1">Once captcha kodunu yazarak devam edin. Isterseniz otomatik cozum denemesi de yapabilirsiniz.</p>
             </div>
 
             {captchaImage && (
@@ -429,7 +432,7 @@ export default function AracBusOverlayPage() {
                 onClick={() => { void runAutoSolveFlow() }}
                 className="metro-tilt px-3 py-2 border border-[#222] text-slate-200 text-sm"
               >
-                Tekrar Oto Coz ({AUTO_SOLVE_MAX_ATTEMPTS})
+                Oto Coz Dene ({AUTO_SOLVE_MAX_ATTEMPTS})
               </button>
             </div>
           </div>
