@@ -85,7 +85,7 @@ docker run --rm -p 8080:80 iett-pwa:0.3.11
 Optimization notes:
 - Route-level lazy loading keeps the initial bundle smaller (non-home pages load on demand).
 - Stable manual Rollup chunking improves long-term browser cache hit rates for vendor code.
-- `npm ci` uses `--omit=optional` in Docker to reduce install footprint and build time.
+- Docker build stage uses `npm ci --include=optional` to ensure Rollup native binaries are available for `vite build`.
 
 ## Environment Variables
 
