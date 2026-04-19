@@ -6,6 +6,22 @@ import { useFleet } from '@/hooks/useFleet'
 import { usePolling } from '@/hooks/usePolling'
 import { api, type BusDetail, type Garage, type RouteSearchResult, type BusPosition } from '@/api/client'
 
+function parseIsoDate(value: string | null | undefined): Date | null {
+  if (!value) return null
+  const parsed = new Date(value)
+  return Number.isNaN(parsed.getTime()) ? null : parsed
+}
+
+function formatAgo(from: Date | null, nowMs: number): string {
+  if (!from) return 'unknown'
+  const diffSeconds = Math.max(0, Math.floor((nowMs - from.getTime()) / 1000))
+  if (diffSeconds < 60) return `${diffSeconds} sec ago`
+  const diffMinutes = Math.floor(diffSeconds / 60)
+  if (diffMinutes < 60) return `${diffMinutes} min ago`
+  const diffHours = Math.floor(diffMinutes / 60)
+  return `${diffHours} h ago`
+}
+
 const garageIcon = L.divIcon({
   className: '',
   html: `<div style="
@@ -43,10 +59,20 @@ const busIcon = L.divIcon({
 export default function MapPage() {
   const navigate = useNavigate()
   const { data: buses, loading, error, refresh } = useFleet()
+  const { data: fleetMeta, refresh: refreshFleetMeta } = usePolling<{ bus_count: number; updated_at: string | null }>(
+    () => api.fleet.meta(),
+    15_000,
+  )
   const { data: garages } = usePolling<Garage[]>(
     () => api.garages.list(),
     86_400_000, // 24 h — garages rarely change
   )
+  const [nowMs, setNowMs] = useState(() => Date.now())
+
+  useEffect(() => {
+    const id = window.setInterval(() => setNowMs(Date.now()), 1_000)
+    return () => window.clearInterval(id)
+  }, [])
 
   // ── Route filter: autocomplete search + chips ──────────────────────────────
   const [selectedRoutes, setSelectedRoutes] = useState<string[]>([])
@@ -148,6 +174,15 @@ export default function MapPage() {
       .catch(() => { if (alive) { setDetailLoading(false) } })
     return () => { alive = false }
   }, [selectedKapino])
+
+  const selectedBusSnapshot = useMemo(() => {
+    if (!selectedKapino || !buses) return null
+    return buses.find((b) => b.kapino === selectedKapino) ?? null
+  }, [buses, selectedKapino])
+
+  const selectedSpeed = selectedDetail?.speed ?? selectedBusSnapshot?.speed ?? null
+  const selectedLastSeen = selectedDetail?.last_seen ?? selectedBusSnapshot?.last_seen ?? null
+  const fleetUpdatedAt = parseIsoDate(fleetMeta?.updated_at)
 
   const filtered = useMemo(() => {
     const all = buses ?? []
@@ -403,6 +438,12 @@ export default function MapPage() {
                     {selectedDetail.route_stops.filter(s => s.direction === (selectedDetail.direction_letter ?? 'G')).length} durak
                   </p>
                 )}
+                <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1">
+                  <p className="text-[10px] text-slate-500 uppercase tracking-wide">Hız</p>
+                  <p className="text-[10px] text-slate-500 uppercase tracking-wide">Son Update (SOAP)</p>
+                  <p className="text-xs text-slate-200">{selectedSpeed !== null ? `${selectedSpeed} km/h` : '—'}</p>
+                  <p className="text-xs text-slate-200 truncate" title={selectedLastSeen ?? undefined}>{selectedLastSeen ?? '—'}</p>
+                </div>
               </div>
               <button
                 onClick={() => { setSelectedKapino(null); setSelectedDetail(null) }}
@@ -429,8 +470,12 @@ export default function MapPage() {
 
       {/* Bottom status bar */}
       <div className="absolute bottom-4 right-4 z-[1000] flex items-center gap-2">
+        <div className="bg-surface-card/90 backdrop-blur px-3 py-1.5 rounded-xl
+                        text-xs text-slate-400 border border-surface-muted">
+          last data update: {formatAgo(fleetUpdatedAt, nowMs)}
+        </div>
         <button
-          onClick={refresh}
+          onClick={() => { refresh(); refreshFleetMeta() }}
           title="Yenile"
           className="bg-surface-card/90 backdrop-blur px-2.5 py-1.5 rounded-xl
                      text-xs text-slate-400 border border-surface-muted hover:text-slate-200 transition-colors"
