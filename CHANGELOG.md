@@ -5,6 +5,18 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [0.3.15] - 2026-04-20
+
+### Changed
+- Docker publish workflow now runs only for version tags (`v*`) instead of every `master` push.
+- GHCR publish pipeline now uses split native builds (`linux/amd64` and `linux/arm64`) and merges them into a multi-arch manifest, reducing emulation overhead.
+- App version bumped to `0.3.15` to stay synchronized with `iett-middle`.
+
+### Release Notes
+- Released as `v0.3.15`.
+
+---
+
 ## [0.3.11] - 2026-04-19
 
 ### Changed
