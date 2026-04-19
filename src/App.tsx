@@ -1,19 +1,20 @@
 ﻿import { BrowserRouter, Routes, Route, useNavigate, useLocation, useNavigationType } from 'react-router-dom'
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { Suspense, lazy, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import AppBar from '@/components/AppBar'
 import InstallBanner, { useInstallBanner } from '@/components/InstallBanner'
 import Home from '@/pages/Home'
-import SearchPage from '@/pages/SearchPage'
-import StopPage from '@/pages/StopPage'
-import RoutePage from '@/pages/RoutePage'
-import MapPage from '@/pages/MapPage'
-import AracBusOverlayPage from '@/pages/AracBusOverlayPage'
-import SettingsPage from '@/pages/SettingsPage'
-import FavoritesPage from '@/pages/FavoritesPage'
-import NearbyPage from '@/pages/NearbyPage'
-import PinnedManagePage from '@/pages/PinnedManagePage'
 import { BottomBarContext, useBottomBarState } from '@/hooks/useBottomBar'
 import { MAIN_PATHS } from '@/routes'
+
+const SearchPage = lazy(() => import('@/pages/SearchPage'))
+const StopPage = lazy(() => import('@/pages/StopPage'))
+const RoutePage = lazy(() => import('@/pages/RoutePage'))
+const MapPage = lazy(() => import('@/pages/MapPage'))
+const AracBusOverlayPage = lazy(() => import('@/pages/AracBusOverlayPage'))
+const SettingsPage = lazy(() => import('@/pages/SettingsPage'))
+const FavoritesPage = lazy(() => import('@/pages/FavoritesPage'))
+const NearbyPage = lazy(() => import('@/pages/NearbyPage'))
+const PinnedManagePage = lazy(() => import('@/pages/PinnedManagePage'))
 
 // Set by swipe commit before navigate() so useLayoutEffect skips CSS transition
 let _swipeNav = false
@@ -23,20 +24,32 @@ function makeLoc(pathname: string) {
   return { pathname, search: '', hash: '', state: null, key: `strip-${pathname}` }
 }
 
+function RouteFallback() {
+  return (
+    <div className="flex-1 min-h-0 flex items-center justify-center bg-black text-slate-400 text-sm">
+      Yukleniyor...
+    </div>
+  )
+}
+
+function LazyRoute({ children }: { children: ReactNode }) {
+  return <Suspense fallback={<RouteFallback />}>{children}</Suspense>
+}
+
 /** Route definitions shared between exit and enter renderers. */
 function MainRoutes({ loc }: { loc: ReturnType<typeof useLocation> | ReturnType<typeof makeLoc> }) {
   return (
     <Routes location={loc}>
-      <Route path="/search"          element={<SearchPage />} />
+      <Route path="/search"          element={<LazyRoute><SearchPage /></LazyRoute>} />
       <Route path="/"                element={<Home />} />
-      <Route path="/nearby"          element={<NearbyPage />} />
-      <Route path="/stops/:dcode"    element={<StopPage />} />
-      <Route path="/routes/:hatKodu" element={<RoutePage />} />
-      <Route path="/map"             element={<MapPage />} />
-      <Route path="/arac/bus/:kapino" element={<AracBusOverlayPage />} />
-      <Route path="/favorites"       element={<FavoritesPage />} />
-      <Route path="/settings"        element={<SettingsPage />} />
-      <Route path="/pinned"          element={<PinnedManagePage />} />
+      <Route path="/nearby"          element={<LazyRoute><NearbyPage /></LazyRoute>} />
+      <Route path="/stops/:dcode"    element={<LazyRoute><StopPage /></LazyRoute>} />
+      <Route path="/routes/:hatKodu" element={<LazyRoute><RoutePage /></LazyRoute>} />
+      <Route path="/map"             element={<LazyRoute><MapPage /></LazyRoute>} />
+      <Route path="/arac/bus/:kapino" element={<LazyRoute><AracBusOverlayPage /></LazyRoute>} />
+      <Route path="/favorites"       element={<LazyRoute><FavoritesPage /></LazyRoute>} />
+      <Route path="/settings"        element={<LazyRoute><SettingsPage /></LazyRoute>} />
+      <Route path="/pinned"          element={<LazyRoute><PinnedManagePage /></LazyRoute>} />
     </Routes>
   )
 }
