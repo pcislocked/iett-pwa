@@ -295,13 +295,13 @@ function BusDetailSheet({
                          py-3 rounded-xl text-sm transition-colors disabled:text-slate-600
                          disabled:border-[#1a1a1a] disabled:cursor-not-allowed hover:border-[#00AFF0]/60"
             >
-              Daha Fazla Detay (ARAC)
+              Daha Fazla Detay
             </button>
           </div>
 
           {!arrival.kapino && (
             <p className="text-[11px] text-slate-600 mt-2">
-              Bu kayıtta kapı kodu yok, ARAC detay açılamıyor.
+              Bu kayitta kapi kodu yok, Arac detayi acilamiyor.
             </p>
           )}
         </div>

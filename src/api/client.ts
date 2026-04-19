@@ -1,10 +1,36 @@
 /**
  * Typed API client for iett-middle REST endpoints.
- * Base URL is read from VITE_API_BASE_URL env var (defaults to same origin).
+ * Base URL is resolved from user settings first, then VITE_API_BASE_URL,
+ * then same origin as a final fallback.
  */
 
-const BASE = import.meta.env.VITE_API_BASE_URL ?? ''
+import { loadSettings } from '@/utils/settings'
+
+const STATIC_BASE = normalizeBase(import.meta.env.VITE_API_BASE_URL ?? '')
 const REQUEST_TIMEOUT_MS = 15_000
+const NETWORK_ERROR_TEXT = 'Sunucuya baglanilamadi. Ayarlar > iett-middle Sunucu Adresi bolumunu kontrol edin.'
+
+function normalizeBase(base: string | null | undefined): string {
+  const trimmed = (base ?? '').trim()
+  if (!trimmed) return ''
+  return trimmed.replace(/\/+$/, '')
+}
+
+function readRuntimeBase(): string {
+  try {
+    return normalizeBase(loadSettings().apiBase)
+  } catch {
+    return ''
+  }
+}
+
+function getConfiguredBase(): string {
+  return readRuntimeBase() || STATIC_BASE
+}
+
+function isNetworkError(error: unknown): boolean {
+  return error instanceof TypeError
+}
 
 export class ApiHttpError extends Error {
   status: number
@@ -46,12 +72,31 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const { signal, clear } = createTimeoutSignal(REQUEST_TIMEOUT_MS)
   try {
     const requestInit = signal ? { ...init, signal } : init
-    const res = await fetch(`${BASE}${path}`, requestInit)
-    if (!res.ok) {
-      const text = await res.text().catch(() => '')
-      throw new ApiHttpError(path, res.status, text)
+    const configuredBase = getConfiguredBase()
+
+    const execute = async (url: string): Promise<T> => {
+      const res = await fetch(url, requestInit)
+      if (!res.ok) {
+        const text = await res.text().catch(() => '')
+        throw new ApiHttpError(path, res.status, text)
+      }
+      return res.json() as Promise<T>
     }
-    return res.json() as Promise<T>
+
+    try {
+      return await execute(`${configuredBase}${path}`)
+    } catch (error) {
+      // If an explicit base is unreachable, retry same-origin once.
+      if (configuredBase && isNetworkError(error)) {
+        return await execute(path)
+      }
+      throw error
+    }
+  } catch (error) {
+    if (isNetworkError(error)) {
+      throw new Error(NETWORK_ERROR_TEXT)
+    }
+    throw error
   } finally {
     clear()
   }

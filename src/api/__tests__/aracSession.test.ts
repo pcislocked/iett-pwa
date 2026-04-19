@@ -7,7 +7,7 @@ afterEach(() => {
 })
 
 describe('aracSession storage helpers', () => {
-  it('saves and loads ARAC session from sessionStorage', () => {
+  it('saves and loads aracapi session from sessionStorage', () => {
     saveAracSession({ sessionId: 'sid-1', sessionKey: 'key-1' })
     const loaded = loadAracSession()
 

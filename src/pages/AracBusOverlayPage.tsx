@@ -255,7 +255,7 @@ export default function AracBusOverlayPage() {
         if (!aliveRef.current) return
         if (hasSessionError(error)) {
           clearAracSession()
-          setInlineWarning('ARAC oturumu suresi doldu. Yeniden captcha akisi baslatiliyor.')
+          setInlineWarning('aracapi oturumu suresi doldu. Yeniden captcha akisi baslatiliyor.')
         } else {
           setViewState('error')
           setFatalError(errorText(error))
@@ -345,7 +345,7 @@ export default function AracBusOverlayPage() {
       <div className="safe-area-pt border-b border-[#111] bg-black px-4 py-3 shrink-0">
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
-            <p className="text-[10px] uppercase tracking-[0.14em] text-[#666]">ARAC Filo Detay</p>
+            <p className="text-[10px] tracking-[0.14em] text-[#666]">arac.iett.gov.tr Filo Detay</p>
             <h1 className="text-base font-semibold text-white truncate">{kapino ? `Arac ${kapino}` : 'Arac Detay'}</h1>
           </div>
           <button
@@ -380,7 +380,7 @@ export default function AracBusOverlayPage() {
                   : viewState === 'manual-submitting'
                   ? 'Captcha dogrulaniyor...'
                   : viewState === 'loading-data'
-                  ? 'ARAC veri paketi yukleniyor...'
+                  ? 'aracapi veri paketi yukleniyor...'
                   : 'ARAÇ oturumu hazırlanıyor...'}
               </p>
               <p className="text-xs text-[#888] mt-1">Islem tamamlanana kadar bu sayfada kalabilirsiniz.</p>
@@ -398,7 +398,7 @@ export default function AracBusOverlayPage() {
             {captchaImage && (
               <img
                 src={toCaptchaSrc(captchaImage)}
-                alt="ARAC captcha"
+                alt="aracapi captcha"
                 className="w-full max-w-[320px] border border-[#222]"
               />
             )}
@@ -437,7 +437,7 @@ export default function AracBusOverlayPage() {
 
         {(viewState === 'error' || fatalError) && (
           <div className="border border-red-800/40 bg-red-950/20 p-4 text-red-200">
-            <p className="text-sm font-semibold">ARAC detay acilamadi</p>
+            <p className="text-sm font-semibold">aracapi detayi acilamadi</p>
             <p className="text-xs mt-1">{fatalError ?? 'Bilinmeyen hata'}</p>
           </div>
         )}

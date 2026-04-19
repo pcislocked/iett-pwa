@@ -32,7 +32,7 @@ export function saveAracSession(session: AracSessionCredentials): StoredAracSess
   try {
     sessionStorage.setItem(STORAGE_KEY, JSON.stringify(stored))
   } catch {
-    // Storage failures should not crash ARAC flow.
+      // Storage failures should not crash aracapi flow.
   }
   return stored
 }
@@ -41,6 +41,6 @@ export function clearAracSession(): void {
   try {
     sessionStorage.removeItem(STORAGE_KEY)
   } catch {
-    // Storage failures should not crash ARAC flow.
+     // Storage failures should not crash aracapi flow.
   }
 }

@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet'
 import * as L from 'leaflet'
 import { useNavigate } from 'react-router-dom'
@@ -356,42 +356,14 @@ export default function MapPage() {
           ) : null
         })()}
 
-        {filtered.map((b) => {
-          return (
-            <React.Fragment key={b.kapino}>
-              <Marker position={[b.latitude, b.longitude]} icon={busIcon}
-                eventHandlers={{ click: () => setSelectedKapino(b.kapino) }}
-              >
-                <Popup minWidth={170}>
-                  <div className="popup-card">
-                    <div className="popup-route" style={{ background: '#2563eb' }}>
-                      {b.kapino}
-                    </div>
-                    {b.plate && (
-                      <p className="popup-mono">{b.plate}</p>
-                    )}
-                    {b.route_code && (
-                      <p className="popup-name">
-                        <span className="popup-label">Hat </span>
-                        {b.route_code}
-                      </p>
-                    )}
-                    {b.direction && (
-                      <p className="popup-name">
-                        <span className="popup-label">→ </span>
-                        {b.direction}
-                      </p>
-                    )}
-                    <p className="popup-label" style={{ marginTop: 4 }}>
-                      {b.speed != null ? `${b.speed} km/h` : '—'}
-                      {b.last_seen && ` · ${b.last_seen}`}
-                    </p>
-                  </div>
-                </Popup>
-              </Marker>
-            </React.Fragment>
-          )
-        })}
+        {filtered.map((b) => (
+          <Marker
+            key={b.kapino}
+            position={[b.latitude, b.longitude]}
+            icon={busIcon}
+            eventHandlers={{ click: () => setSelectedKapino(b.kapino) }}
+          />
+        ))}
       </MapContainer>
 
       {/* Selected bus detail card */}
@@ -448,7 +420,7 @@ export default function MapPage() {
                 className="metro-tilt px-3 py-1.5 text-xs font-semibold border border-[#2a2a2a]
                            text-[#00AFF0] hover:border-[#00AFF0]/60"
               >
-                Daha Fazla Detay (ARAC)
+                Daha Fazla Detay
               </button>
             </div>
           </div>

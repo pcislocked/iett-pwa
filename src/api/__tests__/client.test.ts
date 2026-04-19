@@ -386,7 +386,7 @@ describe('api.arac.autoSolve', () => {
 })
 
 describe('api.arac.bus', () => {
-  it('sends ARAC session headers', async () => {
+  it('sends aracapi session headers', async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
       status: 200,
