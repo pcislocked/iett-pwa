@@ -5,6 +5,21 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [0.3.11] - 2026-04-19
+
+### Changed
+- Route-level page lazy loading added in `App.tsx` so non-home screens load on demand.
+- Vite build now uses explicit manual vendor chunking for React/router, Leaflet, and motion dependencies to improve browser cache reuse.
+- Docker build installs with `npm ci --omit=optional --no-audit --no-fund` to reduce build overhead.
+
+### Fixed
+- README Docker section now reflects the existing multi-stage Dockerfile workflow.
+
+### Release Notes
+- Released as `v0.3.11`.
+
+---
+
 ## [0.3.10] - 2026-04-19
 
 ### Added

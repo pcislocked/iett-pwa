@@ -4,7 +4,7 @@
 [![React](https://img.shields.io/badge/React-18-61DAFB?logo=react)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript)](https://www.typescriptlang.org/)
 [![PWA](https://img.shields.io/badge/PWA-installable-5A0FC8?logo=pwa)](https://web.dev/progressive-web-apps/)
-[![Version](https://img.shields.io/badge/version-0.3.10-orange)](https://github.com/pcislocked/iett-pwa/releases/tag/v0.3.10)
+[![Version](https://img.shields.io/badge/version-0.3.11-orange)](https://github.com/pcislocked/iett-pwa/releases/tag/v0.3.11)
 
 Progressive Web App for real-time Istanbul IETT bus tracking.
 Installable on Android and desktop. Works offline (last-fetched data). Dark transit theme.
@@ -75,14 +75,17 @@ Or any 192 and 512 px square PNG will work as placeholder.
 
 ## Docker
 
-No separate Dockerfile — serve built assets from iett-middle's `static/` or any static host  
-(nginx, Cloudflare Pages, Vercel, etc.).
+Use the multi-stage Dockerfile to build static assets and serve with nginx.
 
 ```bash
-# Build and copy to iett-middle static dir
-npm run build
-cp -r dist/* ../iett-middle/static/
+docker build -t iett-pwa:0.3.11 --build-arg VITE_API_BASE_URL=https://your-middle-host .
+docker run --rm -p 8080:80 iett-pwa:0.3.11
 ```
+
+Optimization notes:
+- Route-level lazy loading keeps the initial bundle smaller (non-home pages load on demand).
+- Stable manual Rollup chunking improves long-term browser cache hit rates for vendor code.
+- `npm ci` uses `--omit=optional` in Docker to reduce install footprint and build time.
 
 ## Environment Variables
 

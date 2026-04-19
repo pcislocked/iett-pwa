@@ -1,4 +1,4 @@
-import { defineConfig } from 'vite'
+import { defineConfig, type Plugin } from 'vite'
 import { mergeConfig, defineConfig as defineTestConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
@@ -12,9 +12,9 @@ const { version: APP_VERSION } = JSON.parse(
 
 const BUILD_TIMESTAMP = new Date().toISOString()
 
-const emitVersionManifest = {
+const emitVersionManifest: Plugin = {
   name: 'emit-version-manifest',
-  apply: 'build' as const,
+  apply: 'build',
   generateBundle() {
     this.emitFile({
       type: 'asset',
@@ -102,6 +102,18 @@ const viteConfig = defineConfig({
       },
     }),
   ],
+  build: {
+    cssCodeSplit: true,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+          'vendor-map': ['leaflet', 'react-leaflet'],
+          'vendor-motion': ['framer-motion'],
+        },
+      },
+    },
+  },
   server: {
     host: '0.0.0.0',
     port: 5173,
