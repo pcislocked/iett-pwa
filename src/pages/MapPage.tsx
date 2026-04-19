@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef } from 'react'
+import { memo, useState, useMemo, useEffect, useRef } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet'
 import * as L from 'leaflet'
 import { useNavigate } from 'react-router-dom'
@@ -13,14 +13,36 @@ function parseIsoDate(value: string | null | undefined): Date | null {
 }
 
 function formatAgo(from: Date | null, nowMs: number): string {
-  if (!from) return 'unknown'
+  if (!from) return '—'
   const diffSeconds = Math.max(0, Math.floor((nowMs - from.getTime()) / 1000))
-  if (diffSeconds < 60) return `${diffSeconds} sec ago`
+  if (diffSeconds < 60) return `${diffSeconds} sn önce`
   const diffMinutes = Math.floor(diffSeconds / 60)
-  if (diffMinutes < 60) return `${diffMinutes} min ago`
+  if (diffMinutes < 60) return `${diffMinutes} dk önce`
   const diffHours = Math.floor(diffMinutes / 60)
-  return `${diffHours} h ago`
+  return `${diffHours} sa önce`
 }
+
+const FleetMetaBadge = memo(function FleetMetaBadge({
+  updatedAt,
+}: {
+  updatedAt: string | null | undefined
+}) {
+  const [nowMs, setNowMs] = useState(() => Date.now())
+
+  useEffect(() => {
+    const id = window.setInterval(() => setNowMs(Date.now()), 5_000)
+    return () => window.clearInterval(id)
+  }, [])
+
+  const updatedAtDate = useMemo(() => parseIsoDate(updatedAt), [updatedAt])
+
+  return (
+    <div className="bg-surface-card/90 backdrop-blur px-3 py-1.5 rounded-xl
+                    text-xs text-slate-400 border border-surface-muted">
+      son veri güncelleme: {formatAgo(updatedAtDate, nowMs)}
+    </div>
+  )
+})
 
 const garageIcon = L.divIcon({
   className: '',
@@ -67,12 +89,6 @@ export default function MapPage() {
     () => api.garages.list(),
     86_400_000, // 24 h — garages rarely change
   )
-  const [nowMs, setNowMs] = useState(() => Date.now())
-
-  useEffect(() => {
-    const id = window.setInterval(() => setNowMs(Date.now()), 1_000)
-    return () => window.clearInterval(id)
-  }, [])
 
   // ── Route filter: autocomplete search + chips ──────────────────────────────
   const [selectedRoutes, setSelectedRoutes] = useState<string[]>([])
@@ -182,7 +198,6 @@ export default function MapPage() {
 
   const selectedSpeed = selectedDetail?.speed ?? selectedBusSnapshot?.speed ?? null
   const selectedLastSeen = selectedDetail?.last_seen ?? selectedBusSnapshot?.last_seen ?? null
-  const fleetUpdatedAt = parseIsoDate(fleetMeta?.updated_at)
 
   const filtered = useMemo(() => {
     const all = buses ?? []
@@ -470,10 +485,7 @@ export default function MapPage() {
 
       {/* Bottom status bar */}
       <div className="absolute bottom-4 right-4 z-[1000] flex items-center gap-2">
-        <div className="bg-surface-card/90 backdrop-blur px-3 py-1.5 rounded-xl
-                        text-xs text-slate-400 border border-surface-muted">
-          last data update: {formatAgo(fleetUpdatedAt, nowMs)}
-        </div>
+        <FleetMetaBadge updatedAt={fleetMeta?.updated_at} />
         <button
           onClick={() => { refresh(); refreshFleetMeta() }}
           title="Yenile"
