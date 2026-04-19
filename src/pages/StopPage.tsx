@@ -140,6 +140,8 @@ function BusDetailSheet({
   stopName: string
   onClose: () => void
 }) {
+  const navigate = useNavigate()
+
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
     document.addEventListener('keydown', handler)
@@ -273,13 +275,35 @@ function BusDetailSheet({
 
         {/* CTA */}
         <div className="px-4 pb-6 pt-2">
-          <Link
-            to={`/routes/${arrival.route_code}`}
-            onClick={onClose}
-            className="block w-full text-center bg-brand-600 hover:bg-brand-500 text-white font-semibold py-3 rounded-xl text-sm transition-colors"
-          >
-            Hattı Aç →
-          </Link>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <Link
+              to={`/routes/${arrival.route_code}`}
+              onClick={onClose}
+              className="block w-full text-center bg-brand-600 hover:bg-brand-500 text-white font-semibold py-3 rounded-xl text-sm transition-colors"
+            >
+              Hattı Aç →
+            </Link>
+
+            <button
+              onClick={() => {
+                if (!arrival.kapino) return
+                onClose()
+                navigate(`/arac/bus/${encodeURIComponent(arrival.kapino)}`)
+              }}
+              disabled={!arrival.kapino}
+              className="w-full text-center border border-[#2a2a2a] text-[#00AFF0] font-semibold
+                         py-3 rounded-xl text-sm transition-colors disabled:text-slate-600
+                         disabled:border-[#1a1a1a] disabled:cursor-not-allowed hover:border-[#00AFF0]/60"
+            >
+              Daha Fazla Detay (ARAC)
+            </button>
+          </div>
+
+          {!arrival.kapino && (
+            <p className="text-[11px] text-slate-600 mt-2">
+              Bu kayıtta kapı kodu yok, ARAC detay açılamıyor.
+            </p>
+          )}
         </div>
       </div>
     </div>

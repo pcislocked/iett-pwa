@@ -7,6 +7,7 @@ import SearchPage from '@/pages/SearchPage'
 import StopPage from '@/pages/StopPage'
 import RoutePage from '@/pages/RoutePage'
 import MapPage from '@/pages/MapPage'
+import AracBusOverlayPage from '@/pages/AracBusOverlayPage'
 import SettingsPage from '@/pages/SettingsPage'
 import FavoritesPage from '@/pages/FavoritesPage'
 import NearbyPage from '@/pages/NearbyPage'
@@ -32,6 +33,7 @@ function MainRoutes({ loc }: { loc: ReturnType<typeof useLocation> | ReturnType<
       <Route path="/stops/:dcode"    element={<StopPage />} />
       <Route path="/routes/:hatKodu" element={<RoutePage />} />
       <Route path="/map"             element={<MapPage />} />
+      <Route path="/arac/bus/:kapino" element={<AracBusOverlayPage />} />
       <Route path="/favorites"       element={<FavoritesPage />} />
       <Route path="/settings"        element={<SettingsPage />} />
       <Route path="/pinned"          element={<PinnedManagePage />} />

@@ -6,6 +6,20 @@
 const BASE = import.meta.env.VITE_API_BASE_URL ?? ''
 const REQUEST_TIMEOUT_MS = 15_000
 
+export class ApiHttpError extends Error {
+  status: number
+  path: string
+  responseText: string
+
+  constructor(path: string, status: number, responseText: string) {
+    super(`API ${path} -> HTTP ${status}: ${responseText}`)
+    this.name = 'ApiHttpError'
+    this.status = status
+    this.path = path
+    this.responseText = responseText
+  }
+}
+
 type TimeoutSignal = {
   signal?: AbortSignal
   clear: () => void
@@ -35,7 +49,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     const res = await fetch(`${BASE}${path}`, requestInit)
     if (!res.ok) {
       const text = await res.text().catch(() => '')
-      throw new Error(`API ${path} → HTTP ${res.status}: ${text}`)
+      throw new ApiHttpError(path, res.status, text)
     }
     return res.json() as Promise<T>
   } finally {
@@ -43,12 +57,22 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   }
 }
 
-async function get<T>(path: string): Promise<T> {
-  return request<T>(path)
+async function get<T>(path: string, init?: RequestInit): Promise<T> {
+  return request<T>(path, init)
 }
 
-async function post<T>(path: string): Promise<T> {
-  return request<T>(path, { method: 'POST' })
+async function post<T>(path: string, body?: unknown, init?: RequestInit): Promise<T> {
+  const headers = new Headers(init?.headers)
+  if (body !== undefined && !headers.has('Content-Type')) {
+    headers.set('Content-Type', 'application/json')
+  }
+
+  return request<T>(path, {
+    ...init,
+    method: 'POST',
+    headers,
+    body: body === undefined ? init?.body : JSON.stringify(body),
+  })
 }
 
 // ─── Model types ──────────────────────────────────────────────────────────────
@@ -73,6 +97,21 @@ export interface BusPosition {
   direction_letter: string | null // "G" or "D"
   nearest_stop: string | null
   stop_sequence: number | null    // current stop index along the route
+  operator_id?: number | null
+  operator_name?: string | null
+  vehicle_brand?: string | null
+  model_year?: number | null
+  vehicle_type?: string | null
+  seating_capacity?: number | null
+  full_capacity?: number | null
+  accessible?: boolean | null
+  has_usb?: boolean | null
+  has_wifi?: boolean | null
+  has_bicycle_rack?: boolean | null
+  is_air_conditioned?: boolean | null
+  garage_code?: string | null
+  garage_name?: string | null
+  vehicle_software_version?: number | null
   trail: TrailPoint[]
 }
 
@@ -201,6 +240,123 @@ export type FleetRefreshResponse =
   | { status: 'queued' }
   | { status: 'cooldown'; retry_after_seconds: number }
 
+export interface AracSessionCredentials {
+  sessionId: string
+  sessionKey: string
+}
+
+export interface AracCaptchaResponse {
+  captchaId: string
+  captchaImageBase64: string
+}
+
+export interface AracSessionCreateRequest {
+  captchaId: string
+  captchaAnswer: string
+}
+
+export interface AracSessionCreateResponse {
+  sessionId: string
+  sessionKey: string
+}
+
+export interface AracAutoSolveRequest {
+  captchaId?: string
+  captchaImageBase64?: string
+  createSession?: boolean
+  maxCandidates?: number
+}
+
+export interface AracAutoSolveResponse {
+  captchaId: string
+  captchaImageBase64: string
+  solved: boolean
+  strategy: string
+  candidatesTried: string[]
+  selectedCandidate: string | null
+  sessionId: string | null
+  sessionKey: string | null
+  error: string | null
+}
+
+export interface AracMissionItem {
+  task_id: number | null
+  archive_id: number | null
+  task_start_time_ms: number | null
+  task_end_time_ms: number | null
+  task_coming_time_ms: number | null
+  line_code: string | null
+  line_name: string | null
+  route_code: string | null
+  route_id: number | null
+  route_direction: number | null
+  service_no: number | null
+  driver_register_no: string | null
+  unread_message: boolean | null
+  task_status: number | null
+  task_status_code: string | null
+  old_line_name: string | null
+  superior_name: string | null
+  bus_door_number: string | null
+  driver_id: number | null
+  vehicle_id: number | null
+  line_id: number | null
+  justification_id: number | null
+  last_location_time_ms: number | null
+  updated_by: string | null
+  intervention_code: string | null
+  note: string | null
+  updated_time_ms: number | null
+  updated_start_time_ms: number | null
+  task_start_time: string | null
+  task_end_time: string | null
+  task_coming_time: string | null
+  last_location_time: string | null
+  updated_time: string | null
+  updated_start_time: string | null
+  approximate_start_time_ms: number | null
+  approximate_end_time_ms: number | null
+  approximate_start_time: string | null
+  approximate_end_time: string | null
+  is_active: boolean | null
+  last_point_order_number: number | null
+  task_type_id: number | null
+  created_by: number | null
+  last_stop_passed_code: string | null
+  last_stop_passed_name: string | null
+  stop_id: number | null
+  stop_code: string | null
+  stop_name: string | null
+  sending_time_ms: number | null
+  sending_time: string | null
+  sending_time_old_ms: number | null
+  sending_time_old: string | null
+  has_plan_sent: boolean | null
+  delivery_report_time_ms: number | null
+  delivery_report_time: string | null
+  gprs_active: boolean | null
+}
+
+export interface AracMissionSummary {
+  mission_count: number
+  active_count: number
+  distinct_line_codes: string[]
+  distinct_route_codes: string[]
+}
+
+export interface AracMissionsResponse {
+  kapino: string
+  summary: AracMissionSummary
+  missions: AracMissionItem[]
+}
+
+function aracAuthHeaders(session: AracSessionCredentials): HeadersInit {
+  return {
+    'X-Arac-Session-Id': session.sessionId,
+    'X-Arac-Session-Key': session.sessionKey,
+  }
+}
+
 // ─── API calls ────────────────────────────────────────────────────────────────
 
 export const api = {
@@ -234,5 +390,22 @@ export const api = {
   traffic: {
     index: () => get<TrafficIndex>('/v1/traffic/index'),
     segments: () => get<TrafficSegment[]>('/v1/traffic/segments'),
+  },
+  arac: {
+    captcha: () => post<AracCaptchaResponse>('/v1/arac/session/captcha'),
+    autoSolve: (payload: AracAutoSolveRequest) =>
+      post<AracAutoSolveResponse>('/v1/arac/session/auto-solve', payload),
+    createSession: (payload: AracSessionCreateRequest) =>
+      post<AracSessionCreateResponse>('/v1/arac/session/create', payload),
+    fleet: (session: AracSessionCredentials) =>
+      get<BusPosition[]>('/v1/arac/fleet', { headers: aracAuthHeaders(session) }),
+    bus: (kapino: string, session: AracSessionCredentials) =>
+      get<BusPosition>(`/v1/arac/fleet/${encodeURIComponent(kapino)}`, {
+        headers: aracAuthHeaders(session),
+      }),
+    missions: (kapino: string, session: AracSessionCredentials) =>
+      get<AracMissionsResponse>(`/v1/arac/fleet/${encodeURIComponent(kapino)}/missions`, {
+        headers: aracAuthHeaders(session),
+      }),
   },
 }

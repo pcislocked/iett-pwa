@@ -5,6 +5,23 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [0.3.10] - 2026-04-19
+
+### Added
+- On-demand ARAC bus detail flow from map and stop contexts (`Daha Fazla Detay (ARAC)`).
+- New full-screen ARAC overlay route (`/arac/bus/:kapino`) with captcha/session bootstrap and mission rendering.
+- ARAC client/session helper coverage expansions.
+
+### Fixed
+- Auto-solve flow now stops immediately after unmount between captcha fetch and solve request.
+- Captcha manual input now includes an accessibility label for assistive technologies.
+
+### Changed
+- App version bumped to `0.3.10`.
+- README version badge/link updated to `v0.3.10`.
+
+---
+
 ## [0.3.9] - 2026-04-16
 
 ### Added

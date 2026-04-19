@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet'
 import * as L from 'leaflet'
+import { useNavigate } from 'react-router-dom'
 import { useFleet } from '@/hooks/useFleet'
 import { usePolling } from '@/hooks/usePolling'
 import { api, type BusDetail, type Garage, type RouteSearchResult, type BusPosition } from '@/api/client'
@@ -40,6 +41,7 @@ const busIcon = L.divIcon({
 
 
 export default function MapPage() {
+  const navigate = useNavigate()
   const { data: buses, loading, error, refresh } = useFleet()
   const { data: garages } = usePolling<Garage[]>(
     () => api.garages.list(),
@@ -437,6 +439,16 @@ export default function MapPage() {
                 title="Detayları kapat"
               >
                 ×
+              </button>
+            </div>
+
+            <div className="mt-3 pt-2 border-t border-[#1b1b1b] flex items-center justify-end">
+              <button
+                onClick={() => navigate(`/arac/bus/${encodeURIComponent(selectedKapino)}`)}
+                className="metro-tilt px-3 py-1.5 text-xs font-semibold border border-[#2a2a2a]
+                           text-[#00AFF0] hover:border-[#00AFF0]/60"
+              >
+                Daha Fazla Detay (ARAC)
               </button>
             </div>
           </div>

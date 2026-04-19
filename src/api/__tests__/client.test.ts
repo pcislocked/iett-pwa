@@ -321,3 +321,106 @@ describe('api.traffic.segments', () => {
     expect(result[0].speed_kmh).toBe(40)
   })
 })
+
+// ---------------------------------------------------------------------------
+// api.arac
+// ---------------------------------------------------------------------------
+
+describe('api.arac.captcha', () => {
+  it('calls POST /v1/arac/session/captcha', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve({ captchaId: 'abc', captchaImageBase64: 'xxx' }),
+      text: () => Promise.resolve(''),
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    const result = await api.arac.captcha()
+
+    const url = fetchMock.mock.calls[0][0] as string
+    const init = fetchMock.mock.calls[0][1] as RequestInit
+    expect(url).toContain('/v1/arac/session/captcha')
+    expect(init.method).toBe('POST')
+    expect(result.captchaId).toBe('abc')
+  })
+})
+
+describe('api.arac.autoSolve', () => {
+  it('posts createSession payload as JSON', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve({
+        captchaId: 'abc',
+        captchaImageBase64: 'img',
+        solved: false,
+        strategy: 'ocr-candidates',
+        candidatesTried: [],
+        selectedCandidate: null,
+        sessionId: null,
+        sessionKey: null,
+        error: 'failed',
+      }),
+      text: () => Promise.resolve(''),
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    await api.arac.autoSolve({
+      captchaId: 'abc',
+      captchaImageBase64: 'img',
+      createSession: true,
+      maxCandidates: 8,
+    })
+
+    const init = fetchMock.mock.calls[0][1] as RequestInit
+    expect(init.method).toBe('POST')
+    expect(init.headers).toBeDefined()
+    expect(init.body).toBe(JSON.stringify({
+      captchaId: 'abc',
+      captchaImageBase64: 'img',
+      createSession: true,
+      maxCandidates: 8,
+    }))
+  })
+})
+
+describe('api.arac.bus', () => {
+  it('sends ARAC session headers', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve({ kapino: 'C-1', latitude: 41, longitude: 29 }),
+      text: () => Promise.resolve(''),
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    await api.arac.bus('C-1', { sessionId: 'sid', sessionKey: 'skey' })
+
+    const init = fetchMock.mock.calls[0][1] as RequestInit
+    const headers = init.headers as Record<string, string>
+    expect(headers['X-Arac-Session-Id']).toBe('sid')
+    expect(headers['X-Arac-Session-Key']).toBe('skey')
+  })
+})
+
+describe('api.arac.missions', () => {
+  it('calls missions endpoint with encoded kapino', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve({
+        kapino: 'C-1',
+        summary: { mission_count: 0, active_count: 0, distinct_line_codes: [], distinct_route_codes: [] },
+        missions: [],
+      }),
+      text: () => Promise.resolve(''),
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    await api.arac.missions('C-1 X', { sessionId: 'sid', sessionKey: 'skey' })
+
+    const url = fetchMock.mock.calls[0][0] as string
+    expect(url).toContain('/v1/arac/fleet/C-1%20X/missions')
+  })
+})
