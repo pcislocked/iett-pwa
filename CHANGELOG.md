@@ -5,6 +5,23 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [0.3.16] - 2026-04-20
+
+### Fixed
+- Map freshness parsing now treats timezone-less ISO timestamps as UTC before relative age calculation, preventing false "hours ago" drift on fresh data.
+- ARAC overlay auto-solve now runs a single attempt with fewer OCR candidates to reduce backend CPU pressure.
+
+### Tests
+- Updated ARAC overlay auto-solve expectations to match the new single-attempt behavior.
+
+### Changed
+- App version bumped to `0.3.16` to stay synchronized with `iett-middle`.
+
+### Release Notes
+- Released as `v0.3.16`.
+
+---
+
 ## [0.3.15] - 2026-04-20
 
 ### Changed
