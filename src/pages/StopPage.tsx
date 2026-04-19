@@ -301,7 +301,7 @@ function BusDetailSheet({
 
           {!arrival.kapino && (
             <p className="text-[11px] text-slate-600 mt-2">
-              Bu kayitta kapi kodu yok, ARAC detay acilamiyor.
+              Bu kayıtta kapı kodu yok, ARAC detay açılamıyor.
             </p>
           )}
         </div>

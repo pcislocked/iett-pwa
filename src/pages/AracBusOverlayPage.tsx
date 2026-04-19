@@ -376,12 +376,12 @@ export default function AracBusOverlayPage() {
             <div>
               <p className="text-sm text-white font-medium">
                 {viewState === 'auto-solving'
-                  ? `Captcha otomatik cozüluyor (${autoAttempt}/${AUTO_SOLVE_MAX_ATTEMPTS})`
+                  ? `Captcha otomatik çözülüyor (${autoAttempt}/${AUTO_SOLVE_MAX_ATTEMPTS})`
                   : viewState === 'manual-submitting'
                   ? 'Captcha dogrulaniyor...'
                   : viewState === 'loading-data'
                   ? 'ARAC veri paketi yukleniyor...'
-                  : 'ARAC oturumu hazirlaniyor...'}
+                  : 'ARAÇ oturumu hazırlanıyor...'}
               </p>
               <p className="text-xs text-[#888] mt-1">Islem tamamlanana kadar bu sayfada kalabilirsiniz.</p>
             </div>
