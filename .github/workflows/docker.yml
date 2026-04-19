@@ -2,7 +2,7 @@ name: Docker
 
 on:
   push:
-    tags: ["v*"]
+    tags: ["v*.*.*"]
 
 env:
   REGISTRY: ghcr.io
@@ -32,6 +32,15 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=raw,value=latest,enable=${{ !contains(github.ref_name, '-') }}
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -43,6 +52,7 @@ jobs:
           push: true
           platforms: linux/amd64
           outputs: type=image,name=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }},push-by-digest=true,name-canonical=true,push=true
+          labels: ${{ steps.meta.outputs.labels }}
           # VITE_API_BASE_URL is baked into the JS at build time.
           # Set it as a GitHub Actions variable (Settings → Variables → Actions):
           #   VITE_API_BASE_URL = https://api.your-domain.com
@@ -70,6 +80,15 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=raw,value=latest,enable=${{ !contains(github.ref_name, '-') }}
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -81,6 +100,7 @@ jobs:
           push: true
           platforms: linux/arm64
           outputs: type=image,name=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }},push-by-digest=true,name-canonical=true,push=true
+          labels: ${{ steps.meta.outputs.labels }}
           # VITE_API_BASE_URL is baked into the JS at build time.
           # Set it as a GitHub Actions variable (Settings → Variables → Actions):
           #   VITE_API_BASE_URL = https://api.your-domain.com
@@ -113,7 +133,7 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
             type=semver,pattern={{version}}
-            type=raw,value=latest
+            type=raw,value=latest,enable=${{ !contains(github.ref_name, '-') }}
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
