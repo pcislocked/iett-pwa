@@ -408,6 +408,7 @@ export default function AracBusOverlayPage() {
               value={manualAnswer}
               onChange={(event) => setManualAnswer(event.target.value.toUpperCase().slice(0, 6))}
               placeholder="Captcha cevabi"
+              aria-label="Captcha cevabi"
               className="w-full border border-[#222] bg-black px-3 py-2 text-sm text-white placeholder:text-[#555] focus:outline-none focus:border-[#00AFF0]"
             />
 
