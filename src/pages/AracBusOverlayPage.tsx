@@ -20,7 +20,7 @@ type ViewState =
   | 'ready'
   | 'error'
 
-const AUTO_SOLVE_MAX_ATTEMPTS = 3
+const AUTO_SOLVE_MAX_ATTEMPTS = 1
 
 const PROFILE_LABELS: Array<{ key: keyof BusPosition; label: string }> = [
   { key: 'plate', label: 'Plaka' },
@@ -203,7 +203,7 @@ export default function AracBusOverlayPage() {
         captchaId: challenge.captchaId,
         captchaImageBase64: challenge.captchaImageBase64,
         createSession: true,
-        maxCandidates: 8,
+        maxCandidates: 4,
       })
 
       if (solved.solved && solved.sessionId && solved.sessionKey) {

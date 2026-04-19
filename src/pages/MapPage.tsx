@@ -8,7 +8,13 @@ import { api, type BusDetail, type Garage, type RouteSearchResult, type BusPosit
 
 function parseIsoDate(value: string | null | undefined): Date | null {
   if (!value) return null
-  const parsed = new Date(value)
+  const trimmed = value.trim()
+  const hasTimezone = /(?:[zZ]|[+\-]\d{2}:\d{2})$/.test(trimmed)
+  const parsed = new Date(hasTimezone ? trimmed : `${trimmed}Z`)
+  if (Number.isNaN(parsed.getTime()) && !hasTimezone) {
+    const fallback = new Date(trimmed)
+    return Number.isNaN(fallback.getTime()) ? null : fallback
+  }
   return Number.isNaN(parsed.getTime()) ? null : parsed
 }
 

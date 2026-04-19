@@ -248,8 +248,8 @@ describe('AracBusOverlayPage', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /oto coz dene/i }))
 
-    await screen.findByText(/otomatik cozum 3 denemede basarisiz oldu/i)
-    expect(mocks.autoSolve).toHaveBeenCalledTimes(3)
+    await screen.findByText(/otomatik cozum 1 denemede basarisiz oldu/i)
+    expect(mocks.autoSolve).toHaveBeenCalledTimes(1)
   })
 
   it('shows fatal error when kapino param is missing', async () => {
