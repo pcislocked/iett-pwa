@@ -346,45 +346,6 @@ describe('api.arac.captcha', () => {
   })
 })
 
-describe('api.arac.autoSolve', () => {
-  it('posts createSession payload as JSON', async () => {
-    const fetchMock = vi.fn().mockResolvedValue({
-      ok: true,
-      status: 200,
-      json: () => Promise.resolve({
-        captchaId: 'abc',
-        captchaImageBase64: 'img',
-        solved: false,
-        strategy: 'ocr-candidates',
-        candidatesTried: [],
-        selectedCandidate: null,
-        sessionId: null,
-        sessionKey: null,
-        error: 'failed',
-      }),
-      text: () => Promise.resolve(''),
-    })
-    vi.stubGlobal('fetch', fetchMock)
-
-    await api.arac.autoSolve({
-      captchaId: 'abc',
-      captchaImageBase64: 'img',
-      createSession: true,
-      maxCandidates: 8,
-    })
-
-    const init = fetchMock.mock.calls[0][1] as RequestInit
-    expect(init.method).toBe('POST')
-    expect(init.headers).toBeDefined()
-    expect(init.body).toBe(JSON.stringify({
-      captchaId: 'abc',
-      captchaImageBase64: 'img',
-      createSession: true,
-      maxCandidates: 8,
-    }))
-  })
-})
-
 describe('api.arac.bus', () => {
   it('sends aracapi session headers', async () => {
     const fetchMock = vi.fn().mockResolvedValue({
@@ -399,6 +360,27 @@ describe('api.arac.bus', () => {
 
     const init = fetchMock.mock.calls[0][1] as RequestInit
     const headers = init.headers as Record<string, string>
+    expect(headers['X-Arac-Session-Id']).toBe('sid')
+    expect(headers['X-Arac-Session-Key']).toBe('skey')
+  })
+})
+
+describe('api.arac.fleet', () => {
+  it('sends aracapi session headers to fleet endpoint', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve([]),
+      text: () => Promise.resolve(''),
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    await api.arac.fleet({ sessionId: 'sid', sessionKey: 'skey' })
+
+    const url = fetchMock.mock.calls[0][0] as string
+    const init = fetchMock.mock.calls[0][1] as RequestInit
+    const headers = init.headers as Record<string, string>
+    expect(url).toContain('/v1/arac/fleet')
     expect(headers['X-Arac-Session-Id']).toBe('sid')
     expect(headers['X-Arac-Session-Key']).toBe('skey')
   })
