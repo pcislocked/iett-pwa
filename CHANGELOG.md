@@ -5,6 +5,24 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [0.3.17] - 2026-04-20
+
+### Fixed
+- ARAC overlay now uses manual captcha/session flow only; auto-solve action paths were removed.
+- Mission time fields are rendered as localized date-time strings instead of raw Unix millisecond values.
+
+### Tests
+- Added manual-flow edge-case coverage for ARAC overlay (reconnect, refresh captcha, missing captcha ID).
+- Expanded API client tests for ARAC session-header propagation and updated manual-only behavior.
+
+### Changed
+- App version bumped to `0.3.17` to stay synchronized with `iett-middle`.
+
+### Release Notes
+- Released as `v0.3.17`.
+
+---
+
 ## [0.3.16] - 2026-04-20
 
 ### Fixed

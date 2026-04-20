@@ -4,7 +4,7 @@
 [![React](https://img.shields.io/badge/React-18-61DAFB?logo=react)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript)](https://www.typescriptlang.org/)
 [![PWA](https://img.shields.io/badge/PWA-installable-5A0FC8?logo=pwa)](https://web.dev/progressive-web-apps/)
-[![Version](https://img.shields.io/badge/version-0.3.16-orange)](https://github.com/pcislocked/iett-pwa/releases/tag/v0.3.16)
+[![Version](https://img.shields.io/badge/version-0.3.17-orange)](https://github.com/pcislocked/iett-pwa/releases/tag/v0.3.17)
 
 Progressive Web App for real-time Istanbul IETT bus tracking.
 Installable on Android and desktop. Works offline (last-fetched data). Dark transit theme.
@@ -78,8 +78,8 @@ Or any 192 and 512 px square PNG will work as placeholder.
 Use the multi-stage Dockerfile to build static assets and serve with nginx.
 
 ```bash
-docker build -t iett-pwa:0.3.16 --build-arg VITE_API_BASE_URL=https://your-middle-host .
-docker run --rm -p 8080:80 iett-pwa:0.3.16
+docker build -t iett-pwa:0.3.17 --build-arg VITE_API_BASE_URL=https://your-middle-host .
+docker run --rm -p 8080:80 iett-pwa:0.3.17
 ```
 
 Optimization notes:
