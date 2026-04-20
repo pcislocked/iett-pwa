@@ -305,25 +305,6 @@ export interface AracSessionCreateResponse {
   sessionKey: string
 }
 
-export interface AracAutoSolveRequest {
-  captchaId?: string
-  captchaImageBase64?: string
-  createSession?: boolean
-  maxCandidates?: number
-}
-
-export interface AracAutoSolveResponse {
-  captchaId: string
-  captchaImageBase64: string
-  solved: boolean
-  strategy: string
-  candidatesTried: string[]
-  selectedCandidate: string | null
-  sessionId: string | null
-  sessionKey: string | null
-  error: string | null
-}
-
 export interface AracMissionItem {
   task_id: number | null
   archive_id: number | null
@@ -438,8 +419,6 @@ export const api = {
   },
   arac: {
     captcha: () => post<AracCaptchaResponse>('/v1/arac/session/captcha'),
-    autoSolve: (payload: AracAutoSolveRequest) =>
-      post<AracAutoSolveResponse>('/v1/arac/session/auto-solve', payload),
     createSession: (payload: AracSessionCreateRequest) =>
       post<AracSessionCreateResponse>('/v1/arac/session/create', payload),
     fleet: (session: AracSessionCredentials) =>

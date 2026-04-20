@@ -1,12 +1,12 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 
 import AracBusOverlayPage from '@/pages/AracBusOverlayPage'
+import { ApiHttpError } from '@/api/client'
 
 const mocks = vi.hoisted(() => ({
   captcha: vi.fn(),
-  autoSolve: vi.fn(),
   createSession: vi.fn(),
   bus: vi.fn(),
   missions: vi.fn(),
@@ -44,7 +44,6 @@ vi.mock('@/api/client', () => {
     api: {
       arac: {
         captcha: mocks.captcha,
-        autoSolve: mocks.autoSolve,
         createSession: mocks.createSession,
         bus: mocks.bus,
         missions: mocks.missions,
@@ -68,7 +67,7 @@ describe('AracBusOverlayPage', () => {
     )
   }
 
-  it('shows manual captcha input first and does not auto-solve automatically', async () => {
+  it('shows manual captcha input first', async () => {
     mocks.loadAracSession.mockReturnValue(null)
     mocks.captcha.mockResolvedValue({
       captchaId: 'cid-1',
@@ -80,7 +79,6 @@ describe('AracBusOverlayPage', () => {
     await screen.findByRole('heading', { name: /captcha manuel dogrulama/i })
     expect(screen.getByRole('textbox', { name: /captcha cevabi/i })).toBeInTheDocument()
     expect(mocks.captcha).toHaveBeenCalledTimes(1)
-    expect(mocks.autoSolve).not.toHaveBeenCalled()
   })
 
   it('renders profile and mission sections when an existing session is valid', async () => {
@@ -142,6 +140,25 @@ describe('AracBusOverlayPage', () => {
     fireEvent.click(screen.getByRole('button', { name: /oturumu ac/i }))
 
     expect(screen.getByText(/lutfen captcha yanitini girin\./i)).toBeInTheDocument()
+    expect(mocks.createSession).not.toHaveBeenCalled()
+  })
+
+  it('warns when captcha id is missing on submit', async () => {
+    mocks.loadAracSession.mockReturnValue(null)
+    mocks.captcha.mockResolvedValue({
+      captchaId: '',
+      captchaImageBase64: 'AAAA',
+    })
+
+    renderPage()
+
+    await screen.findByRole('heading', { name: /captcha manuel dogrulama/i })
+    fireEvent.change(screen.getByRole('textbox', { name: /captcha cevabi/i }), {
+      target: { value: 'abcd' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /oturumu ac/i }))
+
+    expect(screen.getByText(/captcha gorseli guncel degil\. yeni captcha alin\./i)).toBeInTheDocument()
     expect(mocks.createSession).not.toHaveBeenCalled()
   })
 
@@ -223,33 +240,96 @@ describe('AracBusOverlayPage', () => {
     expect(mocks.captcha).toHaveBeenCalledTimes(2)
   })
 
-  it('attempts auto-solve only after user clicks the auto-solve button', async () => {
+  it('refreshes captcha when Yeni Captcha is clicked', async () => {
     mocks.loadAracSession.mockReturnValue(null)
     mocks.captcha.mockResolvedValue({
       captchaId: 'cid-1',
       captchaImageBase64: 'AAAA',
     })
-    mocks.autoSolve.mockResolvedValue({
-      captchaId: 'cid-1',
-      captchaImageBase64: 'AAAA',
-      solved: false,
-      strategy: 'ocr-candidates',
-      candidatesTried: ['ABCD'],
-      selectedCandidate: null,
-      sessionId: null,
-      sessionKey: null,
-      error: 'Wrong CAPTCHA',
-    })
 
     renderPage()
 
     await screen.findByRole('heading', { name: /captcha manuel dogrulama/i })
-    expect(mocks.autoSolve).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('button', { name: /yeni captcha/i }))
 
-    fireEvent.click(screen.getByRole('button', { name: /oto coz dene/i }))
+    expect(mocks.captcha).toHaveBeenCalledTimes(2)
+  })
 
-    await screen.findByText(/otomatik cozum 1 denemede basarisiz oldu/i)
-    expect(mocks.autoSolve).toHaveBeenCalledTimes(1)
+  it('shows reconnect warning when stored session expires and can restart flow', async () => {
+    mocks.loadAracSession.mockReturnValue({
+      sessionId: 'sid-expired',
+      sessionKey: 'skey-expired',
+      savedAt: '2026-04-19T00:00:00Z',
+    })
+    mocks.bus.mockRejectedValue(new ApiHttpError('/v1/arac/fleet/C-1753', 401, 'expired'))
+    mocks.missions.mockResolvedValue({
+      kapino: 'C-1753',
+      summary: {
+        mission_count: 0,
+        active_count: 0,
+        distinct_line_codes: [],
+        distinct_route_codes: [],
+      },
+      missions: [],
+    })
+    mocks.captcha.mockResolvedValue({
+      captchaId: 'cid-1',
+      captchaImageBase64: 'AAAA',
+    })
+
+    renderPage()
+
+    await screen.findByText(/oturumu suresi doldu/i)
+    await screen.findByRole('heading', { name: /captcha manuel dogrulama/i })
+
+    fireEvent.click(screen.getByRole('button', { name: /yeniden baglan/i }))
+    expect(mocks.clearAracSession).toHaveBeenCalled()
+    await waitFor(() => {
+      expect(mocks.captcha.mock.calls.length).toBeGreaterThanOrEqual(2)
+    })
+  })
+
+  it('renders mission timestamp fields as localized text instead of raw unix ms', async () => {
+    mocks.loadAracSession.mockReturnValue({
+      sessionId: 'sid-1',
+      sessionKey: 'skey-1',
+      savedAt: '2026-04-19T00:00:00Z',
+    })
+    mocks.bus.mockResolvedValue({
+      plate: '34 HO 1753',
+      route_code: '14R',
+      direction: 'G',
+      last_seen: '2026-04-19T00:00:00Z',
+      accessible: true,
+      has_usb: true,
+      has_wifi: false,
+      has_bicycle_rack: false,
+      is_air_conditioned: true,
+    })
+    mocks.missions.mockResolvedValue({
+      kapino: 'C-1753',
+      summary: {
+        mission_count: 1,
+        active_count: 1,
+        distinct_line_codes: ['14R'],
+        distinct_route_codes: ['14R_G_D0'],
+      },
+      missions: [
+        {
+          task_id: 101,
+          line_code: '14R',
+          task_status_code: 'ACTIVE',
+          is_active: true,
+          task_start_time_ms: 1776649842000,
+        },
+      ],
+    })
+
+    renderPage()
+
+    await screen.findByRole('heading', { name: /missions \/ gorevler/i })
+    expect(screen.getByText(/gorev baslangic/i)).toBeInTheDocument()
+    expect(screen.queryByText('1776649842000')).not.toBeInTheDocument()
   })
 
   it('shows fatal error when kapino param is missing', async () => {
