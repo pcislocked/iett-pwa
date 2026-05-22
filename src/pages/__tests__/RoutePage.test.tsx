@@ -58,8 +58,8 @@ describe('RoutePage', () => {
       if (index === 0) { // stops
         return {
           data: options.stops !== undefined ? options.stops : [
-            { stop_code: '1001', stop_name: 'Test Stop 1', direction: 'G', sequence: 1, latitude: 41.0, longitude: 29.0 },
-            { stop_code: '1002', stop_name: 'Test Stop 2', direction: 'D', sequence: 2, latitude: 41.1, longitude: 29.1 },
+            { stop_code: '1001', stop_name: 'Test Stop 1', direction: 'G', sequence: 1, latitude: 41.0, longitude: 29.0, route_code: '15TY_G_D0' },
+            { stop_code: '1002', stop_name: 'Test Stop 2', direction: 'D', sequence: 2, latitude: 41.1, longitude: 29.1, route_code: '15TY_G_D2449' },
           ],
           error: options.stopsError || null,
           refresh: vi.fn(),
@@ -149,9 +149,9 @@ describe('RoutePage', () => {
     // Check map container
     expect(screen.getByTestId('map-container')).toBeInTheDocument()
     
-    // Check direction filter pills on map
-    const dirButtons = screen.getAllByRole('button', { name: 'TOKATKÖY YÖNÜ' })
-    fireEvent.click(dirButtons[0]) // The pill button
+    // Change variant in dropdown
+    const select = screen.getByRole('combobox')
+    fireEvent.change(select, { target: { value: '15TY_G_D2449' } })
     
     // Check buses
     expect(screen.getAllByText('Gidiş').length).toBeGreaterThan(0)
@@ -168,14 +168,14 @@ describe('RoutePage', () => {
     
     fireEvent.click(screen.getByText('Duraklar'))
     
-    // Since 'D' comes before 'G', 'D' is the default active direction, so Test Stop 2 is visible
-    expect(screen.getByText('Test Stop 2')).toBeInTheDocument()
-    
-    // Click 'HEKİMBAŞI YÖNÜ' which corresponds to 'G'
-    const dirButton = screen.getByRole('button', { name: 'HEKİMBAŞI YÖNÜ' })
-    fireEvent.click(dirButton)
-    
+    // Default variant is '15TY_G_D0' (Test Stop 1)
     expect(screen.getByText('Test Stop 1')).toBeInTheDocument()
+    
+    // Change variant in dropdown to '15TY_G_D2449' (Test Stop 2)
+    const select = screen.getByRole('combobox')
+    fireEvent.change(select, { target: { value: '15TY_G_D2449' } })
+    
+    expect(screen.getByText('Test Stop 2')).toBeInTheDocument()
   })
 
   it('shows error state for stops', () => {
