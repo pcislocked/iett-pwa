@@ -1,10 +1,11 @@
 import { renderHook, act } from '@testing-library/react'
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { useUserPrefs, PINNED_STOPS_MAX } from '../useUserPrefs'
 
 describe('useUserPrefs', () => {
   beforeEach(() => {
     localStorage.clear()
+    vi.clearAllMocks()
   })
 
   it('starts with empty prefs when localStorage is empty', () => {
@@ -120,6 +121,80 @@ describe('useUserPrefs', () => {
       act(() => { result.current.toggleFavRoute('500T') })
       act(() => { result.current.toggleFavRoute('500T') })
       expect(result.current.isFavRoute('500T')).toBe(false)
+    })
+  })
+
+  // Export / Import
+  describe('exportPrefs / importPrefs', () => {
+    it('exports prefs by triggering download', () => {
+      vi.useFakeTimers()
+      
+      const originalCreate = global.URL.createObjectURL
+      const originalRevoke = global.URL.revokeObjectURL
+      
+      global.URL.createObjectURL = vi.fn().mockReturnValue('blob:test')
+      global.URL.revokeObjectURL = vi.fn()
+      
+      const mockClick = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
+
+      try {
+        const { result } = renderHook(() => useUserPrefs())
+        
+        act(() => {
+          result.current.exportPrefs()
+        })
+        
+        act(() => {
+          vi.advanceTimersByTime(3000)
+        })
+
+        expect(global.URL.createObjectURL).toHaveBeenCalled()
+        expect(global.URL.revokeObjectURL).toHaveBeenCalledWith('blob:test')
+        expect(mockClick).toHaveBeenCalled()
+      } finally {
+        mockClick.mockRestore()
+        
+        global.URL.createObjectURL = originalCreate
+        global.URL.revokeObjectURL = originalRevoke
+        
+        vi.useRealTimers()
+      }
+    })
+
+    it('imports prefs correctly', async () => {
+      const { result } = renderHook(() => useUserPrefs())
+      const data = JSON.stringify({
+        pinnedStops: [{ dcode: '123', nick: 'Test', order: 0 }],
+        favStops: [{ dcode: '123', name: 'Test Name' }],
+        favRoutes: ['123'],
+        nicknames: { '123': 'Test' }
+      })
+      const file = new File([data], 'prefs.json', { type: 'application/json' })
+      
+      await act(async () => {
+        await result.current.importPrefs(file)
+      })
+
+      expect(result.current.prefs.favRoutes).toContain('123')
+      expect(result.current.prefs.pinnedStops[0].dcode).toBe('123')
+    })
+
+    it('rejects import if format is invalid', async () => {
+      const { result } = renderHook(() => useUserPrefs())
+      const file = new File(['invalid json'], 'prefs.json', { type: 'application/json' })
+      
+      let error: unknown
+      await act(async () => {
+        try {
+          await result.current.importPrefs(file)
+        } catch (e: unknown) {
+          error = e
+        }
+      })
+      expect(error).toBeInstanceOf(Error)
+      if (error instanceof Error) {
+        expect(error.message).toBe('Geçersiz dosya formatı')
+      }
     })
   })
 

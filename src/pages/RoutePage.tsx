@@ -6,7 +6,7 @@ import { useRouteBuses } from '@/hooks/useFleet'
 import { usePolling } from '@/hooks/usePolling'
 import { api, type RouteStop, type ScheduledDeparture, type Announcement, type RouteMetadata } from '@/api/client'
 import { useFavorites } from '@/hooks/useFavorites'
-import { getDirectionLabel } from '@/utils/routeDirectionLabels'
+import { getDirectionLabel, getDestinationLabel } from '@/utils/routeDirectionLabels'
 
 const busIconG = L.divIcon({
   className: '',
@@ -54,10 +54,15 @@ function TimetableView({ schedule, scheduleError, onRetry, metadata }: {
   const [dayType, setDayType] = useState('H')
   const [direction, setDirection] = useState('')
 
-  // Map direction code ('D'/'G') → short terminal label from metadata
+  // Map direction code ('D'/'G') → departure label (KALKIŞ)
   const dirLabel = useMemo(() => {
     const hasMetadata = !!metadata?.length
-    return (code: string) => getDirectionLabel(code, metadata, hasMetadata)
+    return (code: string) => {
+      const baseLabel = getDirectionLabel(code, metadata, hasMetadata)
+      return baseLabel !== code && baseLabel !== 'Gidiş' && baseLabel !== 'Dönüş'
+        ? `${baseLabel} KALKIŞ`
+        : baseLabel === 'Gidiş' ? 'Gidiş' : baseLabel === 'Dönüş' ? 'Dönüş' : code
+    }
   }, [metadata])
 
   // Directions available for the current day type
@@ -75,21 +80,45 @@ function TimetableView({ schedule, scheduleError, onRetry, metadata }: {
     ? direction
     : (availableDirections[0] ?? '')
 
+  // Generate dynamic footnotes for sub-routes
+  const { footnotes, footnoteToName } = useMemo(() => {
+    const fnMap = new Map<string, number>()
+    const fnNameMap = new Map<number, string>()
+    if (!schedule || !effectiveDirection) return { footnotes: fnMap, footnoteToName: fnNameMap }
+
+    const filtered = schedule.filter(d => d.day_type === dayType && d.direction === effectiveDirection)
+    const uniqueVariants = [...new Set(filtered.map(d => d.route_variant).filter(v => v && !v.endsWith('_D0') && !v.endsWith('_G0')))].sort()
+    
+    const metaMap = new Map<string, string>()
+    if (metadata) {
+      for (const m of metadata) {
+        if (m.variant_code && m.full_name) metaMap.set(m.variant_code, m.full_name)
+      }
+    }
+
+    uniqueVariants.forEach((v, idx) => {
+      const num = idx + 1
+      fnMap.set(v, num)
+      fnNameMap.set(num, metaMap.get(v) ?? v)
+    })
+    return { footnotes: fnMap, footnoteToName: fnNameMap }
+  }, [schedule, dayType, effectiveDirection, metadata])
+
   // Group filtered departures by hour
   const hourMap = useMemo(() => {
-    if (!schedule || !effectiveDirection) return new Map<number, number[]>()
+    if (!schedule || !effectiveDirection) return new Map<number, { m: number, fn?: number }[]>()
     const filtered = schedule.filter(
       (d) => d.day_type === dayType && d.direction === effectiveDirection,
     )
-    const map = new Map<number, number[]>()
+    const map = new Map<number, { m: number, fn?: number }[]>()
     for (const dep of filtered) {
       const [h, m] = dep.departure_time.split(':').map(Number)
       if (!map.has(h)) map.set(h, [])
-      map.get(h)!.push(m)
+      map.get(h)!.push({ m, fn: footnotes.get(dep.route_variant) })
     }
-    for (const mins of map.values()) mins.sort((a, b) => a - b)
+    for (const mins of map.values()) mins.sort((a, b) => a.m - b.m)
     return map
-  }, [schedule, dayType, effectiveDirection])
+  }, [schedule, dayType, effectiveDirection, footnotes])
 
   const hours = Array.from(hourMap.keys()).sort((a, b) => a - b)
 
@@ -166,18 +195,34 @@ function TimetableView({ schedule, scheduleError, onRetry, metadata }: {
             </span>
           </div>
           <div className="flex-1 flex flex-wrap gap-1.5 pb-2 border-b border-surface-muted/50">
-            {hourMap.get(h)!.map((m) => (
+            {hourMap.get(h)!.map(({ m, fn }, idx) => (
               <span
-                key={m}
+                key={`${m}-${idx}`}
                 className="text-xs font-mono text-slate-300 bg-surface-card border border-surface-muted
                            rounded-md px-1.5 py-0.5 min-w-[30px] text-center"
               >
                 {String(m).padStart(2, '0')}
+                {fn && <sup className="ml-0.5 text-[#00AFF0] font-bold">{fn}</sup>}
               </span>
             ))}
           </div>
         </div>
       ))}
+
+      {/* Legend (Notlar) */}
+      {footnoteToName.size > 0 && (
+        <div className="mt-4 p-3 bg-surface-card border border-surface-muted rounded-xl">
+          <h4 className="text-xs font-bold text-slate-400 mb-2 uppercase tracking-wider">Notlar (Yan Seferler)</h4>
+          <ul className="flex flex-col gap-1.5">
+            {Array.from(footnoteToName.entries()).map(([num, name]) => (
+              <li key={num} className="text-xs text-slate-300 flex items-start gap-2">
+                <span className="text-[#00AFF0] font-bold shrink-0">{num}:</span>
+                <span>{name}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   )
 }
@@ -208,7 +253,11 @@ export default function RoutePage() {
     () => [...new Set((stops ?? []).map((s) => s.direction))].sort(),
     [stops],
   )
-  const dirLabel = (d: string) => d === 'G' ? 'Gidiş' : d === 'D' ? 'Dönüş' : d
+  const dirLabel = (d: string) => {
+    const dest = getDestinationLabel(d, metadata, !!metadata?.length)
+    if (dest === d || dest === 'Gidiş' || dest === 'Dönüş') return dest
+    return `${dest} YÖNÜ`
+  }
 
   const effectiveStopsDir = stopsDirections.includes(stopsDir)
     ? stopsDir
@@ -221,12 +270,14 @@ export default function RoutePage() {
     return dirStops.filter((s) => { if (seen.has(s.stop_code)) return false; seen.add(s.stop_code); return true })
   }, [stops, effectiveStopsDir])
 
-  // Build set of stop_sequence values for buses currently in the active stops direction
+  // Build map of stop_sequence to bus directions
   const busAtSequence = useMemo(() => {
-    const seqs = new Set<number>()
+    const seqs = new Map<number, Set<string>>()
     for (const b of (buses ?? [])) {
-      if (b.stop_sequence != null && (!effectiveStopsDir || b.direction_letter === effectiveStopsDir))
-        seqs.add(b.stop_sequence)
+      if (b.stop_sequence != null && (!effectiveStopsDir || b.direction_letter === effectiveStopsDir)) {
+        if (!seqs.has(b.stop_sequence)) seqs.set(b.stop_sequence, new Set())
+        seqs.get(b.stop_sequence)!.add(b.direction ?? 'Otobüs')
+      }
     }
     return seqs
   }, [buses, effectiveStopsDir])
@@ -442,7 +493,8 @@ export default function RoutePage() {
                 </span>
                 <span className="flex-1 text-sm text-slate-200 truncate">{s.stop_name}</span>
                 {busAtSequence.has(s.sequence) && (
-                  <span title="Otobüs burada" className="w-2.5 h-2.5 rounded-full shrink-0 animate-pulse"
+                  <span title={`Otobüs burada: ${Array.from(busAtSequence.get(s.sequence)!).join(', ')}`} 
+                        className="w-2.5 h-2.5 rounded-full shrink-0 animate-pulse cursor-help"
                         style={{ background: effectiveStopsDir === 'D' ? '#f59e0b' : '#2563eb' }} />
                 )}
                 <span className="text-xs text-slate-600 shrink-0">{s.stop_code}</span>
