@@ -71,18 +71,29 @@ function FitToBusesOnLoad({
   stopLat,
   stopLon,
   buses,
+  activeRoutes,
+  hasData,
 }: {
   stopLat: number
   stopLon: number
   buses: BusPosition[]
+  activeRoutes: Set<string>
+  hasData: boolean
 }) {
   const map = useMap()
   const firedRef = useRef(false)
+  const prevRoutesRef = useRef<Set<string>>(activeRoutes)
 
   useEffect(() => {
+    if (prevRoutesRef.current !== activeRoutes) {
+      firedRef.current = false
+      prevRoutesRef.current = activeRoutes
+    }
+
     if (firedRef.current) return
+    if (!hasData) return
+
     const withPos = buses.filter((b) => b.latitude != null && b.longitude != null).slice(0, 3)
-    if (withPos.length === 0) return  // wait for data
     firedRef.current = true
     const points: L.LatLngExpression[] = [
       [stopLat, stopLon],
@@ -90,7 +101,7 @@ function FitToBusesOnLoad({
     ]
     const bounds = L.latLngBounds(points)
     map.fitBounds(bounds, { padding: [48, 48], maxZoom: 16 })
-  }, [buses, stopLat, stopLon, map])
+  }, [buses, stopLat, stopLon, map, activeRoutes, hasData])
 
   return null
 }
@@ -426,8 +437,11 @@ export default function StopPage() {
   // Full fleet polled every 30 s via the shared cache — no per-route calls needed.
   // Derive bus positions from arrivals (which already carry lat/lon from YBS response).
   const routeBuses = useMemo<BusPosition[]>(
-    () =>
-      (arrivals ?? [])
+    () => {
+      const base = activeRoutes.size > 0
+        ? (arrivals ?? []).filter((a) => activeRoutes.has(a.route_code))
+        : (arrivals ?? [])
+      return base
         .filter((a): a is Arrival & { lat: number; lon: number } =>
           a.lat != null && a.lon != null && a.kapino != null,
         )
@@ -446,8 +460,9 @@ export default function StopPage() {
           nearest_stop: null,
           stop_sequence: null,
           trail: [],
-        })),
-    [arrivals],
+        }))
+    },
+    [arrivals, activeRoutes],
   )
 
   // One cached Leaflet DivIcon per route_code — avoids creating a new DOM object every render.
@@ -675,6 +690,8 @@ export default function StopPage() {
                 stopLat={stopDetail.latitude}
                 stopLon={stopDetail.longitude}
                 buses={routeBuses}
+                activeRoutes={activeRoutes}
+                hasData={arrivals !== null}
               />
               <CircleMarker
                 center={[stopDetail.latitude, stopDetail.longitude]}
