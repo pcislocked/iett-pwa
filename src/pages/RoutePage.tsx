@@ -6,7 +6,7 @@ import { useRouteBuses } from '@/hooks/useFleet'
 import { usePolling } from '@/hooks/usePolling'
 import { api, type RouteStop, type ScheduledDeparture, type Announcement, type RouteMetadata } from '@/api/client'
 import { useFavorites } from '@/hooks/useFavorites'
-import { getDirectionLabel } from '@/utils/routeDirectionLabels'
+import { getDirectionLabel, getDestinationLabel } from '@/utils/routeDirectionLabels'
 
 const busIconG = L.divIcon({
   className: '',
@@ -248,12 +248,8 @@ export default function RoutePage() {
     [stops],
   )
   const dirLabel = (d: string) => {
-    if (!metadata?.length) return d === 'G' ? 'Gidiş' : d === 'D' ? 'Dönüş' : d
-    if (d !== 'G' && d !== 'D') return d
-    const meta = metadata.find(m => m.variant_code && m.variant_code.includes(`_${d}_`))
-    if (!meta || !meta.direction_name) return d === 'G' ? 'Gidiş' : d === 'D' ? 'Dönüş' : d
-    const parts = meta.direction_name.split(' - ').map(s => s.trim())
-    const dest = parts.length > 1 ? parts[parts.length - 1] : parts[0]
+    const dest = getDestinationLabel(d, metadata, !!metadata?.length)
+    if (dest === d || dest === 'Gidiş' || dest === 'Dönüş') return dest
     return `${dest} YÖNÜ`
   }
 
@@ -270,11 +266,11 @@ export default function RoutePage() {
 
   // Build map of stop_sequence to bus directions
   const busAtSequence = useMemo(() => {
-    const seqs = new Map<number, string[]>()
+    const seqs = new Map<number, Set<string>>()
     for (const b of (buses ?? [])) {
       if (b.stop_sequence != null && (!effectiveStopsDir || b.direction_letter === effectiveStopsDir)) {
-        if (!seqs.has(b.stop_sequence)) seqs.set(b.stop_sequence, [])
-        seqs.get(b.stop_sequence)!.push(b.direction ?? 'Otobüs')
+        if (!seqs.has(b.stop_sequence)) seqs.set(b.stop_sequence, new Set())
+        seqs.get(b.stop_sequence)!.add(b.direction ?? 'Otobüs')
       }
     }
     return seqs
@@ -491,7 +487,7 @@ export default function RoutePage() {
                 </span>
                 <span className="flex-1 text-sm text-slate-200 truncate">{s.stop_name}</span>
                 {busAtSequence.has(s.sequence) && (
-                  <span title={`Otobüs burada: ${busAtSequence.get(s.sequence)!.join(', ')}`} 
+                  <span title={`Otobüs burada: ${Array.from(busAtSequence.get(s.sequence)!).join(', ')}`} 
                         className="w-2.5 h-2.5 rounded-full shrink-0 animate-pulse cursor-help"
                         style={{ background: effectiveStopsDir === 'D' ? '#f59e0b' : '#2563eb' }} />
                 )}

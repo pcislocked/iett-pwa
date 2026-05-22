@@ -62,6 +62,7 @@ describe('RoutePage', () => {
             { stop_code: '1002', stop_name: 'Test Stop 2', direction: 'D', sequence: 2, latitude: 41.1, longitude: 29.1 },
           ],
           error: options.stopsError || null,
+          refresh: vi.fn(),
         }
       }
       if (index === 1) { // schedule
@@ -73,6 +74,7 @@ describe('RoutePage', () => {
             { route_variant: '15TY_D_D0', day_type: 'H', direction: 'D', departure_time: '12:00' },
           ],
           error: options.scheduleError || null,
+          refresh: vi.fn(),
         }
       }
       if (index === 2) { // announcements
@@ -81,6 +83,7 @@ describe('RoutePage', () => {
             { type: 'Info', updated_at: '10:00', message: 'Test announcement' },
           ],
           error: options.announcementsError || null,
+          refresh: vi.fn(),
         }
       }
       if (index === 3) { // metadata
@@ -104,10 +107,11 @@ describe('RoutePage', () => {
               variant_code: '15TY_G_D1234',
               full_name: 'TOKATKÖY - ÇAVUŞBAŞI',
             }
-          ]
+          ],
+          refresh: vi.fn(),
         }
       }
-      return { data: null }
+      return { data: null, refresh: vi.fn() }
     })
   }
 
@@ -146,7 +150,7 @@ describe('RoutePage', () => {
     expect(screen.getByTestId('map-container')).toBeInTheDocument()
     
     // Check direction filter pills on map
-    const dirButtons = screen.getAllByRole('button', { name: 'Dönüş' })
+    const dirButtons = screen.getAllByRole('button', { name: 'TOKATKÖY YÖNÜ' })
     fireEvent.click(dirButtons[0]) // The pill button
     
     // Check buses

@@ -137,26 +137,28 @@ describe('useUserPrefs', () => {
       
       const mockClick = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
 
-      const { result } = renderHook(() => useUserPrefs())
-      
-      act(() => {
-        result.current.exportPrefs()
-      })
-      
-      act(() => {
-        vi.advanceTimersByTime(3000)
-      })
+      try {
+        const { result } = renderHook(() => useUserPrefs())
+        
+        act(() => {
+          result.current.exportPrefs()
+        })
+        
+        act(() => {
+          vi.advanceTimersByTime(3000)
+        })
 
-      expect(global.URL.createObjectURL).toHaveBeenCalled()
-      expect(global.URL.revokeObjectURL).toHaveBeenCalledWith('blob:test')
-      expect(mockClick).toHaveBeenCalled()
-      
-      mockClick.mockRestore()
-      
-      global.URL.createObjectURL = originalCreate
-      global.URL.revokeObjectURL = originalRevoke
-      
-      vi.useRealTimers()
+        expect(global.URL.createObjectURL).toHaveBeenCalled()
+        expect(global.URL.revokeObjectURL).toHaveBeenCalledWith('blob:test')
+        expect(mockClick).toHaveBeenCalled()
+      } finally {
+        mockClick.mockRestore()
+        
+        global.URL.createObjectURL = originalCreate
+        global.URL.revokeObjectURL = originalRevoke
+        
+        vi.useRealTimers()
+      }
     })
 
     it('imports prefs correctly', async () => {
