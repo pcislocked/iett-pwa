@@ -214,4 +214,28 @@ describe('RoutePage', () => {
     fireEvent.click(screen.getByText('Duyurular'))
     expect(screen.getByText('Duyurular yüklenemedi')).toBeInTheDocument()
   })
+
+  it('falls back to direction-based filtering when metadata is absent and route_code has no variants', () => {
+    setupMocks({
+      metadata: [],
+      stops: [
+        { stop_code: '1001', stop_name: 'Fallback Stop G', direction: 'G', sequence: 1, latitude: 41.0, longitude: 29.0, route_code: '15TY' },
+        { stop_code: '1002', stop_name: 'Fallback Stop D', direction: 'D', sequence: 2, latitude: 41.1, longitude: 29.1, route_code: '15TY' },
+      ]
+    })
+    renderPage()
+    
+    fireEvent.click(screen.getByText('Duraklar'))
+    
+    const select = screen.getByRole('combobox')
+    expect(screen.getByText('Gidiş')).toBeInTheDocument()
+    expect(screen.getByText('Dönüş')).toBeInTheDocument()
+
+    expect(screen.getByText('Fallback Stop D')).toBeInTheDocument()
+    expect(screen.queryByText('Fallback Stop G')).not.toBeInTheDocument()
+
+    fireEvent.change(select, { target: { value: '15TY_G' } })
+    expect(screen.getByText('Fallback Stop G')).toBeInTheDocument()
+    expect(screen.queryByText('Fallback Stop D')).not.toBeInTheDocument()
+  })
 })

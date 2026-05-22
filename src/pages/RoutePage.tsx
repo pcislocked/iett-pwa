@@ -265,19 +265,34 @@ export default function RoutePage() {
         .filter(m => m.variant_code)
         .map(m => {
           // Format label: "TOKATKÖY > HEKİMBAŞI"
-          const parts = m.direction_name.split(' - ')
-          const label = parts.length === 2 ? `${parts[0].trim()} > ${parts[1].trim()}` : m.full_name
-          return { value: m.variant_code, label, direction_letter: m.direction === 0 ? 'G' : 'D' }
+          const parts = m.direction_name ? m.direction_name.split(' - ') : []
+          const label = parts.length === 2 ? `${parts[0].trim()} > ${parts[1].trim()}` : (m.full_name || m.variant_code)
+          const dirLetter = (m.direction === 0 || m.direction === 119) ? 'G' : 'D'
+          return { value: m.variant_code, label, direction_letter: dirLetter as 'G' | 'D' }
         })
     }
-    // Fallback if no metadata: extract unique route_codes from stops
-    const uniqueCodes = [...new Set((stops ?? []).map(s => s.route_code))].sort()
-    return uniqueCodes.map(code => ({ 
-      value: code, 
-      label: code, 
-      direction_letter: code.includes('_G_') ? 'G' : 'D' 
-    }))
-  }, [metadata, stops])
+    // Fallback if no metadata: check if stops are grouped by variant or just flat route stops
+    const hasVariantCodes = (stops ?? []).some(s => s.route_code && s.route_code !== hatKodu)
+    if (hasVariantCodes) {
+      const uniqueCodes = [...new Set((stops ?? []).map(s => s.route_code))].sort()
+      return uniqueCodes.map(code => {
+        const isG = code.includes('_G_') || code.includes('_119_')
+        return {
+          value: code,
+          label: code,
+          direction_letter: (isG ? 'G' : 'D') as 'G' | 'D'
+        }
+      })
+    } else {
+      // SOAP fallback: stops only have hatKodu as route_code, but they have direction G/D
+      const directions = [...new Set((stops ?? []).map(s => s.direction))].sort()
+      return directions.map(dir => ({
+        value: `${hatKodu}_${dir}`,
+        label: dir === 'G' ? 'Gidiş' : 'Dönüş',
+        direction_letter: dir as 'G' | 'D'
+      }))
+    }
+  }, [metadata, stops, hatKodu])
 
   useEffect(() => {
     if (!selectedVariant && variantOptions.length > 0) {
@@ -291,8 +306,12 @@ export default function RoutePage() {
 
   const stopsForVariant = useMemo(() => {
     if (!selectedVariant) return []
+    if (selectedVariant === `${hatKodu}_G` || selectedVariant === `${hatKodu}_D`) {
+      const dir = selectedVariant.slice(hatKodu!.length + 1)
+      return (stops ?? []).filter(s => s.direction === dir)
+    }
     return (stops ?? []).filter(s => s.route_code === selectedVariant)
-  }, [stops, selectedVariant])
+  }, [stops, selectedVariant, hatKodu])
 
   // Build map of stop_sequence to bus directions
   const busAtSequence = useMemo(() => {
