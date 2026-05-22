@@ -50,9 +50,12 @@ describe('RoutePage', () => {
       stale: false,
     })
 
-    mocks.usePolling.mockImplementation((fetcher: any) => {
-      const fetcherString = fetcher.toString()
-      if (fetcherString.includes('stops')) {
+    let callCount = 0
+    mocks.usePolling.mockImplementation(() => {
+      const index = callCount % 4
+      callCount++
+      
+      if (index === 0) { // stops
         return {
           data: options.stops !== undefined ? options.stops : [
             { stop_code: '1001', stop_name: 'Test Stop 1', direction: 'G', sequence: 1, latitude: 41.0, longitude: 29.0 },
@@ -61,7 +64,7 @@ describe('RoutePage', () => {
           error: options.stopsError || null,
         }
       }
-      if (fetcherString.includes('schedule')) {
+      if (index === 1) { // schedule
         return {
           data: options.schedule !== undefined ? options.schedule : [
             { route_variant: '15TY_G_D0', day_type: 'H', direction: 'G', departure_time: '10:00' },
@@ -72,7 +75,7 @@ describe('RoutePage', () => {
           error: options.scheduleError || null,
         }
       }
-      if (fetcherString.includes('announcements')) {
+      if (index === 2) { // announcements
         return {
           data: options.announcements !== undefined ? options.announcements : [
             { type: 'Info', updated_at: '10:00', message: 'Test announcement' },
@@ -80,7 +83,7 @@ describe('RoutePage', () => {
           error: options.announcementsError || null,
         }
       }
-      if (fetcherString.includes('metadata')) {
+      if (index === 3) { // metadata
         return {
           data: options.metadata !== undefined ? options.metadata : [
             {

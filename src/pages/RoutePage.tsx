@@ -250,8 +250,7 @@ export default function RoutePage() {
   const dirLabel = (d: string) => {
     if (!metadata?.length) return d === 'G' ? 'Gidiş' : d === 'D' ? 'Dönüş' : d
     if (d !== 'G' && d !== 'D') return d
-    const dirCode = d === 'G' ? 0 : 1
-    const meta = metadata.find(m => m.direction === dirCode)
+    const meta = metadata.find(m => m.variant_code && m.variant_code.includes(`_${d}_`))
     if (!meta || !meta.direction_name) return d === 'G' ? 'Gidiş' : d === 'D' ? 'Dönüş' : d
     const parts = meta.direction_name.split('-').map(s => s.trim())
     const dest = parts.length > 1 ? parts[parts.length - 1] : parts[0]
