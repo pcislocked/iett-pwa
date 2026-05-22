@@ -87,7 +87,7 @@ function TimetableView({ schedule, scheduleError, onRetry, metadata }: {
     if (!schedule || !effectiveDirection) return { footnotes: fnMap, footnoteToName: fnNameMap }
 
     const filtered = schedule.filter(d => d.day_type === dayType && d.direction === effectiveDirection)
-    const uniqueVariants = [...new Set(filtered.map(d => d.route_variant).filter(v => v && !v.endsWith('_D0')))]
+    const uniqueVariants = [...new Set(filtered.map(d => d.route_variant).filter(v => v && !v.endsWith('_D0')))].sort()
     
     uniqueVariants.forEach((v, idx) => {
       const num = idx + 1
@@ -249,6 +249,7 @@ export default function RoutePage() {
   )
   const dirLabel = (d: string) => {
     if (!metadata?.length) return d === 'G' ? 'Gidiş' : d === 'D' ? 'Dönüş' : d
+    if (d !== 'G' && d !== 'D') return d
     const dirCode = d === 'G' ? 0 : 1
     const meta = metadata.find(m => m.direction === dirCode)
     if (!meta || !meta.direction_name) return d === 'G' ? 'Gidiş' : d === 'D' ? 'Dönüş' : d
