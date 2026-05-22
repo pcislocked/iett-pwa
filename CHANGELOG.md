@@ -5,6 +5,28 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [0.3.18] - 2026-05-22
+
+### Added
+- Implemented dynamic footnotes and descriptive direction tabs for yan seferler (route variants) on the Route Page.
+
+### Fixed
+- Stabilized direction pill labels by prioritizing base variants (`_D0` / `_G0`) and deducing destination names securely.
+- Deduplicated bus tooltips for multiple vehicles waiting at the same stop sequence.
+- Migrated legacy `URL.createObjectURL` mock overrides to a robust `try/finally` block to prevent test bleeding.
+
+### Tests
+- Added page-level test coverage for `RoutePage` footnote numbering, mock handling, and tab state.
+- Enhanced test reliability by enforcing `refresh: vi.fn()` parity on hooks and explicitly narrowing unknown types.
+
+### Changed
+- App version bumped to `0.3.18` to stay synchronized with `iett-middle`.
+
+### Release Notes
+- Released as `v0.3.18`.
+
+---
+
 ## [0.3.17] - 2026-04-20
 
 ### Fixed
