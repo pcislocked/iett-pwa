@@ -127,14 +127,8 @@ describe('useUserPrefs', () => {
   // Export / Import
   describe('exportPrefs / importPrefs', () => {
     it('exports prefs by triggering download', () => {
-      const originalCreate = global.URL.createObjectURL;
-      const originalRevoke = global.URL.revokeObjectURL;
-
-      const mockCreateObjectURL = vi.fn().mockReturnValue('blob:test')
-      const mockRevokeObjectURL = vi.fn()
-      global.URL.createObjectURL = mockCreateObjectURL
-      global.URL.revokeObjectURL = mockRevokeObjectURL
-      
+      const mockCreateObjectURL = vi.spyOn(global.URL, 'createObjectURL').mockReturnValue('blob:test')
+      const mockRevokeObjectURL = vi.spyOn(global.URL, 'revokeObjectURL').mockImplementation(() => {})
       const mockClick = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
 
       const { result } = renderHook(() => useUserPrefs())
@@ -147,9 +141,8 @@ describe('useUserPrefs', () => {
       expect(mockClick).toHaveBeenCalled()
       
       mockClick.mockRestore()
-      
-      global.URL.createObjectURL = originalCreate;
-      global.URL.revokeObjectURL = originalRevoke;
+      mockCreateObjectURL.mockRestore()
+      mockRevokeObjectURL.mockRestore()
     })
 
     it('imports prefs correctly', async () => {
