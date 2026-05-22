@@ -266,7 +266,7 @@ export default function RoutePage() {
         .map(m => {
           // Format label: "TOKATKÖY > HEKİMBAŞI"
           const parts = m.direction_name ? m.direction_name.split(' - ') : []
-          const label = parts.length === 2 ? `${parts[0].trim()} > ${parts[1].trim()}` : (m.full_name || m.variant_code)
+          const label = parts.length >= 2 ? `${parts[0].trim()} > ${parts[parts.length - 1].trim()}` : (m.full_name || m.variant_code)
           const dirLetter = (m.direction === 0 || m.direction === 119) ? 'G' : 'D'
           return { value: m.variant_code, label, direction_letter: dirLetter as 'G' | 'D' }
         })
@@ -295,9 +295,12 @@ export default function RoutePage() {
   }, [metadata, stops, hatKodu])
 
   useEffect(() => {
-    if (!selectedVariant && variantOptions.length > 0) {
-      const canonical = variantOptions.find(o => o.value.endsWith('_D0') || o.value.endsWith('_G0'))
-      setSelectedVariant(canonical?.value || variantOptions[0].value)
+    if (variantOptions.length > 0) {
+      const exists = variantOptions.some(o => o.value === selectedVariant)
+      if (!exists) {
+        const canonical = variantOptions.find(o => o.value.endsWith('_D0') || o.value.endsWith('_G0'))
+        setSelectedVariant(canonical?.value || variantOptions[0].value)
+      }
     }
   }, [variantOptions, selectedVariant])
 

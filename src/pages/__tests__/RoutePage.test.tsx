@@ -238,4 +238,28 @@ describe('RoutePage', () => {
     expect(screen.getByText('Fallback Stop G')).toBeInTheDocument()
     expect(screen.queryByText('Fallback Stop D')).not.toBeInTheDocument()
   })
+
+  it('supports split labels with more than 2 parts', () => {
+    setupMocks({
+      metadata: [
+        {
+          direction: 0,
+          direction_name: 'TOKATKÖY - BEŞİKTAŞ - HEKİMBAŞI',
+          variant_code: '15TY_G_D0',
+          full_name: 'TOKATKÖY - BEŞİKTAŞ - HEKİMBAŞI',
+        },
+        {
+          direction: 0,
+          direction_name: 'TOKATKÖY - BEŞİKTAŞ - HEKİMBAŞI - EK',
+          variant_code: '15TY_G_D1',
+          full_name: 'TOKATKÖY - BEŞİKTAŞ - HEKİMBAŞI - EK',
+        }
+      ]
+    })
+    renderPage()
+    fireEvent.click(screen.getByText('Duraklar'))
+    
+    expect(screen.getByText('TOKATKÖY > HEKİMBAŞI')).toBeInTheDocument()
+    expect(screen.getByText('TOKATKÖY > EK')).toBeInTheDocument()
+  })
 })
