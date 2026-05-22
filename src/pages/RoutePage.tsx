@@ -268,12 +268,14 @@ export default function RoutePage() {
     return dirStops.filter((s) => { if (seen.has(s.stop_code)) return false; seen.add(s.stop_code); return true })
   }, [stops, effectiveStopsDir])
 
-  // Build set of stop_sequence values for buses currently in the active stops direction
+  // Build map of stop_sequence to bus directions
   const busAtSequence = useMemo(() => {
-    const seqs = new Set<number>()
+    const seqs = new Map<number, string[]>()
     for (const b of (buses ?? [])) {
-      if (b.stop_sequence != null && (!effectiveStopsDir || b.direction_letter === effectiveStopsDir))
-        seqs.add(b.stop_sequence)
+      if (b.stop_sequence != null && (!effectiveStopsDir || b.direction_letter === effectiveStopsDir)) {
+        if (!seqs.has(b.stop_sequence)) seqs.set(b.stop_sequence, [])
+        seqs.get(b.stop_sequence)!.push(b.direction ?? 'Otobüs')
+      }
     }
     return seqs
   }, [buses, effectiveStopsDir])
@@ -489,7 +491,8 @@ export default function RoutePage() {
                 </span>
                 <span className="flex-1 text-sm text-slate-200 truncate">{s.stop_name}</span>
                 {busAtSequence.has(s.sequence) && (
-                  <span title="Otobüs burada" className="w-2.5 h-2.5 rounded-full shrink-0 animate-pulse"
+                  <span title={`Otobüs burada: ${busAtSequence.get(s.sequence)!.join(', ')}`} 
+                        className="w-2.5 h-2.5 rounded-full shrink-0 animate-pulse cursor-help"
                         style={{ background: effectiveStopsDir === 'D' ? '#f59e0b' : '#2563eb' }} />
                 )}
                 <span className="text-xs text-slate-600 shrink-0">{s.stop_code}</span>
