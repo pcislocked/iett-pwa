@@ -82,10 +82,11 @@ function TimetableView({ schedule, scheduleError, onRetry, metadata, onSelectVar
     : (availableDirections[0] ?? '')
 
   // Generate dynamic footnotes for sub-routes
-  const { footnotes, footnoteToName } = useMemo(() => {
+  const { footnotes, footnoteToName, footnoteToVariant } = useMemo(() => {
     const fnMap = new Map<string, number>()
     const fnNameMap = new Map<number, string>()
-    if (!schedule || !effectiveDirection) return { footnotes: fnMap, footnoteToName: fnNameMap }
+    const fnVariantMap = new Map<number, string>()
+    if (!schedule || !effectiveDirection) return { footnotes: fnMap, footnoteToName: fnNameMap, footnoteToVariant: fnVariantMap }
 
     const filtered = schedule.filter(d => d.day_type === dayType && d.direction === effectiveDirection)
     const uniqueVariants = [...new Set(filtered.map(d => d.route_variant).filter(v => v && !v.endsWith('_D0') && !v.endsWith('_G0')))].sort()
@@ -101,8 +102,9 @@ function TimetableView({ schedule, scheduleError, onRetry, metadata, onSelectVar
       const num = idx + 1
       fnMap.set(v, num)
       fnNameMap.set(num, metaMap.get(v) ?? v)
+      fnVariantMap.set(num, v)
     })
-    return { footnotes: fnMap, footnoteToName: fnNameMap }
+    return { footnotes: fnMap, footnoteToName: fnNameMap, footnoteToVariant: fnVariantMap }
   }, [schedule, dayType, effectiveDirection, metadata])
 
   // Group filtered departures by hour
@@ -197,7 +199,7 @@ function TimetableView({ schedule, scheduleError, onRetry, metadata, onSelectVar
           </div>
           <div className="flex-1 flex flex-wrap gap-1.5 pb-2 border-b border-surface-muted/50">
             {hourMap.get(h)!.map(({ m, fn }, idx) => {
-              const variantCode = fn ? Array.from(footnotes.entries()).find(([, num]) => num === fn)?.[0] : undefined
+              const variantCode = fn ? footnoteToVariant.get(fn) : undefined
               return (
                 <span
                   key={`${m}-${idx}`}
@@ -423,6 +425,7 @@ export default function RoutePage() {
                 <select 
                   value={selectedVariant}
                   onChange={(e) => setSelectedVariant(e.target.value)}
+                  aria-label="Güzergâh varyantı"
                   className="w-full bg-surface-card border border-surface-muted text-slate-200 text-sm rounded-lg p-2.5 outline-none focus:border-[#00AFF0]"
                 >
                   {variantOptions.map(o => (
@@ -451,7 +454,7 @@ export default function RoutePage() {
                 {/* BUG-23: navigate to stop on click instead of showing popup */}
                 {stopsForVariant.map((s) => (
                   <CircleMarker
-                    key={`${s.direction}-${s.stop_code}`}
+                    key={`${s.direction}-${s.stop_code}-${s.sequence}`}
                     center={[s.latitude, s.longitude]}
                     radius={5}
                     pathOptions={{ color: '#94a3b8', fillColor: '#94a3b8', fillOpacity: 1, weight: 2 }}
@@ -486,6 +489,7 @@ export default function RoutePage() {
                 <select 
                   value={selectedVariant}
                   onChange={(e) => setSelectedVariant(e.target.value)}
+                  aria-label="Güzergâh varyantı"
                   className="w-full bg-surface-card border border-surface-muted text-slate-200 text-sm rounded-lg p-2.5 outline-none focus:border-[#00AFF0]"
                 >
                   {variantOptions.map(o => (
