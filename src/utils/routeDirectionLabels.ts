@@ -17,7 +17,9 @@ function buildLabelMap(metadata: RouteMetadata[] | null, type: 'origin' | 'desti
     const isBase = m.variant_code.endsWith('_D0') || m.variant_code.endsWith('_G0')
     const dir = m.variant_code.includes('_D_') ? 'D'
       : m.variant_code.includes('_G_') ? 'G'
-        : null
+        : (m.direction === 0 || m.direction === 119) ? 'G'
+          : (m.direction === 1 || m.direction === 120) ? 'D'
+            : null
     if (!dir) continue
     
     if (!map[dir] || isBase) {
