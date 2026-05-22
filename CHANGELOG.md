@@ -5,6 +5,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [0.3.20] - 2026-05-23
+
+### Fixed
+- Fixed critical bug where the dropdown omitted the opposite direction for routes with asymmetric metadata (like `14M`).
+- Fixed dropdown spam showing multiple duplicates of the same direction with zero stops. Dropdown variants are now strictly generated from actual route variants present in the live API stops list.
+- Fixed fallback parsing logic to successfully derive missing opposite directions (e.g., automatically deriving "KADIKÖY > YENİ CAMİİ" from the primary "YENİ CAMİİ > KADIKÖY" metadata).
+
+---
+
 ## [0.3.19] - 2026-05-23
 
 ### Added

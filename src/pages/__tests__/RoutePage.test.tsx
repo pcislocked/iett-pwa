@@ -254,6 +254,10 @@ describe('RoutePage', () => {
           variant_code: '15TY_G_D1',
           full_name: 'TOKATKÖY - BEŞİKTAŞ - HEKİMBAŞI - EK',
         }
+      ],
+      stops: [
+        { stop_code: '1001', stop_name: 'Test Stop 1', route_code: '15TY_G_D0', direction: 'G', sequence: 1, latitude: 41.0, longitude: 29.0 },
+        { stop_code: '1002', stop_name: 'Test Stop EK', route_code: '15TY_G_D1', direction: 'G', sequence: 1, latitude: 41.1, longitude: 29.1 },
       ]
     })
     renderPage()

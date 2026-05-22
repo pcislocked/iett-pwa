@@ -260,40 +260,71 @@ export default function RoutePage() {
   const { data: announcements, error: announcementsError, refresh: refreshAnnouncements } = usePolling<Announcement[]>(announceFetcher, 300_000)
   const { data: metadata } = usePolling<RouteMetadata[]>(metaFetcher, 600_000)
 
-  // Unique route variants from metadata, or fallback to stops
+  // Unique route variants derived from available stops (or canonical metadata if loading)
   const variantOptions = useMemo(() => {
-    if (metadata && metadata.length > 0) {
-      return metadata
-        .filter(m => m.variant_code)
-        .map(m => {
-          // Format label: "TOKATKÖY > HEKİMBAŞI"
-          const parts = m.direction_name ? m.direction_name.split(' - ') : []
-          const label = parts.length >= 2 ? `${parts[0].trim()} > ${parts[parts.length - 1].trim()}` : (m.full_name || m.variant_code)
-          const dirLetter = (m.direction === 0 || m.direction === 119) ? 'G' : 'D'
-          return { value: m.variant_code, label, direction_letter: dirLetter as 'G' | 'D' }
-        })
+    // 1. Determine which variant codes to show
+    let availableCodes: string[] = []
+    let isSoapFallback = false
+
+    if (stops && stops.length > 0) {
+      const hasVariantCodes = stops.some(s => s.route_code && s.route_code !== hatKodu)
+      if (hasVariantCodes) {
+        availableCodes = [...new Set(stops.map(s => s.route_code))].sort()
+      } else {
+        isSoapFallback = true
+        availableCodes = [...new Set(stops.map(s => `${hatKodu}_${s.direction}`))].sort()
+      }
+    } else if (metadata) {
+      // If stops are still loading, show only the canonical variants to avoid duplicate spam
+      availableCodes = metadata.filter(m => m.variant_code?.endsWith('_D0') || m.variant_code?.endsWith('_G0')).map(m => m.variant_code)
     }
-    // Fallback if no metadata: check if stops are grouped by variant or just flat route stops
-    const hasVariantCodes = (stops ?? []).some(s => s.route_code && s.route_code !== hatKodu)
-    if (hasVariantCodes) {
-      const uniqueCodes = [...new Set((stops ?? []).map(s => s.route_code))].sort()
-      return uniqueCodes.map(code => {
-        const isG = code.includes('_G_') || code.includes('_119_')
-        return {
-          value: code,
-          label: code,
-          direction_letter: (isG ? 'G' : 'D') as 'G' | 'D'
+
+    if (availableCodes.length === 0) return []
+
+    // 2. Build options with labels from metadata
+    const options = availableCodes.map(code => {
+      let label = code
+      let isG = code.includes('_G_') || code.includes('_119_') || code.endsWith('_G')
+
+      if (isSoapFallback) {
+        isG = code.endsWith('_G')
+        label = isG ? 'Gidiş' : 'Dönüş'
+        return { value: code, label, direction_letter: (isG ? 'G' : 'D') as 'G' | 'D' }
+      }
+
+      const meta = metadata?.find(m => m.variant_code === code)
+      if (meta) {
+        isG = (meta.direction === 0 || meta.direction === 119)
+        const parts = meta.direction_name ? meta.direction_name.split(' - ') : []
+        label = parts.length >= 2 ? `${parts[0].trim()} > ${parts[parts.length - 1].trim()}` : (meta.full_name || code)
+      } else {
+        // Missing metadata (e.g. 14M_D_D0 when ntcapi only returned G variants)
+        // Try to derive label by reversing the opposite direction's name
+        const oppositeMeta = metadata?.find(m => m.variant_code && m.variant_code.includes(isG ? '_D_' : '_G_')) || metadata?.[0]
+        if (oppositeMeta && oppositeMeta.direction_name) {
+          const parts = oppositeMeta.direction_name.split(' - ')
+          if (parts.length >= 2) {
+            label = isG ? `${parts[0].trim()} > ${parts[parts.length - 1].trim()}` : `${parts[parts.length - 1].trim()} > ${parts[0].trim()}`
+          }
         }
-      })
-    } else {
-      // SOAP fallback: stops only have hatKodu as route_code, but they have direction G/D
-      const directions = [...new Set((stops ?? []).map(s => s.direction))].sort()
-      return directions.map(dir => ({
-        value: `${hatKodu}_${dir}`,
-        label: dir === 'G' ? 'Gidiş' : 'Dönüş',
-        direction_letter: dir as 'G' | 'D'
-      }))
-    }
+      }
+
+      return { value: code, label, direction_letter: (isG ? 'G' : 'D') as 'G' | 'D' }
+    })
+
+    // 3. Deduplicate labels (e.g. if two variants actually have the same label)
+    const labelCounts = options.reduce((acc, opt) => {
+      acc[opt.label] = (acc[opt.label] || 0) + 1
+      return acc
+    }, {} as Record<string, number>)
+
+    return options.map(opt => {
+      if (labelCounts[opt.label] > 1) {
+        const meta = metadata?.find(m => m.variant_code === opt.value)
+        return { ...opt, label: meta?.full_name || opt.value }
+      }
+      return opt
+    })
   }, [metadata, stops, hatKodu])
 
   useEffect(() => {
