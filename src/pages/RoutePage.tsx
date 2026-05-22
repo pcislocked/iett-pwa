@@ -87,7 +87,7 @@ function TimetableView({ schedule, scheduleError, onRetry, metadata }: {
     if (!schedule || !effectiveDirection) return { footnotes: fnMap, footnoteToName: fnNameMap }
 
     const filtered = schedule.filter(d => d.day_type === dayType && d.direction === effectiveDirection)
-    const uniqueVariants = [...new Set(filtered.map(d => d.route_variant).filter(v => v && !v.endsWith('_D0')))].sort()
+    const uniqueVariants = [...new Set(filtered.map(d => d.route_variant).filter(v => v && !v.endsWith('_D0') && !v.endsWith('_G0')))].sort()
     
     uniqueVariants.forEach((v, idx) => {
       const num = idx + 1
@@ -252,7 +252,7 @@ export default function RoutePage() {
     if (d !== 'G' && d !== 'D') return d
     const meta = metadata.find(m => m.variant_code && m.variant_code.includes(`_${d}_`))
     if (!meta || !meta.direction_name) return d === 'G' ? 'Gidiş' : d === 'D' ? 'Dönüş' : d
-    const parts = meta.direction_name.split('-').map(s => s.trim())
+    const parts = meta.direction_name.split(' - ').map(s => s.trim())
     const dest = parts.length > 1 ? parts[parts.length - 1] : parts[0]
     return `${dest} YÖNÜ`
   }

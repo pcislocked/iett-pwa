@@ -127,8 +127,14 @@ describe('useUserPrefs', () => {
   // Export / Import
   describe('exportPrefs / importPrefs', () => {
     it('exports prefs by triggering download', () => {
-      const mockCreateObjectURL = vi.spyOn(global.URL, 'createObjectURL').mockReturnValue('blob:test')
-      const mockRevokeObjectURL = vi.spyOn(global.URL, 'revokeObjectURL').mockImplementation(() => {})
+      vi.useFakeTimers()
+      
+      const originalCreate = global.URL.createObjectURL
+      const originalRevoke = global.URL.revokeObjectURL
+      
+      global.URL.createObjectURL = vi.fn().mockReturnValue('blob:test')
+      global.URL.revokeObjectURL = vi.fn()
+      
       const mockClick = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
 
       const { result } = renderHook(() => useUserPrefs())
@@ -136,13 +142,21 @@ describe('useUserPrefs', () => {
       act(() => {
         result.current.exportPrefs()
       })
+      
+      act(() => {
+        vi.advanceTimersByTime(3000)
+      })
 
-      expect(mockCreateObjectURL).toHaveBeenCalled()
+      expect(global.URL.createObjectURL).toHaveBeenCalled()
+      expect(global.URL.revokeObjectURL).toHaveBeenCalledWith('blob:test')
       expect(mockClick).toHaveBeenCalled()
       
       mockClick.mockRestore()
-      mockCreateObjectURL.mockRestore()
-      mockRevokeObjectURL.mockRestore()
+      
+      global.URL.createObjectURL = originalCreate
+      global.URL.revokeObjectURL = originalRevoke
+      
+      vi.useRealTimers()
     })
 
     it('imports prefs correctly', async () => {
