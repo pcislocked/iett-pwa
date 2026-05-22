@@ -5,6 +5,21 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [0.3.19] - 2026-05-23
+
+### Added
+- Added robust sub-route variant dropdown selection to both Map and Stops tabs. Map and stops lists now correctly reflect the active route variant.
+
+### Fixed
+- Fixed direction label parsing bugs for variants missing strict 'G'/'D' suffix.
+- Fixed performance issue with rendering schedule footnotes; lookup is now O(1) instead of `variants × metadata`.
+- Increased map stop marker robustness using `sequence` identifiers and fixed potential screen-reader accessibility issues.
+
+### Release Notes
+- App version bumped to `0.3.19` to stay synchronized with `iett-middle`.
+
+---
+
 ## [0.3.18] - 2026-05-22
 
 ### Added

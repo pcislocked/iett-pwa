@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { MapContainer, TileLayer, Marker, Popup, CircleMarker } from 'react-leaflet'
 import * as L from 'leaflet'
@@ -45,11 +45,12 @@ function ErrorRetry({ message, onRetry }: { message: string; onRetry: () => void
   )
 }
 
-function TimetableView({ schedule, scheduleError, onRetry, metadata }: {
+function TimetableView({ schedule, scheduleError, onRetry, metadata, onSelectVariant }: {
   schedule: ScheduledDeparture[] | null
   scheduleError: string | null
   onRetry: () => void
   metadata: RouteMetadata[] | null
+  onSelectVariant?: (variant: string) => void
 }) {
   const [dayType, setDayType] = useState('H')
   const [direction, setDirection] = useState('')
@@ -81,10 +82,11 @@ function TimetableView({ schedule, scheduleError, onRetry, metadata }: {
     : (availableDirections[0] ?? '')
 
   // Generate dynamic footnotes for sub-routes
-  const { footnotes, footnoteToName } = useMemo(() => {
+  const { footnotes, footnoteToName, footnoteToVariant } = useMemo(() => {
     const fnMap = new Map<string, number>()
     const fnNameMap = new Map<number, string>()
-    if (!schedule || !effectiveDirection) return { footnotes: fnMap, footnoteToName: fnNameMap }
+    const fnVariantMap = new Map<number, string>()
+    if (!schedule || !effectiveDirection) return { footnotes: fnMap, footnoteToName: fnNameMap, footnoteToVariant: fnVariantMap }
 
     const filtered = schedule.filter(d => d.day_type === dayType && d.direction === effectiveDirection)
     const uniqueVariants = [...new Set(filtered.map(d => d.route_variant).filter(v => v && !v.endsWith('_D0') && !v.endsWith('_G0')))].sort()
@@ -100,8 +102,9 @@ function TimetableView({ schedule, scheduleError, onRetry, metadata }: {
       const num = idx + 1
       fnMap.set(v, num)
       fnNameMap.set(num, metaMap.get(v) ?? v)
+      fnVariantMap.set(num, v)
     })
-    return { footnotes: fnMap, footnoteToName: fnNameMap }
+    return { footnotes: fnMap, footnoteToName: fnNameMap, footnoteToVariant: fnVariantMap }
   }, [schedule, dayType, effectiveDirection, metadata])
 
   // Group filtered departures by hour
@@ -195,16 +198,26 @@ function TimetableView({ schedule, scheduleError, onRetry, metadata }: {
             </span>
           </div>
           <div className="flex-1 flex flex-wrap gap-1.5 pb-2 border-b border-surface-muted/50">
-            {hourMap.get(h)!.map(({ m, fn }, idx) => (
-              <span
-                key={`${m}-${idx}`}
-                className="text-xs font-mono text-slate-300 bg-surface-card border border-surface-muted
-                           rounded-md px-1.5 py-0.5 min-w-[30px] text-center"
-              >
-                {String(m).padStart(2, '0')}
-                {fn && <sup className="ml-0.5 text-[#00AFF0] font-bold">{fn}</sup>}
-              </span>
-            ))}
+            {hourMap.get(h)!.map(({ m, fn }, idx) => {
+              const variantCode = fn ? footnoteToVariant.get(fn) : undefined
+              return (
+                <span
+                  key={`${m}-${idx}`}
+                  className="text-xs font-mono text-slate-300 bg-surface-card border border-surface-muted
+                             rounded-md px-1.5 py-0.5 min-w-[30px] text-center"
+                >
+                  {String(m).padStart(2, '0')}
+                  {fn && (
+                    <button 
+                      onClick={() => variantCode && onSelectVariant?.(variantCode)}
+                      className="ml-0.5 text-[#00AFF0] font-bold hover:underline"
+                    >
+                      {fn}
+                    </button>
+                  )}
+                </span>
+              )
+            })}
           </div>
         </div>
       ))}
@@ -233,8 +246,7 @@ export default function RoutePage() {
   const { hatKodu } = useParams<{ hatKodu: string }>()
   const navigate = useNavigate()
   const [tab, setTab] = useState<Tab>('schedule')
-  const [stopsDir, setStopsDir] = useState('')
-  const [mapDir, setMapDir] = useState('')
+  const [selectedVariant, setSelectedVariant] = useState('')
 
   const { data: buses, stale } = useRouteBuses(hatKodu ?? '')
 
@@ -248,49 +260,75 @@ export default function RoutePage() {
   const { data: announcements, error: announcementsError, refresh: refreshAnnouncements } = usePolling<Announcement[]>(announceFetcher, 300_000)
   const { data: metadata } = usePolling<RouteMetadata[]>(metaFetcher, 600_000)
 
-  // Unique direction keys from stops — "G" / "D"
-  const stopsDirections = useMemo(
-    () => [...new Set((stops ?? []).map((s) => s.direction))].sort(),
-    [stops],
-  )
-  const dirLabel = (d: string) => {
-    const dest = getDestinationLabel(d, metadata, !!metadata?.length)
-    if (dest === d || dest === 'Gidiş' || dest === 'Dönüş') return dest
-    return `${dest} YÖNÜ`
-  }
+  // Unique route variants from metadata, or fallback to stops
+  const variantOptions = useMemo(() => {
+    if (metadata && metadata.length > 0) {
+      return metadata
+        .filter(m => m.variant_code)
+        .map(m => {
+          // Format label: "TOKATKÖY > HEKİMBAŞI"
+          const parts = m.direction_name ? m.direction_name.split(' - ') : []
+          const label = parts.length >= 2 ? `${parts[0].trim()} > ${parts[parts.length - 1].trim()}` : (m.full_name || m.variant_code)
+          const dirLetter = (m.direction === 0 || m.direction === 119) ? 'G' : 'D'
+          return { value: m.variant_code, label, direction_letter: dirLetter as 'G' | 'D' }
+        })
+    }
+    // Fallback if no metadata: check if stops are grouped by variant or just flat route stops
+    const hasVariantCodes = (stops ?? []).some(s => s.route_code && s.route_code !== hatKodu)
+    if (hasVariantCodes) {
+      const uniqueCodes = [...new Set((stops ?? []).map(s => s.route_code))].sort()
+      return uniqueCodes.map(code => {
+        const isG = code.includes('_G_') || code.includes('_119_')
+        return {
+          value: code,
+          label: code,
+          direction_letter: (isG ? 'G' : 'D') as 'G' | 'D'
+        }
+      })
+    } else {
+      // SOAP fallback: stops only have hatKodu as route_code, but they have direction G/D
+      const directions = [...new Set((stops ?? []).map(s => s.direction))].sort()
+      return directions.map(dir => ({
+        value: `${hatKodu}_${dir}`,
+        label: dir === 'G' ? 'Gidiş' : 'Dönüş',
+        direction_letter: dir as 'G' | 'D'
+      }))
+    }
+  }, [metadata, stops, hatKodu])
 
-  const effectiveStopsDir = stopsDirections.includes(stopsDir)
-    ? stopsDir
-    : (stopsDirections[0] ?? '')
+  useEffect(() => {
+    if (variantOptions.length > 0) {
+      const exists = variantOptions.some(o => o.value === selectedVariant)
+      if (!exists) {
+        const canonical = variantOptions.find(o => o.value.endsWith('_D0') || o.value.endsWith('_G0'))
+        setSelectedVariant(canonical?.value || variantOptions[0].value)
+      }
+    }
+  }, [variantOptions, selectedVariant])
 
-  // Deduplicate by stop_code within the selected direction (ntcapi returns multiple variants)
-  const stopsForDir = useMemo(() => {
-    const dirStops = (stops ?? []).filter((s) => !effectiveStopsDir || s.direction === effectiveStopsDir)
-    const seen = new Set<string>()
-    return dirStops.filter((s) => { if (seen.has(s.stop_code)) return false; seen.add(s.stop_code); return true })
-  }, [stops, effectiveStopsDir])
+  const activeOption = variantOptions.find(o => o.value === selectedVariant)
+  const activeDirectionLetter = activeOption?.direction_letter ?? ''
+
+  const stopsForVariant = useMemo(() => {
+    if (!selectedVariant) return []
+    if (selectedVariant === `${hatKodu}_G` || selectedVariant === `${hatKodu}_D`) {
+      const dir = selectedVariant.slice(hatKodu!.length + 1)
+      return (stops ?? []).filter(s => s.direction === dir)
+    }
+    return (stops ?? []).filter(s => s.route_code === selectedVariant)
+  }, [stops, selectedVariant, hatKodu])
 
   // Build map of stop_sequence to bus directions
   const busAtSequence = useMemo(() => {
     const seqs = new Map<number, Set<string>>()
     for (const b of (buses ?? [])) {
-      if (b.stop_sequence != null && (!effectiveStopsDir || b.direction_letter === effectiveStopsDir)) {
+      if (b.stop_sequence != null && (!activeDirectionLetter || b.direction_letter === activeDirectionLetter)) {
         if (!seqs.has(b.stop_sequence)) seqs.set(b.stop_sequence, new Set())
         seqs.get(b.stop_sequence)!.add(b.direction ?? 'Otobüs')
       }
     }
     return seqs
-  }, [buses, effectiveStopsDir])
-
-  // Direction state for the map tab
-  const effectiveMapDir = stopsDirections.includes(mapDir)
-    ? mapDir
-    : (stopsDirections[0] ?? '')
-  const stopsForMap = useMemo(() => {
-    const dirStops = (stops ?? []).filter((s) => !effectiveMapDir || s.direction === effectiveMapDir)
-    const seen = new Set<string>()
-    return dirStops.filter((s) => { if (seen.has(s.stop_code)) return false; seen.add(s.stop_code); return true })
-  }, [stops, effectiveMapDir])
+  }, [buses, activeDirectionLetter])
 
   const { isFavorite, toggle } = useFavorites()
   const routeName = metadata?.[0]?.full_name ?? hatKodu ?? ''
@@ -306,7 +344,7 @@ export default function RoutePage() {
   const tabs: { id: Tab; label: string; badge?: number }[] = [
     { id: 'schedule', label: 'Sefer Saatleri' },
     { id: 'map', label: 'Harita', badge: buses?.length },
-    { id: 'stops', label: 'Duraklar', badge: stopsForDir.length ?? stops?.length },
+    { id: 'stops', label: 'Duraklar', badge: stopsForVariant.length ?? stops?.length },
     { id: 'alerts', label: 'Duyurular', badge: announcements?.length ? announcements.length : undefined },
   ]
 
@@ -369,28 +407,31 @@ export default function RoutePage() {
 
         {/* Timetable tab */}
         {tab === 'schedule' && (
-          <TimetableView schedule={schedule} scheduleError={scheduleError} onRetry={refreshSchedule} metadata={metadata} />
+          <TimetableView 
+            schedule={schedule} 
+            scheduleError={scheduleError} 
+            onRetry={refreshSchedule} 
+            metadata={metadata} 
+            onSelectVariant={(v) => { setSelectedVariant(v); setTab('stops') }}
+          />
         )}
 
         {/* Map tab */}
         {tab === 'map' && (
           <div className="flex flex-col gap-2">
-            {/* Direction pills — map tab, Metro flat */}
-            {stopsDirections.length > 1 && (
-              <div className="flex border-b border-[#222]">
-                {stopsDirections.map((dir) => (
-                  <button
-                    key={dir}
-                    onClick={() => setMapDir(dir)}
-                    className={`flex-1 text-xs py-2 px-2 font-medium transition-colors truncate border-b-2 -mb-px ${
-                      effectiveMapDir === dir
-                        ? 'border-[#00AFF0] text-[#00AFF0]'
-                        : 'border-transparent text-[#404040] hover:text-[#888]'
-                    }`}
-                  >
-                    {dirLabel(dir)}
-                  </button>
-                ))}
+            {/* Dropdown — map tab */}
+            {variantOptions.length > 1 && (
+              <div className="px-1 border-b border-[#222] pb-2">
+                <select 
+                  value={selectedVariant}
+                  onChange={(e) => setSelectedVariant(e.target.value)}
+                  aria-label="Güzergâh varyantı"
+                  className="w-full bg-surface-card border border-surface-muted text-slate-200 text-sm rounded-lg p-2.5 outline-none focus:border-[#00AFF0]"
+                >
+                  {variantOptions.map(o => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                  ))}
+                </select>
               </div>
             )}
             {/* Bus direction legend */}
@@ -411,9 +452,9 @@ export default function RoutePage() {
                   url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
                 />
                 {/* BUG-23: navigate to stop on click instead of showing popup */}
-                {stopsForMap.map((s) => (
+                {stopsForVariant.map((s) => (
                   <CircleMarker
-                    key={`${s.direction}-${s.stop_code}`}
+                    key={`${s.direction}-${s.stop_code}-${s.sequence}`}
                     center={[s.latitude, s.longitude]}
                     radius={5}
                     pathOptions={{ color: '#94a3b8', fillColor: '#94a3b8', fillOpacity: 1, weight: 2 }}
@@ -421,7 +462,7 @@ export default function RoutePage() {
                   />
                 ))}
                 {buses
-                  ?.filter((b) => !effectiveMapDir || b.direction_letter === effectiveMapDir)
+                  ?.filter((b) => !activeDirectionLetter || b.direction_letter === activeDirectionLetter)
                   .map((b) => (
                     <Marker
                       key={b.kapino}
@@ -442,22 +483,19 @@ export default function RoutePage() {
         {/* Stops tab */}
         {tab === 'stops' && (
           <div className="flex flex-col gap-1">
-            {/* Direction filter pills — stops tab, Metro flat */}
-            {stopsDirections.length > 1 && (
-              <div className="flex border-b border-[#222] mb-1">
-                {stopsDirections.map((dir) => (
-                  <button
-                    key={dir}
-                    onClick={() => setStopsDir(dir)}
-                    className={`flex-1 text-xs py-2 px-2 font-medium transition-colors truncate border-b-2 -mb-px ${
-                      effectiveStopsDir === dir
-                        ? 'border-[#00AFF0] text-[#00AFF0]'
-                        : 'border-transparent text-[#404040] hover:text-[#888]'
-                    }`}
-                  >
-                    {dirLabel(dir)}
-                  </button>
-                ))}
+            {/* Dropdown — stops tab */}
+            {variantOptions.length > 1 && (
+              <div className="px-1 border-b border-[#222] pb-2 mb-1">
+                <select 
+                  value={selectedVariant}
+                  onChange={(e) => setSelectedVariant(e.target.value)}
+                  aria-label="Güzergâh varyantı"
+                  className="w-full bg-surface-card border border-surface-muted text-slate-200 text-sm rounded-lg p-2.5 outline-none focus:border-[#00AFF0]"
+                >
+                  {variantOptions.map(o => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                  ))}
+                </select>
               </div>
             )}
             {!stops && !stopsError && (
@@ -482,9 +520,9 @@ export default function RoutePage() {
                 <p className="text-sm">Bu hat için durak bulunamadı</p>
               </div>
             )}
-            {stopsForDir.map((s) => (
+            {stopsForVariant.map((s) => (
               <Link
-                key={`${s.direction}-${s.stop_code}`}
+                key={`${s.direction}-${s.stop_code}-${s.sequence}`}
                 to={`/stops/${s.stop_code}`}
                 className="card flex items-center gap-3 py-3 hover:border-slate-500 transition-colors"
               >
@@ -495,7 +533,7 @@ export default function RoutePage() {
                 {busAtSequence.has(s.sequence) && (
                   <span title={`Otobüs burada: ${Array.from(busAtSequence.get(s.sequence)!).join(', ')}`} 
                         className="w-2.5 h-2.5 rounded-full shrink-0 animate-pulse cursor-help"
-                        style={{ background: effectiveStopsDir === 'D' ? '#f59e0b' : '#2563eb' }} />
+                        style={{ background: activeDirectionLetter === 'D' ? '#f59e0b' : '#2563eb' }} />
                 )}
                 <span className="text-xs text-slate-600 shrink-0">{s.stop_code}</span>
                 <svg className="w-4 h-4 text-slate-600 shrink-0" fill="none" viewBox="0 0 24 24"
