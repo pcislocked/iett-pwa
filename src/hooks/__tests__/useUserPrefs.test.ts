@@ -183,15 +183,18 @@ describe('useUserPrefs', () => {
       const { result } = renderHook(() => useUserPrefs())
       const file = new File(['invalid json'], 'prefs.json', { type: 'application/json' })
       
-      let error: any;
+      let error: unknown
       await act(async () => {
         try {
           await result.current.importPrefs(file)
-        } catch (e) {
+        } catch (e: unknown) {
           error = e
         }
       })
-      expect(error?.message).toBe('Geçersiz dosya formatı')
+      expect(error).toBeInstanceOf(Error)
+      if (error instanceof Error) {
+        expect(error.message).toBe('Geçersiz dosya formatı')
+      }
     })
   })
 

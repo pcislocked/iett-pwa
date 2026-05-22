@@ -89,11 +89,17 @@ function TimetableView({ schedule, scheduleError, onRetry, metadata }: {
     const filtered = schedule.filter(d => d.day_type === dayType && d.direction === effectiveDirection)
     const uniqueVariants = [...new Set(filtered.map(d => d.route_variant).filter(v => v && !v.endsWith('_D0') && !v.endsWith('_G0')))].sort()
     
+    const metaMap = new Map<string, string>()
+    if (metadata) {
+      for (const m of metadata) {
+        if (m.variant_code && m.full_name) metaMap.set(m.variant_code, m.full_name)
+      }
+    }
+
     uniqueVariants.forEach((v, idx) => {
       const num = idx + 1
       fnMap.set(v, num)
-      const meta = metadata?.find(m => m.variant_code === v)
-      fnNameMap.set(num, meta?.full_name ?? v)
+      fnNameMap.set(num, metaMap.get(v) ?? v)
     })
     return { footnotes: fnMap, footnoteToName: fnNameMap }
   }, [schedule, dayType, effectiveDirection, metadata])
