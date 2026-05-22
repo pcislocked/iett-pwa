@@ -876,16 +876,7 @@ export default function StopPage() {
               Yenile
             </button>
           </div>
-          {stopDetail?.direction && (
-            <div className="px-4 pt-2">
-              <span className="inline-flex items-center gap-1 text-[11px] text-slate-400 bg-surface-muted px-2 py-0.5 rounded-md">
-                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-                </svg>
-                {stopDetail.direction}
-              </span>
-            </div>
-          )}
+
           {(routes ?? []).length > 0 && (
             <div className="px-4 py-2 flex gap-2 overflow-x-auto no-scrollbar">
               <button
