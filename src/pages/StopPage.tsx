@@ -94,6 +94,8 @@ function FitToBusesOnLoad({
     if (!hasData) return
 
     const withPos = buses.filter((b) => b.latitude != null && b.longitude != null).slice(0, 3)
+    if (withPos.length === 0 && activeRoutes.size === 0) return
+
     firedRef.current = true
     const points: L.LatLngExpression[] = [
       [stopLat, stopLon],
