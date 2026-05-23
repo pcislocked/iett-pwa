@@ -1,12 +1,9 @@
-import { useMemo, useCallback } from 'react'
+import { useCallback } from 'react'
 import { usePolling } from './usePolling'
 import { api, type BusPosition } from '@/api/client'
 import { POLLING } from '@/config/polling'
 
-export function useFleet(routeCode?: string) {
-  if (!routeCode) {
-    return usePolling<BusPosition[]>(api.fleet.all, POLLING.FLEET_ALL_MS)
-  }
+export function useFleet(_routeCode?: string) {
   return usePolling<BusPosition[]>(api.fleet.all, POLLING.FLEET_ALL_MS)
 }
 
@@ -15,5 +12,5 @@ export function useRouteBuses(hatKodu: string) {
     return api.routes.buses(hatKodu)
   }, [hatKodu])
 
-  return usePolling<BusPosition[]>(fetcher, POLLING.FLEET_SPECIFIC_MS)
+  return usePolling<BusPosition[]>(fetcher, POLLING.FLEET_SPECIFIC_MS, hatKodu)
 }

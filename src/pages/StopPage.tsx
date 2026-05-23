@@ -365,8 +365,17 @@ function InfoModal({ onClose }: { onClose: () => void }) {
     }
   }, [onClose])
 
+  const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget) {
+      onClose()
+    }
+  }
+
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
+    <div 
+      onClick={handleBackdropClick}
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4"
+    >
       <div 
         role="dialog"
         aria-modal="true"
@@ -475,11 +484,13 @@ export default function StopPage() {
   const { data: routes } = usePolling<string[]>(
     useMemo(() => () => dcode ? api.stops.routes(dcode) : Promise.resolve([]), [dcode]),
     POLLING.STOP_ROUTES_MS,
+    dcode,
   )
 
   const { data: stopDetail } = usePolling<StopDetail>(
     useMemo(() => () => dcode ? api.stops.detail(dcode) : Promise.reject(), [dcode]),
     POLLING.STOP_DETAIL_MS,
+    dcode,
   )
 
   // Ordered unique routes from live arrivals (used for colour assignment)
@@ -542,6 +553,7 @@ export default function StopPage() {
       [firstActive],
     ),
     POLLING.ANNOUNCEMENTS_MS,
+    firstActive,
   )
 
   const { isFavorite, toggle } = useFavorites()

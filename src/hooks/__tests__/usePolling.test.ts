@@ -187,4 +187,54 @@ describe('usePolling', () => {
     await act(async () => { vi.advanceTimersByTime(5_000); await Promise.resolve() })
     expect(result.current.iettUpdated).toBeNull()
   })
+
+  it('refetches immediately and sets loading=true when key changes', async () => {
+    const fetcher = vi.fn().mockResolvedValue('data')
+    const { result, rerender } = renderHook(
+      ({ key }) => usePolling(fetcher, 5_000, key),
+      { initialProps: { key: 'key1' } }
+    )
+
+    await waitFor(() => expect(result.current.loading).toBe(false))
+    expect(fetcher).toHaveBeenCalledTimes(1)
+
+    // Change the key
+    act(() => {
+      rerender({ key: 'key2' })
+    })
+
+    expect(result.current.loading).toBe(true)
+    await waitFor(() => expect(result.current.loading).toBe(false))
+    expect(fetcher).toHaveBeenCalledTimes(2)
+  })
+
+  it('cancels any in-flight requests of the previous key when key changes', async () => {
+    let resolveFirst!: (v: string) => void
+    const fetcher = vi.fn()
+      .mockReturnValueOnce(new Promise<string>((r) => { resolveFirst = r }))
+      .mockResolvedValueOnce('second-key-data')
+
+    const { result, rerender } = renderHook(
+      ({ key }) => usePolling(fetcher, 5_000, key),
+      { initialProps: { key: 'key1' } }
+    )
+
+    expect(result.current.loading).toBe(true)
+
+    // Change the key before the first fetch resolves
+    act(() => {
+      rerender({ key: 'key2' })
+    })
+
+    // Wait for the second key fetch to resolve
+    await waitFor(() => expect(result.current.loading).toBe(false))
+    expect(result.current.data).toBe('second-key-data')
+
+    // Resolve the first key fetch - it should be ignored
+    await act(async () => {
+      resolveFirst('stale-key1-data')
+    })
+    expect(result.current.data).toBe('second-key-data')
+  })
 })
+

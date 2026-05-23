@@ -8,5 +8,5 @@ export function useArrivals(dcode: string, via?: string) {
     return api.stops.arrivals(dcode, via)
   }, [dcode, via])
 
-  return usePolling<Arrival[]>(fetcher, POLLING.ARRIVALS_MS)
+  return usePolling<Arrival[]>(fetcher, POLLING.ARRIVALS_MS, `${dcode}:${via || ''}`)
 }

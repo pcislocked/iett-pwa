@@ -6,7 +6,7 @@ import { useRouteBuses } from '@/hooks/useFleet'
 import { usePolling } from '@/hooks/usePolling'
 import { api, type RouteStop, type ScheduledDeparture, type Announcement, type RouteMetadata } from '@/api/client'
 import { useFavorites } from '@/hooks/useFavorites'
-import { getDirectionLabel, getDestinationLabel } from '@/utils/routeDirectionLabels'
+import { getDirectionLabel } from '@/utils/routeDirectionLabels'
 import { POLLING } from '@/config/polling'
 
 const busIconG = L.divIcon({
@@ -256,10 +256,10 @@ export default function RoutePage() {
   const announceFetcher = useCallback(() => api.routes.announcements(hatKodu ?? ''), [hatKodu])
   const metaFetcher = useCallback(() => api.routes.metadata(hatKodu ?? ''), [hatKodu])
 
-  const { data: stops, error: stopsError, refresh: refreshStops } = usePolling<RouteStop[]>(stopsFetcher, POLLING.ROUTE_STOPS_MS)
-  const { data: schedule, error: scheduleError, refresh: refreshSchedule } = usePolling<ScheduledDeparture[]>(scheduleFetcher, POLLING.ROUTE_SCHEDULE_MS)
-  const { data: announcements, error: announcementsError, refresh: refreshAnnouncements } = usePolling<Announcement[]>(announceFetcher, POLLING.ANNOUNCEMENTS_MS)
-  const { data: metadata } = usePolling<RouteMetadata[]>(metaFetcher, POLLING.ROUTE_META_MS)
+  const { data: stops, error: stopsError, refresh: refreshStops } = usePolling<RouteStop[]>(stopsFetcher, POLLING.ROUTE_STOPS_MS, hatKodu)
+  const { data: schedule, error: scheduleError, refresh: refreshSchedule } = usePolling<ScheduledDeparture[]>(scheduleFetcher, POLLING.ROUTE_SCHEDULE_MS, hatKodu)
+  const { data: announcements, error: announcementsError, refresh: refreshAnnouncements } = usePolling<Announcement[]>(announceFetcher, POLLING.ANNOUNCEMENTS_MS, hatKodu)
+  const { data: metadata } = usePolling<RouteMetadata[]>(metaFetcher, POLLING.ROUTE_META_MS, hatKodu)
 
   // Unique route variants derived from available stops (or canonical metadata if loading)
   const variantOptions = useMemo(() => {

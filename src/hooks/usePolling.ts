@@ -18,6 +18,7 @@ interface UsePollingResult<T> {
 export function usePolling<T>(
   fetcher: () => Promise<T>,
   intervalMs = 20_000,
+  key?: string | number | boolean | null,
 ): UsePollingResult<T> {
   const [data, setData] = useState<T | null>(null)
   const [loading, setLoading] = useState(true)
@@ -44,7 +45,9 @@ export function usePolling<T>(
       setError(null)
       setStale(false)
       setLastUpdated(new Date())
-      setIettUpdated((result as any)?.__iettUpdated || null)
+      const resObj = result as Record<string, unknown> | null
+      const iettDate = resObj && typeof resObj === 'object' && '__iettUpdated' in resObj ? (resObj.__iettUpdated as Date) : null
+      setIettUpdated(iettDate)
     } catch (e) {
       if (id !== fetchIdRef.current || !mountedRef.current) return
       setError(e instanceof Error ? e.message : String(e))
@@ -69,6 +72,7 @@ export function usePolling<T>(
   }, [])
 
   useEffect(() => {
+    setLoading(true)
     void doFetch()
     const id = setInterval(() => { void doFetch() }, intervalMs)
     return () => {
@@ -76,7 +80,7 @@ export function usePolling<T>(
       fetchIdRef.current += 1
       clearInterval(id)
     }
-  }, [doFetch, intervalMs])
+  }, [doFetch, intervalMs, key])
 
   return { data, loading, error, refresh, stale, lastUpdated, iettUpdated }
 }
