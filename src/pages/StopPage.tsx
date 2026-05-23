@@ -481,17 +481,11 @@ export default function StopPage() {
 
   const { data: arrivals, loading, error, stale, refresh: refreshArrivals, lastUpdated, iettUpdated } = useArrivals(dcode ?? '')
 
-  const { data: routes } = usePolling<string[]>(
-    useMemo(() => () => dcode ? api.stops.routes(dcode) : Promise.resolve([]), [dcode]),
-    POLLING.STOP_ROUTES_MS,
-    dcode,
-  )
+  const routesFetcher = useCallback(() => dcode ? api.stops.routes(dcode) : Promise.resolve([]), [dcode])
+  const stopDetailFetcher = useCallback(() => dcode ? api.stops.detail(dcode) : Promise.resolve(null), [dcode])
 
-  const { data: stopDetail } = usePolling<StopDetail>(
-    useMemo(() => () => dcode ? api.stops.detail(dcode) : Promise.reject(), [dcode]),
-    POLLING.STOP_DETAIL_MS,
-    dcode,
-  )
+  const { data: routes } = usePolling<string[]>(routesFetcher, POLLING.STOP_ROUTES_MS, dcode)
+  const { data: stopDetail } = usePolling<StopDetail>(stopDetailFetcher, POLLING.STOP_DETAIL_MS, dcode)
 
   // Ordered unique routes from live arrivals (used for colour assignment)
   const arrivalRouteOrder = useMemo(() => {
@@ -547,11 +541,9 @@ export default function StopPage() {
 
   // Announcements for the first selected route
   const firstActive = useMemo(() => Array.from(activeRoutes)[0] ?? null, [activeRoutes])
+  const announceFetcher = useCallback(() => firstActive ? api.routes.announcements(firstActive) : Promise.resolve([]), [firstActive])
   const { data: announcements } = usePolling<Announcement[]>(
-    useMemo(
-      () => () => firstActive ? api.routes.announcements(firstActive) : Promise.resolve([]),
-      [firstActive],
-    ),
+    announceFetcher,
     POLLING.ANNOUNCEMENTS_MS,
     firstActive,
   )
