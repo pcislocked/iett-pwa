@@ -157,4 +157,34 @@ describe('usePolling', () => {
     act(() => { vi.advanceTimersByTime(5_000) })
     expect(fetcher).toHaveBeenCalledTimes(1)
   })
+
+  it('extracts iettUpdated from __iettUpdated property', async () => {
+    const fetcher = vi.fn().mockResolvedValue({
+      data: 'ok',
+      __iettUpdated: new Date('2026-05-23T00:00:00Z')
+    })
+    const { result } = renderHook(() => usePolling(fetcher, 5_000))
+    await waitFor(() => expect(result.current.loading).toBe(false))
+    expect(result.current.iettUpdated).toBeInstanceOf(Date)
+    expect(result.current.iettUpdated!.toISOString()).toBe('2026-05-23T00:00:00.000Z')
+  })
+
+  it('clears iettUpdated when subsequent fetch lacks __iettUpdated', async () => {
+    vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval', 'setTimeout', 'clearTimeout'] })
+    const fetcher = vi.fn()
+      .mockResolvedValueOnce({
+        data: '1',
+        __iettUpdated: new Date('2026-05-23T00:00:00Z')
+      })
+      .mockResolvedValueOnce({
+        data: '2'
+      })
+
+    const { result } = renderHook(() => usePolling(fetcher, 5_000))
+    await act(async () => { await Promise.resolve(); await Promise.resolve() })
+    expect(result.current.iettUpdated).not.toBeNull()
+
+    await act(async () => { vi.advanceTimersByTime(5_000); await Promise.resolve() })
+    expect(result.current.iettUpdated).toBeNull()
+  })
 })

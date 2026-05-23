@@ -341,6 +341,60 @@ function EtaChip({ minutes, raw }: { minutes: number | null; raw: string }) {
   )
 }
 
+function InfoModal({ onClose }: { onClose: () => void }) {
+  const btnRef = useRef<HTMLButtonElement>(null)
+  const prevFocusRef = useRef<Element | null>(null)
+
+  useEffect(() => {
+    prevFocusRef.current = document.activeElement
+    btnRef.current?.focus()
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+      // Basic focus trap: keep focus on button if tab pressed
+      if (e.key === 'Tab') {
+        e.preventDefault()
+        btnRef.current?.focus()
+      }
+    }
+    document.addEventListener('keydown', handleKey)
+    return () => {
+      document.removeEventListener('keydown', handleKey)
+      if (prevFocusRef.current instanceof HTMLElement) {
+        prevFocusRef.current.focus()
+      }
+    }
+  }, [onClose])
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
+      <div 
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="info-title"
+        aria-describedby="info-desc"
+        className="bg-surface-card border border-surface-muted rounded-2xl w-full max-w-sm p-5 shadow-xl relative"
+      >
+        <h2 id="info-title" className="text-base font-bold text-slate-100 mb-3 text-center">Zaman Damgaları</h2>
+        <div id="info-desc">
+          <p className="text-sm text-slate-300 leading-relaxed mb-4">
+            Gizliliğinizi korumak ve İETT sistemlerindeki yükü azaltmak için bu uygulama, verileri <strong>pcislocked.net</strong> üzerinden çekerek kısa süreliğine önbellekte tutar. Bu nedenle gördüğünüz ikinci saat, İETT'den alınan en güncel verinin asıl zaman damgasıdır.
+          </p>
+          <p className="text-sm text-slate-400 leading-relaxed mb-6">
+            Araçların konum bildirme aralıkları, İETT sunucularındaki olağan gecikmeler ve bizim önbellek süremiz birleştiğinde, ekrandaki konum gerçek hayattan 90 saniyeye kadar geride kalabilir. Yine de bu yapı, resmi uygulamaya kıyasla size çok daha hızlı ve akıcı bir deneyim sunar.
+          </p>
+        </div>
+        <button
+          ref={btnRef}
+          onClick={onClose}
+          className="w-full bg-brand-600 hover:bg-brand-500 text-white font-semibold py-3 rounded-xl text-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#111]"
+        >
+          Anladım
+        </button>
+      </div>
+    </div>
+  )
+}
+
 export default function StopPage() {
   const { dcode } = useParams<{ dcode: string }>()
   const navigate = useNavigate()
@@ -956,25 +1010,7 @@ export default function StopPage() {
         />
       )}
       {/* Info Modal */}
-      {showInfo && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
-          <div className="bg-surface-card border border-surface-muted rounded-2xl w-full max-w-sm p-5 shadow-xl relative">
-            <h2 className="text-base font-bold text-slate-100 mb-3 text-center">Zaman Damgaları</h2>
-            <p className="text-sm text-slate-300 leading-relaxed mb-4">
-              Gizliliğinizi korumak ve İETT sistemlerindeki yükü azaltmak için bu uygulama, verileri <strong>pcislocked.net</strong> üzerinden çekerek kısa süreliğine önbellekte tutar. Bu nedenle gördüğünüz ikinci saat, İETT'den alınan en güncel verinin asıl zaman damgasıdır.
-            </p>
-            <p className="text-sm text-slate-400 leading-relaxed mb-6">
-              Araçların konum bildirme aralıkları, İETT sunucularındaki olağan gecikmeler ve bizim önbellek süremiz birleştiğinde, ekrandaki konum gerçek hayattan 90 saniyeye kadar geride kalabilir. Yine de bu yapı, resmi uygulamaya kıyasla size çok daha hızlı ve akıcı bir deneyim sunar.
-            </p>
-            <button
-              onClick={() => setShowInfo(false)}
-              className="w-full bg-brand-600 hover:bg-brand-500 text-white font-semibold py-3 rounded-xl text-sm transition-colors"
-            >
-              Anladım
-            </button>
-          </div>
-        </div>
-      )}
+      {showInfo && <InfoModal onClose={() => setShowInfo(false)} />}
     </div>
   )
 }
