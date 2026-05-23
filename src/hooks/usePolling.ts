@@ -12,6 +12,7 @@ interface UsePollingResult<T> {
   refresh: () => void
   stale: boolean  // true if we have cached data but last fetch failed
   lastUpdated: Date | null
+  iettUpdated: Date | null
 }
 
 export function usePolling<T>(
@@ -23,6 +24,7 @@ export function usePolling<T>(
   const [error, setError] = useState<string | null>(null)
   const [stale, setStale] = useState(false)
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
+  const [iettUpdated, setIettUpdated] = useState<Date | null>(null)
   const fetcherRef = useRef(fetcher)
   fetcherRef.current = fetcher
   const dataRef = useRef(data)
@@ -42,6 +44,7 @@ export function usePolling<T>(
       setError(null)
       setStale(false)
       setLastUpdated(new Date())
+      setIettUpdated((result as any)?.__iettUpdated || null)
     } catch (e) {
       if (id !== fetchIdRef.current || !mountedRef.current) return
       setError(e instanceof Error ? e.message : String(e))
@@ -75,5 +78,5 @@ export function usePolling<T>(
     }
   }, [doFetch, intervalMs])
 
-  return { data, loading, error, refresh, stale, lastUpdated }
+  return { data, loading, error, refresh, stale, lastUpdated, iettUpdated }
 }

@@ -80,7 +80,12 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
         const text = await res.text().catch(() => '')
         throw new ApiHttpError(path, res.status, text)
       }
-      return res.json() as Promise<T>
+      const data = await res.json()
+      const upstreamHeader = res.headers?.get?.("X-IETT-Updated-At")
+      if (upstreamHeader && typeof data === 'object' && data !== null) {
+        Object.defineProperty(data, '__iettUpdated', { value: new Date(upstreamHeader), enumerable: false })
+      }
+      return data as T
     }
 
     try {

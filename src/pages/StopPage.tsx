@@ -347,6 +347,7 @@ export default function StopPage() {
   const [showAnnouncements, setShowAnnouncements] = useState(false)
   const [selectedArrival, setSelectedArrival] = useState<Arrival | null>(null)
   const [activeTab, setActiveTab] = useState<'gelis' | 'hatlar' | 'bilgi'>('gelis')
+  const [showInfo, setShowInfo] = useState(false)
 
   // Sliding panel state — map height as percentage of split container
   const [mapHeightPct, setMapHeightPct] = useState(40)
@@ -414,7 +415,7 @@ export default function StopPage() {
 
   useBottomBar(bottomBarTabs)
 
-  const { data: arrivals, loading, error, stale, refresh: refreshArrivals, lastUpdated } = useArrivals(dcode ?? '')
+  const { data: arrivals, loading, error, stale, refresh: refreshArrivals, lastUpdated, iettUpdated } = useArrivals(dcode ?? '')
 
   const { data: routes } = usePolling<string[]>(
     useMemo(() => () => api.stops.routes(dcode ?? ''), [dcode]),
@@ -861,11 +862,29 @@ export default function StopPage() {
         <div className="shrink-0 border-t border-surface-muted bg-surface-card pb-2">
           {/* Last updated row */}
           <div className="px-4 pt-2 pb-1 flex items-center justify-between">
-            <span className="text-[11px] text-slate-600">
-              {lastUpdated
-                ? `güncellendi: ${lastUpdated.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`
-                : 'yükleniyor...'}
-            </span>
+            <div className="flex flex-col">
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] text-slate-600">
+                  {lastUpdated
+                    ? `güncellendi: ${lastUpdated.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`
+                    : 'yükleniyor...'}
+                </span>
+                {lastUpdated && (
+                  <button
+                    onClick={() => setShowInfo(true)}
+                    className="w-3.5 h-3.5 rounded-full border border-slate-600 text-slate-600 flex items-center justify-center hover:bg-slate-700 hover:text-slate-300 transition-colors"
+                    aria-label="Neden iki farklı saat var?"
+                  >
+                    <span className="text-[9px] font-bold">i</span>
+                  </button>
+                )}
+              </div>
+              {iettUpdated && (
+                <span className="text-[10px] text-slate-500 font-mono mt-0.5">
+                  İETT Kaynak: {iettUpdated.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                </span>
+              )}
+            </div>
             <button
               onClick={refreshArrivals}
               className="flex items-center gap-1 text-[11px] text-slate-400 hover:text-white transition-colors active:scale-95"
@@ -934,6 +953,26 @@ export default function StopPage() {
           stopName={stopName}
           onClose={() => setSelectedArrival(null)}
         />
+      )}
+      {/* Info Modal */}
+      {showInfo && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
+          <div className="bg-surface-card border border-surface-muted rounded-2xl w-full max-w-sm p-5 shadow-xl relative">
+            <h2 className="text-base font-bold text-slate-100 mb-3 text-center">Zaman Damgaları</h2>
+            <p className="text-sm text-slate-300 leading-relaxed mb-4">
+              Gizliliğinizi korumak ve İETT sistemlerindeki yükü azaltmak için bu uygulama, verileri <strong>pcislocked.net</strong> üzerinden çekerek kısa süreliğine önbellekte tutar. Bu nedenle gördüğünüz ikinci saat, İETT'den alınan en güncel verinin asıl zaman damgasıdır.
+            </p>
+            <p className="text-sm text-slate-400 leading-relaxed mb-6">
+              Araçların konum bildirme aralıkları, İETT sunucularındaki olağan gecikmeler ve bizim önbellek süremiz birleştiğinde, ekrandaki konum gerçek hayattan 90 saniyeye kadar geride kalabilir. Yine de bu yapı, resmi uygulamaya kıyasla size çok daha hızlı ve akıcı bir deneyim sunar.
+            </p>
+            <button
+              onClick={() => setShowInfo(false)}
+              className="w-full bg-brand-600 hover:bg-brand-500 text-white font-semibold py-3 rounded-xl text-sm transition-colors"
+            >
+              Anladım
+            </button>
+          </div>
+        </div>
       )}
     </div>
   )
