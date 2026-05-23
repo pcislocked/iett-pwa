@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom'
 import { useFleet } from '@/hooks/useFleet'
 import { usePolling } from '@/hooks/usePolling'
 import { api, type BusDetail, type Garage, type RouteSearchResult, type BusPosition } from '@/api/client'
+import { POLLING } from '@/config/polling'
 
 function parseIsoDate(value: string | null | undefined): Date | null {
   if (!value) return null
@@ -89,11 +90,11 @@ export default function MapPage() {
   const { data: buses, loading, error, refresh } = useFleet()
   const { data: fleetMeta, refresh: refreshFleetMeta } = usePolling<{ bus_count: number; updated_at: string | null }>(
     () => api.fleet.meta(),
-    15_000,
+    POLLING.FLEET_ALL_MS,
   )
   const { data: garages } = usePolling<Garage[]>(
     () => api.garages.list(),
-    86_400_000, // 24 h — garages rarely change
+    POLLING.GARAGES_MS,
   )
 
   // ── Route filter: autocomplete search + chips ──────────────────────────────

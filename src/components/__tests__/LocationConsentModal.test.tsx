@@ -10,7 +10,7 @@ describe('LocationConsentModal', () => {
 
   it('renders privacy description', () => {
     render(<LocationConsentModal onConfirm={vi.fn()} onDismiss={vi.fn()} />)
-    expect(screen.getByText(/konumunuz yalnızca/i)).toBeInTheDocument()
+    expect(screen.getByText(/konumunuz pcislocked.net/i)).toBeInTheDocument()
   })
 
   it('calls onConfirm when primary button is clicked', () => {
@@ -42,21 +42,21 @@ describe('LocationConsentModal', () => {
 
   it('traps focus: Tab from last button wraps to first', () => {
     render(<LocationConsentModal onConfirm={vi.fn()} onDismiss={vi.fn()} />)
-    const buttons = screen.getAllByRole('button')
-    const last = buttons[buttons.length - 1]
+    const focusable = screen.getByRole('dialog').querySelectorAll<HTMLElement>('button, a')
+    const last = focusable[focusable.length - 1]
     last.focus()
     const defaultWasPrevented = !fireEvent.keyDown(document, { key: 'Tab', shiftKey: false })
     expect(defaultWasPrevented).toBe(true)
-    expect(document.activeElement).toBe(buttons[0])
+    expect(document.activeElement).toBe(focusable[0])
   })
 
   it('traps focus: Shift+Tab from first button wraps to last', () => {
     render(<LocationConsentModal onConfirm={vi.fn()} onDismiss={vi.fn()} />)
-    const buttons = screen.getAllByRole('button')
-    buttons[0].focus()
+    const focusable = screen.getByRole('dialog').querySelectorAll<HTMLElement>('button, a')
+    focusable[0].focus()
     const defaultWasPrevented = !fireEvent.keyDown(document, { key: 'Tab', shiftKey: true })
     expect(defaultWasPrevented).toBe(true)
-    expect(document.activeElement).toBe(buttons[buttons.length - 1])
+    expect(document.activeElement).toBe(focusable[focusable.length - 1])
   })
 
   it('restores focus to previously focused element on unmount', () => {

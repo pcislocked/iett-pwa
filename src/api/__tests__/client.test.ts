@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import { api } from '@/api/client'
 
@@ -406,3 +407,34 @@ describe('api.arac.missions', () => {
     expect(url).toContain('/v1/arac/fleet/C-1%20X/missions')
   })
 })
+
+// ---------------------------------------------------------------------------
+// Header Metadata (__iettUpdated)
+// ---------------------------------------------------------------------------
+
+describe('X-IETT-Updated-At Metadata', () => {
+  it('extracts X-IETT-Updated-At header and sets __iettUpdated non-enumerable property', async () => {
+    const payload = [{ dcode: '123', name: 'Test' }]
+    const mockHeaders = new Headers()
+    mockHeaders.set('X-IETT-Updated-At', '2026-05-23T00:00:00Z')
+    
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        headers: mockHeaders,
+        json: () => Promise.resolve(payload),
+        text: () => Promise.resolve(JSON.stringify(payload)),
+      }),
+    )
+
+    const result = await api.stops.search('test') as any
+    expect(result.__iettUpdated).toBeInstanceOf(Date)
+    expect(result.__iettUpdated.toISOString()).toBe('2026-05-23T00:00:00.000Z')
+    
+    // Check it's non-enumerable
+    expect(Object.keys(result)).not.toContain('__iettUpdated')
+  })
+})
+

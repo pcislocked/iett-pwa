@@ -5,6 +5,22 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [0.3.21] - 2026-05-23
+
+### Added
+- Added display of secondary "İETT Kaynak" timestamp on StopPage.
+- Added InfoModal detailing why two different timestamps are shown.
+- Extracted all polling intervals to a global, environment-configurable config file (`src/config/polling.ts`).
+
+### Fixed
+- Fixed critical bug where navigating between stops/routes showed stale cached data (polling keys added to usePolling).
+- Fixed potential UI crash by validating the format of `X-IETT-Updated-At` date strings in API client.
+- Added backdrop-click dismissal for the secondary timestamp InfoModal.
+- Updated location consent and privacy copy with KVKK link pointing to pcislocked.net/kvkk.
+- Fixed React Hook rules-of-hooks violation in useFleet.
+
+---
+
 ## [0.3.20] - 2026-05-23
 
 ### Fixed
