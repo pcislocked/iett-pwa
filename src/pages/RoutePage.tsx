@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useCallback } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { MapContainer, TileLayer, Marker, Popup, CircleMarker } from 'react-leaflet'
 import * as L from 'leaflet'
@@ -7,6 +7,7 @@ import { usePolling } from '@/hooks/usePolling'
 import { api, type RouteStop, type ScheduledDeparture, type Announcement, type RouteMetadata } from '@/api/client'
 import { useFavorites } from '@/hooks/useFavorites'
 import { getDirectionLabel, getDestinationLabel } from '@/utils/routeDirectionLabels'
+import { POLLING } from '@/config/polling'
 
 const busIconG = L.divIcon({
   className: '',
@@ -250,15 +251,15 @@ export default function RoutePage() {
 
   const { data: buses, stale } = useRouteBuses(hatKodu ?? '')
 
-  const stopsFetcher = useMemo(() => () => api.routes.stops(hatKodu ?? ''), [hatKodu])
-  const scheduleFetcher = useMemo(() => () => api.routes.schedule(hatKodu ?? ''), [hatKodu])
-  const announceFetcher = useMemo(() => () => api.routes.announcements(hatKodu ?? ''), [hatKodu])
-  const metaFetcher = useMemo(() => () => api.routes.metadata(hatKodu ?? ''), [hatKodu])
+  const stopsFetcher = useCallback(() => api.routes.stops(hatKodu ?? ''), [hatKodu])
+  const scheduleFetcher = useCallback(() => api.routes.schedule(hatKodu ?? ''), [hatKodu])
+  const announceFetcher = useCallback(() => api.routes.announcements(hatKodu ?? ''), [hatKodu])
+  const metaFetcher = useCallback(() => api.routes.metadata(hatKodu ?? ''), [hatKodu])
 
-  const { data: stops, error: stopsError, refresh: refreshStops } = usePolling<RouteStop[]>(stopsFetcher, 300_000)
-  const { data: schedule, error: scheduleError, refresh: refreshSchedule } = usePolling<ScheduledDeparture[]>(scheduleFetcher, 300_000)
-  const { data: announcements, error: announcementsError, refresh: refreshAnnouncements } = usePolling<Announcement[]>(announceFetcher, 300_000)
-  const { data: metadata } = usePolling<RouteMetadata[]>(metaFetcher, 600_000)
+  const { data: stops, error: stopsError, refresh: refreshStops } = usePolling<RouteStop[]>(stopsFetcher, POLLING.ROUTE_STOPS_MS)
+  const { data: schedule, error: scheduleError, refresh: refreshSchedule } = usePolling<ScheduledDeparture[]>(scheduleFetcher, POLLING.ROUTE_SCHEDULE_MS)
+  const { data: announcements, error: announcementsError, refresh: refreshAnnouncements } = usePolling<Announcement[]>(announceFetcher, POLLING.ANNOUNCEMENTS_MS)
+  const { data: metadata } = usePolling<RouteMetadata[]>(metaFetcher, POLLING.ROUTE_META_MS)
 
   // Unique route variants derived from available stops (or canonical metadata if loading)
   const variantOptions = useMemo(() => {

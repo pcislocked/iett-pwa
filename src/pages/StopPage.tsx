@@ -9,6 +9,7 @@ import { useFavorites } from '@/hooks/useFavorites'
 import { useBottomBar } from '@/hooks/useBottomBar'
 import { PINNED_STOPS_MAX, useUserPrefs } from '@/hooks/useUserPrefs'
 import { etaChipClass } from '@/utils/etaColor'
+import { POLLING } from '@/config/polling'
 
 /** Calls map.invalidateSize() whenever the container height percentage changes. */
 function MapResizer({ heightPct }: { heightPct: number }) {
@@ -418,13 +419,13 @@ export default function StopPage() {
   const { data: arrivals, loading, error, stale, refresh: refreshArrivals, lastUpdated, iettUpdated } = useArrivals(dcode ?? '')
 
   const { data: routes } = usePolling<string[]>(
-    useMemo(() => () => api.stops.routes(dcode ?? ''), [dcode]),
-    300_000,
+    useMemo(() => () => dcode ? api.stops.routes(dcode) : Promise.resolve([]), [dcode]),
+    POLLING.STOP_ROUTES_MS,
   )
 
   const { data: stopDetail } = usePolling<StopDetail>(
-    useMemo(() => () => api.stops.detail(dcode ?? ''), [dcode]),
-    3_600_000,
+    useMemo(() => () => dcode ? api.stops.detail(dcode) : Promise.reject(), [dcode]),
+    POLLING.STOP_DETAIL_MS,
   )
 
   // Ordered unique routes from live arrivals (used for colour assignment)
@@ -486,7 +487,7 @@ export default function StopPage() {
       () => () => firstActive ? api.routes.announcements(firstActive) : Promise.resolve([]),
       [firstActive],
     ),
-    300_000,
+    POLLING.ANNOUNCEMENTS_MS,
   )
 
   const { isFavorite, toggle } = useFavorites()
