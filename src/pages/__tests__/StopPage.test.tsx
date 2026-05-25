@@ -100,7 +100,7 @@ describe('StopPage', () => {
     setupMocks()
     renderPage()
     expect(screen.getByText(/güncellendi: 07:00/i)).toBeInTheDocument() // 04:00Z formatted in local time +3
-    expect(screen.getByText(/İETT Kaynak: 06:59/i)).toBeInTheDocument() // 03:59Z formatted in local time +3
+    expect(screen.getByText(/, İETT: 06:59/i)).toBeInTheDocument() // 03:59Z formatted in local time +3
   })
 
   it('opens and closes the Zaman Damgaları InfoModal via backdrop click', () => {

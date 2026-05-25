@@ -7,7 +7,9 @@ import { usePolling } from '@/hooks/usePolling'
 import { api, type RouteStop, type ScheduledDeparture, type Announcement, type RouteMetadata } from '@/api/client'
 import { useFavorites } from '@/hooks/useFavorites'
 import { getDirectionLabel } from '@/utils/routeDirectionLabels'
+import { formatStopName } from '@/utils/formatStopName'
 import { POLLING } from '@/config/polling'
+import BusDetailSheet from '@/components/BusDetailSheet'
 
 const busIconG = L.divIcon({
   className: '',
@@ -33,6 +35,58 @@ const DAY_TYPES = [
   { key: 'C', label: 'Cumartesi' },
   { key: 'P', label: 'Pazar' },
 ]
+
+function VariantSelect({ 
+  options, 
+  value, 
+  onChange, 
+  className 
+}: { 
+  options: { value: string; label: string; isCanonical?: boolean; separatorAfter?: boolean }[]
+  value: string
+  onChange: (val: string) => void
+  className?: string
+}) {
+  const [isOpen, setIsOpen] = useState(false)
+  const selected = options.find(o => o.value === value)
+
+  return (
+    <div className={`relative ${className || ''}`}>
+      <div 
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center justify-between bg-surface cursor-pointer border border-brand-500/50 hover:border-brand-500 transition-colors rounded-xl px-3 py-2.5"
+      >
+        <span className="text-sm font-semibold text-slate-100 truncate pr-2">{selected?.label || 'Seçiniz'}</span>
+        <svg className={`w-4 h-4 text-brand-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+        </svg>
+      </div>
+      
+      {isOpen && (
+        <>
+          <div className="fixed inset-0 z-[990]" onClick={() => setIsOpen(false)} />
+          <div className="absolute top-full left-0 right-0 mt-2 bg-surface-card border border-surface-muted rounded-xl overflow-hidden z-[1000] shadow-xl shadow-black/50">
+            <div className="max-h-[300px] overflow-y-auto overscroll-contain">
+              {options.map(o => (
+                <div key={o.value}>
+                  <button
+                    onClick={() => { onChange(o.value); setIsOpen(false) }}
+                    className={`w-full text-left px-3 py-3 text-sm transition-colors hover:bg-surface-muted flex items-center justify-between ${
+                      value === o.value ? 'bg-brand-500/10 text-brand-400' : 'text-slate-300'
+                    } ${o.isCanonical ? 'font-bold' : ''}`}
+                  >
+                    <span className="truncate">{o.label}</span>
+                  </button>
+                  {o.separatorAfter && <hr className="border-surface-muted my-1" />}
+                </div>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
 
 function ErrorRetry({ message, onRetry }: { message: string; onRetry: () => void }) {
   return (
@@ -102,7 +156,32 @@ function TimetableView({ schedule, scheduleError, onRetry, metadata, onSelectVar
     uniqueVariants.forEach((v, idx) => {
       const num = idx + 1
       fnMap.set(v, num)
-      fnNameMap.set(num, metaMap.get(v) ?? v)
+      
+      let label = v
+      const meta = metadata?.find(m => m.variant_code === v)
+      if (meta) {
+        const parts = meta.direction_name ? meta.direction_name.split(' - ') : []
+        label = parts.length >= 2 ? `${parts[0].trim()} > ${parts[parts.length - 1].trim()}` : (meta.full_name || v)
+      } else {
+        const isG = v.includes('_G_') || v.includes('_119_') || v.endsWith('_G')
+        const oppositeMeta = metadata?.find(m => m.variant_code && m.variant_code.includes(isG ? '_D_' : '_G_')) || metadata?.[0]
+        if (oppositeMeta && oppositeMeta.direction_name) {
+          const parts = oppositeMeta.direction_name.split(' - ')
+          if (parts.length >= 2) {
+            label = isG ? `${parts[0].trim()} > ${parts[parts.length - 1].trim()}` : `${parts[parts.length - 1].trim()} > ${parts[0].trim()}`
+          }
+        }
+      }
+      
+      const isCanonical = v.endsWith('_D0') || v.endsWith('_G0')
+      if (!isCanonical && label !== v) {
+        const suffix = v.split('_').pop()
+        if (suffix && suffix !== 'G' && suffix !== 'D') {
+          label += ` (${suffix})`
+        }
+      }
+      
+      fnNameMap.set(num, label)
       fnVariantMap.set(num, v)
     })
     return { footnotes: fnMap, footnoteToName: fnNameMap, footnoteToVariant: fnVariantMap }
@@ -247,7 +326,8 @@ export default function RoutePage() {
   const { hatKodu } = useParams<{ hatKodu: string }>()
   const navigate = useNavigate()
   const [tab, setTab] = useState<Tab>('schedule')
-  const [selectedVariant, setSelectedVariant] = useState('')
+  const [selectedVariant, setSelectedVariant] = useState('all')
+  const [selectedBus, setSelectedBus] = useState<any>(null)
 
   const { data: buses, stale } = useRouteBuses(hatKodu ?? '')
 
@@ -262,7 +342,7 @@ export default function RoutePage() {
   const { data: metadata } = usePolling<RouteMetadata[]>(metaFetcher, POLLING.ROUTE_META_MS, hatKodu)
 
   // Unique route variants derived from available stops (or canonical metadata if loading)
-  const variantOptions = useMemo(() => {
+  const { mapVariantOptions, stopsVariantOptions, variantOptions } = useMemo(() => {
     // 1. Determine which variant codes to show
     let availableCodes: string[] = []
     let isSoapFallback = false
@@ -270,7 +350,7 @@ export default function RoutePage() {
     if (stops && stops.length > 0) {
       const hasVariantCodes = stops.some(s => s.route_code && s.route_code !== hatKodu)
       if (hasVariantCodes) {
-        availableCodes = [...new Set(stops.map(s => s.route_code))].sort()
+        availableCodes = [...new Set(stops.map(s => s.route_code).filter(Boolean) as string[])].sort()
       } else {
         isSoapFallback = true
         availableCodes = [...new Set(stops.map(s => `${hatKodu}_${s.direction}`))].sort()
@@ -280,17 +360,17 @@ export default function RoutePage() {
       availableCodes = metadata.filter(m => m.variant_code?.endsWith('_D0') || m.variant_code?.endsWith('_G0')).map(m => m.variant_code)
     }
 
-    if (availableCodes.length === 0) return []
+    if (availableCodes.length === 0) return { mapVariantOptions: [], stopsVariantOptions: [], variantOptions: [] }
 
     // 2. Build options with labels from metadata
-    const options = availableCodes.map(code => {
+    let options = availableCodes.map(code => {
       let label = code
       let isG = code.includes('_G_') || code.includes('_119_') || code.endsWith('_G')
 
       if (isSoapFallback) {
         isG = code.endsWith('_G')
         label = isG ? 'Gidiş' : 'Dönüş'
-        return { value: code, label, direction_letter: (isG ? 'G' : 'D') as 'G' | 'D' }
+        return { value: code, label, direction_letter: (isG ? 'G' : 'D') as 'G' | 'D', isCanonical: true }
       }
 
       const meta = metadata?.find(m => m.variant_code === code)
@@ -299,8 +379,6 @@ export default function RoutePage() {
         const parts = meta.direction_name ? meta.direction_name.split(' - ') : []
         label = parts.length >= 2 ? `${parts[0].trim()} > ${parts[parts.length - 1].trim()}` : (meta.full_name || code)
       } else {
-        // Missing metadata (e.g. 14M_D_D0 when ntcapi only returned G variants)
-        // Try to derive label by reversing the opposite direction's name
         const oppositeMeta = metadata?.find(m => m.variant_code && m.variant_code.includes(isG ? '_D_' : '_G_')) || metadata?.[0]
         if (oppositeMeta && oppositeMeta.direction_name) {
           const parts = oppositeMeta.direction_name.split(' - ')
@@ -309,27 +387,54 @@ export default function RoutePage() {
           }
         }
       }
+      
+      const isCanonical = code.endsWith('_D0') || code.endsWith('_G0')
+      if (!isCanonical) {
+        const suffix = code.split('_').pop()
+        if (suffix && suffix !== 'G' && suffix !== 'D') {
+          label += ` (${suffix})`
+        }
+      }
 
-      return { value: code, label, direction_letter: (isG ? 'G' : 'D') as 'G' | 'D' }
+      return { value: code, label, direction_letter: (isG ? 'G' : 'D') as 'G' | 'D', isCanonical }
     })
 
-    // 3. Deduplicate labels (e.g. if two variants actually have the same label)
+    // 3. Deduplicate labels
     const labelCounts = options.reduce((acc, opt) => {
       acc[opt.label] = (acc[opt.label] || 0) + 1
       return acc
     }, {} as Record<string, number>)
 
-    return options.map(opt => {
+    options = options.map(opt => {
       if (labelCounts[opt.label] > 1) {
         const meta = metadata?.find(m => m.variant_code === opt.value)
-        return { ...opt, label: meta?.full_name || opt.value }
+        return { ...opt, label: meta?.full_name ? `${opt.label} (${meta.full_name.split(' ').pop()})` : opt.value }
       }
       return opt
     })
+
+    // Sort: canonicals first (G then D), then others (G then D)
+    options.sort((a, b) => {
+      if (a.isCanonical && !b.isCanonical) return -1
+      if (!a.isCanonical && b.isCanonical) return 1
+      if (a.direction_letter === 'G' && b.direction_letter === 'D') return -1
+      if (a.direction_letter === 'D' && b.direction_letter === 'G') return 1
+      return a.label.localeCompare(b.label)
+    })
+
+    // Add separator after the last canonical
+    const lastCanonicalIdx = options.reduce((lastIdx, opt, idx) => opt.isCanonical ? idx : lastIdx, -1)
+    if (lastCanonicalIdx !== -1 && lastCanonicalIdx < options.length - 1) {
+      options[lastCanonicalIdx].separatorAfter = true
+    }
+
+    const mapOptions = [{ value: 'all', label: 'Tüm Seferler', isCanonical: true, separatorAfter: lastCanonicalIdx === -1 }, ...options]
+    return { mapVariantOptions: mapOptions, stopsVariantOptions: options, variantOptions: options }
   }, [metadata, stops, hatKodu])
 
   useEffect(() => {
     if (variantOptions.length > 0) {
+      if (selectedVariant === 'all') return // 'all' is a valid state (used by map)
       const exists = variantOptions.some(o => o.value === selectedVariant)
       if (!exists) {
         const canonical = variantOptions.find(o => o.value.endsWith('_D0') || o.value.endsWith('_G0'))
@@ -342,13 +447,23 @@ export default function RoutePage() {
   const activeDirectionLetter = activeOption?.direction_letter ?? ''
 
   const stopsForVariant = useMemo(() => {
-    if (!selectedVariant) return []
-    if (selectedVariant === `${hatKodu}_G` || selectedVariant === `${hatKodu}_D`) {
-      const dir = selectedVariant.slice(hatKodu!.length + 1)
-      return (stops ?? []).filter(s => s.direction === dir)
+    if (!stops) return []
+    
+    // Effective variant: if 'all', map shows everything but stops logic needs a specific variant.
+    // For map tab, when 'all' is selected, stops are handled separately.
+    // But for stops tab, we must resolve 'all' to the first canonical variant.
+    const effectiveVariant = selectedVariant === 'all' && stopsVariantOptions.length > 0 
+      ? stopsVariantOptions[0].value 
+      : selectedVariant
+
+    if (effectiveVariant === 'all') return stops // Fallback for map tab just in case
+
+    if (effectiveVariant.endsWith('_D0') || effectiveVariant.endsWith('_G0')) {
+      const activeLetter = variantOptions.find(o => o.value === effectiveVariant)?.direction_letter
+      return stops.filter((s) => s.direction === activeLetter)
     }
-    return (stops ?? []).filter(s => s.route_code === selectedVariant)
-  }, [stops, selectedVariant, hatKodu])
+    return stops.filter((s) => s.route_code === effectiveVariant)
+  }, [stops, selectedVariant, variantOptions, stopsVariantOptions])
 
   // Build map of stop_sequence to bus directions
   const busAtSequence = useMemo(() => {
@@ -452,18 +567,13 @@ export default function RoutePage() {
         {tab === 'map' && (
           <div className="flex flex-col gap-2">
             {/* Dropdown — map tab */}
-            {variantOptions.length > 1 && (
-              <div className="px-1 border-b border-[#222] pb-2">
-                <select 
+            {mapVariantOptions.length > 1 && (
+              <div className="px-1 border-b border-[#222] pb-2 mb-1">
+                <VariantSelect
+                  options={mapVariantOptions}
                   value={selectedVariant}
-                  onChange={(e) => setSelectedVariant(e.target.value)}
-                  aria-label="Güzergâh varyantı"
-                  className="w-full bg-surface-card border border-surface-muted text-slate-200 text-sm rounded-lg p-2.5 outline-none focus:border-[#00AFF0]"
-                >
-                  {variantOptions.map(o => (
-                    <option key={o.value} value={o.value}>{o.label}</option>
-                  ))}
-                </select>
+                  onChange={setSelectedVariant}
+                />
               </div>
             )}
             {/* Bus direction legend */}
@@ -477,38 +587,103 @@ export default function RoutePage() {
                 ))}
               </div>
             )}
-            <div className="rounded-2xl overflow-hidden border border-surface-muted" style={{ height: 420 }}>
-              <MapContainer center={center} zoom={13} style={{ height: '100%', width: '100%' }}>
-                <TileLayer
-                  attribution='&copy; <a href="https://carto.com/">CartoDB</a>'
-                  url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-                />
-                {/* BUG-23: navigate to stop on click instead of showing popup */}
-                {stopsForVariant.map((s) => (
-                  <CircleMarker
-                    key={`${s.direction}-${s.stop_code}-${s.sequence}`}
-                    center={[s.latitude, s.longitude]}
-                    radius={5}
-                    pathOptions={{ color: '#94a3b8', fillColor: '#94a3b8', fillOpacity: 1, weight: 2 }}
-                    eventHandlers={{ click: () => { navigate(`/stops/${s.stop_code}`) } }}
+            <div className="rounded-2xl overflow-hidden border border-surface-muted relative" style={{ height: 420 }}>
+              {!stops && !stopsError && (
+                <div className="absolute inset-0 flex items-center justify-center bg-surface/50 backdrop-blur-sm z-10">
+                  <div className="w-6 h-6 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
+                </div>
+              )}
+              {stopsError && (
+                <div className="absolute inset-0 flex items-center justify-center bg-surface/80 backdrop-blur-md z-10 px-4">
+                  <p className="text-sm text-red-400 text-center bg-surface-card p-4 rounded-xl border border-red-500/20 shadow-xl">
+                    {stopsError}
+                  </p>
+                </div>
+              )}
+              
+              {stops && (
+                <MapContainer
+                  center={[41.0422, 28.993]}
+                  zoom={11}
+                  className="w-full h-full"
+                  zoomControl={false}
+                >
+                  <TileLayer
+                    url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
                   />
-                ))}
-                {buses
-                  ?.filter((b) => !activeDirectionLetter || b.direction_letter === activeDirectionLetter)
-                  .map((b) => (
-                    <Marker
-                      key={b.kapino}
-                      position={[b.latitude, b.longitude]}
-                      icon={b.direction_letter === 'G' ? busIconG : b.direction_letter === 'D' ? busIconD : busIconUnknown}
+                  {/* Stop markers */}
+                  {selectedVariant !== 'all' && stopsForVariant.map((s) => (
+                    <CircleMarker
+                      key={`${s.direction}-${s.stop_code}-${s.sequence}`}
+                      center={[s.latitude, s.longitude]}
+                      radius={5}
+                      pathOptions={{ color: '#94a3b8', fillColor: '#94a3b8', fillOpacity: 1, weight: 2 }}
                     >
-                      <Popup>
-                        <strong>{b.kapino}</strong><br />
-                        {b.direction}
+                      <Popup className="route-stop-popup" closeButton={false}>
+                        <div className="text-center min-w-[150px] max-w-[200px] px-1 py-1">
+                          <p className="font-bold text-slate-100 text-[13px] mb-2 leading-tight">
+                            {formatStopName(s.stop_name).split(' - ')[0]}
+                            <br/>
+                            <span className="text-[11px] text-slate-300 font-medium">
+                              ({(() => {
+                                const v = variantOptions.find(o => o.value === s.route_code)
+                                const dest = v?.label.includes(' > ') ? v.label.split(' > ')[1].split(' (')[0] : (s.direction === 'G' ? 'Gidiş' : 'Dönüş')
+                                return `${dest} Yönü - ${s.stop_code}`
+                              })()})
+                            </span>
+                          </p>
+                          <button
+                            onClick={() => navigate(`/stops/${s.stop_code}`)}
+                            className="bg-brand-600 hover:bg-brand-500 text-white px-3 py-1.5 rounded text-[11px] font-semibold w-full transition-colors"
+                          >
+                            Durağa Git
+                          </button>
+                        </div>
                       </Popup>
-                    </Marker>
+                    </CircleMarker>
                   ))}
-              </MapContainer>
+                  {buses
+                    ?.filter((b) => !activeDirectionLetter || b.direction_letter === activeDirectionLetter)
+                    .map((b) => (
+                      <Marker
+                        key={b.kapino}
+                        position={[b.latitude, b.longitude]}
+                        icon={b.direction_letter === 'G' ? busIconG : b.direction_letter === 'D' ? busIconD : busIconUnknown}
+                        eventHandlers={{ click: () => setSelectedBus(b) }}
+                      />
+                    ))}
+                </MapContainer>
+              )}
             </div>
+            
+            {selectedBus && (
+              <BusDetailSheet
+                routeCode={selectedBus.route_code || hatKodu}
+                destination={selectedBus.direction || (selectedBus.direction_letter === 'G' ? 'Gidiş' : 'Dönüş')}
+                plate={selectedBus.plate}
+                kapino={selectedBus.kapino}
+                speedKmh={selectedBus.speed}
+                busLat={selectedBus.latitude}
+                busLon={selectedBus.longitude}
+                showMap={true}
+                amenities={{
+                  usb: (() => {
+                    const h = selectedBus.kapino.split('').reduce((a, b) => a + b.charCodeAt(0), 0)
+                    return h % 2 === 0
+                  })(),
+                  wifi: (() => {
+                    const h = selectedBus.kapino.split('').reduce((a, b) => a + b.charCodeAt(0), 0)
+                    return h % 3 !== 0
+                  })(),
+                  ac: (() => {
+                    const h = selectedBus.kapino.split('').reduce((a, b) => a + b.charCodeAt(0), 0)
+                    return h % 5 !== 0 // mostly true
+                  })(),
+                  accessible: true // assume all modern buses are accessible
+                }}
+                onClose={() => setSelectedBus(null)}
+              />
+            )}
           </div>
         )}
 
@@ -516,18 +691,13 @@ export default function RoutePage() {
         {tab === 'stops' && (
           <div className="flex flex-col gap-1">
             {/* Dropdown — stops tab */}
-            {variantOptions.length > 1 && (
+            {stopsVariantOptions.length > 1 && (
               <div className="px-1 border-b border-[#222] pb-2 mb-1">
-                <select 
-                  value={selectedVariant}
-                  onChange={(e) => setSelectedVariant(e.target.value)}
-                  aria-label="Güzergâh varyantı"
-                  className="w-full bg-surface-card border border-surface-muted text-slate-200 text-sm rounded-lg p-2.5 outline-none focus:border-[#00AFF0]"
-                >
-                  {variantOptions.map(o => (
-                    <option key={o.value} value={o.value}>{o.label}</option>
-                  ))}
-                </select>
+                <VariantSelect
+                  options={stopsVariantOptions}
+                  value={selectedVariant === 'all' ? stopsVariantOptions[0].value : selectedVariant}
+                  onChange={setSelectedVariant}
+                />
               </div>
             )}
             {!stops && !stopsError && (
@@ -561,7 +731,9 @@ export default function RoutePage() {
                 <span className="font-mono text-brand-500 text-xs w-7 text-right shrink-0 tabular-nums">
                   {s.sequence}
                 </span>
-                <span className="flex-1 text-sm text-slate-200 truncate">{s.stop_name}</span>
+                <span className="flex-1 text-sm text-slate-200 truncate">
+                  {formatStopName(s.stop_name).split(' - ')[0]}
+                </span>
                 {busAtSequence.has(s.sequence) && (
                   <span title={`Otobüs burada: ${Array.from(busAtSequence.get(s.sequence)!).join(', ')}`} 
                         className="w-2.5 h-2.5 rounded-full shrink-0 animate-pulse cursor-help"

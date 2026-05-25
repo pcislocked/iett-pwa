@@ -4,6 +4,8 @@ import { api, type StopSearchResult, type RouteSearchResult } from '@/api/client
 import { addRecent, getRecent, type RecentSearch } from '@/hooks/useRecentSearches'
 import { useFavorites } from '@/hooks/useFavorites'
 
+import { formatStopName } from '@/utils/formatStopName'
+
 type SearchResult =
   | ({ kind: 'stop' } & StopSearchResult)
   | ({ kind: 'route' } & RouteSearchResult)
@@ -57,8 +59,8 @@ export default function SearchPage() {
         ])
         if (myId !== reqIdRef.current) return   // stale — a newer query is in flight
         const combined: SearchResult[] = [
-          ...stops.map((s) => ({ kind: 'stop' as const, ...s })),
           ...routes.map((r) => ({ kind: 'route' as const, ...r })),
+          ...stops.map((s) => ({ kind: 'stop' as const, ...s })),
         ]
         setResults(combined)
       } catch {
@@ -77,7 +79,7 @@ export default function SearchPage() {
     if (r.kind === 'stop-direct') {
       navigate(`/stops/${r.dcode}`)
     } else if (r.kind === 'stop') {
-      addRecent({ kind: 'stop', code: r.dcode, name: r.name })
+      addRecent({ kind: 'stop', code: r.dcode, name: formatStopName(r.name) })
       navigate(`/stops/${r.dcode}`)
     } else {
       addRecent({ kind: 'route', code: r.hat_kodu, name: r.name })
@@ -155,7 +157,7 @@ export default function SearchPage() {
                       <span className="text-[11px] font-bold px-1.5 py-0.5 rounded bg-brand-900 text-brand-100 font-mono shrink-0">
                         {r.dcode}
                       </span>
-                      <span className="text-sm text-slate-200 flex-1 truncate">{r.name}</span>
+                      <span className="text-sm text-slate-200 flex-1 truncate">{formatStopName(r.name)}</span>
                     </>
                   ) : (
                     <>

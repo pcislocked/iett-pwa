@@ -32,6 +32,13 @@ export default function PinnedStopRow({ dcode, nick, icon = '📌', distLabel, d
   const resolvedDirection = directionProp ?? stopDetail?.direction
   const top4 = arrivals?.slice(0, 4) ?? []
 
+  // Clean up long backend names (e.g., "BOSTANCI KÖPRÜSÜ - Ataşehir - KADIKÖY Yönü")
+  const cleanNick = nick.split(' - ')[0]
+  
+  const displayDir = resolvedDirection
+    ? (resolvedDirection.toLowerCase().endsWith('yönü') ? resolvedDirection : `${resolvedDirection} yönü`)
+    : null
+
   return (
     <button
       onClick={() => navigate(`/stops/${dcode}`)}
@@ -42,7 +49,7 @@ export default function PinnedStopRow({ dcode, nick, icon = '📌', distLabel, d
       {/* Line 1: icon + name + distance + chevron */}
       <div className="flex items-center gap-2.5">
         <span className="text-base shrink-0 leading-none">{icon}</span>
-        <span className="flex-1 text-[13px] font-bold text-white truncate leading-tight">{nick}</span>
+        <span className="flex-1 text-[13px] font-bold text-white truncate leading-tight">{cleanNick}</span>
         {distLabel && (
           <span className="text-[10px] text-slate-600 bg-surface-muted px-1.5 py-0.5 rounded-full shrink-0">
             {distLabel}
@@ -55,9 +62,9 @@ export default function PinnedStopRow({ dcode, nick, icon = '📌', distLabel, d
       </div>
 
       {/* Line 2: direction */}
-      {resolvedDirection ? (
+      {displayDir ? (
         <div className="mt-0.5 pl-[26px]">
-          <span className="text-[10px] text-slate-500">→ {resolvedDirection}</span>
+          <span className="text-[10px] text-slate-500">{displayDir}</span>
         </div>
       ) : !distLabel ? (
         <div className="mt-0.5 pl-[26px]">

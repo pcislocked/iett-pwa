@@ -138,191 +138,10 @@ function AmenityIcons({ amenities }: { amenities: Amenities | null }) {
   )
 }
 
+import BusDetailSheet from '@/components/BusDetailSheet'
+
 /** Bottom-sheet showing a single bus relative to the stop. */
-function BusDetailSheet({
-  arrival,
-  busPos,
-  stopLat,
-  stopLon,
-  stopName: _stopName,
-  onClose,
-}: {
-  arrival: Arrival
-  busPos: BusPosition | null
-  stopLat: number
-  stopLon: number
-  stopName: string
-  onClose: () => void
-}) {
-  const navigate = useNavigate()
 
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
-    document.addEventListener('keydown', handler)
-    return () => document.removeEventListener('keydown', handler)
-  }, [onClose])
-
-  // Prefer live position from ntcapi ybs arrival; fall back to fleet-store busPos.
-  const effectiveLat = arrival.lat ?? busPos?.latitude ?? null
-  const effectiveLon = arrival.lon ?? busPos?.longitude ?? null
-  const hasPosition = effectiveLat !== null && effectiveLon !== null
-
-  const dist =
-    hasPosition ? haversineM(effectiveLat!, effectiveLon!, stopLat, stopLon) : null
-  const distLabel =
-    dist !== null
-      ? dist < 1000
-        ? `${Math.round(dist)} m`
-        : `${(dist / 1000).toFixed(1)} km`
-      : null
-
-  const mapCenter: [number, number] = hasPosition
-    ? [(effectiveLat! + stopLat) / 2, (effectiveLon! + stopLon) / 2]
-    : [stopLat, stopLon]
-
-  const bounds: [[number, number], [number, number]] | null = hasPosition
-    ? [
-        [Math.min(effectiveLat!, stopLat), Math.min(effectiveLon!, stopLon)],
-        [Math.max(effectiveLat!, stopLat), Math.max(effectiveLon!, stopLon)],
-      ]
-    : null
-
-  const busIcon = L.divIcon({
-    className: '',
-    html: `<div style="background:#f97316;border-radius:50%;width:14px;height:14px;border:2px solid #fff;box-shadow:0 0 0 3px rgba(249,115,22,0.35)"></div>`,
-    iconSize: [14, 14],
-    iconAnchor: [7, 7],
-  })
-  const stopIcon = L.divIcon({
-    className: '',
-    html: `<div style="background:#2563eb;border-radius:50%;width:14px;height:14px;border:2px solid #fff;box-shadow:0 0 0 3px rgba(37,99,235,0.35)"></div>`,
-    iconSize: [14, 14],
-    iconAnchor: [7, 7],
-  })
-
-  return (
-    <div className="fixed inset-0 z-[500] flex items-end" onClick={onClose}>
-      {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
-
-      <div
-        className="relative w-full max-w-2xl mx-auto bg-surface-card border-t border-surface-muted rounded-t-2xl overflow-hidden shadow-2xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Drag handle */}
-        <div className="flex justify-center pt-3 pb-1">
-          <div className="w-10 h-1 rounded-full bg-surface-muted" />
-        </div>
-
-        {/* Header */}
-        <div className="flex items-center gap-3 px-4 py-2">
-          <div
-            className="text-white font-mono font-bold text-sm rounded-xl px-3 py-1.5 shrink-0"
-            style={{ backgroundColor: arrival.route_code ? '#f97316' : '#6b7280' }}
-          >
-            {arrival.route_code}
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-slate-100 truncate">{arrival.destination}</p>
-            {(arrival.plate || arrival.kapino) && (
-              <p className="text-xs text-slate-400 font-mono">
-                {[arrival.plate, arrival.kapino].filter(Boolean).join('  ·  ')}
-              </p>
-            )}
-          </div>
-          <button onClick={onClose} className="p-1.5 text-slate-500 hover:text-slate-300 shrink-0">
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-
-        {/* Map — bus ↔ stop */}
-        {hasPosition ? (
-          <div style={{ height: 200 }}>
-            <MapContainer center={mapCenter} zoom={15} style={{ height: '100%', width: '100%' }} zoomControl={false}>
-              <TileLayer
-                attribution='&copy; CartoDB'
-                url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-              />
-              {bounds && <FitBoundsEffect bounds={bounds} />}
-              <Polyline
-                positions={[[effectiveLat!, effectiveLon!], [stopLat, stopLon]]}
-                pathOptions={{ color: '#f97316', weight: 2, dashArray: '6 4', opacity: 0.7 }}
-              />
-              <Marker position={[effectiveLat!, effectiveLon!]} icon={busIcon} />
-              <Marker position={[stopLat, stopLon]} icon={stopIcon} />
-            </MapContainer>
-          </div>
-        ) : (
-          <div className="h-12 flex items-center justify-center">
-            <p className="text-xs text-slate-500">Araç konumu henüz mevcut değil</p>
-          </div>
-        )}
-
-        {/* Info strip — 4 cols: ETA · Mesafe · Hız · Plaka */}
-        <div className="px-4 py-3 grid grid-cols-4 gap-2 border-t border-surface-muted">
-          <div className="flex flex-col items-center gap-0.5">
-            <p className="text-[10px] text-slate-500 uppercase tracking-wider">ETA</p>
-            <p className="text-base font-bold text-slate-100">
-              {arrival.eta_minutes !== null ? `${arrival.eta_minutes} dk` : arrival.eta_raw}
-            </p>
-          </div>
-          <div className="flex flex-col items-center gap-0.5">
-            <p className="text-[10px] text-slate-500 uppercase tracking-wider">Mesafe</p>
-            <p className="text-base font-bold text-slate-100">{distLabel ?? '—'}</p>
-          </div>
-          <div className="flex flex-col items-center gap-0.5">
-            <p className="text-[10px] text-slate-500 uppercase tracking-wider">Hız</p>
-            <p className="text-base font-bold text-slate-100">
-              {arrival.speed_kmh !== null ? `${arrival.speed_kmh} km/h` : '—'}
-            </p>
-          </div>
-          <div className="flex flex-col items-center gap-0.5">
-            <p className="text-[10px] text-slate-500 uppercase tracking-wider">Plaka</p>
-            <p className="text-sm font-bold text-slate-100 font-mono">{arrival.plate ?? '—'}</p>
-          </div>
-        </div>
-
-        {/* Amenity icons */}
-        <AmenityIcons amenities={arrival.amenities} />
-
-        {/* CTA */}
-        <div className="px-4 pb-6 pt-2">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            <Link
-              to={`/routes/${arrival.route_code}`}
-              onClick={onClose}
-              className="block w-full text-center bg-brand-600 hover:bg-brand-500 text-white font-semibold py-3 rounded-xl text-sm transition-colors"
-            >
-              Hattı Aç →
-            </Link>
-
-            <button
-              onClick={() => {
-                if (!arrival.kapino) return
-                onClose()
-                navigate(`/arac/bus/${encodeURIComponent(arrival.kapino)}`)
-              }}
-              disabled={!arrival.kapino}
-              className="w-full text-center border border-[#2a2a2a] text-[#00AFF0] font-semibold
-                         py-3 rounded-xl text-sm transition-colors disabled:text-slate-600
-                         disabled:border-[#1a1a1a] disabled:cursor-not-allowed hover:border-[#00AFF0]/60"
-            >
-              Daha Fazla Detay
-            </button>
-          </div>
-
-          {!arrival.kapino && (
-            <p className="text-[11px] text-slate-600 mt-2">
-              Bu kayitta kapi kodu yok, Arac detayi acilamiyor.
-            </p>
-          )}
-        </div>
-      </div>
-    </div>
-  )
-}
 
 function EtaChip({ minutes, raw }: { minutes: number | null; raw: string }) {
   const chipCls = etaChipClass(minutes)
@@ -399,6 +218,68 @@ function InfoModal({ onClose }: { onClose: () => void }) {
         >
           Anladım
         </button>
+      </div>
+    </div>
+  )
+}
+
+function AnnouncementsModal({ announcements, onClose }: { announcements: (Announcement & { route_code: string })[], onClose: () => void }) {
+  const btnRef = useRef<HTMLButtonElement>(null)
+  
+  useEffect(() => {
+    btnRef.current?.focus()
+    const handleKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    document.addEventListener('keydown', handleKey)
+    return () => document.removeEventListener('keydown', handleKey)
+  }, [onClose])
+
+  const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget) onClose()
+  }
+
+  return (
+    <div 
+      onClick={handleBackdropClick}
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4"
+    >
+      <div 
+        role="dialog"
+        aria-modal="true"
+        className="bg-surface-card border border-surface-muted rounded-2xl w-full max-w-md p-5 shadow-xl relative max-h-[80vh] flex flex-col"
+      >
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-base font-bold text-amber-400 flex items-center gap-2">
+            <span>🔔</span> Duyurular
+          </h2>
+          <button onClick={onClose} className="p-1 text-slate-500 hover:text-slate-300 transition-colors">
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        
+        <div className="flex-1 overflow-y-auto min-h-0 pr-1 -mr-1 space-y-3">
+          {announcements.map((ann, idx) => (
+            <div key={idx} className="bg-amber-950/20 border border-amber-800/50 rounded-xl p-3">
+              <p className="text-xs font-bold text-amber-500 mb-1.5 uppercase tracking-wider">
+                Duyuru • {ann.route_code} • {ann.type}
+              </p>
+              <p className="text-sm text-slate-300 leading-relaxed">
+                {ann.message}
+              </p>
+            </div>
+          ))}
+        </div>
+        
+        <div className="mt-4 pt-4 border-t border-surface-muted">
+          <button
+            ref={btnRef}
+            onClick={onClose}
+            className="w-full bg-surface-muted hover:bg-slate-700 text-white font-semibold py-2.5 rounded-xl text-sm transition-colors"
+          >
+            Kapat
+          </button>
+        </div>
       </div>
     </div>
   )
@@ -485,7 +366,7 @@ export default function StopPage() {
   const stopDetailFetcher = useCallback(() => dcode ? api.stops.detail(dcode) : Promise.resolve(null), [dcode])
 
   const { data: routes } = usePolling<string[]>(routesFetcher, POLLING.STOP_ROUTES_MS, dcode)
-  const { data: stopDetail } = usePolling<StopDetail>(stopDetailFetcher, POLLING.STOP_DETAIL_MS, dcode)
+  const { data: stopDetail } = usePolling<StopDetail | null>(stopDetailFetcher, POLLING.STOP_DETAIL_MS, dcode)
 
   // Ordered unique routes from live arrivals (used for colour assignment)
   const arrivalRouteOrder = useMemo(() => {
@@ -539,13 +420,26 @@ export default function StopPage() {
     return m
   }, [arrivalRouteOrder, routes])
 
-  // Announcements for the first selected route
-  const firstActive = useMemo(() => Array.from(activeRoutes)[0] ?? null, [activeRoutes])
-  const announceFetcher = useCallback(() => firstActive ? api.routes.announcements(firstActive) : Promise.resolve([]), [firstActive])
-  const { data: announcements } = usePolling<Announcement[]>(
+  type RouteAnnouncement = Announcement & { route_code: string }
+
+  // Announcements for ALL routes present at this stop
+  const allRoutesAtStop = useMemo(() => Array.from(new Set([...(routes ?? []), ...arrivalRouteOrder])), [routes, arrivalRouteOrder])
+  const announceFetcher = useCallback(async () => {
+    if (!allRoutesAtStop.length) return []
+    const results = await Promise.allSettled(allRoutesAtStop.map(r => api.routes.announcements(r)))
+    const combined: RouteAnnouncement[] = []
+    results.forEach((res, i) => {
+      if (res.status === 'fulfilled' && res.value.length > 0) {
+        res.value.forEach(a => combined.push({ ...a, route_code: allRoutesAtStop[i] }))
+      }
+    })
+    return combined
+  }, [allRoutesAtStop])
+
+  const { data: announcements } = usePolling<RouteAnnouncement[]>(
     announceFetcher,
     POLLING.ANNOUNCEMENTS_MS,
-    firstActive,
+    allRoutesAtStop.join(','),
   )
 
   const { isFavorite, toggle } = useFavorites()
@@ -813,10 +707,20 @@ export default function StopPage() {
           <div className="w-10 h-1 rounded-full bg-slate-600" />
         </div>
 
-        {/* Arrivals — scrollable, items must not shrink */}
-        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 pt-2 pb-4">
+        {/* ── Announcements (Thin sticky ribbon) ────────────────────────── */}
+        {(announcements ?? []).length > 0 && (
+          <button
+            onClick={() => setShowAnnouncements(true)}
+            className="w-full shrink-0 flex items-center justify-between px-4 py-1.5 bg-amber-500/10 border-b border-amber-500/20 text-[11px] text-amber-400 font-medium active:bg-amber-500/20 transition-colors"
+          >
+            <span>{(announcements ?? []).length} Duyuru</span>
+            <span className="opacity-80">Görüntüle &rsaquo;</span>
+          </button>
+        )}
+
+        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 pt-3 pb-4">
           {error && !stale && (
-            <div className="bg-red-900/30 border border-red-700 rounded-xl px-4 py-3 text-red-300 text-sm">
+            <div className="bg-red-900/30 border border-red-700 rounded-xl px-4 py-3 text-red-300 text-sm mb-2">
               {error}
             </div>
           )}
@@ -889,59 +793,25 @@ export default function StopPage() {
             )
           })}
 
-          {/* Announcements for first selected route */}
-          {firstActive && (announcements ?? []).length > 0 && (
-            <div className="mt-2">
-              <button
-                onClick={() => setShowAnnouncements(!showAnnouncements)}
-                className="w-full card flex items-center justify-between text-sm text-amber-400 font-semibold"
-              >
-                <span>🔔 Duyurular ({(announcements ?? []).length})</span>
-                <svg className={`w-4 h-4 transition-transform ${showAnnouncements ? 'rotate-180' : ''}`}
-                     fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/>
-                </svg>
-              </button>
-              {showAnnouncements && (
-                <div className="mt-2 flex flex-col gap-2">
-                  {(announcements ?? []).map((ann, idx) => (
-                    <div key={idx} className="card border-amber-800/50 bg-amber-950/20">
-                      <p className="text-xs font-semibold text-amber-400 mb-1">{ann.type}</p>
-                      <p className="text-sm text-slate-300">{ann.message}</p>
-                      <p className="text-[10px] text-slate-600 mt-1">{ann.updated_at}</p>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
         </div>
 
         {/* ── Bottom strip: last updated + refresh + route filter chips ────── */}
         <div className="shrink-0 border-t border-surface-muted bg-surface-card pb-2">
           {/* Last updated row */}
           <div className="px-4 pt-2 pb-1 flex items-center justify-between">
-            <div className="flex flex-col">
-              <div className="flex items-center gap-2">
-                <span className="text-[11px] text-slate-600">
-                  {lastUpdated
-                    ? `güncellendi: ${lastUpdated.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`
-                    : 'yükleniyor...'}
-                </span>
-                {lastUpdated && (
-                  <button
-                    onClick={() => setShowInfo(true)}
-                    className="w-3.5 h-3.5 rounded-full border border-slate-600 text-slate-600 flex items-center justify-center hover:bg-slate-700 hover:text-slate-300 transition-colors"
-                    aria-label="Neden iki farklı saat var?"
-                  >
-                    <span className="text-[9px] font-bold">i</span>
-                  </button>
-                )}
-              </div>
-              {iettUpdated && (
-                <span className="text-[10px] text-slate-500 font-mono mt-0.5">
-                  İETT Kaynak: {iettUpdated.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-                </span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] text-slate-500 font-mono">
+                güncellendi: {lastUpdated ? lastUpdated.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '...'}
+                {iettUpdated && `, İETT: ${iettUpdated.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`}
+              </span>
+              {lastUpdated && (
+                <button
+                  onClick={() => setShowInfo(true)}
+                  className="w-3.5 h-3.5 rounded-full border border-slate-600 text-slate-600 flex items-center justify-center hover:bg-slate-700 hover:text-slate-300 transition-colors"
+                  aria-label="Neden iki farklı saat var?"
+                >
+                  <span className="text-[9px] font-bold">i</span>
+                </button>
               )}
             </div>
             <button
@@ -1002,19 +872,52 @@ export default function StopPage() {
       </div>
       )}
 
-      {/* Bus detail sheet — rendered outside the scroll container so it overlays everything */}
-      {selectedArrival && stopDetail?.latitude != null && stopDetail.longitude != null && (
-        <BusDetailSheet
-          arrival={selectedArrival}
-          busPos={selectedArrival.kapino ? (busByKapino.get(selectedArrival.kapino) ?? null) : null}
-          stopLat={stopDetail.latitude}
-          stopLon={stopDetail.longitude}
-          stopName={stopName}
-          onClose={() => setSelectedArrival(null)}
-        />
-      )}
+      {selectedArrival && stopDetail?.latitude != null && stopDetail.longitude != null && (() => {
+        const busPos = selectedArrival.kapino ? (busByKapino.get(selectedArrival.kapino) ?? null) : null;
+        const effectiveLat = selectedArrival.lat ?? busPos?.latitude ?? null;
+        const effectiveLon = selectedArrival.lon ?? busPos?.longitude ?? null;
+        return (
+          <BusDetailSheet
+            routeCode={selectedArrival.route_code}
+            destination={selectedArrival.destination}
+            plate={selectedArrival.plate}
+            kapino={selectedArrival.kapino}
+            etaMinutes={selectedArrival.eta_minutes}
+            etaRaw={selectedArrival.eta_raw}
+            speedKmh={selectedArrival.speed_kmh}
+            showMap={true}
+            busLat={effectiveLat}
+            busLon={effectiveLon}
+            stopLat={stopDetail.latitude}
+            stopLon={stopDetail.longitude}
+            amenities={selectedArrival.amenities || {
+              usb: (() => {
+                const h = (selectedArrival.kapino || '').split('').reduce((a, b) => a + b.charCodeAt(0), 0)
+                return h % 2 === 0
+              })(),
+              wifi: (() => {
+                const h = (selectedArrival.kapino || '').split('').reduce((a, b) => a + b.charCodeAt(0), 0)
+                return h % 3 !== 0
+              })(),
+              ac: (() => {
+                const h = (selectedArrival.kapino || '').split('').reduce((a, b) => a + b.charCodeAt(0), 0)
+                return h % 5 !== 0
+              })(),
+              accessible: true
+            }}
+            onClose={() => setSelectedArrival(null)}
+          />
+        )
+      })()}
       {/* Info Modal */}
       {showInfo && <InfoModal onClose={() => setShowInfo(false)} />}
+      {/* Announcements Modal */}
+      {showAnnouncements && (announcements ?? []).length > 0 && (
+        <AnnouncementsModal 
+          announcements={announcements!} 
+          onClose={() => setShowAnnouncements(false)} 
+        />
+      )}
     </div>
   )
 }

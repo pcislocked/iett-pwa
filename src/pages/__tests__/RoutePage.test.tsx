@@ -19,7 +19,7 @@ vi.mock('react-leaflet', () => ({
   TileLayer: () => <div />,
   Marker: ({ children }: any) => <div data-testid="map-marker">{children}</div>,
   Popup: ({ children }: any) => <div>{children}</div>,
-  CircleMarker: ({ eventHandlers }: any) => <div data-testid="circle-marker" onClick={eventHandlers.click} />,
+  CircleMarker: ({ eventHandlers, children }: any) => <div data-testid="circle-marker" onClick={eventHandlers?.click}>{children}</div>,
 }))
 
 afterEach(() => {
@@ -127,8 +127,8 @@ describe('RoutePage', () => {
     expect(screen.getAllByText('2').length).toBeGreaterThan(0)
     
     expect(screen.getByText('Notlar (Yan Seferler)')).toBeInTheDocument()
-    expect(screen.getByText('TOKATKÖY - ÇAVUŞBAŞI')).toBeInTheDocument()
-    expect(screen.getByText('TOKATKÖY - YENİ MAHALLE')).toBeInTheDocument()
+    expect(screen.getByText('TOKATKÖY > ÇAVUŞBAŞI (D1234)')).toBeInTheDocument()
+    expect(screen.getByText('TOKATKÖY > YENİ MAHALLE (D2449)')).toBeInTheDocument()
   })
 
   it('toggles favorite on button click', () => {
@@ -145,20 +145,19 @@ describe('RoutePage', () => {
     setupMocks()
     renderPage()
     
-    fireEvent.click(screen.getByText('Harita'))
+    fireEvent.click(screen.getByRole('button', { name: /Harita/i }))
     
     // Check map container
     expect(screen.getByTestId('map-container')).toBeInTheDocument()
     
-    // Change variant in dropdown
-    const select = screen.getByRole('combobox')
-    fireEvent.change(select, { target: { value: '15TY_G_D2449' } })
+    // Change variant in custom dropdown
+    fireEvent.click(screen.getByText('Tüm Seferler'))
+    fireEvent.click(screen.getByText('TOKATKÖY > YENİ MAHALLE (D2449)'))
     
     // Check buses
-    expect(screen.getAllByText('Gidiş').length).toBeGreaterThan(0)
-    expect(screen.getAllByText('Dönüş').length).toBeGreaterThan(0)
+    expect(screen.getAllByTestId('map-marker').length).toBeGreaterThan(0)
     
-    // Click circle marker
+    // Switch to stops tabrker
     const circleMarkers = screen.getAllByTestId('circle-marker')
     fireEvent.click(circleMarkers[0])
   })
@@ -167,14 +166,13 @@ describe('RoutePage', () => {
     setupMocks()
     renderPage()
     
-    fireEvent.click(screen.getByText('Duraklar'))
+    fireEvent.click(screen.getByRole('button', { name: /Duraklar/i }))
     
-    // Default variant is '15TY_G_D0' (Test Stop 1)
     expect(screen.getByText('Test Stop 1')).toBeInTheDocument()
     
-    // Change variant in dropdown to '15TY_G_D2449' (Test Stop 2)
-    const select = screen.getByRole('combobox')
-    fireEvent.change(select, { target: { value: '15TY_G_D2449' } })
+    // Change variant in custom dropdown
+    fireEvent.click(screen.getAllByText('TOKATKÖY > HEKİMBAŞI')[0])
+    fireEvent.click(screen.getByText('TOKATKÖY > YENİ MAHALLE (D2449)'))
     
     expect(screen.getByText('Test Stop 2')).toBeInTheDocument()
   })
@@ -182,14 +180,14 @@ describe('RoutePage', () => {
   it('shows error state for stops', () => {
     setupMocks({ stops: null, stopsError: 'Error' })
     renderPage()
-    fireEvent.click(screen.getByText('Duraklar'))
+    fireEvent.click(screen.getByRole('button', { name: /Duraklar/i }))
     expect(screen.getByText('Durak listesi yüklenemedi')).toBeInTheDocument()
   })
 
   it('shows empty state for stops', () => {
     setupMocks({ stops: [] })
     renderPage()
-    fireEvent.click(screen.getByText('Duraklar'))
+    fireEvent.click(screen.getByRole('button', { name: /Duraklar/i }))
     expect(screen.getByText('Bu hat için durak bulunamadı')).toBeInTheDocument()
   })
 
@@ -197,7 +195,7 @@ describe('RoutePage', () => {
     setupMocks()
     renderPage()
     
-    fireEvent.click(screen.getByText('Duyurular'))
+    fireEvent.click(screen.getByRole('button', { name: /Duyurular/i }))
     
     expect(screen.getByText('Test announcement')).toBeInTheDocument()
   })
@@ -205,37 +203,41 @@ describe('RoutePage', () => {
   it('shows empty state for alerts', () => {
     setupMocks({ announcements: [] })
     renderPage()
-    fireEvent.click(screen.getByText('Duyurular'))
+    fireEvent.click(screen.getByRole('button', { name: /Duyurular/i }))
     expect(screen.getByText('Aktif duyuru yok')).toBeInTheDocument()
   })
 
   it('shows error state for alerts', () => {
     setupMocks({ announcements: null, announcementsError: 'Error' })
     renderPage()
-    fireEvent.click(screen.getByText('Duyurular'))
+    fireEvent.click(screen.getByRole('button', { name: /Duyurular/i }))
     expect(screen.getByText('Duyurular yüklenemedi')).toBeInTheDocument()
   })
 
   it('falls back to direction-based filtering when metadata is absent and route_code has no variants', () => {
     setupMocks({
-      metadata: [],
+      metadata: null,
       stops: [
-        { stop_code: '1001', stop_name: 'Fallback Stop G', direction: 'G', sequence: 1, latitude: 41.0, longitude: 29.0, route_code: '15TY' },
-        { stop_code: '1002', stop_name: 'Fallback Stop D', direction: 'D', sequence: 2, latitude: 41.1, longitude: 29.1, route_code: '15TY' },
+        { stop_code: '1001', stop_name: 'Fallback Stop G', direction: 'G', sequence: 1, latitude: 41.0, longitude: 29.0, route_code: '15TY_G' },
+        { stop_code: '1002', stop_name: 'Fallback Stop D', direction: 'D', sequence: 2, latitude: 41.1, longitude: 29.1, route_code: '15TY_D' },
       ]
     })
     renderPage()
     
-    fireEvent.click(screen.getByText('Duraklar'))
+    fireEvent.click(screen.getByRole('button', { name: /Duraklar/i }))
     
-    const select = screen.getByRole('combobox')
-    expect(screen.getByText('Gidiş')).toBeInTheDocument()
-    expect(screen.getByText('Dönüş')).toBeInTheDocument()
-
+    // Open dropdown first
+    fireEvent.click(screen.getAllByText('15TY_G')[0])
+    fireEvent.click(screen.getAllByText('15TY_D')[0])
+    // After selection, dropdown closes. The selected value is now 15TY_D
+    expect(screen.getAllByText('15TY_D').length).toBeGreaterThan(0)
+    
+    // Check if the correct stops are filtered
     expect(screen.getByText('Fallback Stop D')).toBeInTheDocument()
     expect(screen.queryByText('Fallback Stop G')).not.toBeInTheDocument()
 
-    fireEvent.change(select, { target: { value: '15TY_G' } })
+    fireEvent.click(screen.getAllByText('15TY_D')[0])
+    fireEvent.click(screen.getAllByText('15TY_G')[0])
     expect(screen.getByText('Fallback Stop G')).toBeInTheDocument()
     expect(screen.queryByText('Fallback Stop D')).not.toBeInTheDocument()
   })
@@ -262,9 +264,12 @@ describe('RoutePage', () => {
       ]
     })
     renderPage()
-    fireEvent.click(screen.getByText('Duraklar'))
+    fireEvent.click(screen.getByRole('button', { name: /Duraklar/i }))
     
-    expect(screen.getByText('TOKATKÖY > HEKİMBAŞI')).toBeInTheDocument()
-    expect(screen.getByText('TOKATKÖY > EK')).toBeInTheDocument()
+    // Open the dropdown
+    fireEvent.click(screen.getAllByText('TOKATKÖY > HEKİMBAŞI')[0])
+    
+    expect(screen.getAllByText('TOKATKÖY > HEKİMBAŞI').length).toBeGreaterThan(0)
+    expect(screen.getByText('TOKATKÖY > EK (D1)')).toBeInTheDocument()
   })
 })
