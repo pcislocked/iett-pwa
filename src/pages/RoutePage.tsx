@@ -100,26 +100,53 @@ function ErrorRetry({ message, onRetry }: { message: string; onRetry: () => void
   )
 }
 
-function TimetableView({ schedule, scheduleError, onRetry, metadata, onSelectVariant }: {
+function TimetableView({ schedule, scheduleError, onRetry, metadata, onSelectVariant, stops, hatKodu }: {
   schedule: ScheduledDeparture[] | null
   scheduleError: string | null
   onRetry: () => void
   metadata: RouteMetadata[] | null
   onSelectVariant?: (variant: string) => void
+  stops?: RouteStop[] | null
+  hatKodu?: string
 }) {
   const [dayType, setDayType] = useState('H')
   const [direction, setDirection] = useState('')
 
-  // Map direction code ('D'/'G') → departure label (KALKIŞ)
+  // Map direction code ('D'/'G') → departure label (KALKIŞ / YÖNÜ)
   const dirLabel = useMemo(() => {
     const hasMetadata = !!metadata?.length
     return (code: string) => {
+      if (stops && stops.length > 0) {
+        const dirStops = stops.filter(s => s.direction === code)
+        if (dirStops.length > 0) {
+          const variantsInDir = Array.from(new Set(dirStops.map(s => s.route_code)))
+          const firstStops = new Set<string>()
+          const lastStops = new Set<string>()
+          
+          for (const v of variantsInDir) {
+            const vStops = dirStops.filter(s => s.route_code === v)
+            if (vStops.length > 0) {
+              firstStops.add(formatStopName(vStops[0].stop_name).split(' - ')[0])
+              lastStops.add(formatStopName(vStops[vStops.length - 1].stop_name).split(' - ')[0])
+            }
+          }
+          
+          if (firstStops.size === 1) {
+            return `${Array.from(firstStops)[0]} KALKIŞ`
+          } else if (lastStops.size === 1) {
+            return `${Array.from(lastStops)[0]} YÖNÜ`
+          } else if (firstStops.size > 1) {
+            return `ÇEŞİTLİ KALKIŞLAR (${code === 'G' ? 'Gidiş' : 'Dönüş'})`
+          }
+        }
+      }
+
       const baseLabel = getDirectionLabel(code, metadata, hasMetadata)
       return baseLabel !== code && baseLabel !== 'Gidiş' && baseLabel !== 'Dönüş'
         ? `${baseLabel} KALKIŞ`
         : baseLabel === 'Gidiş' ? 'Gidiş' : baseLabel === 'Dönüş' ? 'Dönüş' : code
     }
-  }, [metadata])
+  }, [metadata, stops])
 
   // Directions available for the current day type
   const availableDirections = useMemo(() => {
@@ -158,17 +185,31 @@ function TimetableView({ schedule, scheduleError, onRetry, metadata, onSelectVar
       fnMap.set(v, num)
       
       let label = v
-      const meta = metadata?.find(m => m.variant_code === v)
-      if (meta) {
-        const parts = meta.direction_name ? meta.direction_name.split(' - ') : []
-        label = parts.length >= 2 ? `${parts[0].trim()} > ${parts[parts.length - 1].trim()}` : (meta.full_name || v)
+
+      // 1. Try to derive from physical stops
+      let stopsLabel = ''
+      const variantStops = stops?.filter(s => s.route_code === v || (!metadata?.length && `${hatKodu}_${s.direction}` === v))
+      if (variantStops && variantStops.length > 1) {
+        const first = formatStopName(variantStops[0].stop_name).split(' - ')[0]
+        const last = formatStopName(variantStops[variantStops.length - 1].stop_name).split(' - ')[0]
+        stopsLabel = `${first} > ${last}`
+      }
+
+      if (stopsLabel) {
+        label = stopsLabel
       } else {
-        const isG = v.includes('_G_') || v.includes('_119_') || v.endsWith('_G')
-        const oppositeMeta = metadata?.find(m => m.variant_code && m.variant_code.includes(isG ? '_D_' : '_G_')) || metadata?.[0]
-        if (oppositeMeta && oppositeMeta.direction_name) {
-          const parts = oppositeMeta.direction_name.split(' - ')
-          if (parts.length >= 2) {
-            label = isG ? `${parts[0].trim()} > ${parts[parts.length - 1].trim()}` : `${parts[parts.length - 1].trim()} > ${parts[0].trim()}`
+        const meta = metadata?.find(m => m.variant_code === v)
+        if (meta) {
+          const parts = meta.direction_name ? meta.direction_name.split(' - ') : []
+          label = parts.length >= 2 ? `${parts[0].trim()} > ${parts[parts.length - 1].trim()}` : (meta.full_name || v)
+        } else {
+          const isG = v.includes('_G_') || v.includes('_119_') || v.endsWith('_G')
+          const oppositeMeta = metadata?.find(m => m.variant_code && m.variant_code.includes(isG ? '_D_' : '_G_')) || metadata?.[0]
+          if (oppositeMeta && oppositeMeta.direction_name) {
+            const parts = oppositeMeta.direction_name.split(' - ')
+            if (parts.length >= 2) {
+              label = isG ? `${parts[0].trim()} > ${parts[parts.length - 1].trim()}` : `${parts[parts.length - 1].trim()} > ${parts[0].trim()}`
+            }
           }
         }
       }
@@ -185,7 +226,7 @@ function TimetableView({ schedule, scheduleError, onRetry, metadata, onSelectVar
       fnVariantMap.set(num, v)
     })
     return { footnotes: fnMap, footnoteToName: fnNameMap, footnoteToVariant: fnVariantMap }
-  }, [schedule, dayType, effectiveDirection, metadata])
+  }, [schedule, dayType, effectiveDirection, metadata, stops, hatKodu])
 
   // Group filtered departures by hour
   const hourMap = useMemo(() => {
@@ -205,6 +246,56 @@ function TimetableView({ schedule, scheduleError, onRetry, metadata, onSelectVar
 
   const hours = Array.from(hourMap.keys()).sort((a, b) => a - b)
 
+  const [showWarningDetail, setShowWarningDetail] = useState(false)
+
+  // Warning for mismatched metadata or multiple origin stations
+  const directionWarning = useMemo(() => {
+    if (!stops || stops.length === 0 || !effectiveDirection) return null
+
+    const dirStops = stops.filter(s => s.direction === effectiveDirection)
+    if (dirStops.length === 0) return null
+
+    const variantsInDir = Array.from(new Set(dirStops.map(s => s.route_code)))
+    const firstStops = new Set<string>()
+    for (const v of variantsInDir) {
+      const vStops = dirStops.filter(s => s.route_code === v)
+      if (vStops.length > 0) {
+        firstStops.add(formatStopName(vStops[0].stop_name).split(' - ')[0])
+      }
+    }
+
+    if (firstStops.size > 1) {
+      return {
+        type: 'multiple',
+        text: 'Birden fazla kalkış istasyonu',
+        detail: 'Bu yönde farklı istasyonlardan kalkan alternatif güzergahlar mevcut. Sistemimiz alternatif güzergahları analiz edip aşağıda listelese de, karmaşık resmi veri için IETT web sitesine bakmanız önerilir.'
+      }
+    }
+
+    // Check mismatch for single starting point
+    const actualFirstStop = Array.from(firstStops)[0]
+    if (actualFirstStop) {
+      const hasMetadata = !!metadata?.length
+      const metaLabel = getDirectionLabel(effectiveDirection, metadata, hasMetadata)
+      
+      if (metaLabel && metaLabel !== effectiveDirection && metaLabel !== 'Gidiş' && metaLabel !== 'Dönüş') {
+        const isMatch = actualFirstStop.includes(metaLabel) || metaLabel.includes(actualFirstStop) || 
+                        actualFirstStop.split(' ').some(w => w.length > 3 && metaLabel.includes(w)) ||
+                        metaLabel.split(' ').some(w => w.length > 3 && actualFirstStop.includes(w))
+
+        if (!isMatch) {
+          return {
+            type: 'mismatch',
+            text: 'Kalkış istasyonları eşleşmiyor',
+            detail: `IETT verisinde yön "${metaLabel}" olarak geçmesine rağmen, fiziksel durak "${actualFirstStop}" durağından başlıyor. Uygulamamız doğru fiziksel durakları baz alsa da, resmi veri için IETT'ye güvenmeniz önerilir.`
+          }
+        }
+      }
+    }
+
+    return null
+  }, [stops, effectiveDirection, metadata])
+
   // Check which day types have data
   const availableDays = useMemo(() => {
     if (!schedule) return new Set<string>()
@@ -213,9 +304,11 @@ function TimetableView({ schedule, scheduleError, onRetry, metadata, onSelectVar
 
   /* ── Metro-style day type selector ── */
   return (
-    <div className="flex flex-col gap-4">
-      {/* Day type selector */}
-      <div className="flex border-b border-[#222]">
+    <div className="flex flex-col h-full min-h-0 px-4">
+      {/* Static Sub-filters container */}
+      <div className="sticky top-0 shrink-0 flex flex-col bg-[#0a0a0a] z-20 pb-2 pt-4 -mx-4 px-4 border-b border-[#222]">
+        {/* Day type selector */}
+        <div className="flex border-b border-[#222]">
         {DAY_TYPES.map(({ key, label }) => (
           <button
             key={key}
@@ -230,11 +323,11 @@ function TimetableView({ schedule, scheduleError, onRetry, metadata, onSelectVar
             {label}
           </button>
         ))}
-      </div>
+        </div>
 
-      {/* Direction pill toggle — flat Metro style */}
-      {availableDirections.length > 1 && (
-        <div className="flex gap-0 border-b border-[#222]">
+        {/* Direction pill toggle — flat Metro style */}
+        {availableDirections.length > 1 && (
+          <div className="flex gap-0 border-t border-[#222] mt-2 pt-1">
           {availableDirections.map((dir) => (
             <button
               key={dir}
@@ -248,11 +341,37 @@ function TimetableView({ schedule, scheduleError, onRetry, metadata, onSelectVar
               {dirLabel(dir)}
             </button>
           ))}
+          </div>
+        )}
+
+        {/* Info warning for mismatches or multiple terminals */}
+        {directionWarning && (
+          <div className="px-1 mt-3">
+          <div className="flex items-center gap-1.5 text-xs text-brand-400 bg-brand-500/10 px-2.5 py-1.5 rounded-lg w-fit">
+            <span className="truncate">{directionWarning.text}</span>
+            <button 
+              onClick={() => setShowWarningDetail(!showWarningDetail)}
+              className="p-1 hover:bg-brand-500/20 rounded-full shrink-0 transition-colors"
+              title="Detay"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </button>
+          </div>
+          {showWarningDetail && (
+            <div className="mt-2 text-[11px] text-brand-100/70 bg-brand-500/5 p-2.5 rounded-lg border border-brand-500/10 leading-relaxed">
+              {directionWarning.detail}
+            </div>
+          )}
         </div>
       )}
+      </div>
 
-      {/* Hour grid */}
-      {!schedule && !scheduleError && (
+      {/* Scrollable Content Container */}
+      <div className="flex-1 overflow-y-auto no-scrollbar pb-6 pt-2">
+        {/* Hour grid */}
+        {!schedule && !scheduleError && (
         <div className="flex flex-col gap-2">
           {[...Array(5)].map((_, i) => (
             <div key={i} className="h-12 bg-surface-muted rounded-xl animate-pulse" />
@@ -302,25 +421,65 @@ function TimetableView({ schedule, scheduleError, onRetry, metadata, onSelectVar
         </div>
       ))}
 
-      {/* Legend (Notlar) */}
-      {footnoteToName.size > 0 && (
-        <div className="mt-4 p-3 bg-surface-card border border-surface-muted rounded-xl">
-          <h4 className="text-xs font-bold text-slate-400 mb-2 uppercase tracking-wider">Notlar (Yan Seferler)</h4>
-          <ul className="flex flex-col gap-1.5">
-            {Array.from(footnoteToName.entries()).map(([num, name]) => (
-              <li key={num} className="text-xs text-slate-300 flex items-start gap-2">
-                <span className="text-[#00AFF0] font-bold shrink-0">{num}:</span>
-                <span>{name}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+        {/* Legend (Notlar) */}
+        {footnoteToName.size > 0 && (
+          <div className="mt-4 p-3 bg-surface-card border border-surface-muted rounded-xl">
+            <h4 className="text-xs font-bold text-slate-400 mb-2 uppercase tracking-wider">Notlar (Yan Seferler)</h4>
+            <ul className="flex flex-col gap-1.5">
+              {Array.from(footnoteToName.entries()).map(([num, name]) => {
+                const variantCode = footnoteToVariant.get(num)
+                return (
+                  <li key={num}>
+                    <button 
+                      onClick={() => variantCode && onSelectVariant?.(variantCode)}
+                      className="text-xs text-slate-300 flex items-start gap-2 text-left hover:text-brand-300 transition-colors w-full group"
+                    >
+                      <span className="text-[#00AFF0] font-bold shrink-0 group-hover:underline">{num}:</span>
+                      <span className="group-hover:underline">{name}</span>
+                    </button>
+                  </li>
+                )
+              })}
+            </ul>
+          </div>
+        )}
+      </div>
     </div>
   )
 }
 
 type Tab = 'schedule' | 'map' | 'stops' | 'alerts'
+
+function StopPopupContent({ s }: { s: RouteStop }) {
+  const navigate = useNavigate()
+  const [direction, setDirection] = useState(s.stop_direction)
+
+  useEffect(() => {
+    if (!s.stop_direction) {
+      api.stops.detail(s.stop_code).then(res => {
+        if (res.direction) setDirection(res.direction)
+      }).catch(() => {})
+    }
+  }, [s.stop_code, s.stop_direction])
+
+  return (
+    <div className="text-center min-w-[150px] max-w-[200px] px-1 py-1">
+      <p className="font-bold text-slate-100 text-[13px] mb-2 leading-tight">
+        {formatStopName(s.stop_name).split(' - ')[0]}
+        <br/>
+        <span className="text-[11px] text-slate-300 font-medium">
+          {direction ? `(${direction} Yönü - ${s.stop_code})` : `(#${s.stop_code})`}
+        </span>
+      </p>
+      <button
+        onClick={() => navigate(`/stops/${s.stop_code}`)}
+        className="bg-brand-600 hover:bg-brand-500 text-white px-3 py-1.5 rounded text-[11px] font-semibold w-full transition-colors"
+      >
+        Durağa Git
+      </button>
+    </div>
+  )
+}
 
 export default function RoutePage() {
   const { hatKodu } = useParams<{ hatKodu: string }>()
@@ -362,20 +521,35 @@ export default function RoutePage() {
 
     if (availableCodes.length === 0) return { mapVariantOptions: [], stopsVariantOptions: [], variantOptions: [] }
 
-    // 2. Build options with labels from metadata
+    // 2. Build options with labels from metadata and actual stops
     let options = availableCodes.map(code => {
       let label = code
       let isG = code.includes('_G_') || code.includes('_119_') || code.endsWith('_G')
 
+      // 2a. Derive physical true label from actual stops
+      let stopsLabel = ''
+      const variantStops = stops?.filter(s => s.route_code === code || (isSoapFallback && `${hatKodu}_${s.direction}` === code))
+      if (variantStops && variantStops.length > 1) {
+        const first = formatStopName(variantStops[0].stop_name).split(' - ')[0]
+        const last = formatStopName(variantStops[variantStops.length - 1].stop_name).split(' - ')[0]
+        stopsLabel = `${first} > ${last}`
+      }
+
       if (isSoapFallback) {
         isG = code.endsWith('_G')
-        label = isG ? 'Gidiş' : 'Dönüş'
+        label = stopsLabel || (isG ? 'Gidiş' : 'Dönüş')
         return { value: code, label, direction_letter: (isG ? 'G' : 'D') as 'G' | 'D', isCanonical: true }
       }
 
       const meta = metadata?.find(m => m.variant_code === code)
       if (meta) {
         isG = (meta.direction === 0 || meta.direction === 119)
+      }
+      
+      // Use physical stops label if available, otherwise fallback to metadata
+      if (stopsLabel) {
+        label = stopsLabel
+      } else if (meta) {
         const parts = meta.direction_name ? meta.direction_name.split(' - ') : []
         label = parts.length >= 2 ? `${parts[0].trim()} > ${parts[parts.length - 1].trim()}` : (meta.full_name || code)
       } else {
@@ -449,21 +623,16 @@ export default function RoutePage() {
   const stopsForVariant = useMemo(() => {
     if (!stops) return []
     
-    // Effective variant: if 'all', map shows everything but stops logic needs a specific variant.
-    // For map tab, when 'all' is selected, stops are handled separately.
-    // But for stops tab, we must resolve 'all' to the first canonical variant.
-    const effectiveVariant = selectedVariant === 'all' && stopsVariantOptions.length > 0 
-      ? stopsVariantOptions[0].value 
-      : selectedVariant
-
-    if (effectiveVariant === 'all') return stops // Fallback for map tab just in case
-
-    if (effectiveVariant.endsWith('_D0') || effectiveVariant.endsWith('_G0')) {
-      const activeLetter = variantOptions.find(o => o.value === effectiveVariant)?.direction_letter
-      return stops.filter((s) => s.direction === activeLetter)
+    let effectiveVariant = selectedVariant
+    if (effectiveVariant === 'all' && stopsVariantOptions.length > 0) {
+      if (tab === 'map') return stops // Map renders all stops when 'all' is selected
+      effectiveVariant = stopsVariantOptions[0].value
     }
+
+    if (effectiveVariant === 'all') return stops // Fallback
+
     return stops.filter((s) => s.route_code === effectiveVariant)
-  }, [stops, selectedVariant, variantOptions, stopsVariantOptions])
+  }, [stops, selectedVariant, stopsVariantOptions, tab])
 
   // Build map of stop_sequence to bus directions
   const busAtSequence = useMemo(() => {
@@ -496,9 +665,9 @@ export default function RoutePage() {
   ]
 
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex flex-col h-[100dvh] overflow-hidden">
       {/* Header */}
-      <div className="bg-surface-card border-b border-surface-muted">
+      <div className="shrink-0 bg-[#0a0a0a] border-b border-[#222]">
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
@@ -549,8 +718,8 @@ export default function RoutePage() {
         </div>
       </div>
 
-      {/* Body */}
-      <div className="flex-1 max-w-2xl w-full mx-auto px-4 pb-6 pt-4">
+      {/* Body Container */}
+      <div className="flex-1 max-w-2xl w-full mx-auto flex flex-col min-h-0 overflow-y-auto no-scrollbar relative">
 
         {/* Timetable tab */}
         {tab === 'schedule' && (
@@ -559,16 +728,21 @@ export default function RoutePage() {
             scheduleError={scheduleError} 
             onRetry={refreshSchedule} 
             metadata={metadata} 
-            onSelectVariant={(v) => { setSelectedVariant(v); setTab('stops') }}
+            onSelectVariant={(v) => { 
+              setSelectedVariant(v); 
+              setTab('stops');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            stops={stops}
           />
         )}
 
         {/* Map tab */}
         {tab === 'map' && (
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col h-full min-h-0 px-4 pb-6">
             {/* Dropdown — map tab */}
             {mapVariantOptions.length > 1 && (
-              <div className="px-1 border-b border-[#222] pb-2 mb-1">
+              <div className="sticky top-0 z-20 bg-[#0a0a0a] pt-4 px-5 -mx-4 pb-2 border-b border-[#222] mb-4">
                 <VariantSelect
                   options={mapVariantOptions}
                   value={selectedVariant}
@@ -587,7 +761,7 @@ export default function RoutePage() {
                 ))}
               </div>
             )}
-            <div className="rounded-2xl overflow-hidden border border-surface-muted relative" style={{ height: 420 }}>
+            <div className="rounded-2xl overflow-hidden border border-surface-muted relative z-0" style={{ height: 420 }}>
               {!stops && !stopsError && (
                 <div className="absolute inset-0 flex items-center justify-center bg-surface/50 backdrop-blur-sm z-10">
                   <div className="w-6 h-6 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
@@ -620,25 +794,7 @@ export default function RoutePage() {
                       pathOptions={{ color: '#94a3b8', fillColor: '#94a3b8', fillOpacity: 1, weight: 2 }}
                     >
                       <Popup className="route-stop-popup" closeButton={false}>
-                        <div className="text-center min-w-[150px] max-w-[200px] px-1 py-1">
-                          <p className="font-bold text-slate-100 text-[13px] mb-2 leading-tight">
-                            {formatStopName(s.stop_name).split(' - ')[0]}
-                            <br/>
-                            <span className="text-[11px] text-slate-300 font-medium">
-                              ({(() => {
-                                const v = variantOptions.find(o => o.value === s.route_code)
-                                const dest = v?.label.includes(' > ') ? v.label.split(' > ')[1].split(' (')[0] : (s.direction === 'G' ? 'Gidiş' : 'Dönüş')
-                                return `${dest} Yönü - ${s.stop_code}`
-                              })()})
-                            </span>
-                          </p>
-                          <button
-                            onClick={() => navigate(`/stops/${s.stop_code}`)}
-                            className="bg-brand-600 hover:bg-brand-500 text-white px-3 py-1.5 rounded text-[11px] font-semibold w-full transition-colors"
-                          >
-                            Durağa Git
-                          </button>
-                        </div>
+                        <StopPopupContent s={s} />
                       </Popup>
                     </CircleMarker>
                   ))}
@@ -666,12 +822,7 @@ export default function RoutePage() {
                 busLat={selectedBus.latitude}
                 busLon={selectedBus.longitude}
                 showMap={true}
-                amenities={{
-                  usb: selectedBus.has_usb ?? null,
-                  wifi: selectedBus.has_wifi ?? null,
-                  ac: selectedBus.is_air_conditioned ?? null,
-                  accessible: selectedBus.accessible ?? null
-                }}
+                fetchAmenitiesForKapino={selectedBus.kapino}
                 onClose={() => setSelectedBus(null)}
               />
             )}
@@ -683,7 +834,7 @@ export default function RoutePage() {
           <div className="flex flex-col gap-1">
             {/* Dropdown — stops tab */}
             {stopsVariantOptions.length > 1 && (
-              <div className="px-1 border-b border-[#222] pb-2 mb-1">
+              <div className="sticky top-0 z-20 bg-[#0a0a0a] pt-4 px-5 -mx-4 pb-2 border-b border-[#222] mb-1">
                 <VariantSelect
                   options={stopsVariantOptions}
                   value={selectedVariant === 'all' ? stopsVariantOptions[0].value : selectedVariant}

@@ -249,6 +249,7 @@ export interface RouteStop {
   latitude: number
   longitude: number
   district: string | null
+  stop_direction?: string | null
 }
 
 export interface ScheduledDeparture {

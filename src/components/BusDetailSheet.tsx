@@ -1,7 +1,8 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { MapContainer, TileLayer, Marker, Polyline, useMap } from 'react-leaflet'
 import * as L from 'leaflet'
+import * as api from '@/api/client'
 import type { Amenities } from '@/api/client'
 
 /** Haversine distance in metres between two lat/lon points. */
@@ -24,7 +25,16 @@ function FitBoundsEffect({ bounds }: { bounds: [[number, number], [number, numbe
 }
 
 /** Amenity icon row */
-function AmenityIcons({ amenities }: { amenities: Amenities | null }) {
+function AmenityIcons({ amenities, isLoading }: { amenities: Amenities | null, isLoading?: boolean }) {
+  if (isLoading) {
+    return (
+      <div className="px-4 pb-2 flex gap-3 justify-center flex-wrap">
+        <div className="h-5 w-16 bg-surface-muted rounded-full animate-pulse" />
+        <div className="h-5 w-16 bg-surface-muted rounded-full animate-pulse" />
+        <div className="h-5 w-16 bg-surface-muted rounded-full animate-pulse" />
+      </div>
+    )
+  }
   if (!amenities) return null
   const items: { label: string; icon: string; value: boolean | null }[] = [
     { label: 'USB', icon: '🔌', value: amenities.usb },
@@ -72,6 +82,9 @@ export type BusDetailSheetProps = {
 
   // Amenities
   amenities?: Amenities | null
+  
+  // If provided, the sheet will dynamically fetch full bus details to populate amenities
+  fetchAmenitiesForKapino?: string | null
 
   // Actions
   onClose: () => void
@@ -92,10 +105,46 @@ export default function BusDetailSheet({
   stopLat,
   stopLon,
   amenities,
+  fetchAmenitiesForKapino,
   onClose,
   showRouteButton = true,
 }: BusDetailSheetProps) {
   const navigate = useNavigate()
+  
+  const [liveAmenities, setLiveAmenities] = useState<Amenities | null>(amenities || null)
+  const [livePlate, setLivePlate] = useState<string | null>(plate || null)
+  const [liveSpeed, setLiveSpeed] = useState<number | null>(speedKmh ?? null)
+  const [liveDestination, setLiveDestination] = useState<string | null>(destination || null)
+  const [isLoadingAmenities, setIsLoadingAmenities] = useState(false)
+
+  // Fetch live amenities if requested
+  useEffect(() => {
+    // StopPage passes full amenities directly, RoutePage might not have them initially
+    if (fetchAmenitiesForKapino) {
+      setIsLoadingAmenities(true)
+      // fetch indirectly because api client isn't exported with getBusDetail
+      fetch(`/v1/fleet/${fetchAmenitiesForKapino}/detail`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.plate) setLivePlate(data.plate)
+          if (data.speed != null) setLiveSpeed(data.speed)
+          if (data.direction) setLiveDestination(data.direction)
+          
+          if (data.has_usb !== undefined) {
+            setLiveAmenities({
+              usb: data.has_usb ?? null,
+              wifi: data.has_wifi ?? null,
+              ac: data.is_air_conditioned ?? null,
+              accessible: data.accessible ?? null
+            })
+          }
+        })
+        .catch(err => console.error('Failed to load amenities:', err))
+        .finally(() => setIsLoadingAmenities(false))
+    } else if (amenities) {
+      setLiveAmenities(amenities)
+    }
+  }, [fetchAmenitiesForKapino, amenities])
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
@@ -165,10 +214,10 @@ export default function BusDetailSheet({
             {routeCode ?? '?'}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-slate-100 truncate">{destination ?? 'Bilinmeyen Yön'}</p>
-            {(plate || kapino) && (
+            <p className="text-sm font-semibold text-slate-100 truncate">{liveDestination ?? 'Bilinmeyen Yön'}</p>
+            {(livePlate || kapino) && (
               <p className="text-xs text-slate-400 font-mono">
-                {[plate, kapino].filter(Boolean).join('  ·  ')}
+                {[livePlate, kapino].filter(Boolean).join('  ·  ')}
               </p>
             )}
           </div>
@@ -222,22 +271,22 @@ export default function BusDetailSheet({
               <p className="text-base font-mono font-bold text-slate-100">{distLabel ?? '—'}</p>
             </div>
           )}
-          {speedKmh != null && (
+          {liveSpeed != null && (
             <div className="flex flex-col items-center gap-1">
               <p className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">Hız</p>
-              <p className="text-base font-mono font-bold text-slate-100">{speedKmh} km/h</p>
+              <p className="text-base font-mono font-bold text-slate-100">{liveSpeed} km/h</p>
             </div>
           )}
-          {plate != null && (
+          {livePlate != null && (
             <div className="flex flex-col items-center gap-1">
               <p className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">Plaka</p>
-              <p className="text-base font-bold text-slate-100 font-mono">{plate}</p>
+              <p className="text-base font-bold text-slate-100 font-mono">{livePlate}</p>
             </div>
           )}
         </div>
 
         {/* Amenity icons */}
-        <AmenityIcons amenities={amenities ?? null} />
+        <AmenityIcons amenities={liveAmenities} isLoading={isLoadingAmenities} />
 
         {/* CTA */}
         <div className="px-4 pb-6 pt-2">

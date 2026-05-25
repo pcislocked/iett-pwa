@@ -59,8 +59,9 @@ describe('RoutePage', () => {
       if (index === 0) { // stops
         return {
           data: options.stops !== undefined ? options.stops : [
-            { stop_code: '1001', stop_name: 'Test Stop 1', direction: 'G', sequence: 1, latitude: 41.0, longitude: 29.0, route_code: '15TY_G_D0' },
-            { stop_code: '1002', stop_name: 'Test Stop 2', direction: 'D', sequence: 2, latitude: 41.1, longitude: 29.1, route_code: '15TY_G_D2449' },
+            { stop_code: '1001', stop_name: 'TOKATKÖY - Beykoz', direction: 'G', sequence: 1, latitude: 41.0, longitude: 29.0, route_code: '15TY_G_D0' },
+            { stop_code: '1002', stop_name: 'HEKİMBAŞI - Ümraniye', direction: 'G', sequence: 2, latitude: 41.1, longitude: 29.1, route_code: '15TY_G_D0' },
+            { stop_code: '1003', stop_name: 'YENİ MAHALLE - Ümraniye', direction: 'D', sequence: 1, latitude: 41.2, longitude: 29.2, route_code: '15TY_G_D2449' },
           ],
           error: options.stopsError || null,
           refresh: vi.fn(),
@@ -168,13 +169,13 @@ describe('RoutePage', () => {
     
     fireEvent.click(screen.getByRole('button', { name: /Duraklar/i }))
     
-    expect(screen.getByText('Test Stop 1')).toBeInTheDocument()
+    expect(screen.getByText('TOKATKÖY')).toBeInTheDocument()
     
     // Change variant in custom dropdown
     fireEvent.click(screen.getAllByText('TOKATKÖY > HEKİMBAŞI')[0])
     fireEvent.click(screen.getByText('TOKATKÖY > YENİ MAHALLE (D2449)'))
     
-    expect(screen.getByText('Test Stop 2')).toBeInTheDocument()
+    expect(screen.getByText('YENİ MAHALLE')).toBeInTheDocument()
   })
 
   it('shows error state for stops', () => {
