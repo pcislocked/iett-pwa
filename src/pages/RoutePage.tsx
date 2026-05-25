@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback } from 'react'
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { MapContainer, TileLayer, Marker, Popup, CircleMarker } from 'react-leaflet'
 import * as L from 'leaflet'
@@ -52,15 +52,18 @@ function VariantSelect({
 
   return (
     <div className={`relative ${className || ''}`}>
-      <div 
+      <button 
+        type="button"
+        aria-haspopup="listbox"
+        aria-expanded={isOpen}
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center justify-between bg-surface cursor-pointer border border-brand-500/50 hover:border-brand-500 transition-colors rounded-xl px-3 py-2.5"
+        className="w-full flex items-center justify-between bg-surface cursor-pointer border border-brand-500/50 hover:border-brand-500 transition-colors rounded-xl px-3 py-2.5 text-left"
       >
         <span className="text-sm font-semibold text-slate-100 truncate pr-2">{selected?.label || 'Seçiniz'}</span>
         <svg className={`w-4 h-4 text-brand-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
         </svg>
-      </div>
+      </button>
       
       {isOpen && (
         <>
@@ -483,9 +486,10 @@ function StopPopupContent({ s }: { s: RouteStop }) {
 
 export default function RoutePage() {
   const { hatKodu } = useParams<{ hatKodu: string }>()
-  const navigate = useNavigate()
   const [tab, setTab] = useState<Tab>('schedule')
+  const scrollRef = useRef<HTMLDivElement>(null)
   const [selectedVariant, setSelectedVariant] = useState('all')
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [selectedBus, setSelectedBus] = useState<any>(null)
 
   const { data: buses, stale } = useRouteBuses(hatKodu ?? '')
@@ -522,7 +526,7 @@ export default function RoutePage() {
     if (availableCodes.length === 0) return { mapVariantOptions: [], stopsVariantOptions: [], variantOptions: [] }
 
     // 2. Build options with labels from metadata and actual stops
-    let options = availableCodes.map(code => {
+    let options: { value: string; label: string; direction_letter: 'G'|'D'; isCanonical?: boolean; separatorAfter?: boolean }[] = availableCodes.map(code => {
       let label = code
       let isG = code.includes('_G_') || code.includes('_119_') || code.endsWith('_G')
 
@@ -719,7 +723,7 @@ export default function RoutePage() {
       </div>
 
       {/* Body Container */}
-      <div className="flex-1 max-w-2xl w-full mx-auto flex flex-col min-h-0 overflow-y-auto no-scrollbar relative">
+      <div ref={scrollRef} className="flex-1 max-w-2xl w-full mx-auto flex flex-col min-h-0 overflow-y-auto no-scrollbar relative">
 
         {/* Timetable tab */}
         {tab === 'schedule' && (
@@ -731,7 +735,7 @@ export default function RoutePage() {
             onSelectVariant={(v) => { 
               setSelectedVariant(v); 
               setTab('stops');
-              window.scrollTo({ top: 0, behavior: 'smooth' });
+              scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
             }}
             stops={stops}
           />
@@ -777,7 +781,7 @@ export default function RoutePage() {
               
               {stops && (
                 <MapContainer
-                  center={[41.0422, 28.993]}
+                  center={center}
                   zoom={11}
                   className="w-full h-full"
                   zoomControl={false}

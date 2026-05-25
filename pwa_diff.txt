@@ -1,0 +1,3117 @@
+﻿diff --git a/CHANGELOG.md b/CHANGELOG.md
+index 58f0b4f..43d1ee6 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -5,6 +5,69 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
+ 
+ ---
+ 
++## [0.3.21] - 2026-05-23
++
++### Added
++- Added display of secondary "─░ETT Kaynak" timestamp on StopPage.
++- Added InfoModal detailing why two different timestamps are shown.
++- Extracted all polling intervals to a global, environment-configurable config file (`src/config/polling.ts`).
++
++### Fixed
++- Fixed critical bug where navigating between stops/routes showed stale cached data (polling keys added to usePolling).
++- Fixed potential UI crash by validating the format of `X-IETT-Updated-At` date strings in API client.
++- Added backdrop-click dismissal for the secondary timestamp InfoModal.
++- Updated location consent and privacy copy with KVKK link pointing to pcislocked.net/kvkk.
++- Fixed React Hook rules-of-hooks violation in useFleet.
++
++---
++
++## [0.3.20] - 2026-05-23
++
++### Fixed
++- Fixed critical bug where the dropdown omitted the opposite direction for routes with asymmetric metadata (like `14M`).
++- Fixed dropdown spam showing multiple duplicates of the same direction with zero stops. Dropdown variants are now strictly generated from actual route variants present in the live API stops list.
++- Fixed fallback parsing logic to successfully derive missing opposite directions (e.g., automatically deriving "KADIK├ûY > YEN─░ CAM─░─░" from the primary "YEN─░ CAM─░─░ > KADIK├ûY" metadata).
++- Removed redundant direction chip on the StopPage arrivals list since the direction is already shown under the title.
++
++---
++
++## [0.3.19] - 2026-05-23
++
++### Added
++- Added robust sub-route variant dropdown selection to both Map and Stops tabs. Map and stops lists now correctly reflect the active route variant.
++
++### Fixed
++- Fixed direction label parsing bugs for variants missing strict 'G'/'D' suffix.
++- Fixed performance issue with rendering schedule footnotes; lookup is now O(1) instead of `variants ├ù metadata`.
++- Increased map stop marker robustness using `sequence` identifiers and fixed potential screen-reader accessibility issues.
++
++### Release Notes
++- App version bumped to `0.3.19` to stay synchronized with `iett-middle`.
++
++---
++
++## [0.3.18] - 2026-05-22
++
++### Added
++- Implemented dynamic footnotes and descriptive direction tabs for yan seferler (route variants) on the Route Page.
++
++### Fixed
++- Stabilized direction pill labels by prioritizing base variants (`_D0` / `_G0`) and deducing destination names securely.
++- Deduplicated bus tooltips for multiple vehicles waiting at the same stop sequence.
++- Migrated legacy `URL.createObjectURL` mock overrides to a robust `try/finally` block to prevent test bleeding.
++
++### Tests
++- Added page-level test coverage for `RoutePage` footnote numbering, mock handling, and tab state.
++- Enhanced test reliability by enforcing `refresh: vi.fn()` parity on hooks and explicitly narrowing unknown types.
++
++### Changed
++- App version bumped to `0.3.18` to stay synchronized with `iett-middle`.
++
++### Release Notes
++- Released as `v0.3.18`.
++
++---
++
+ ## [0.3.17] - 2026-04-20
+ 
+ ### Fixed
+diff --git a/package.json b/package.json
+index e4e5091..1d48ae7 100644
+--- a/package.json
++++ b/package.json
+@@ -1,7 +1,7 @@
+ {
+   "name": "iett-pwa",
+   "private": true,
+-  "version": "0.3.17",
++  "version": "0.4.0",
+   "type": "module",
+   "scripts": {
+     "dev": "vite",
+@@ -30,7 +30,7 @@
+     "@types/node": "^25.3.2",
+     "@types/react": "^18.3.3",
+     "@types/react-dom": "^18.3.0",
+-    "@vitejs/plugin-react": "^4.3.1",
++    "@vitejs/plugin-react": "^6.0.2",
+     "@vitest/coverage-v8": "^4.0.18",
+     "@vitest/ui": "^4.0.18",
+     "autoprefixer": "^10.4.19",
+@@ -38,12 +38,12 @@
+     "eslint-plugin-react-hooks": "^7.0.1",
+     "eslint-plugin-react-refresh": "^0.5.2",
+     "jsdom": "^28.1.0",
+-    "postcss": "^8.4.40",
++    "postcss": "^8.5.15",
+     "tailwindcss": "^3.4.7",
+     "typescript": "^5.5.3",
+     "typescript-eslint": "^8.56.1",
+-    "vite": "^5.3.4",
+-    "vite-plugin-pwa": "^0.20.1",
++    "vite": "^8.0.14",
++    "vite-plugin-pwa": "^1.3.0",
+     "vitest": "^4.0.18"
+   }
+ }
+diff --git a/src/api/__tests__/client.test.ts b/src/api/__tests__/client.test.ts
+index 9c50144..b7fa77e 100644
+--- a/src/api/__tests__/client.test.ts
++++ b/src/api/__tests__/client.test.ts
+@@ -1,3 +1,4 @@
++/* eslint-disable @typescript-eslint/no-explicit-any */
+ import { describe, it, expect, vi, afterEach } from 'vitest'
+ import { api } from '@/api/client'
+ 
+@@ -406,3 +407,34 @@ describe('api.arac.missions', () => {
+     expect(url).toContain('/v1/arac/fleet/C-1%20X/missions')
+   })
+ })
++
++// ---------------------------------------------------------------------------
++// Header Metadata (__iettUpdated)
++// ---------------------------------------------------------------------------
++
++describe('X-IETT-Updated-At Metadata', () => {
++  it('extracts X-IETT-Updated-At header and sets __iettUpdated non-enumerable property', async () => {
++    const payload = [{ dcode: '123', name: 'Test' }]
++    const mockHeaders = new Headers()
++    mockHeaders.set('X-IETT-Updated-At', '2026-05-23T00:00:00Z')
++    
++    vi.stubGlobal(
++      'fetch',
++      vi.fn().mockResolvedValue({
++        ok: true,
++        status: 200,
++        headers: mockHeaders,
++        json: () => Promise.resolve(payload),
++        text: () => Promise.resolve(JSON.stringify(payload)),
++      }),
++    )
++
++    const result = await api.stops.search('test') as any
++    expect(result.__iettUpdated).toBeInstanceOf(Date)
++    expect(result.__iettUpdated.toISOString()).toBe('2026-05-23T00:00:00.000Z')
++    
++    // Check it's non-enumerable
++    expect(Object.keys(result)).not.toContain('__iettUpdated')
++  })
++})
++
+diff --git a/src/api/client.ts b/src/api/client.ts
+index 34d85fd..9891da0 100644
+--- a/src/api/client.ts
++++ b/src/api/client.ts
+@@ -80,7 +80,15 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
+         const text = await res.text().catch(() => '')
+         throw new ApiHttpError(path, res.status, text)
+       }
+-      return res.json() as Promise<T>
++      const data = await res.json()
++      const upstreamHeader = res.headers?.get?.("X-IETT-Updated-At")
++      if (upstreamHeader && typeof data === 'object' && data !== null) {
++        const parsedDate = new Date(upstreamHeader)
++        if (!isNaN(parsedDate.getTime())) {
++          Object.defineProperty(data, '__iettUpdated', { value: parsedDate, enumerable: false })
++        }
++      }
++      return data as T
+     }
+ 
+     try {
+@@ -241,6 +249,7 @@ export interface RouteStop {
+   latitude: number
+   longitude: number
+   district: string | null
++  stop_direction?: string | null
+ }
+ 
+ export interface ScheduledDeparture {
+diff --git a/src/components/BusDetailSheet.tsx b/src/components/BusDetailSheet.tsx
+new file mode 100644
+index 0000000..11d0970
+--- /dev/null
++++ b/src/components/BusDetailSheet.tsx
+@@ -0,0 +1,330 @@
++import { useEffect, useState } from 'react'
++import { useNavigate, Link } from 'react-router-dom'
++import { MapContainer, TileLayer, Marker, Polyline, useMap } from 'react-leaflet'
++import * as L from 'leaflet'
++import * as api from '@/api/client'
++import type { Amenities } from '@/api/client'
++
++/** Haversine distance in metres between two lat/lon points. */
++function haversineM(lat1: number, lon1: number, lat2: number, lon2: number): number {
++  const R = 6_371_000
++  const rad = Math.PI / 180
++  const dLat = (lat2 - lat1) * rad
++  const dLon = (lon2 - lon1) * rad
++  const a =
++    Math.sin(dLat / 2) ** 2 +
++    Math.cos(lat1 * rad) * Math.cos(lat2 * rad) * Math.sin(dLon / 2) ** 2
++  return R * 2 * Math.asin(Math.sqrt(a))
++}
++
++/** Auto-fits map to given bounds on mount. */
++function FitBoundsEffect({ bounds }: { bounds: [[number, number], [number, number]] }) {
++  const map = useMap()
++  useEffect(() => { map.fitBounds(bounds, { padding: [32, 32] }) }, []) // eslint-disable-line react-hooks/exhaustive-deps
++  return null
++}
++
++/** Amenity icon row */
++function AmenityIcons({ amenities, isLoading }: { amenities: Amenities | null, isLoading?: boolean }) {
++  if (isLoading) {
++    return (
++      <div className="px-4 pb-2 flex gap-3 justify-center flex-wrap">
++        <div className="h-5 w-16 bg-surface-muted rounded-full animate-pulse" />
++        <div className="h-5 w-16 bg-surface-muted rounded-full animate-pulse" />
++        <div className="h-5 w-16 bg-surface-muted rounded-full animate-pulse" />
++      </div>
++    )
++  }
++  if (!amenities) return null
++  const items: { label: string; icon: string; value: boolean | null }[] = [
++    { label: 'USB', icon: '­ƒöî', value: amenities.usb },
++    { label: 'Wi-Fi', icon: '­ƒôÂ', value: amenities.wifi },
++    { label: 'Klima', icon: 'ÔØä´©Å', value: amenities.ac },
++    { label: 'Engelli', icon: 'ÔÖ┐', value: amenities.accessible },
++  ]
++  const known = items.filter((i) => i.value !== null)
++  if (known.length === 0) return null
++  return (
++    <div className="px-4 pb-2 flex gap-3 justify-center flex-wrap">
++      {known.map((item) => (
++        <span
++          key={item.label}
++          className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full ${
++            item.value
++              ? 'bg-emerald-900/50 text-emerald-400'
++              : 'bg-surface-muted text-slate-600 line-through'
++          }`}
++        >
++          {item.icon} {item.label}
++        </span>
++      ))}
++    </div>
++  )
++}
++
++export type BusDetailSheetProps = {
++  routeCode: string | null
++  destination: string | null
++  plate: string | null
++  kapino: string | null
++  
++  // Optional metrics (only passed if we have them, like on StopPage)
++  etaMinutes?: number | null
++  etaRaw?: string | null
++  speedKmh?: number | null
++  
++  // Optional Map & Distance info
++  showMap?: boolean
++  busLat?: number | null
++  busLon?: number | null
++  stopLat?: number | null
++  stopLon?: number | null
++
++  // Amenities
++  amenities?: Amenities | null
++  
++  // If provided, the sheet will dynamically fetch full bus details to populate amenities
++  fetchAmenitiesForKapino?: string | null
++
++  // Actions
++  onClose: () => void
++  showRouteButton?: boolean
++}
++
++export default function BusDetailSheet({
++  routeCode,
++  destination,
++  plate,
++  kapino,
++  etaMinutes,
++  etaRaw,
++  speedKmh,
++  showMap = true,
++  busLat,
++  busLon,
++  stopLat,
++  stopLon,
++  amenities,
++  fetchAmenitiesForKapino,
++  onClose,
++  showRouteButton = true,
++}: BusDetailSheetProps) {
++  const navigate = useNavigate()
++  
++  const [liveAmenities, setLiveAmenities] = useState<Amenities | null>(amenities || null)
++  const [livePlate, setLivePlate] = useState<string | null>(plate || null)
++  const [liveSpeed, setLiveSpeed] = useState<number | null>(speedKmh ?? null)
++  const [liveDestination, setLiveDestination] = useState<string | null>(destination || null)
++  const [isLoadingAmenities, setIsLoadingAmenities] = useState(false)
++
++  // Fetch live amenities if requested
++  useEffect(() => {
++    // StopPage passes full amenities directly, RoutePage might not have them initially
++    if (fetchAmenitiesForKapino) {
++      setIsLoadingAmenities(true)
++      // fetch indirectly because api client isn't exported with getBusDetail
++      fetch(`/v1/fleet/${fetchAmenitiesForKapino}/detail`)
++        .then(res => res.json())
++        .then(data => {
++          if (data.plate) setLivePlate(data.plate)
++          if (data.speed != null) setLiveSpeed(data.speed)
++          if (data.direction) setLiveDestination(data.direction)
++          
++          if (data.has_usb !== undefined) {
++            setLiveAmenities({
++              usb: data.has_usb ?? null,
++              wifi: data.has_wifi ?? null,
++              ac: data.is_air_conditioned ?? null,
++              accessible: data.accessible ?? null
++            })
++          }
++        })
++        .catch(err => console.error('Failed to load amenities:', err))
++        .finally(() => setIsLoadingAmenities(false))
++    } else if (amenities) {
++      setLiveAmenities(amenities)
++    }
++  }, [fetchAmenitiesForKapino, amenities])
++
++  useEffect(() => {
++    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
++    document.addEventListener('keydown', handler)
++    return () => document.removeEventListener('keydown', handler)
++  }, [onClose])
++
++  const hasBusPos = busLat != null && busLon != null
++  const hasStopPos = stopLat != null && stopLon != null
++
++  const dist = (hasBusPos && hasStopPos) ? haversineM(busLat!, busLon!, stopLat!, stopLon!) : null
++  const distLabel =
++    dist !== null
++      ? dist < 1000
++        ? `${Math.round(dist)} m`
++        : `${(dist / 1000).toFixed(1)} km`
++      : null
++
++  const mapCenter: [number, number] = hasBusPos && hasStopPos
++    ? [(busLat! + stopLat!) / 2, (busLon! + stopLon!) / 2]
++    : hasBusPos ? [busLat!, busLon!] : hasStopPos ? [stopLat!, stopLon!] : [41.0, 29.0]
++
++  const bounds: [[number, number], [number, number]] | null = (hasBusPos && hasStopPos)
++    ? [
++        [Math.min(busLat!, stopLat!), Math.min(busLon!, stopLon!)],
++        [Math.max(busLat!, stopLat!), Math.max(busLon!, stopLon!)],
++      ]
++    : null
++
++  const busIcon = L.divIcon({
++    className: '',
++    html: `<div style="background:#f97316;border-radius:50%;width:14px;height:14px;border:2px solid #fff;box-shadow:0 0 0 3px rgba(249,115,22,0.35)"></div>`,
++    iconSize: [14, 14],
++    iconAnchor: [7, 7],
++  })
++  const stopIcon = L.divIcon({
++    className: '',
++    html: `<div style="background:#2563eb;border-radius:50%;width:14px;height:14px;border:2px solid #fff;box-shadow:0 0 0 3px rgba(37,99,235,0.35)"></div>`,
++    iconSize: [14, 14],
++    iconAnchor: [7, 7],
++  })
++
++  // Which metrics should we show?
++  const showETA = etaMinutes !== undefined || etaRaw !== undefined
++  const showDist = distLabel !== null
++
++  return (
++    <div className="fixed inset-0 z-[10000] flex items-end" onClick={onClose}>
++      {/* Backdrop */}
++      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
++
++      <div
++        className="relative w-full max-w-2xl mx-auto bg-surface-card border-t border-surface-muted rounded-t-2xl overflow-hidden shadow-2xl"
++        onClick={(e) => e.stopPropagation()}
++      >
++        {/* Drag handle */}
++        <div className="flex justify-center pt-3 pb-1">
++          <div className="w-10 h-1 rounded-full bg-surface-muted" />
++        </div>
++
++        {/* Header */}
++        <div className="flex items-center gap-3 px-4 py-2">
++          <div
++            className="text-white font-mono font-bold text-sm rounded-xl px-3 py-1.5 shrink-0"
++            style={{ backgroundColor: routeCode ? '#f97316' : '#6b7280' }}
++          >
++            {routeCode ?? '?'}
++          </div>
++          <div className="flex-1 min-w-0">
++            <p className="text-sm font-semibold text-slate-100 truncate">{liveDestination ?? 'Bilinmeyen Y├Ân'}</p>
++            {(livePlate || kapino) && (
++              <p className="text-xs text-slate-400 font-mono">
++                {[livePlate, kapino].filter(Boolean).join('  ┬À  ')}
++              </p>
++            )}
++          </div>
++          <button onClick={onClose} className="p-1.5 text-slate-500 hover:text-slate-300 shrink-0">
++            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
++              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
++            </svg>
++          </button>
++        </div>
++
++        {/* Map ÔÇö bus Ôåö stop */}
++        {showMap && (
++          hasBusPos || hasStopPos ? (
++            <div style={{ height: 200 }}>
++              <MapContainer center={mapCenter} zoom={15} style={{ height: '100%', width: '100%' }} zoomControl={false}>
++                <TileLayer
++                  attribution='&copy; CartoDB'
++                  url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
++                />
++                {bounds && <FitBoundsEffect bounds={bounds} />}
++                {hasBusPos && hasStopPos && (
++                  <Polyline
++                    positions={[[busLat!, busLon!], [stopLat!, stopLon!]]}
++                    pathOptions={{ color: '#f97316', weight: 2, dashArray: '6 4', opacity: 0.7 }}
++                  />
++                )}
++                {hasBusPos && <Marker position={[busLat!, busLon!]} icon={busIcon} />}
++                {hasStopPos && <Marker position={[stopLat!, stopLon!]} icon={stopIcon} />}
++              </MapContainer>
++            </div>
++          ) : (
++            <div className="h-12 flex items-center justify-center">
++              <p className="text-xs text-slate-500">Ara├º konumu hen├╝z mevcut de─ƒil</p>
++            </div>
++          )
++        )}
++
++        {/* Info strip ÔÇö horizontal flex container */}
++        <div className="px-4 py-4 flex flex-row flex-wrap items-center justify-around gap-4 border-t border-surface-muted">
++          {showETA && (
++            <div className="flex flex-col items-center gap-1">
++              <p className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">ETA</p>
++              <p className="text-base font-mono font-bold text-slate-100">
++                {etaMinutes !== null && etaMinutes !== undefined ? `${etaMinutes} dk` : (etaRaw ?? 'ÔÇö')}
++              </p>
++            </div>
++          )}
++          {showDist && (
++            <div className="flex flex-col items-center gap-1">
++              <p className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">Mesafe</p>
++              <p className="text-base font-mono font-bold text-slate-100">{distLabel ?? 'ÔÇö'}</p>
++            </div>
++          )}
++          {liveSpeed != null && (
++            <div className="flex flex-col items-center gap-1">
++              <p className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">H─▒z</p>
++              <p className="text-base font-mono font-bold text-slate-100">{liveSpeed} km/h</p>
++            </div>
++          )}
++          {livePlate != null && (
++            <div className="flex flex-col items-center gap-1">
++              <p className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">Plaka</p>
++              <p className="text-base font-bold text-slate-100 font-mono">{livePlate}</p>
++            </div>
++          )}
++        </div>
++
++        {/* Amenity icons */}
++        <AmenityIcons amenities={liveAmenities} isLoading={isLoadingAmenities} />
++
++        {/* CTA */}
++        <div className="px-4 pb-6 pt-2">
++          <div className={`grid gap-2 ${showRouteButton ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1'}`}>
++            {showRouteButton && (
++              <Link
++                to={`/routes/${routeCode}`}
++                onClick={onClose}
++                className="block w-full text-center bg-brand-600 hover:bg-brand-500 text-white font-semibold py-3 rounded-xl text-sm transition-colors"
++              >
++                Hatt─▒ A├º ÔåÆ
++              </Link>
++            )}
++            
++            <button
++              onClick={() => {
++                if (!kapino) return
++                onClose()
++                navigate(`/arac/bus/${encodeURIComponent(kapino)}`)
++              }}
++              disabled={!kapino}
++              className={`w-full text-center border border-[#2a2a2a] text-[#00AFF0] font-semibold
++                         py-3 rounded-xl text-sm transition-colors disabled:text-slate-600
++                         disabled:border-[#1a1a1a] disabled:cursor-not-allowed hover:border-[#00AFF0]/60 ${
++                           !showRouteButton && 'bg-surface'
++                         }`}
++            >
++              Daha Fazla Detay
++            </button>
++          </div>
++
++          {!kapino && (
++            <p className="text-[11px] text-slate-600 mt-2 text-center">
++              Bu kay─▒tta kap─▒ kodu yok, ara├º detay─▒ a├º─▒lam─▒yor.
++            </p>
++          )}
++        </div>
++      </div>
++    </div>
++  )
++}
+diff --git a/src/components/InstallBanner.tsx b/src/components/InstallBanner.tsx
+index bee46cd..94ee4e0 100644
+--- a/src/components/InstallBanner.tsx
++++ b/src/components/InstallBanner.tsx
+@@ -14,7 +14,7 @@ export default function InstallBanner({ onDismiss, onInstall }: InstallBannerPro
+       <span className="text-2xl shrink-0">­ƒÜî</span>
+       <div className="flex-1 min-w-0">
+         <p className="text-sm font-semibold text-white leading-tight">Ana Ekrana Ekle</p>
+-        <p className="text-xs text-slate-400 leading-tight mt-0.5">├ºevrimd─▒┼ƒ─▒ ├ºal─▒┼ƒ─▒r, pil dostu</p>
++        <p className="text-xs text-slate-400 leading-tight mt-0.5">Daha h─▒zl─▒ ve tam ekran deneyim i├ºin</p>
+       </div>
+       <button
+         onClick={onInstall}
+diff --git a/src/components/LocationConsentModal.tsx b/src/components/LocationConsentModal.tsx
+index c2dc38a..dd44930 100644
+--- a/src/components/LocationConsentModal.tsx
++++ b/src/components/LocationConsentModal.tsx
+@@ -75,8 +75,10 @@ export default function LocationConsentModal({ onConfirm, onDismiss }: Props) {
+         <div className="text-center">
+           <h2 id="consent-title" className="text-base font-bold text-slate-100 mb-1">Konum ─░zni</h2>
+           <p id="consent-desc" className="text-xs text-slate-400 leading-relaxed">
+-            Yak─▒n duraklar─▒ listelemek i├ºin konumunuza ihtiya├º var. Konumunuz yaln─▒zca
+-            bu cihazda i┼ƒlenir; hi├ºbir sunucuya kaydedilmez.
++            Yak─▒n duraklar─▒ listelemek i├ºin konumunuza ihtiya├º var. Konumunuz pcislocked.net gizlilik politikalar─▒na g├Âre ─░stanbul ve Amsterdam'daki sunucular─▒m─▒za anl─▒k g├Ânderilir fakat kal─▒c─▒ olarak kay─▒t alt─▒na al─▒nmaz.{' '}
++            <a href="https://pcislocked.net/kvkk/" target="_blank" rel="noreferrer" className="text-brand-400 hover:underline">
++              Gizlilik Politikas─▒ (KVKK)
++            </a>
+           </p>
+         </div>
+ 
+diff --git a/src/components/PinnedStopRow.tsx b/src/components/PinnedStopRow.tsx
+index 27b33ed..06f043b 100644
+--- a/src/components/PinnedStopRow.tsx
++++ b/src/components/PinnedStopRow.tsx
+@@ -32,6 +32,13 @@ export default function PinnedStopRow({ dcode, nick, icon = '­ƒôî', distLabel, d
+   const resolvedDirection = directionProp ?? stopDetail?.direction
+   const top4 = arrivals?.slice(0, 4) ?? []
+ 
++  // Clean up long backend names (e.g., "BOSTANCI K├ûPR├£S├£ - Ata┼ƒehir - KADIK├ûY Y├Ân├╝")
++  const cleanNick = nick.split(' - ')[0]
++  
++  const displayDir = resolvedDirection
++    ? (resolvedDirection.toLowerCase().endsWith('y├Ân├╝') ? resolvedDirection : `${resolvedDirection} y├Ân├╝`)
++    : null
++
+   return (
+     <button
+       onClick={() => navigate(`/stops/${dcode}`)}
+@@ -42,7 +49,7 @@ export default function PinnedStopRow({ dcode, nick, icon = '­ƒôî', distLabel, d
+       {/* Line 1: icon + name + distance + chevron */}
+       <div className="flex items-center gap-2.5">
+         <span className="text-base shrink-0 leading-none">{icon}</span>
+-        <span className="flex-1 text-[13px] font-bold text-white truncate leading-tight">{nick}</span>
++        <span className="flex-1 text-[13px] font-bold text-white truncate leading-tight">{cleanNick}</span>
+         {distLabel && (
+           <span className="text-[10px] text-slate-600 bg-surface-muted px-1.5 py-0.5 rounded-full shrink-0">
+             {distLabel}
+@@ -55,9 +62,9 @@ export default function PinnedStopRow({ dcode, nick, icon = '­ƒôî', distLabel, d
+       </div>
+ 
+       {/* Line 2: direction */}
+-      {resolvedDirection ? (
++      {displayDir ? (
+         <div className="mt-0.5 pl-[26px]">
+-          <span className="text-[10px] text-slate-500">ÔåÆ {resolvedDirection}</span>
++          <span className="text-[10px] text-slate-500">{displayDir}</span>
+         </div>
+       ) : !distLabel ? (
+         <div className="mt-0.5 pl-[26px]">
+diff --git a/src/components/__tests__/LocationConsentModal.test.tsx b/src/components/__tests__/LocationConsentModal.test.tsx
+index c9f7d5c..3010c34 100644
+--- a/src/components/__tests__/LocationConsentModal.test.tsx
++++ b/src/components/__tests__/LocationConsentModal.test.tsx
+@@ -10,7 +10,7 @@ describe('LocationConsentModal', () => {
+ 
+   it('renders privacy description', () => {
+     render(<LocationConsentModal onConfirm={vi.fn()} onDismiss={vi.fn()} />)
+-    expect(screen.getByText(/konumunuz yaln─▒zca/i)).toBeInTheDocument()
++    expect(screen.getByText(/konumunuz pcislocked.net/i)).toBeInTheDocument()
+   })
+ 
+   it('calls onConfirm when primary button is clicked', () => {
+@@ -42,21 +42,21 @@ describe('LocationConsentModal', () => {
+ 
+   it('traps focus: Tab from last button wraps to first', () => {
+     render(<LocationConsentModal onConfirm={vi.fn()} onDismiss={vi.fn()} />)
+-    const buttons = screen.getAllByRole('button')
+-    const last = buttons[buttons.length - 1]
++    const focusable = screen.getByRole('dialog').querySelectorAll<HTMLElement>('button, a')
++    const last = focusable[focusable.length - 1]
+     last.focus()
+     const defaultWasPrevented = !fireEvent.keyDown(document, { key: 'Tab', shiftKey: false })
+     expect(defaultWasPrevented).toBe(true)
+-    expect(document.activeElement).toBe(buttons[0])
++    expect(document.activeElement).toBe(focusable[0])
+   })
+ 
+   it('traps focus: Shift+Tab from first button wraps to last', () => {
+     render(<LocationConsentModal onConfirm={vi.fn()} onDismiss={vi.fn()} />)
+-    const buttons = screen.getAllByRole('button')
+-    buttons[0].focus()
++    const focusable = screen.getByRole('dialog').querySelectorAll<HTMLElement>('button, a')
++    focusable[0].focus()
+     const defaultWasPrevented = !fireEvent.keyDown(document, { key: 'Tab', shiftKey: true })
+     expect(defaultWasPrevented).toBe(true)
+-    expect(document.activeElement).toBe(buttons[buttons.length - 1])
++    expect(document.activeElement).toBe(focusable[focusable.length - 1])
+   })
+ 
+   it('restores focus to previously focused element on unmount', () => {
+diff --git a/src/config/polling.ts b/src/config/polling.ts
+new file mode 100644
+index 0000000..8ba4afc
+--- /dev/null
++++ b/src/config/polling.ts
+@@ -0,0 +1,19 @@
++/**
++ * Global polling intervals configuration in milliseconds.
++ * Can be overridden by Vite environment variables (e.g. VITE_POLL_ARRIVALS_MS).
++ */
++
++export const POLLING = {
++  ARRIVALS_MS: import.meta.env.VITE_POLL_ARRIVALS_MS ? parseInt(import.meta.env.VITE_POLL_ARRIVALS_MS, 10) : 10_000,
++  FLEET_ALL_MS: import.meta.env.VITE_POLL_FLEET_ALL_MS ? parseInt(import.meta.env.VITE_POLL_FLEET_ALL_MS, 10) : 30_000,
++  FLEET_SPECIFIC_MS: import.meta.env.VITE_POLL_FLEET_SPECIFIC_MS ? parseInt(import.meta.env.VITE_POLL_FLEET_SPECIFIC_MS, 10) : 15_000,
++  TICKER_MS: import.meta.env.VITE_POLL_TICKER_MS ? parseInt(import.meta.env.VITE_POLL_TICKER_MS, 10) : 60_000,
++  ROUTE_STOPS_MS: import.meta.env.VITE_POLL_ROUTE_STOPS_MS ? parseInt(import.meta.env.VITE_POLL_ROUTE_STOPS_MS, 10) : 300_000,
++  ROUTE_SCHEDULE_MS: import.meta.env.VITE_POLL_ROUTE_SCHEDULE_MS ? parseInt(import.meta.env.VITE_POLL_ROUTE_SCHEDULE_MS, 10) : 300_000,
++  ANNOUNCEMENTS_MS: import.meta.env.VITE_POLL_ANNOUNCEMENTS_MS ? parseInt(import.meta.env.VITE_POLL_ANNOUNCEMENTS_MS, 10) : 60_000,
++  ROUTE_META_MS: import.meta.env.VITE_POLL_ROUTE_META_MS ? parseInt(import.meta.env.VITE_POLL_ROUTE_META_MS, 10) : 600_000,
++  STOP_ROUTES_MS: import.meta.env.VITE_POLL_STOP_ROUTES_MS ? parseInt(import.meta.env.VITE_POLL_STOP_ROUTES_MS, 10) : 300_000,
++  STOP_DETAIL_MS: import.meta.env.VITE_POLL_STOP_DETAIL_MS ? parseInt(import.meta.env.VITE_POLL_STOP_DETAIL_MS, 10) : 3600_000,
++  GARAGES_MS: import.meta.env.VITE_POLL_GARAGES_MS ? parseInt(import.meta.env.VITE_POLL_GARAGES_MS, 10) : 3600_000,
++  DEFAULT_MS: 20_000
++}
+diff --git a/src/hooks/__tests__/usePolling.test.ts b/src/hooks/__tests__/usePolling.test.ts
+index 6ed6aa6..8a8bd02 100644
+--- a/src/hooks/__tests__/usePolling.test.ts
++++ b/src/hooks/__tests__/usePolling.test.ts
+@@ -157,4 +157,84 @@ describe('usePolling', () => {
+     act(() => { vi.advanceTimersByTime(5_000) })
+     expect(fetcher).toHaveBeenCalledTimes(1)
+   })
++
++  it('extracts iettUpdated from __iettUpdated property', async () => {
++    const fetcher = vi.fn().mockResolvedValue({
++      data: 'ok',
++      __iettUpdated: new Date('2026-05-23T00:00:00Z')
++    })
++    const { result } = renderHook(() => usePolling(fetcher, 5_000))
++    await waitFor(() => expect(result.current.loading).toBe(false))
++    expect(result.current.iettUpdated).toBeInstanceOf(Date)
++    expect(result.current.iettUpdated!.toISOString()).toBe('2026-05-23T00:00:00.000Z')
++  })
++
++  it('clears iettUpdated when subsequent fetch lacks __iettUpdated', async () => {
++    vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval', 'setTimeout', 'clearTimeout'] })
++    const fetcher = vi.fn()
++      .mockResolvedValueOnce({
++        data: '1',
++        __iettUpdated: new Date('2026-05-23T00:00:00Z')
++      })
++      .mockResolvedValueOnce({
++        data: '2'
++      })
++
++    const { result } = renderHook(() => usePolling(fetcher, 5_000))
++    await act(async () => { await Promise.resolve(); await Promise.resolve() })
++    expect(result.current.iettUpdated).not.toBeNull()
++
++    await act(async () => { vi.advanceTimersByTime(5_000); await Promise.resolve() })
++    expect(result.current.iettUpdated).toBeNull()
++  })
++
++  it('refetches immediately and sets loading=true when key changes', async () => {
++    const fetcher = vi.fn().mockResolvedValue('data')
++    const { result, rerender } = renderHook(
++      ({ key }) => usePolling(fetcher, 5_000, key),
++      { initialProps: { key: 'key1' } }
++    )
++
++    await waitFor(() => expect(result.current.loading).toBe(false))
++    expect(fetcher).toHaveBeenCalledTimes(1)
++
++    // Change the key
++    act(() => {
++      rerender({ key: 'key2' })
++    })
++
++    expect(result.current.loading).toBe(true)
++    await waitFor(() => expect(result.current.loading).toBe(false))
++    expect(fetcher).toHaveBeenCalledTimes(2)
++  })
++
++  it('cancels any in-flight requests of the previous key when key changes', async () => {
++    let resolveFirst!: (v: string) => void
++    const fetcher = vi.fn()
++      .mockReturnValueOnce(new Promise<string>((r) => { resolveFirst = r }))
++      .mockResolvedValueOnce('second-key-data')
++
++    const { result, rerender } = renderHook(
++      ({ key }) => usePolling(fetcher, 5_000, key),
++      { initialProps: { key: 'key1' } }
++    )
++
++    expect(result.current.loading).toBe(true)
++
++    // Change the key before the first fetch resolves
++    act(() => {
++      rerender({ key: 'key2' })
++    })
++
++    // Wait for the second key fetch to resolve
++    await waitFor(() => expect(result.current.loading).toBe(false))
++    expect(result.current.data).toBe('second-key-data')
++
++    // Resolve the first key fetch - it should be ignored
++    await act(async () => {
++      resolveFirst('stale-key1-data')
++    })
++    expect(result.current.data).toBe('second-key-data')
++  })
+ })
++
+diff --git a/src/hooks/__tests__/useUserPrefs.test.ts b/src/hooks/__tests__/useUserPrefs.test.ts
+index 396aee4..7370016 100644
+--- a/src/hooks/__tests__/useUserPrefs.test.ts
++++ b/src/hooks/__tests__/useUserPrefs.test.ts
+@@ -1,10 +1,11 @@
+ import { renderHook, act } from '@testing-library/react'
+-import { describe, it, expect, beforeEach } from 'vitest'
++import { describe, it, expect, beforeEach, vi } from 'vitest'
+ import { useUserPrefs, PINNED_STOPS_MAX } from '../useUserPrefs'
+ 
+ describe('useUserPrefs', () => {
+   beforeEach(() => {
+     localStorage.clear()
++    vi.clearAllMocks()
+   })
+ 
+   it('starts with empty prefs when localStorage is empty', () => {
+@@ -123,6 +124,80 @@ describe('useUserPrefs', () => {
+     })
+   })
+ 
++  // Export / Import
++  describe('exportPrefs / importPrefs', () => {
++    it('exports prefs by triggering download', () => {
++      vi.useFakeTimers()
++      
++      const originalCreate = global.URL.createObjectURL
++      const originalRevoke = global.URL.revokeObjectURL
++      
++      global.URL.createObjectURL = vi.fn().mockReturnValue('blob:test')
++      global.URL.revokeObjectURL = vi.fn()
++      
++      const mockClick = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
++
++      try {
++        const { result } = renderHook(() => useUserPrefs())
++        
++        act(() => {
++          result.current.exportPrefs()
++        })
++        
++        act(() => {
++          vi.advanceTimersByTime(3000)
++        })
++
++        expect(global.URL.createObjectURL).toHaveBeenCalled()
++        expect(global.URL.revokeObjectURL).toHaveBeenCalledWith('blob:test')
++        expect(mockClick).toHaveBeenCalled()
++      } finally {
++        mockClick.mockRestore()
++        
++        global.URL.createObjectURL = originalCreate
++        global.URL.revokeObjectURL = originalRevoke
++        
++        vi.useRealTimers()
++      }
++    })
++
++    it('imports prefs correctly', async () => {
++      const { result } = renderHook(() => useUserPrefs())
++      const data = JSON.stringify({
++        pinnedStops: [{ dcode: '123', nick: 'Test', order: 0 }],
++        favStops: [{ dcode: '123', name: 'Test Name' }],
++        favRoutes: ['123'],
++        nicknames: { '123': 'Test' }
++      })
++      const file = new File([data], 'prefs.json', { type: 'application/json' })
++      
++      await act(async () => {
++        await result.current.importPrefs(file)
++      })
++
++      expect(result.current.prefs.favRoutes).toContain('123')
++      expect(result.current.prefs.pinnedStops[0].dcode).toBe('123')
++    })
++
++    it('rejects import if format is invalid', async () => {
++      const { result } = renderHook(() => useUserPrefs())
++      const file = new File(['invalid json'], 'prefs.json', { type: 'application/json' })
++      
++      let error: unknown
++      await act(async () => {
++        try {
++          await result.current.importPrefs(file)
++        } catch (e: unknown) {
++          error = e
++        }
++      })
++      expect(error).toBeInstanceOf(Error)
++      if (error instanceof Error) {
++        expect(error.message).toBe('Ge├ºersiz dosya format─▒')
++      }
++    })
++  })
++
+   // Persistence
+   it('persists changes to localStorage', () => {
+     const { result } = renderHook(() => useUserPrefs())
+diff --git a/src/hooks/useArrivals.ts b/src/hooks/useArrivals.ts
+index 979c317..7754f63 100644
+--- a/src/hooks/useArrivals.ts
++++ b/src/hooks/useArrivals.ts
+@@ -1,11 +1,12 @@
+-import { useMemo } from 'react'
++import { useCallback } from 'react'
+ import { usePolling } from './usePolling'
+ import { api, type Arrival } from '@/api/client'
++import { POLLING } from '@/config/polling'
+ 
+ export function useArrivals(dcode: string, via?: string) {
+-  const fetcher = useMemo(
+-    () => () => api.stops.arrivals(dcode, via),
+-    [dcode, via],
+-  )
+-  return usePolling<Arrival[]>(fetcher, 20_000)
++  const fetcher = useCallback(async () => {
++    return api.stops.arrivals(dcode, via)
++  }, [dcode, via])
++
++  return usePolling<Arrival[]>(fetcher, POLLING.ARRIVALS_MS, `${dcode}:${via || ''}`)
+ }
+diff --git a/src/hooks/useFleet.ts b/src/hooks/useFleet.ts
+index 05f0e08..1a4aa8d 100644
+--- a/src/hooks/useFleet.ts
++++ b/src/hooks/useFleet.ts
+@@ -1,12 +1,16 @@
+-import { useMemo } from 'react'
++import { useCallback } from 'react'
+ import { usePolling } from './usePolling'
+ import { api, type BusPosition } from '@/api/client'
++import { POLLING } from '@/config/polling'
+ 
+-export function useFleet() {
+-  return usePolling<BusPosition[]>(api.fleet.all, 30_000)
++export function useFleet(_routeCode?: string) {
++  return usePolling<BusPosition[]>(api.fleet.all, POLLING.FLEET_ALL_MS)
+ }
+ 
+ export function useRouteBuses(hatKodu: string) {
+-  const fetcher = useMemo(() => () => api.routes.buses(hatKodu), [hatKodu])
+-  return usePolling<BusPosition[]>(fetcher, 15_000)
++  const fetcher = useCallback(async () => {
++    return api.routes.buses(hatKodu)
++  }, [hatKodu])
++
++  return usePolling<BusPosition[]>(fetcher, POLLING.FLEET_SPECIFIC_MS, hatKodu)
+ }
+diff --git a/src/hooks/usePolling.ts b/src/hooks/usePolling.ts
+index c851f69..7d1a4ea 100644
+--- a/src/hooks/usePolling.ts
++++ b/src/hooks/usePolling.ts
+@@ -12,17 +12,20 @@ interface UsePollingResult<T> {
+   refresh: () => void
+   stale: boolean  // true if we have cached data but last fetch failed
+   lastUpdated: Date | null
++  iettUpdated: Date | null
+ }
+ 
+ export function usePolling<T>(
+   fetcher: () => Promise<T>,
+   intervalMs = 20_000,
++  key?: string | number | boolean | null,
+ ): UsePollingResult<T> {
+   const [data, setData] = useState<T | null>(null)
+   const [loading, setLoading] = useState(true)
+   const [error, setError] = useState<string | null>(null)
+   const [stale, setStale] = useState(false)
+   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
++  const [iettUpdated, setIettUpdated] = useState<Date | null>(null)
+   const fetcherRef = useRef(fetcher)
+   fetcherRef.current = fetcher
+   const dataRef = useRef(data)
+@@ -42,6 +45,9 @@ export function usePolling<T>(
+       setError(null)
+       setStale(false)
+       setLastUpdated(new Date())
++      const resObj = result as Record<string, unknown> | null
++      const iettDate = resObj && typeof resObj === 'object' && '__iettUpdated' in resObj ? (resObj.__iettUpdated as Date) : null
++      setIettUpdated(iettDate)
+     } catch (e) {
+       if (id !== fetchIdRef.current || !mountedRef.current) return
+       setError(e instanceof Error ? e.message : String(e))
+@@ -66,6 +72,7 @@ export function usePolling<T>(
+   }, [])
+ 
+   useEffect(() => {
++    setLoading(true)
+     void doFetch()
+     const id = setInterval(() => { void doFetch() }, intervalMs)
+     return () => {
+@@ -73,7 +80,7 @@ export function usePolling<T>(
+       fetchIdRef.current += 1
+       clearInterval(id)
+     }
+-  }, [doFetch, intervalMs])
++  }, [doFetch, intervalMs, key])
+ 
+-  return { data, loading, error, refresh, stale, lastUpdated }
++  return { data, loading, error, refresh, stale, lastUpdated, iettUpdated }
+ }
+diff --git a/src/hooks/useRouteTickerData.ts b/src/hooks/useRouteTickerData.ts
+index 94cddfd..2937873 100644
+--- a/src/hooks/useRouteTickerData.ts
++++ b/src/hooks/useRouteTickerData.ts
+@@ -1,6 +1,7 @@
+ import { useMemo } from 'react'
+ import { usePolling } from './usePolling'
+ import { api, type ScheduledDeparture, type RouteMetadata } from '@/api/client'
++import { POLLING } from '@/config/polling'
+ 
+ type CacheEntry = { schedule: ScheduledDeparture[]; metadata: RouteMetadata[] | null }
+ type CacheRecord = { data: CacheEntry; timestamp: number; lastAccess: number }
+@@ -65,7 +66,5 @@ export function useRouteTickerData(code: string) {
+     [code],
+   )
+ 
+-  // Poll every 5 minutes; reuses cache during interval
+-  return usePolling(fetcher, 300_000)
++  return usePolling(fetcher, POLLING.TICKER_MS)
+ }
+-
+diff --git a/src/pages/MapPage.tsx b/src/pages/MapPage.tsx
+index 442174b..8e2b052 100644
+--- a/src/pages/MapPage.tsx
++++ b/src/pages/MapPage.tsx
+@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom'
+ import { useFleet } from '@/hooks/useFleet'
+ import { usePolling } from '@/hooks/usePolling'
+ import { api, type BusDetail, type Garage, type RouteSearchResult, type BusPosition } from '@/api/client'
++import { POLLING } from '@/config/polling'
+ 
+ function parseIsoDate(value: string | null | undefined): Date | null {
+   if (!value) return null
+@@ -89,11 +90,11 @@ export default function MapPage() {
+   const { data: buses, loading, error, refresh } = useFleet()
+   const { data: fleetMeta, refresh: refreshFleetMeta } = usePolling<{ bus_count: number; updated_at: string | null }>(
+     () => api.fleet.meta(),
+-    15_000,
++    POLLING.FLEET_ALL_MS,
+   )
+   const { data: garages } = usePolling<Garage[]>(
+     () => api.garages.list(),
+-    86_400_000, // 24 h ÔÇö garages rarely change
++    POLLING.GARAGES_MS,
+   )
+ 
+   // ÔöÇÔöÇ Route filter: autocomplete search + chips ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+diff --git a/src/pages/NearbyPage.tsx b/src/pages/NearbyPage.tsx
+index c7baa41..ce8ccd2 100644
+--- a/src/pages/NearbyPage.tsx
++++ b/src/pages/NearbyPage.tsx
+@@ -376,8 +376,10 @@ export default function NearbyPage() {
+             <div className="text-center">
+               <h2 className="text-lg font-bold text-slate-100 mb-1">Konum ─░zni</h2>
+               <p className="text-sm text-slate-400 leading-relaxed max-w-xs">
+-                Yak─▒n duraklar─▒ listelemek i├ºin konumunuza ihtiya├º var.
+-                Konumunuz yaln─▒zca bu cihazda i┼ƒlenir; hi├ºbir sunucuya kaydedilmez.
++                Yak─▒n duraklar─▒ listelemek i├ºin konumunuza ihtiya├º var. Konumunuz pcislocked.net gizlilik politikalar─▒na g├Âre ─░stanbul ve Amsterdam'daki sunucular─▒m─▒za anl─▒k g├Ânderilir fakat kal─▒c─▒ olarak kay─▒t alt─▒na al─▒nmaz.{' '}
++                <a href="https://pcislocked.net/kvkk/" target="_blank" rel="noreferrer" className="text-brand-400 hover:underline">
++                  Gizlilik Politikas─▒ (KVKK)
++                </a>
+               </p>
+             </div>
+           </div>
+diff --git a/src/pages/RoutePage.tsx b/src/pages/RoutePage.tsx
+index 18f3956..004edbf 100644
+--- a/src/pages/RoutePage.tsx
++++ b/src/pages/RoutePage.tsx
+@@ -1,4 +1,4 @@
+-import { useState, useMemo } from 'react'
++import { useState, useMemo, useEffect, useCallback } from 'react'
+ import { useParams, useNavigate, Link } from 'react-router-dom'
+ import { MapContainer, TileLayer, Marker, Popup, CircleMarker } from 'react-leaflet'
+ import * as L from 'leaflet'
+@@ -7,6 +7,9 @@ import { usePolling } from '@/hooks/usePolling'
+ import { api, type RouteStop, type ScheduledDeparture, type Announcement, type RouteMetadata } from '@/api/client'
+ import { useFavorites } from '@/hooks/useFavorites'
+ import { getDirectionLabel } from '@/utils/routeDirectionLabels'
++import { formatStopName } from '@/utils/formatStopName'
++import { POLLING } from '@/config/polling'
++import BusDetailSheet from '@/components/BusDetailSheet'
+ 
+ const busIconG = L.divIcon({
+   className: '',
+@@ -33,6 +36,58 @@ const DAY_TYPES = [
+   { key: 'P', label: 'Pazar' },
+ ]
+ 
++function VariantSelect({ 
++  options, 
++  value, 
++  onChange, 
++  className 
++}: { 
++  options: { value: string; label: string; isCanonical?: boolean; separatorAfter?: boolean }[]
++  value: string
++  onChange: (val: string) => void
++  className?: string
++}) {
++  const [isOpen, setIsOpen] = useState(false)
++  const selected = options.find(o => o.value === value)
++
++  return (
++    <div className={`relative ${className || ''}`}>
++      <div 
++        onClick={() => setIsOpen(!isOpen)}
++        className="flex items-center justify-between bg-surface cursor-pointer border border-brand-500/50 hover:border-brand-500 transition-colors rounded-xl px-3 py-2.5"
++      >
++        <span className="text-sm font-semibold text-slate-100 truncate pr-2">{selected?.label || 'Se├ºiniz'}</span>
++        <svg className={`w-4 h-4 text-brand-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
++          <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
++        </svg>
++      </div>
++      
++      {isOpen && (
++        <>
++          <div className="fixed inset-0 z-[990]" onClick={() => setIsOpen(false)} />
++          <div className="absolute top-full left-0 right-0 mt-2 bg-surface-card border border-surface-muted rounded-xl overflow-hidden z-[1000] shadow-xl shadow-black/50">
++            <div className="max-h-[300px] overflow-y-auto overscroll-contain">
++              {options.map(o => (
++                <div key={o.value}>
++                  <button
++                    onClick={() => { onChange(o.value); setIsOpen(false) }}
++                    className={`w-full text-left px-3 py-3 text-sm transition-colors hover:bg-surface-muted flex items-center justify-between ${
++                      value === o.value ? 'bg-brand-500/10 text-brand-400' : 'text-slate-300'
++                    } ${o.isCanonical ? 'font-bold' : ''}`}
++                  >
++                    <span className="truncate">{o.label}</span>
++                  </button>
++                  {o.separatorAfter && <hr className="border-surface-muted my-1" />}
++                </div>
++              ))}
++            </div>
++          </div>
++        </>
++      )}
++    </div>
++  )
++}
++
+ function ErrorRetry({ message, onRetry }: { message: string; onRetry: () => void }) {
+   return (
+     <div className="flex flex-col items-center py-16 gap-4 text-slate-500">
+@@ -45,20 +100,53 @@ function ErrorRetry({ message, onRetry }: { message: string; onRetry: () => void
+   )
+ }
+ 
+-function TimetableView({ schedule, scheduleError, onRetry, metadata }: {
++function TimetableView({ schedule, scheduleError, onRetry, metadata, onSelectVariant, stops, hatKodu }: {
+   schedule: ScheduledDeparture[] | null
+   scheduleError: string | null
+   onRetry: () => void
+   metadata: RouteMetadata[] | null
++  onSelectVariant?: (variant: string) => void
++  stops?: RouteStop[] | null
++  hatKodu?: string
+ }) {
+   const [dayType, setDayType] = useState('H')
+   const [direction, setDirection] = useState('')
+ 
+-  // Map direction code ('D'/'G') ÔåÆ short terminal label from metadata
++  // Map direction code ('D'/'G') ÔåÆ departure label (KALKI┼× / Y├ûN├£)
+   const dirLabel = useMemo(() => {
+     const hasMetadata = !!metadata?.length
+-    return (code: string) => getDirectionLabel(code, metadata, hasMetadata)
+-  }, [metadata])
++    return (code: string) => {
++      if (stops && stops.length > 0) {
++        const dirStops = stops.filter(s => s.direction === code)
++        if (dirStops.length > 0) {
++          const variantsInDir = Array.from(new Set(dirStops.map(s => s.route_code)))
++          const firstStops = new Set<string>()
++          const lastStops = new Set<string>()
++          
++          for (const v of variantsInDir) {
++            const vStops = dirStops.filter(s => s.route_code === v)
++            if (vStops.length > 0) {
++              firstStops.add(formatStopName(vStops[0].stop_name).split(' - ')[0])
++              lastStops.add(formatStopName(vStops[vStops.length - 1].stop_name).split(' - ')[0])
++            }
++          }
++          
++          if (firstStops.size === 1) {
++            return `${Array.from(firstStops)[0]} KALKI┼×`
++          } else if (lastStops.size === 1) {
++            return `${Array.from(lastStops)[0]} Y├ûN├£`
++          } else if (firstStops.size > 1) {
++            return `├çE┼×─░TL─░ KALKI┼×LAR (${code === 'G' ? 'Gidi┼ƒ' : 'D├Ân├╝┼ƒ'})`
++          }
++        }
++      }
++
++      const baseLabel = getDirectionLabel(code, metadata, hasMetadata)
++      return baseLabel !== code && baseLabel !== 'Gidi┼ƒ' && baseLabel !== 'D├Ân├╝┼ƒ'
++        ? `${baseLabel} KALKI┼×`
++        : baseLabel === 'Gidi┼ƒ' ? 'Gidi┼ƒ' : baseLabel === 'D├Ân├╝┼ƒ' ? 'D├Ân├╝┼ƒ' : code
++    }
++  }, [metadata, stops])
+ 
+   // Directions available for the current day type
+   const availableDirections = useMemo(() => {
+@@ -75,24 +163,139 @@ function TimetableView({ schedule, scheduleError, onRetry, metadata }: {
+     ? direction
+     : (availableDirections[0] ?? '')
+ 
++  // Generate dynamic footnotes for sub-routes
++  const { footnotes, footnoteToName, footnoteToVariant } = useMemo(() => {
++    const fnMap = new Map<string, number>()
++    const fnNameMap = new Map<number, string>()
++    const fnVariantMap = new Map<number, string>()
++    if (!schedule || !effectiveDirection) return { footnotes: fnMap, footnoteToName: fnNameMap, footnoteToVariant: fnVariantMap }
++
++    const filtered = schedule.filter(d => d.day_type === dayType && d.direction === effectiveDirection)
++    const uniqueVariants = [...new Set(filtered.map(d => d.route_variant).filter(v => v && !v.endsWith('_D0') && !v.endsWith('_G0')))].sort()
++    
++    const metaMap = new Map<string, string>()
++    if (metadata) {
++      for (const m of metadata) {
++        if (m.variant_code && m.full_name) metaMap.set(m.variant_code, m.full_name)
++      }
++    }
++
++    uniqueVariants.forEach((v, idx) => {
++      const num = idx + 1
++      fnMap.set(v, num)
++      
++      let label = v
++
++      // 1. Try to derive from physical stops
++      let stopsLabel = ''
++      const variantStops = stops?.filter(s => s.route_code === v || (!metadata?.length && `${hatKodu}_${s.direction}` === v))
++      if (variantStops && variantStops.length > 1) {
++        const first = formatStopName(variantStops[0].stop_name).split(' - ')[0]
++        const last = formatStopName(variantStops[variantStops.length - 1].stop_name).split(' - ')[0]
++        stopsLabel = `${first} > ${last}`
++      }
++
++      if (stopsLabel) {
++        label = stopsLabel
++      } else {
++        const meta = metadata?.find(m => m.variant_code === v)
++        if (meta) {
++          const parts = meta.direction_name ? meta.direction_name.split(' - ') : []
++          label = parts.length >= 2 ? `${parts[0].trim()} > ${parts[parts.length - 1].trim()}` : (meta.full_name || v)
++        } else {
++          const isG = v.includes('_G_') || v.includes('_119_') || v.endsWith('_G')
++          const oppositeMeta = metadata?.find(m => m.variant_code && m.variant_code.includes(isG ? '_D_' : '_G_')) || metadata?.[0]
++          if (oppositeMeta && oppositeMeta.direction_name) {
++            const parts = oppositeMeta.direction_name.split(' - ')
++            if (parts.length >= 2) {
++              label = isG ? `${parts[0].trim()} > ${parts[parts.length - 1].trim()}` : `${parts[parts.length - 1].trim()} > ${parts[0].trim()}`
++            }
++          }
++        }
++      }
++      
++      const isCanonical = v.endsWith('_D0') || v.endsWith('_G0')
++      if (!isCanonical && label !== v) {
++        const suffix = v.split('_').pop()
++        if (suffix && suffix !== 'G' && suffix !== 'D') {
++          label += ` (${suffix})`
++        }
++      }
++      
++      fnNameMap.set(num, label)
++      fnVariantMap.set(num, v)
++    })
++    return { footnotes: fnMap, footnoteToName: fnNameMap, footnoteToVariant: fnVariantMap }
++  }, [schedule, dayType, effectiveDirection, metadata, stops, hatKodu])
++
+   // Group filtered departures by hour
+   const hourMap = useMemo(() => {
+-    if (!schedule || !effectiveDirection) return new Map<number, number[]>()
++    if (!schedule || !effectiveDirection) return new Map<number, { m: number, fn?: number }[]>()
+     const filtered = schedule.filter(
+       (d) => d.day_type === dayType && d.direction === effectiveDirection,
+     )
+-    const map = new Map<number, number[]>()
++    const map = new Map<number, { m: number, fn?: number }[]>()
+     for (const dep of filtered) {
+       const [h, m] = dep.departure_time.split(':').map(Number)
+       if (!map.has(h)) map.set(h, [])
+-      map.get(h)!.push(m)
++      map.get(h)!.push({ m, fn: footnotes.get(dep.route_variant) })
+     }
+-    for (const mins of map.values()) mins.sort((a, b) => a - b)
++    for (const mins of map.values()) mins.sort((a, b) => a.m - b.m)
+     return map
+-  }, [schedule, dayType, effectiveDirection])
++  }, [schedule, dayType, effectiveDirection, footnotes])
+ 
+   const hours = Array.from(hourMap.keys()).sort((a, b) => a - b)
+ 
++  const [showWarningDetail, setShowWarningDetail] = useState(false)
++
++  // Warning for mismatched metadata or multiple origin stations
++  const directionWarning = useMemo(() => {
++    if (!stops || stops.length === 0 || !effectiveDirection) return null
++
++    const dirStops = stops.filter(s => s.direction === effectiveDirection)
++    if (dirStops.length === 0) return null
++
++    const variantsInDir = Array.from(new Set(dirStops.map(s => s.route_code)))
++    const firstStops = new Set<string>()
++    for (const v of variantsInDir) {
++      const vStops = dirStops.filter(s => s.route_code === v)
++      if (vStops.length > 0) {
++        firstStops.add(formatStopName(vStops[0].stop_name).split(' - ')[0])
++      }
++    }
++
++    if (firstStops.size > 1) {
++      return {
++        type: 'multiple',
++        text: 'Birden fazla kalk─▒┼ƒ istasyonu',
++        detail: 'Bu y├Ânde farkl─▒ istasyonlardan kalkan alternatif g├╝zergahlar mevcut. Sistemimiz alternatif g├╝zergahlar─▒ analiz edip a┼ƒa─ƒ─▒da listelese de, karma┼ƒ─▒k resmi veri i├ºin IETT web sitesine bakman─▒z ├Ânerilir.'
++      }
++    }
++
++    // Check mismatch for single starting point
++    const actualFirstStop = Array.from(firstStops)[0]
++    if (actualFirstStop) {
++      const hasMetadata = !!metadata?.length
++      const metaLabel = getDirectionLabel(effectiveDirection, metadata, hasMetadata)
++      
++      if (metaLabel && metaLabel !== effectiveDirection && metaLabel !== 'Gidi┼ƒ' && metaLabel !== 'D├Ân├╝┼ƒ') {
++        const isMatch = actualFirstStop.includes(metaLabel) || metaLabel.includes(actualFirstStop) || 
++                        actualFirstStop.split(' ').some(w => w.length > 3 && metaLabel.includes(w)) ||
++                        metaLabel.split(' ').some(w => w.length > 3 && actualFirstStop.includes(w))
++
++        if (!isMatch) {
++          return {
++            type: 'mismatch',
++            text: 'Kalk─▒┼ƒ istasyonlar─▒ e┼ƒle┼ƒmiyor',
++            detail: `IETT verisinde y├Ân "${metaLabel}" olarak ge├ºmesine ra─ƒmen, fiziksel durak "${actualFirstStop}" dura─ƒ─▒ndan ba┼ƒl─▒yor. Uygulamam─▒z do─ƒru fiziksel duraklar─▒ baz alsa da, resmi veri i├ºin IETT'ye g├╝venmeniz ├Ânerilir.`
++          }
++        }
++      }
++    }
++
++    return null
++  }, [stops, effectiveDirection, metadata])
++
+   // Check which day types have data
+   const availableDays = useMemo(() => {
+     if (!schedule) return new Set<string>()
+@@ -101,9 +304,11 @@ function TimetableView({ schedule, scheduleError, onRetry, metadata }: {
+ 
+   /* ÔöÇÔöÇ Metro-style day type selector ÔöÇÔöÇ */
+   return (
+-    <div className="flex flex-col gap-4">
+-      {/* Day type selector */}
+-      <div className="flex border-b border-[#222]">
++    <div className="flex flex-col h-full min-h-0 px-4">
++      {/* Static Sub-filters container */}
++      <div className="sticky top-0 shrink-0 flex flex-col bg-[#0a0a0a] z-20 pb-2 pt-4 -mx-4 px-4 border-b border-[#222]">
++        {/* Day type selector */}
++        <div className="flex border-b border-[#222]">
+         {DAY_TYPES.map(({ key, label }) => (
+           <button
+             key={key}
+@@ -118,11 +323,11 @@ function TimetableView({ schedule, scheduleError, onRetry, metadata }: {
+             {label}
+           </button>
+         ))}
+-      </div>
++        </div>
+ 
+-      {/* Direction pill toggle ÔÇö flat Metro style */}
+-      {availableDirections.length > 1 && (
+-        <div className="flex gap-0 border-b border-[#222]">
++        {/* Direction pill toggle ÔÇö flat Metro style */}
++        {availableDirections.length > 1 && (
++          <div className="flex gap-0 border-t border-[#222] mt-2 pt-1">
+           {availableDirections.map((dir) => (
+             <button
+               key={dir}
+@@ -136,11 +341,37 @@ function TimetableView({ schedule, scheduleError, onRetry, metadata }: {
+               {dirLabel(dir)}
+             </button>
+           ))}
++          </div>
++        )}
++
++        {/* Info warning for mismatches or multiple terminals */}
++        {directionWarning && (
++          <div className="px-1 mt-3">
++          <div className="flex items-center gap-1.5 text-xs text-brand-400 bg-brand-500/10 px-2.5 py-1.5 rounded-lg w-fit">
++            <span className="truncate">{directionWarning.text}</span>
++            <button 
++              onClick={() => setShowWarningDetail(!showWarningDetail)}
++              className="p-1 hover:bg-brand-500/20 rounded-full shrink-0 transition-colors"
++              title="Detay"
++            >
++              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
++                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
++              </svg>
++            </button>
++          </div>
++          {showWarningDetail && (
++            <div className="mt-2 text-[11px] text-brand-100/70 bg-brand-500/5 p-2.5 rounded-lg border border-brand-500/10 leading-relaxed">
++              {directionWarning.detail}
++            </div>
++          )}
+         </div>
+       )}
++      </div>
+ 
+-      {/* Hour grid */}
+-      {!schedule && !scheduleError && (
++      {/* Scrollable Content Container */}
++      <div className="flex-1 overflow-y-auto no-scrollbar pb-6 pt-2">
++        {/* Hour grid */}
++        {!schedule && !scheduleError && (
+         <div className="flex flex-col gap-2">
+           {[...Array(5)].map((_, i) => (
+             <div key={i} className="h-12 bg-surface-muted rounded-xl animate-pulse" />
+@@ -166,80 +397,254 @@ function TimetableView({ schedule, scheduleError, onRetry, metadata }: {
+             </span>
+           </div>
+           <div className="flex-1 flex flex-wrap gap-1.5 pb-2 border-b border-surface-muted/50">
+-            {hourMap.get(h)!.map((m) => (
+-              <span
+-                key={m}
+-                className="text-xs font-mono text-slate-300 bg-surface-card border border-surface-muted
+-                           rounded-md px-1.5 py-0.5 min-w-[30px] text-center"
+-              >
+-                {String(m).padStart(2, '0')}
+-              </span>
+-            ))}
++            {hourMap.get(h)!.map(({ m, fn }, idx) => {
++              const variantCode = fn ? footnoteToVariant.get(fn) : undefined
++              return (
++                <span
++                  key={`${m}-${idx}`}
++                  className="text-xs font-mono text-slate-300 bg-surface-card border border-surface-muted
++                             rounded-md px-1.5 py-0.5 min-w-[30px] text-center"
++                >
++                  {String(m).padStart(2, '0')}
++                  {fn && (
++                    <button 
++                      onClick={() => variantCode && onSelectVariant?.(variantCode)}
++                      className="ml-0.5 text-[#00AFF0] font-bold hover:underline"
++                    >
++                      {fn}
++                    </button>
++                  )}
++                </span>
++              )
++            })}
+           </div>
+         </div>
+       ))}
++
++        {/* Legend (Notlar) */}
++        {footnoteToName.size > 0 && (
++          <div className="mt-4 p-3 bg-surface-card border border-surface-muted rounded-xl">
++            <h4 className="text-xs font-bold text-slate-400 mb-2 uppercase tracking-wider">Notlar (Yan Seferler)</h4>
++            <ul className="flex flex-col gap-1.5">
++              {Array.from(footnoteToName.entries()).map(([num, name]) => {
++                const variantCode = footnoteToVariant.get(num)
++                return (
++                  <li key={num}>
++                    <button 
++                      onClick={() => variantCode && onSelectVariant?.(variantCode)}
++                      className="text-xs text-slate-300 flex items-start gap-2 text-left hover:text-brand-300 transition-colors w-full group"
++                    >
++                      <span className="text-[#00AFF0] font-bold shrink-0 group-hover:underline">{num}:</span>
++                      <span className="group-hover:underline">{name}</span>
++                    </button>
++                  </li>
++                )
++              })}
++            </ul>
++          </div>
++        )}
++      </div>
+     </div>
+   )
+ }
+ 
+ type Tab = 'schedule' | 'map' | 'stops' | 'alerts'
+ 
++function StopPopupContent({ s }: { s: RouteStop }) {
++  const navigate = useNavigate()
++  const [direction, setDirection] = useState(s.stop_direction)
++
++  useEffect(() => {
++    if (!s.stop_direction) {
++      api.stops.detail(s.stop_code).then(res => {
++        if (res.direction) setDirection(res.direction)
++      }).catch(() => {})
++    }
++  }, [s.stop_code, s.stop_direction])
++
++  return (
++    <div className="text-center min-w-[150px] max-w-[200px] px-1 py-1">
++      <p className="font-bold text-slate-100 text-[13px] mb-2 leading-tight">
++        {formatStopName(s.stop_name).split(' - ')[0]}
++        <br/>
++        <span className="text-[11px] text-slate-300 font-medium">
++          {direction ? `(${direction} Y├Ân├╝ - ${s.stop_code})` : `(#${s.stop_code})`}
++        </span>
++      </p>
++      <button
++        onClick={() => navigate(`/stops/${s.stop_code}`)}
++        className="bg-brand-600 hover:bg-brand-500 text-white px-3 py-1.5 rounded text-[11px] font-semibold w-full transition-colors"
++      >
++        Dura─ƒa Git
++      </button>
++    </div>
++  )
++}
++
+ export default function RoutePage() {
+   const { hatKodu } = useParams<{ hatKodu: string }>()
+   const navigate = useNavigate()
+   const [tab, setTab] = useState<Tab>('schedule')
+-  const [stopsDir, setStopsDir] = useState('')
+-  const [mapDir, setMapDir] = useState('')
++  const [selectedVariant, setSelectedVariant] = useState('all')
++  const [selectedBus, setSelectedBus] = useState<any>(null)
+ 
+   const { data: buses, stale } = useRouteBuses(hatKodu ?? '')
+ 
+-  const stopsFetcher = useMemo(() => () => api.routes.stops(hatKodu ?? ''), [hatKodu])
+-  const scheduleFetcher = useMemo(() => () => api.routes.schedule(hatKodu ?? ''), [hatKodu])
+-  const announceFetcher = useMemo(() => () => api.routes.announcements(hatKodu ?? ''), [hatKodu])
+-  const metaFetcher = useMemo(() => () => api.routes.metadata(hatKodu ?? ''), [hatKodu])
++  const stopsFetcher = useCallback(() => api.routes.stops(hatKodu ?? ''), [hatKodu])
++  const scheduleFetcher = useCallback(() => api.routes.schedule(hatKodu ?? ''), [hatKodu])
++  const announceFetcher = useCallback(() => api.routes.announcements(hatKodu ?? ''), [hatKodu])
++  const metaFetcher = useCallback(() => api.routes.metadata(hatKodu ?? ''), [hatKodu])
++
++  const { data: stops, error: stopsError, refresh: refreshStops } = usePolling<RouteStop[]>(stopsFetcher, POLLING.ROUTE_STOPS_MS, hatKodu)
++  const { data: schedule, error: scheduleError, refresh: refreshSchedule } = usePolling<ScheduledDeparture[]>(scheduleFetcher, POLLING.ROUTE_SCHEDULE_MS, hatKodu)
++  const { data: announcements, error: announcementsError, refresh: refreshAnnouncements } = usePolling<Announcement[]>(announceFetcher, POLLING.ANNOUNCEMENTS_MS, hatKodu)
++  const { data: metadata } = usePolling<RouteMetadata[]>(metaFetcher, POLLING.ROUTE_META_MS, hatKodu)
++
++  // Unique route variants derived from available stops (or canonical metadata if loading)
++  const { mapVariantOptions, stopsVariantOptions, variantOptions } = useMemo(() => {
++    // 1. Determine which variant codes to show
++    let availableCodes: string[] = []
++    let isSoapFallback = false
++
++    if (stops && stops.length > 0) {
++      const hasVariantCodes = stops.some(s => s.route_code && s.route_code !== hatKodu)
++      if (hasVariantCodes) {
++        availableCodes = [...new Set(stops.map(s => s.route_code).filter(Boolean) as string[])].sort()
++      } else {
++        isSoapFallback = true
++        availableCodes = [...new Set(stops.map(s => `${hatKodu}_${s.direction}`))].sort()
++      }
++    } else if (metadata) {
++      // If stops are still loading, show only the canonical variants to avoid duplicate spam
++      availableCodes = metadata.filter(m => m.variant_code?.endsWith('_D0') || m.variant_code?.endsWith('_G0')).map(m => m.variant_code)
++    }
+ 
+-  const { data: stops, error: stopsError, refresh: refreshStops } = usePolling<RouteStop[]>(stopsFetcher, 300_000)
+-  const { data: schedule, error: scheduleError, refresh: refreshSchedule } = usePolling<ScheduledDeparture[]>(scheduleFetcher, 300_000)
+-  const { data: announcements, error: announcementsError, refresh: refreshAnnouncements } = usePolling<Announcement[]>(announceFetcher, 300_000)
+-  const { data: metadata } = usePolling<RouteMetadata[]>(metaFetcher, 600_000)
++    if (availableCodes.length === 0) return { mapVariantOptions: [], stopsVariantOptions: [], variantOptions: [] }
++
++    // 2. Build options with labels from metadata and actual stops
++    let options = availableCodes.map(code => {
++      let label = code
++      let isG = code.includes('_G_') || code.includes('_119_') || code.endsWith('_G')
++
++      // 2a. Derive physical true label from actual stops
++      let stopsLabel = ''
++      const variantStops = stops?.filter(s => s.route_code === code || (isSoapFallback && `${hatKodu}_${s.direction}` === code))
++      if (variantStops && variantStops.length > 1) {
++        const first = formatStopName(variantStops[0].stop_name).split(' - ')[0]
++        const last = formatStopName(variantStops[variantStops.length - 1].stop_name).split(' - ')[0]
++        stopsLabel = `${first} > ${last}`
++      }
++
++      if (isSoapFallback) {
++        isG = code.endsWith('_G')
++        label = stopsLabel || (isG ? 'Gidi┼ƒ' : 'D├Ân├╝┼ƒ')
++        return { value: code, label, direction_letter: (isG ? 'G' : 'D') as 'G' | 'D', isCanonical: true }
++      }
++
++      const meta = metadata?.find(m => m.variant_code === code)
++      if (meta) {
++        isG = (meta.direction === 0 || meta.direction === 119)
++      }
++      
++      // Use physical stops label if available, otherwise fallback to metadata
++      if (stopsLabel) {
++        label = stopsLabel
++      } else if (meta) {
++        const parts = meta.direction_name ? meta.direction_name.split(' - ') : []
++        label = parts.length >= 2 ? `${parts[0].trim()} > ${parts[parts.length - 1].trim()}` : (meta.full_name || code)
++      } else {
++        const oppositeMeta = metadata?.find(m => m.variant_code && m.variant_code.includes(isG ? '_D_' : '_G_')) || metadata?.[0]
++        if (oppositeMeta && oppositeMeta.direction_name) {
++          const parts = oppositeMeta.direction_name.split(' - ')
++          if (parts.length >= 2) {
++            label = isG ? `${parts[0].trim()} > ${parts[parts.length - 1].trim()}` : `${parts[parts.length - 1].trim()} > ${parts[0].trim()}`
++          }
++        }
++      }
++      
++      const isCanonical = code.endsWith('_D0') || code.endsWith('_G0')
++      if (!isCanonical) {
++        const suffix = code.split('_').pop()
++        if (suffix && suffix !== 'G' && suffix !== 'D') {
++          label += ` (${suffix})`
++        }
++      }
++
++      return { value: code, label, direction_letter: (isG ? 'G' : 'D') as 'G' | 'D', isCanonical }
++    })
++
++    // 3. Deduplicate labels
++    const labelCounts = options.reduce((acc, opt) => {
++      acc[opt.label] = (acc[opt.label] || 0) + 1
++      return acc
++    }, {} as Record<string, number>)
++
++    options = options.map(opt => {
++      if (labelCounts[opt.label] > 1) {
++        const meta = metadata?.find(m => m.variant_code === opt.value)
++        return { ...opt, label: meta?.full_name ? `${opt.label} (${meta.full_name.split(' ').pop()})` : opt.value }
++      }
++      return opt
++    })
++
++    // Sort: canonicals first (G then D), then others (G then D)
++    options.sort((a, b) => {
++      if (a.isCanonical && !b.isCanonical) return -1
++      if (!a.isCanonical && b.isCanonical) return 1
++      if (a.direction_letter === 'G' && b.direction_letter === 'D') return -1
++      if (a.direction_letter === 'D' && b.direction_letter === 'G') return 1
++      return a.label.localeCompare(b.label)
++    })
++
++    // Add separator after the last canonical
++    const lastCanonicalIdx = options.reduce((lastIdx, opt, idx) => opt.isCanonical ? idx : lastIdx, -1)
++    if (lastCanonicalIdx !== -1 && lastCanonicalIdx < options.length - 1) {
++      options[lastCanonicalIdx].separatorAfter = true
++    }
+ 
+-  // Unique direction keys from stops ÔÇö "G" / "D"
+-  const stopsDirections = useMemo(
+-    () => [...new Set((stops ?? []).map((s) => s.direction))].sort(),
+-    [stops],
+-  )
+-  const dirLabel = (d: string) => d === 'G' ? 'Gidi┼ƒ' : d === 'D' ? 'D├Ân├╝┼ƒ' : d
++    const mapOptions = [{ value: 'all', label: 'T├╝m Seferler', isCanonical: true, separatorAfter: lastCanonicalIdx === -1 }, ...options]
++    return { mapVariantOptions: mapOptions, stopsVariantOptions: options, variantOptions: options }
++  }, [metadata, stops, hatKodu])
++
++  useEffect(() => {
++    if (variantOptions.length > 0) {
++      if (selectedVariant === 'all') return // 'all' is a valid state (used by map)
++      const exists = variantOptions.some(o => o.value === selectedVariant)
++      if (!exists) {
++        const canonical = variantOptions.find(o => o.value.endsWith('_D0') || o.value.endsWith('_G0'))
++        setSelectedVariant(canonical?.value || variantOptions[0].value)
++      }
++    }
++  }, [variantOptions, selectedVariant])
++
++  const activeOption = variantOptions.find(o => o.value === selectedVariant)
++  const activeDirectionLetter = activeOption?.direction_letter ?? ''
++
++  const stopsForVariant = useMemo(() => {
++    if (!stops) return []
++    
++    let effectiveVariant = selectedVariant
++    if (effectiveVariant === 'all' && stopsVariantOptions.length > 0) {
++      if (tab === 'map') return stops // Map renders all stops when 'all' is selected
++      effectiveVariant = stopsVariantOptions[0].value
++    }
+ 
+-  const effectiveStopsDir = stopsDirections.includes(stopsDir)
+-    ? stopsDir
+-    : (stopsDirections[0] ?? '')
++    if (effectiveVariant === 'all') return stops // Fallback
+ 
+-  // Deduplicate by stop_code within the selected direction (ntcapi returns multiple variants)
+-  const stopsForDir = useMemo(() => {
+-    const dirStops = (stops ?? []).filter((s) => !effectiveStopsDir || s.direction === effectiveStopsDir)
+-    const seen = new Set<string>()
+-    return dirStops.filter((s) => { if (seen.has(s.stop_code)) return false; seen.add(s.stop_code); return true })
+-  }, [stops, effectiveStopsDir])
++    return stops.filter((s) => s.route_code === effectiveVariant)
++  }, [stops, selectedVariant, stopsVariantOptions, tab])
+ 
+-  // Build set of stop_sequence values for buses currently in the active stops direction
++  // Build map of stop_sequence to bus directions
+   const busAtSequence = useMemo(() => {
+-    const seqs = new Set<number>()
++    const seqs = new Map<number, Set<string>>()
+     for (const b of (buses ?? [])) {
+-      if (b.stop_sequence != null && (!effectiveStopsDir || b.direction_letter === effectiveStopsDir))
+-        seqs.add(b.stop_sequence)
++      if (b.stop_sequence != null && (!activeDirectionLetter || b.direction_letter === activeDirectionLetter)) {
++        if (!seqs.has(b.stop_sequence)) seqs.set(b.stop_sequence, new Set())
++        seqs.get(b.stop_sequence)!.add(b.direction ?? 'Otob├╝s')
++      }
+     }
+     return seqs
+-  }, [buses, effectiveStopsDir])
+-
+-  // Direction state for the map tab
+-  const effectiveMapDir = stopsDirections.includes(mapDir)
+-    ? mapDir
+-    : (stopsDirections[0] ?? '')
+-  const stopsForMap = useMemo(() => {
+-    const dirStops = (stops ?? []).filter((s) => !effectiveMapDir || s.direction === effectiveMapDir)
+-    const seen = new Set<string>()
+-    return dirStops.filter((s) => { if (seen.has(s.stop_code)) return false; seen.add(s.stop_code); return true })
+-  }, [stops, effectiveMapDir])
++  }, [buses, activeDirectionLetter])
+ 
+   const { isFavorite, toggle } = useFavorites()
+   const routeName = metadata?.[0]?.full_name ?? hatKodu ?? ''
+@@ -255,14 +660,14 @@ export default function RoutePage() {
+   const tabs: { id: Tab; label: string; badge?: number }[] = [
+     { id: 'schedule', label: 'Sefer Saatleri' },
+     { id: 'map', label: 'Harita', badge: buses?.length },
+-    { id: 'stops', label: 'Duraklar', badge: stopsForDir.length ?? stops?.length },
++    { id: 'stops', label: 'Duraklar', badge: stopsForVariant.length ?? stops?.length },
+     { id: 'alerts', label: 'Duyurular', badge: announcements?.length ? announcements.length : undefined },
+   ]
+ 
+   return (
+-    <div className="flex flex-col min-h-screen">
++    <div className="flex flex-col h-[100dvh] overflow-hidden">
+       {/* Header */}
+-      <div className="bg-surface-card border-b border-surface-muted">
++      <div className="shrink-0 bg-[#0a0a0a] border-b border-[#222]">
+         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
+           <div className="flex-1 min-w-0">
+             <div className="flex items-center gap-2">
+@@ -313,33 +718,36 @@ export default function RoutePage() {
+         </div>
+       </div>
+ 
+-      {/* Body */}
+-      <div className="flex-1 max-w-2xl w-full mx-auto px-4 pb-6 pt-4">
++      {/* Body Container */}
++      <div className="flex-1 max-w-2xl w-full mx-auto flex flex-col min-h-0 overflow-y-auto no-scrollbar relative">
+ 
+         {/* Timetable tab */}
+         {tab === 'schedule' && (
+-          <TimetableView schedule={schedule} scheduleError={scheduleError} onRetry={refreshSchedule} metadata={metadata} />
++          <TimetableView 
++            schedule={schedule} 
++            scheduleError={scheduleError} 
++            onRetry={refreshSchedule} 
++            metadata={metadata} 
++            onSelectVariant={(v) => { 
++              setSelectedVariant(v); 
++              setTab('stops');
++              window.scrollTo({ top: 0, behavior: 'smooth' });
++            }}
++            stops={stops}
++          />
+         )}
+ 
+         {/* Map tab */}
+         {tab === 'map' && (
+-          <div className="flex flex-col gap-2">
+-            {/* Direction pills ÔÇö map tab, Metro flat */}
+-            {stopsDirections.length > 1 && (
+-              <div className="flex border-b border-[#222]">
+-                {stopsDirections.map((dir) => (
+-                  <button
+-                    key={dir}
+-                    onClick={() => setMapDir(dir)}
+-                    className={`flex-1 text-xs py-2 px-2 font-medium transition-colors truncate border-b-2 -mb-px ${
+-                      effectiveMapDir === dir
+-                        ? 'border-[#00AFF0] text-[#00AFF0]'
+-                        : 'border-transparent text-[#404040] hover:text-[#888]'
+-                    }`}
+-                  >
+-                    {dirLabel(dir)}
+-                  </button>
+-                ))}
++          <div className="flex flex-col h-full min-h-0 px-4 pb-6">
++            {/* Dropdown ÔÇö map tab */}
++            {mapVariantOptions.length > 1 && (
++              <div className="sticky top-0 z-20 bg-[#0a0a0a] pt-4 px-5 -mx-4 pb-2 border-b border-[#222] mb-4">
++                <VariantSelect
++                  options={mapVariantOptions}
++                  value={selectedVariant}
++                  onChange={setSelectedVariant}
++                />
+               </div>
+             )}
+             {/* Bus direction legend */}
+@@ -353,60 +761,85 @@ export default function RoutePage() {
+                 ))}
+               </div>
+             )}
+-            <div className="rounded-2xl overflow-hidden border border-surface-muted" style={{ height: 420 }}>
+-              <MapContainer center={center} zoom={13} style={{ height: '100%', width: '100%' }}>
+-                <TileLayer
+-                  attribution='&copy; <a href="https://carto.com/">CartoDB</a>'
+-                  url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+-                />
+-                {/* BUG-23: navigate to stop on click instead of showing popup */}
+-                {stopsForMap.map((s) => (
+-                  <CircleMarker
+-                    key={`${s.direction}-${s.stop_code}`}
+-                    center={[s.latitude, s.longitude]}
+-                    radius={5}
+-                    pathOptions={{ color: '#94a3b8', fillColor: '#94a3b8', fillOpacity: 1, weight: 2 }}
+-                    eventHandlers={{ click: () => { navigate(`/stops/${s.stop_code}`) } }}
++            <div className="rounded-2xl overflow-hidden border border-surface-muted relative z-0" style={{ height: 420 }}>
++              {!stops && !stopsError && (
++                <div className="absolute inset-0 flex items-center justify-center bg-surface/50 backdrop-blur-sm z-10">
++                  <div className="w-6 h-6 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
++                </div>
++              )}
++              {stopsError && (
++                <div className="absolute inset-0 flex items-center justify-center bg-surface/80 backdrop-blur-md z-10 px-4">
++                  <p className="text-sm text-red-400 text-center bg-surface-card p-4 rounded-xl border border-red-500/20 shadow-xl">
++                    {stopsError}
++                  </p>
++                </div>
++              )}
++              
++              {stops && (
++                <MapContainer
++                  center={[41.0422, 28.993]}
++                  zoom={11}
++                  className="w-full h-full"
++                  zoomControl={false}
++                >
++                  <TileLayer
++                    url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+                   />
+-                ))}
+-                {buses
+-                  ?.filter((b) => !effectiveMapDir || b.direction_letter === effectiveMapDir)
+-                  .map((b) => (
+-                    <Marker
+-                      key={b.kapino}
+-                      position={[b.latitude, b.longitude]}
+-                      icon={b.direction_letter === 'G' ? busIconG : b.direction_letter === 'D' ? busIconD : busIconUnknown}
++                  {/* Stop markers */}
++                  {selectedVariant !== 'all' && stopsForVariant.map((s) => (
++                    <CircleMarker
++                      key={`${s.direction}-${s.stop_code}-${s.sequence}`}
++                      center={[s.latitude, s.longitude]}
++                      radius={5}
++                      pathOptions={{ color: '#94a3b8', fillColor: '#94a3b8', fillOpacity: 1, weight: 2 }}
+                     >
+-                      <Popup>
+-                        <strong>{b.kapino}</strong><br />
+-                        {b.direction}
++                      <Popup className="route-stop-popup" closeButton={false}>
++                        <StopPopupContent s={s} />
+                       </Popup>
+-                    </Marker>
++                    </CircleMarker>
+                   ))}
+-              </MapContainer>
++                  {buses
++                    ?.filter((b) => !activeDirectionLetter || b.direction_letter === activeDirectionLetter)
++                    .map((b) => (
++                      <Marker
++                        key={b.kapino}
++                        position={[b.latitude, b.longitude]}
++                        icon={b.direction_letter === 'G' ? busIconG : b.direction_letter === 'D' ? busIconD : busIconUnknown}
++                        eventHandlers={{ click: () => setSelectedBus(b) }}
++                      />
++                    ))}
++                </MapContainer>
++              )}
+             </div>
++            
++            {selectedBus && (
++              <BusDetailSheet
++                routeCode={selectedBus.route_code || hatKodu}
++                destination={selectedBus.direction || (selectedBus.direction_letter === 'G' ? 'Gidi┼ƒ' : 'D├Ân├╝┼ƒ')}
++                plate={selectedBus.plate}
++                kapino={selectedBus.kapino}
++                speedKmh={selectedBus.speed}
++                busLat={selectedBus.latitude}
++                busLon={selectedBus.longitude}
++                showMap={true}
++                fetchAmenitiesForKapino={selectedBus.kapino}
++                onClose={() => setSelectedBus(null)}
++              />
++            )}
+           </div>
+         )}
+ 
+         {/* Stops tab */}
+         {tab === 'stops' && (
+           <div className="flex flex-col gap-1">
+-            {/* Direction filter pills ÔÇö stops tab, Metro flat */}
+-            {stopsDirections.length > 1 && (
+-              <div className="flex border-b border-[#222] mb-1">
+-                {stopsDirections.map((dir) => (
+-                  <button
+-                    key={dir}
+-                    onClick={() => setStopsDir(dir)}
+-                    className={`flex-1 text-xs py-2 px-2 font-medium transition-colors truncate border-b-2 -mb-px ${
+-                      effectiveStopsDir === dir
+-                        ? 'border-[#00AFF0] text-[#00AFF0]'
+-                        : 'border-transparent text-[#404040] hover:text-[#888]'
+-                    }`}
+-                  >
+-                    {dirLabel(dir)}
+-                  </button>
+-                ))}
++            {/* Dropdown ÔÇö stops tab */}
++            {stopsVariantOptions.length > 1 && (
++              <div className="sticky top-0 z-20 bg-[#0a0a0a] pt-4 px-5 -mx-4 pb-2 border-b border-[#222] mb-1">
++                <VariantSelect
++                  options={stopsVariantOptions}
++                  value={selectedVariant === 'all' ? stopsVariantOptions[0].value : selectedVariant}
++                  onChange={setSelectedVariant}
++                />
+               </div>
+             )}
+             {!stops && !stopsError && (
+@@ -431,19 +864,22 @@ export default function RoutePage() {
+                 <p className="text-sm">Bu hat i├ºin durak bulunamad─▒</p>
+               </div>
+             )}
+-            {stopsForDir.map((s) => (
++            {stopsForVariant.map((s) => (
+               <Link
+-                key={`${s.direction}-${s.stop_code}`}
++                key={`${s.direction}-${s.stop_code}-${s.sequence}`}
+                 to={`/stops/${s.stop_code}`}
+                 className="card flex items-center gap-3 py-3 hover:border-slate-500 transition-colors"
+               >
+                 <span className="font-mono text-brand-500 text-xs w-7 text-right shrink-0 tabular-nums">
+                   {s.sequence}
+                 </span>
+-                <span className="flex-1 text-sm text-slate-200 truncate">{s.stop_name}</span>
++                <span className="flex-1 text-sm text-slate-200 truncate">
++                  {formatStopName(s.stop_name).split(' - ')[0]}
++                </span>
+                 {busAtSequence.has(s.sequence) && (
+-                  <span title="Otob├╝s burada" className="w-2.5 h-2.5 rounded-full shrink-0 animate-pulse"
+-                        style={{ background: effectiveStopsDir === 'D' ? '#f59e0b' : '#2563eb' }} />
++                  <span title={`Otob├╝s burada: ${Array.from(busAtSequence.get(s.sequence)!).join(', ')}`} 
++                        className="w-2.5 h-2.5 rounded-full shrink-0 animate-pulse cursor-help"
++                        style={{ background: activeDirectionLetter === 'D' ? '#f59e0b' : '#2563eb' }} />
+                 )}
+                 <span className="text-xs text-slate-600 shrink-0">{s.stop_code}</span>
+                 <svg className="w-4 h-4 text-slate-600 shrink-0" fill="none" viewBox="0 0 24 24"
+diff --git a/src/pages/SearchPage.tsx b/src/pages/SearchPage.tsx
+index 54afaaa..6f3e0d5 100644
+--- a/src/pages/SearchPage.tsx
++++ b/src/pages/SearchPage.tsx
+@@ -4,6 +4,8 @@ import { api, type StopSearchResult, type RouteSearchResult } from '@/api/client
+ import { addRecent, getRecent, type RecentSearch } from '@/hooks/useRecentSearches'
+ import { useFavorites } from '@/hooks/useFavorites'
+ 
++import { formatStopName } from '@/utils/formatStopName'
++
+ type SearchResult =
+   | ({ kind: 'stop' } & StopSearchResult)
+   | ({ kind: 'route' } & RouteSearchResult)
+@@ -57,8 +59,8 @@ export default function SearchPage() {
+         ])
+         if (myId !== reqIdRef.current) return   // stale ÔÇö a newer query is in flight
+         const combined: SearchResult[] = [
+-          ...stops.map((s) => ({ kind: 'stop' as const, ...s })),
+           ...routes.map((r) => ({ kind: 'route' as const, ...r })),
++          ...stops.map((s) => ({ kind: 'stop' as const, ...s })),
+         ]
+         setResults(combined)
+       } catch {
+@@ -77,7 +79,7 @@ export default function SearchPage() {
+     if (r.kind === 'stop-direct') {
+       navigate(`/stops/${r.dcode}`)
+     } else if (r.kind === 'stop') {
+-      addRecent({ kind: 'stop', code: r.dcode, name: r.name })
++      addRecent({ kind: 'stop', code: r.dcode, name: formatStopName(r.name) })
+       navigate(`/stops/${r.dcode}`)
+     } else {
+       addRecent({ kind: 'route', code: r.hat_kodu, name: r.name })
+@@ -155,7 +157,7 @@ export default function SearchPage() {
+                       <span className="text-[11px] font-bold px-1.5 py-0.5 rounded bg-brand-900 text-brand-100 font-mono shrink-0">
+                         {r.dcode}
+                       </span>
+-                      <span className="text-sm text-slate-200 flex-1 truncate">{r.name}</span>
++                      <span className="text-sm text-slate-200 flex-1 truncate">{formatStopName(r.name)}</span>
+                     </>
+                   ) : (
+                     <>
+diff --git a/src/pages/StopPage.tsx b/src/pages/StopPage.tsx
+index e0e3368..e74e8c9 100644
+--- a/src/pages/StopPage.tsx
++++ b/src/pages/StopPage.tsx
+@@ -9,6 +9,7 @@ import { useFavorites } from '@/hooks/useFavorites'
+ import { useBottomBar } from '@/hooks/useBottomBar'
+ import { PINNED_STOPS_MAX, useUserPrefs } from '@/hooks/useUserPrefs'
+ import { etaChipClass } from '@/utils/etaColor'
++import { POLLING } from '@/config/polling'
+ 
+ /** Calls map.invalidateSize() whenever the container height percentage changes. */
+ function MapResizer({ heightPct }: { heightPct: number }) {
+@@ -71,18 +72,31 @@ function FitToBusesOnLoad({
+   stopLat,
+   stopLon,
+   buses,
++  activeRoutes,
++  hasData,
+ }: {
+   stopLat: number
+   stopLon: number
+   buses: BusPosition[]
++  activeRoutes: Set<string>
++  hasData: boolean
+ }) {
+   const map = useMap()
+   const firedRef = useRef(false)
++  const prevRoutesRef = useRef<Set<string>>(activeRoutes)
+ 
+   useEffect(() => {
++    if (prevRoutesRef.current !== activeRoutes) {
++      firedRef.current = false
++      prevRoutesRef.current = activeRoutes
++    }
++
+     if (firedRef.current) return
++    if (!hasData) return
++
+     const withPos = buses.filter((b) => b.latitude != null && b.longitude != null).slice(0, 3)
+-    if (withPos.length === 0) return  // wait for data
++    if (withPos.length === 0 && activeRoutes.size === 0) return
++
+     firedRef.current = true
+     const points: L.LatLngExpression[] = [
+       [stopLat, stopLon],
+@@ -90,7 +104,7 @@ function FitToBusesOnLoad({
+     ]
+     const bounds = L.latLngBounds(points)
+     map.fitBounds(bounds, { padding: [48, 48], maxZoom: 16 })
+-  }, [buses, stopLat, stopLon, map])
++  }, [buses, stopLat, stopLon, map, activeRoutes, hasData])
+ 
+   return null
+ }
+@@ -124,209 +138,153 @@ function AmenityIcons({ amenities }: { amenities: Amenities | null }) {
+   )
+ }
+ 
++import BusDetailSheet from '@/components/BusDetailSheet'
++
+ /** Bottom-sheet showing a single bus relative to the stop. */
+-function BusDetailSheet({
+-  arrival,
+-  busPos,
+-  stopLat,
+-  stopLon,
+-  stopName: _stopName,
+-  onClose,
+-}: {
+-  arrival: Arrival
+-  busPos: BusPosition | null
+-  stopLat: number
+-  stopLon: number
+-  stopName: string
+-  onClose: () => void
+-}) {
+-  const navigate = useNavigate()
++
++
++function EtaChip({ minutes, raw }: { minutes: number | null; raw: string }) {
++  const chipCls = etaChipClass(minutes)
++  if (minutes === null)
++    return (
++      <span className="inline-flex items-center justify-center bg-surface-muted text-slate-400 text-xs font-semibold
++                        px-2.5 py-1 rounded-full min-w-[52px]">
++        {raw}
++      </span>
++    )
++  return (
++    <span className={`inline-flex items-center justify-center text-xs font-bold
++                      px-2.5 py-1 rounded-full min-w-[52px] ${chipCls}`}>
++      {minutes} dk
++    </span>
++  )
++}
++
++function InfoModal({ onClose }: { onClose: () => void }) {
++  const btnRef = useRef<HTMLButtonElement>(null)
++  const prevFocusRef = useRef<Element | null>(null)
+ 
+   useEffect(() => {
+-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+-    document.addEventListener('keydown', handler)
+-    return () => document.removeEventListener('keydown', handler)
++    prevFocusRef.current = document.activeElement
++    btnRef.current?.focus()
++    const handleKey = (e: KeyboardEvent) => {
++      if (e.key === 'Escape') onClose()
++      // Basic focus trap: keep focus on button if tab pressed
++      if (e.key === 'Tab') {
++        e.preventDefault()
++        btnRef.current?.focus()
++      }
++    }
++    document.addEventListener('keydown', handleKey)
++    return () => {
++      document.removeEventListener('keydown', handleKey)
++      if (prevFocusRef.current instanceof HTMLElement) {
++        prevFocusRef.current.focus()
++      }
++    }
+   }, [onClose])
+ 
+-  // Prefer live position from ntcapi ybs arrival; fall back to fleet-store busPos.
+-  const effectiveLat = arrival.lat ?? busPos?.latitude ?? null
+-  const effectiveLon = arrival.lon ?? busPos?.longitude ?? null
+-  const hasPosition = effectiveLat !== null && effectiveLon !== null
+-
+-  const dist =
+-    hasPosition ? haversineM(effectiveLat!, effectiveLon!, stopLat, stopLon) : null
+-  const distLabel =
+-    dist !== null
+-      ? dist < 1000
+-        ? `${Math.round(dist)} m`
+-        : `${(dist / 1000).toFixed(1)} km`
+-      : null
+-
+-  const mapCenter: [number, number] = hasPosition
+-    ? [(effectiveLat! + stopLat) / 2, (effectiveLon! + stopLon) / 2]
+-    : [stopLat, stopLon]
+-
+-  const bounds: [[number, number], [number, number]] | null = hasPosition
+-    ? [
+-        [Math.min(effectiveLat!, stopLat), Math.min(effectiveLon!, stopLon)],
+-        [Math.max(effectiveLat!, stopLat), Math.max(effectiveLon!, stopLon)],
+-      ]
+-    : null
+-
+-  const busIcon = L.divIcon({
+-    className: '',
+-    html: `<div style="background:#f97316;border-radius:50%;width:14px;height:14px;border:2px solid #fff;box-shadow:0 0 0 3px rgba(249,115,22,0.35)"></div>`,
+-    iconSize: [14, 14],
+-    iconAnchor: [7, 7],
+-  })
+-  const stopIcon = L.divIcon({
+-    className: '',
+-    html: `<div style="background:#2563eb;border-radius:50%;width:14px;height:14px;border:2px solid #fff;box-shadow:0 0 0 3px rgba(37,99,235,0.35)"></div>`,
+-    iconSize: [14, 14],
+-    iconAnchor: [7, 7],
+-  })
++  const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
++    if (e.target === e.currentTarget) {
++      onClose()
++    }
++  }
+ 
+   return (
+-    <div className="fixed inset-0 z-[500] flex items-end" onClick={onClose}>
+-      {/* Backdrop */}
+-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
+-
+-      <div
+-        className="relative w-full max-w-2xl mx-auto bg-surface-card border-t border-surface-muted rounded-t-2xl overflow-hidden shadow-2xl"
+-        onClick={(e) => e.stopPropagation()}
++    <div 
++      onClick={handleBackdropClick}
++      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4"
++    >
++      <div 
++        role="dialog"
++        aria-modal="true"
++        aria-labelledby="info-title"
++        aria-describedby="info-desc"
++        className="bg-surface-card border border-surface-muted rounded-2xl w-full max-w-sm p-5 shadow-xl relative"
+       >
+-        {/* Drag handle */}
+-        <div className="flex justify-center pt-3 pb-1">
+-          <div className="w-10 h-1 rounded-full bg-surface-muted" />
++        <h2 id="info-title" className="text-base font-bold text-slate-100 mb-3 text-center">Zaman Damgalar─▒</h2>
++        <div id="info-desc">
++          <p className="text-sm text-slate-300 leading-relaxed mb-4">
++            Gizlili─ƒinizi korumak ve ─░ETT sistemlerindeki y├╝k├╝ azaltmak i├ºin bu uygulama, verileri <strong>pcislocked.net</strong> ├╝zerinden ├ºekerek k─▒sa s├╝reli─ƒine ├Ânbellekte tutar. Bu nedenle g├Ârd├╝─ƒ├╝n├╝z ikinci saat, ─░ETT'den al─▒nan en g├╝ncel verinin as─▒l zaman damgas─▒d─▒r.
++          </p>
++          <p className="text-sm text-slate-400 leading-relaxed mb-6">
++            Ara├ºlar─▒n konum bildirme aral─▒klar─▒, ─░ETT sunucular─▒ndaki ola─ƒan gecikmeler ve bizim ├Ânbellek s├╝remiz birle┼ƒti─ƒinde, ekrandaki konum ger├ºek hayattan 90 saniyeye kadar geride kalabilir. Yine de bu yap─▒, resmi uygulamaya k─▒yasla size ├ºok daha h─▒zl─▒ ve ak─▒c─▒ bir deneyim sunar.
++          </p>
+         </div>
++        <button
++          ref={btnRef}
++          onClick={onClose}
++          className="w-full bg-brand-600 hover:bg-brand-500 text-white font-semibold py-3 rounded-xl text-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#111]"
++        >
++          Anlad─▒m
++        </button>
++      </div>
++    </div>
++  )
++}
+ 
+-        {/* Header */}
+-        <div className="flex items-center gap-3 px-4 py-2">
+-          <div
+-            className="text-white font-mono font-bold text-sm rounded-xl px-3 py-1.5 shrink-0"
+-            style={{ backgroundColor: arrival.route_code ? '#f97316' : '#6b7280' }}
+-          >
+-            {arrival.route_code}
+-          </div>
+-          <div className="flex-1 min-w-0">
+-            <p className="text-sm font-semibold text-slate-100 truncate">{arrival.destination}</p>
+-            {(arrival.plate || arrival.kapino) && (
+-              <p className="text-xs text-slate-400 font-mono">
+-                {[arrival.plate, arrival.kapino].filter(Boolean).join('  ┬À  ')}
+-              </p>
+-            )}
+-          </div>
+-          <button onClick={onClose} className="p-1.5 text-slate-500 hover:text-slate-300 shrink-0">
++function AnnouncementsModal({ announcements, onClose }: { announcements: (Announcement & { route_code: string })[], onClose: () => void }) {
++  const btnRef = useRef<HTMLButtonElement>(null)
++  
++  useEffect(() => {
++    btnRef.current?.focus()
++    const handleKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
++    document.addEventListener('keydown', handleKey)
++    return () => document.removeEventListener('keydown', handleKey)
++  }, [onClose])
++
++  const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
++    if (e.target === e.currentTarget) onClose()
++  }
++
++  return (
++    <div 
++      onClick={handleBackdropClick}
++      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4"
++    >
++      <div 
++        role="dialog"
++        aria-modal="true"
++        className="bg-surface-card border border-surface-muted rounded-2xl w-full max-w-md p-5 shadow-xl relative max-h-[80vh] flex flex-col"
++      >
++        <div className="flex items-center justify-between mb-4">
++          <h2 className="text-base font-bold text-amber-400 flex items-center gap-2">
++            <span>­ƒöö</span> Duyurular
++          </h2>
++          <button onClick={onClose} className="p-1 text-slate-500 hover:text-slate-300 transition-colors">
+             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+             </svg>
+           </button>
+         </div>
+-
+-        {/* Map ÔÇö bus Ôåö stop */}
+-        {hasPosition ? (
+-          <div style={{ height: 200 }}>
+-            <MapContainer center={mapCenter} zoom={15} style={{ height: '100%', width: '100%' }} zoomControl={false}>
+-              <TileLayer
+-                attribution='&copy; CartoDB'
+-                url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+-              />
+-              {bounds && <FitBoundsEffect bounds={bounds} />}
+-              <Polyline
+-                positions={[[effectiveLat!, effectiveLon!], [stopLat, stopLon]]}
+-                pathOptions={{ color: '#f97316', weight: 2, dashArray: '6 4', opacity: 0.7 }}
+-              />
+-              <Marker position={[effectiveLat!, effectiveLon!]} icon={busIcon} />
+-              <Marker position={[stopLat, stopLon]} icon={stopIcon} />
+-            </MapContainer>
+-          </div>
+-        ) : (
+-          <div className="h-12 flex items-center justify-center">
+-            <p className="text-xs text-slate-500">Ara├º konumu hen├╝z mevcut de─ƒil</p>
+-          </div>
+-        )}
+-
+-        {/* Info strip ÔÇö 4 cols: ETA ┬À Mesafe ┬À H─▒z ┬À Plaka */}
+-        <div className="px-4 py-3 grid grid-cols-4 gap-2 border-t border-surface-muted">
+-          <div className="flex flex-col items-center gap-0.5">
+-            <p className="text-[10px] text-slate-500 uppercase tracking-wider">ETA</p>
+-            <p className="text-base font-bold text-slate-100">
+-              {arrival.eta_minutes !== null ? `${arrival.eta_minutes} dk` : arrival.eta_raw}
+-            </p>
+-          </div>
+-          <div className="flex flex-col items-center gap-0.5">
+-            <p className="text-[10px] text-slate-500 uppercase tracking-wider">Mesafe</p>
+-            <p className="text-base font-bold text-slate-100">{distLabel ?? 'ÔÇö'}</p>
+-          </div>
+-          <div className="flex flex-col items-center gap-0.5">
+-            <p className="text-[10px] text-slate-500 uppercase tracking-wider">H─▒z</p>
+-            <p className="text-base font-bold text-slate-100">
+-              {arrival.speed_kmh !== null ? `${arrival.speed_kmh} km/h` : 'ÔÇö'}
+-            </p>
+-          </div>
+-          <div className="flex flex-col items-center gap-0.5">
+-            <p className="text-[10px] text-slate-500 uppercase tracking-wider">Plaka</p>
+-            <p className="text-sm font-bold text-slate-100 font-mono">{arrival.plate ?? 'ÔÇö'}</p>
+-          </div>
++        
++        <div className="flex-1 overflow-y-auto min-h-0 pr-1 -mr-1 space-y-3">
++          {announcements.map((ann, idx) => (
++            <div key={idx} className="bg-amber-950/20 border border-amber-800/50 rounded-xl p-3">
++              <p className="text-xs font-bold text-amber-500 mb-1.5 uppercase tracking-wider">
++                Duyuru ÔÇó {ann.route_code} ÔÇó {ann.type}
++              </p>
++              <p className="text-sm text-slate-300 leading-relaxed">
++                {ann.message}
++              </p>
++            </div>
++          ))}
+         </div>
+-
+-        {/* Amenity icons */}
+-        <AmenityIcons amenities={arrival.amenities} />
+-
+-        {/* CTA */}
+-        <div className="px-4 pb-6 pt-2">
+-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+-            <Link
+-              to={`/routes/${arrival.route_code}`}
+-              onClick={onClose}
+-              className="block w-full text-center bg-brand-600 hover:bg-brand-500 text-white font-semibold py-3 rounded-xl text-sm transition-colors"
+-            >
+-              Hatt─▒ A├º ÔåÆ
+-            </Link>
+-
+-            <button
+-              onClick={() => {
+-                if (!arrival.kapino) return
+-                onClose()
+-                navigate(`/arac/bus/${encodeURIComponent(arrival.kapino)}`)
+-              }}
+-              disabled={!arrival.kapino}
+-              className="w-full text-center border border-[#2a2a2a] text-[#00AFF0] font-semibold
+-                         py-3 rounded-xl text-sm transition-colors disabled:text-slate-600
+-                         disabled:border-[#1a1a1a] disabled:cursor-not-allowed hover:border-[#00AFF0]/60"
+-            >
+-              Daha Fazla Detay
+-            </button>
+-          </div>
+-
+-          {!arrival.kapino && (
+-            <p className="text-[11px] text-slate-600 mt-2">
+-              Bu kayitta kapi kodu yok, Arac detayi acilamiyor.
+-            </p>
+-          )}
++        
++        <div className="mt-4 pt-4 border-t border-surface-muted">
++          <button
++            ref={btnRef}
++            onClick={onClose}
++            className="w-full bg-surface-muted hover:bg-slate-700 text-white font-semibold py-2.5 rounded-xl text-sm transition-colors"
++          >
++            Kapat
++          </button>
+         </div>
+       </div>
+     </div>
+   )
+ }
+ 
+-function EtaChip({ minutes, raw }: { minutes: number | null; raw: string }) {
+-  const chipCls = etaChipClass(minutes)
+-  if (minutes === null)
+-    return (
+-      <span className="inline-flex items-center justify-center bg-surface-muted text-slate-400 text-xs font-semibold
+-                        px-2.5 py-1 rounded-full min-w-[52px]">
+-        {raw}
+-      </span>
+-    )
+-  return (
+-    <span className={`inline-flex items-center justify-center text-xs font-bold
+-                      px-2.5 py-1 rounded-full min-w-[52px] ${chipCls}`}>
+-      {minutes} dk
+-    </span>
+-  )
+-}
+-
+ export default function StopPage() {
+   const { dcode } = useParams<{ dcode: string }>()
+   const navigate = useNavigate()
+@@ -334,6 +292,7 @@ export default function StopPage() {
+   const [showAnnouncements, setShowAnnouncements] = useState(false)
+   const [selectedArrival, setSelectedArrival] = useState<Arrival | null>(null)
+   const [activeTab, setActiveTab] = useState<'gelis' | 'hatlar' | 'bilgi'>('gelis')
++  const [showInfo, setShowInfo] = useState(false)
+ 
+   // Sliding panel state ÔÇö map height as percentage of split container
+   const [mapHeightPct, setMapHeightPct] = useState(40)
+@@ -401,17 +360,13 @@ export default function StopPage() {
+ 
+   useBottomBar(bottomBarTabs)
+ 
+-  const { data: arrivals, loading, error, stale, refresh: refreshArrivals, lastUpdated } = useArrivals(dcode ?? '')
++  const { data: arrivals, loading, error, stale, refresh: refreshArrivals, lastUpdated, iettUpdated } = useArrivals(dcode ?? '')
+ 
+-  const { data: routes } = usePolling<string[]>(
+-    useMemo(() => () => api.stops.routes(dcode ?? ''), [dcode]),
+-    300_000,
+-  )
++  const routesFetcher = useCallback(() => dcode ? api.stops.routes(dcode) : Promise.resolve([]), [dcode])
++  const stopDetailFetcher = useCallback(() => dcode ? api.stops.detail(dcode) : Promise.resolve(null), [dcode])
+ 
+-  const { data: stopDetail } = usePolling<StopDetail>(
+-    useMemo(() => () => api.stops.detail(dcode ?? ''), [dcode]),
+-    3_600_000,
+-  )
++  const { data: routes } = usePolling<string[]>(routesFetcher, POLLING.STOP_ROUTES_MS, dcode)
++  const { data: stopDetail } = usePolling<StopDetail | null>(stopDetailFetcher, POLLING.STOP_DETAIL_MS, dcode)
+ 
+   // Ordered unique routes from live arrivals (used for colour assignment)
+   const arrivalRouteOrder = useMemo(() => {
+@@ -426,8 +381,11 @@ export default function StopPage() {
+   // Full fleet polled every 30 s via the shared cache ÔÇö no per-route calls needed.
+   // Derive bus positions from arrivals (which already carry lat/lon from YBS response).
+   const routeBuses = useMemo<BusPosition[]>(
+-    () =>
+-      (arrivals ?? [])
++    () => {
++      const base = activeRoutes.size > 0
++        ? (arrivals ?? []).filter((a) => activeRoutes.has(a.route_code))
++        : (arrivals ?? [])
++      return base
+         .filter((a): a is Arrival & { lat: number; lon: number } =>
+           a.lat != null && a.lon != null && a.kapino != null,
+         )
+@@ -446,8 +404,9 @@ export default function StopPage() {
+           nearest_stop: null,
+           stop_sequence: null,
+           trail: [],
+-        })),
+-    [arrivals],
++        }))
++    },
++    [arrivals, activeRoutes],
+   )
+ 
+   // One cached Leaflet DivIcon per route_code ÔÇö avoids creating a new DOM object every render.
+@@ -461,14 +420,26 @@ export default function StopPage() {
+     return m
+   }, [arrivalRouteOrder, routes])
+ 
+-  // Announcements for the first selected route
+-  const firstActive = useMemo(() => Array.from(activeRoutes)[0] ?? null, [activeRoutes])
+-  const { data: announcements } = usePolling<Announcement[]>(
+-    useMemo(
+-      () => () => firstActive ? api.routes.announcements(firstActive) : Promise.resolve([]),
+-      [firstActive],
+-    ),
+-    300_000,
++  type RouteAnnouncement = Announcement & { route_code: string }
++
++  // Announcements for ALL routes present at this stop
++  const allRoutesAtStop = useMemo(() => Array.from(new Set([...(routes ?? []), ...arrivalRouteOrder])), [routes, arrivalRouteOrder])
++  const announceFetcher = useCallback(async () => {
++    if (!allRoutesAtStop.length) return []
++    const results = await Promise.allSettled(allRoutesAtStop.map(r => api.routes.announcements(r)))
++    const combined: RouteAnnouncement[] = []
++    results.forEach((res, i) => {
++      if (res.status === 'fulfilled' && res.value.length > 0) {
++        res.value.forEach(a => combined.push({ ...a, route_code: allRoutesAtStop[i] }))
++      }
++    })
++    return combined
++  }, [allRoutesAtStop])
++
++  const { data: announcements } = usePolling<RouteAnnouncement[]>(
++    announceFetcher,
++    POLLING.ANNOUNCEMENTS_MS,
++    allRoutesAtStop.join(','),
+   )
+ 
+   const { isFavorite, toggle } = useFavorites()
+@@ -675,6 +646,8 @@ export default function StopPage() {
+                 stopLat={stopDetail.latitude}
+                 stopLon={stopDetail.longitude}
+                 buses={routeBuses}
++                activeRoutes={activeRoutes}
++                hasData={arrivals !== null}
+               />
+               <CircleMarker
+                 center={[stopDetail.latitude, stopDetail.longitude]}
+@@ -734,10 +707,20 @@ export default function StopPage() {
+           <div className="w-10 h-1 rounded-full bg-slate-600" />
+         </div>
+ 
+-        {/* Arrivals ÔÇö scrollable, items must not shrink */}
+-        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 pt-2 pb-4">
++        {/* ÔöÇÔöÇ Announcements (Thin sticky ribbon) ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ */}
++        {(announcements ?? []).length > 0 && (
++          <button
++            onClick={() => setShowAnnouncements(true)}
++            className="w-full shrink-0 flex items-center justify-between px-4 py-1.5 bg-amber-500/10 border-b border-amber-500/20 text-[11px] text-amber-400 font-medium active:bg-amber-500/20 transition-colors"
++          >
++            <span>{(announcements ?? []).length} Duyuru</span>
++            <span className="opacity-80">G├Âr├╝nt├╝le &rsaquo;</span>
++          </button>
++        )}
++
++        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 pt-3 pb-4">
+           {error && !stale && (
+-            <div className="bg-red-900/30 border border-red-700 rounded-xl px-4 py-3 text-red-300 text-sm">
++            <div className="bg-red-900/30 border border-red-700 rounded-xl px-4 py-3 text-red-300 text-sm mb-2">
+               {error}
+             </div>
+           )}
+@@ -810,43 +793,27 @@ export default function StopPage() {
+             )
+           })}
+ 
+-          {/* Announcements for first selected route */}
+-          {firstActive && (announcements ?? []).length > 0 && (
+-            <div className="mt-2">
+-              <button
+-                onClick={() => setShowAnnouncements(!showAnnouncements)}
+-                className="w-full card flex items-center justify-between text-sm text-amber-400 font-semibold"
+-              >
+-                <span>­ƒöö Duyurular ({(announcements ?? []).length})</span>
+-                <svg className={`w-4 h-4 transition-transform ${showAnnouncements ? 'rotate-180' : ''}`}
+-                     fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+-                  <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/>
+-                </svg>
+-              </button>
+-              {showAnnouncements && (
+-                <div className="mt-2 flex flex-col gap-2">
+-                  {(announcements ?? []).map((ann, idx) => (
+-                    <div key={idx} className="card border-amber-800/50 bg-amber-950/20">
+-                      <p className="text-xs font-semibold text-amber-400 mb-1">{ann.type}</p>
+-                      <p className="text-sm text-slate-300">{ann.message}</p>
+-                      <p className="text-[10px] text-slate-600 mt-1">{ann.updated_at}</p>
+-                    </div>
+-                  ))}
+-                </div>
+-              )}
+-            </div>
+-          )}
+         </div>
+ 
+         {/* ÔöÇÔöÇ Bottom strip: last updated + refresh + route filter chips ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ */}
+         <div className="shrink-0 border-t border-surface-muted bg-surface-card pb-2">
+           {/* Last updated row */}
+           <div className="px-4 pt-2 pb-1 flex items-center justify-between">
+-            <span className="text-[11px] text-slate-600">
+-              {lastUpdated
+-                ? `g├╝ncellendi: ${lastUpdated.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`
+-                : 'y├╝kleniyor...'}
+-            </span>
++            <div className="flex items-center gap-1.5">
++              <span className="text-[10px] text-slate-500 font-mono">
++                g├╝ncellendi: {lastUpdated ? lastUpdated.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '...'}
++                {iettUpdated && `, ─░ETT: ${iettUpdated.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`}
++              </span>
++              {lastUpdated && (
++                <button
++                  onClick={() => setShowInfo(true)}
++                  className="w-3.5 h-3.5 rounded-full border border-slate-600 text-slate-600 flex items-center justify-center hover:bg-slate-700 hover:text-slate-300 transition-colors"
++                  aria-label="Neden iki farkl─▒ saat var?"
++                >
++                  <span className="text-[9px] font-bold">i</span>
++                </button>
++              )}
++            </div>
+             <button
+               onClick={refreshArrivals}
+               className="flex items-center gap-1 text-[11px] text-slate-400 hover:text-white transition-colors active:scale-95"
+@@ -857,16 +824,7 @@ export default function StopPage() {
+               Yenile
+             </button>
+           </div>
+-          {stopDetail?.direction && (
+-            <div className="px-4 pt-2">
+-              <span className="inline-flex items-center gap-1 text-[11px] text-slate-400 bg-surface-muted px-2 py-0.5 rounded-md">
+-                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+-                  <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+-                </svg>
+-                {stopDetail.direction}
+-              </span>
+-            </div>
+-          )}
++
+           {(routes ?? []).length > 0 && (
+             <div className="px-4 py-2 flex gap-2 overflow-x-auto no-scrollbar">
+               <button
+@@ -914,15 +872,36 @@ export default function StopPage() {
+       </div>
+       )}
+ 
+-      {/* Bus detail sheet ÔÇö rendered outside the scroll container so it overlays everything */}
+-      {selectedArrival && stopDetail?.latitude != null && stopDetail.longitude != null && (
+-        <BusDetailSheet
+-          arrival={selectedArrival}
+-          busPos={selectedArrival.kapino ? (busByKapino.get(selectedArrival.kapino) ?? null) : null}
+-          stopLat={stopDetail.latitude}
+-          stopLon={stopDetail.longitude}
+-          stopName={stopName}
+-          onClose={() => setSelectedArrival(null)}
++      {selectedArrival && stopDetail?.latitude != null && stopDetail.longitude != null && (() => {
++        const busPos = selectedArrival.kapino ? (busByKapino.get(selectedArrival.kapino) ?? null) : null;
++        const effectiveLat = selectedArrival.lat ?? busPos?.latitude ?? null;
++        const effectiveLon = selectedArrival.lon ?? busPos?.longitude ?? null;
++        return (
++          <BusDetailSheet
++            routeCode={selectedArrival.route_code}
++            destination={selectedArrival.destination}
++            plate={selectedArrival.plate}
++            kapino={selectedArrival.kapino}
++            etaMinutes={selectedArrival.eta_minutes}
++            etaRaw={selectedArrival.eta_raw}
++            speedKmh={selectedArrival.speed_kmh}
++            showMap={true}
++            busLat={effectiveLat}
++            busLon={effectiveLon}
++            stopLat={stopDetail.latitude}
++            stopLon={stopDetail.longitude}
++            amenities={selectedArrival.amenities}
++            onClose={() => setSelectedArrival(null)}
++          />
++        )
++      })()}
++      {/* Info Modal */}
++      {showInfo && <InfoModal onClose={() => setShowInfo(false)} />}
++      {/* Announcements Modal */}
++      {showAnnouncements && (announcements ?? []).length > 0 && (
++        <AnnouncementsModal 
++          announcements={announcements!} 
++          onClose={() => setShowAnnouncements(false)} 
+         />
+       )}
+     </div>
+diff --git a/src/pages/__tests__/RoutePage.test.tsx b/src/pages/__tests__/RoutePage.test.tsx
+new file mode 100644
+index 0000000..d0adc6a
+--- /dev/null
++++ b/src/pages/__tests__/RoutePage.test.tsx
+@@ -0,0 +1,275 @@
++/* eslint-disable @typescript-eslint/no-explicit-any */
++import { afterEach, describe, expect, it, vi } from 'vitest'
++import { render, screen, fireEvent } from '@testing-library/react'
++import { MemoryRouter, Route, Routes } from 'react-router-dom'
++import RoutePage from '@/pages/RoutePage'
++
++// Mock the polling hooks to supply synchronous test data
++const mocks = vi.hoisted(() => ({
++  useRouteBuses: vi.fn(() => ({ data: [], stale: false })),
++  usePolling: vi.fn(),
++  useFavorites: vi.fn(() => ({ isFavorite: () => false, toggle: vi.fn() })),
++}))
++
++vi.mock('@/hooks/useFleet', () => ({ useRouteBuses: mocks.useRouteBuses }))
++vi.mock('@/hooks/usePolling', () => ({ usePolling: mocks.usePolling }))
++vi.mock('@/hooks/useFavorites', () => ({ useFavorites: mocks.useFavorites }))
++vi.mock('react-leaflet', () => ({
++  MapContainer: ({ children }: any) => <div data-testid="map-container">{children}</div>,
++  TileLayer: () => <div />,
++  Marker: ({ children }: any) => <div data-testid="map-marker">{children}</div>,
++  Popup: ({ children }: any) => <div>{children}</div>,
++  CircleMarker: ({ eventHandlers, children }: any) => <div data-testid="circle-marker" onClick={eventHandlers?.click}>{children}</div>,
++}))
++
++afterEach(() => {
++  vi.clearAllMocks()
++})
++
++describe('RoutePage', () => {
++  function renderPage(entry = '/routes/15TY') {
++    return render(
++      <MemoryRouter initialEntries={[entry]}>
++        <Routes>
++          <Route path="/routes/:hatKodu" element={<RoutePage />} />
++        </Routes>
++      </MemoryRouter>
++    )
++  }
++
++  function setupMocks(options: any = {}) {
++    mocks.useFavorites.mockReturnValue({
++      isFavorite: () => options.isFav || false,
++      toggle: vi.fn(),
++    })
++
++    mocks.useRouteBuses.mockReturnValue({
++      data: options.buses || [
++        { kapino: 'B123', latitude: 41.0, longitude: 29.0, direction_letter: 'G', direction: 'Gidi┼ƒ', stop_sequence: 1 },
++        { kapino: 'B456', latitude: 41.1, longitude: 29.1, direction_letter: 'D', direction: 'D├Ân├╝┼ƒ', stop_sequence: 2 },
++      ],
++      stale: false,
++    })
++
++    let callCount = 0
++    mocks.usePolling.mockImplementation(() => {
++      const index = callCount % 4
++      callCount++
++      
++      if (index === 0) { // stops
++        return {
++          data: options.stops !== undefined ? options.stops : [
++            { stop_code: '1001', stop_name: 'Test Stop 1', direction: 'G', sequence: 1, latitude: 41.0, longitude: 29.0, route_code: '15TY_G_D0' },
++            { stop_code: '1002', stop_name: 'Test Stop 2', direction: 'D', sequence: 2, latitude: 41.1, longitude: 29.1, route_code: '15TY_G_D2449' },
++          ],
++          error: options.stopsError || null,
++          refresh: vi.fn(),
++        }
++      }
++      if (index === 1) { // schedule
++        return {
++          data: options.schedule !== undefined ? options.schedule : [
++            { route_variant: '15TY_G_D0', day_type: 'H', direction: 'G', departure_time: '10:00' },
++            { route_variant: '15TY_G_D2449', day_type: 'H', direction: 'G', departure_time: '10:30' },
++            { route_variant: '15TY_G_D1234', day_type: 'H', direction: 'G', departure_time: '11:00' },
++            { route_variant: '15TY_D_D0', day_type: 'H', direction: 'D', departure_time: '12:00' },
++          ],
++          error: options.scheduleError || null,
++          refresh: vi.fn(),
++        }
++      }
++      if (index === 2) { // announcements
++        return {
++          data: options.announcements !== undefined ? options.announcements : [
++            { type: 'Info', updated_at: '10:00', message: 'Test announcement' },
++          ],
++          error: options.announcementsError || null,
++          refresh: vi.fn(),
++        }
++      }
++      if (index === 3) { // metadata
++        return {
++          data: options.metadata !== undefined ? options.metadata : [
++            {
++              direction: 0,
++              direction_name: 'TOKATK├ûY - HEK─░MBA┼×I',
++              variant_code: '15TY_G_D0',
++              full_name: 'TOKATK├ûY - HEK─░MBA┼×I',
++            },
++            {
++              direction: 0,
++              direction_name: 'TOKATK├ûY - YEN─░ MAHALLE',
++              variant_code: '15TY_G_D2449',
++              full_name: 'TOKATK├ûY - YEN─░ MAHALLE',
++            },
++            {
++              direction: 0,
++              direction_name: 'TOKATK├ûY - ├çAVU┼×BA┼×I',
++              variant_code: '15TY_G_D1234',
++              full_name: 'TOKATK├ûY - ├çAVU┼×BA┼×I',
++            }
++          ],
++          refresh: vi.fn(),
++        }
++      }
++      return { data: null, refresh: vi.fn() }
++    })
++  }
++
++  it('renders dynamic footnotes for sub-routes and descriptive direction labels', async () => {
++    setupMocks()
++    renderPage()
++
++    expect(screen.getByText('TOKATK├ûY KALKI┼×')).toBeInTheDocument()
++    fireEvent.click(screen.getByText('TOKATK├ûY KALKI┼×'))
++
++    expect(screen.getAllByText('1').length).toBeGreaterThan(0)
++    expect(screen.getAllByText('2').length).toBeGreaterThan(0)
++    
++    expect(screen.getByText('Notlar (Yan Seferler)')).toBeInTheDocument()
++    expect(screen.getByText('TOKATK├ûY > ├çAVU┼×BA┼×I (D1234)')).toBeInTheDocument()
++    expect(screen.getByText('TOKATK├ûY > YEN─░ MAHALLE (D2449)')).toBeInTheDocument()
++  })
++
++  it('toggles favorite on button click', () => {
++    setupMocks()
++    renderPage()
++    
++    const buttons = screen.getAllByRole('button')
++    // The favorite button is the first button in the header
++    fireEvent.click(buttons[0])
++    expect(mocks.useFavorites().toggle).toHaveBeenCalledWith({ kind: 'route', hat_kodu: '15TY', name: 'TOKATK├ûY - HEK─░MBA┼×I' })
++  })
++
++  it('renders map tab correctly', () => {
++    setupMocks()
++    renderPage()
++    
++    fireEvent.click(screen.getByRole('button', { name: /Harita/i }))
++    
++    // Check map container
++    expect(screen.getByTestId('map-container')).toBeInTheDocument()
++    
++    // Change variant in custom dropdown
++    fireEvent.click(screen.getByText('T├╝m Seferler'))
++    fireEvent.click(screen.getByText('TOKATK├ûY > YEN─░ MAHALLE (D2449)'))
++    
++    // Check buses
++    expect(screen.getAllByTestId('map-marker').length).toBeGreaterThan(0)
++    
++    // Switch to stops tabrker
++    const circleMarkers = screen.getAllByTestId('circle-marker')
++    fireEvent.click(circleMarkers[0])
++  })
++
++  it('renders stops tab correctly', () => {
++    setupMocks()
++    renderPage()
++    
++    fireEvent.click(screen.getByRole('button', { name: /Duraklar/i }))
++    
++    expect(screen.getByText('Test Stop 1')).toBeInTheDocument()
++    
++    // Change variant in custom dropdown
++    fireEvent.click(screen.getAllByText('TOKATK├ûY > HEK─░MBA┼×I')[0])
++    fireEvent.click(screen.getByText('TOKATK├ûY > YEN─░ MAHALLE (D2449)'))
++    
++    expect(screen.getByText('Test Stop 2')).toBeInTheDocument()
++  })
++
++  it('shows error state for stops', () => {
++    setupMocks({ stops: null, stopsError: 'Error' })
++    renderPage()
++    fireEvent.click(screen.getByRole('button', { name: /Duraklar/i }))
++    expect(screen.getByText('Durak listesi y├╝klenemedi')).toBeInTheDocument()
++  })
++
++  it('shows empty state for stops', () => {
++    setupMocks({ stops: [] })
++    renderPage()
++    fireEvent.click(screen.getByRole('button', { name: /Duraklar/i }))
++    expect(screen.getByText('Bu hat i├ºin durak bulunamad─▒')).toBeInTheDocument()
++  })
++
++  it('renders alerts tab correctly', () => {
++    setupMocks()
++    renderPage()
++    
++    fireEvent.click(screen.getByRole('button', { name: /Duyurular/i }))
++    
++    expect(screen.getByText('Test announcement')).toBeInTheDocument()
++  })
++
++  it('shows empty state for alerts', () => {
++    setupMocks({ announcements: [] })
++    renderPage()
++    fireEvent.click(screen.getByRole('button', { name: /Duyurular/i }))
++    expect(screen.getByText('Aktif duyuru yok')).toBeInTheDocument()
++  })
++
++  it('shows error state for alerts', () => {
++    setupMocks({ announcements: null, announcementsError: 'Error' })
++    renderPage()
++    fireEvent.click(screen.getByRole('button', { name: /Duyurular/i }))
++    expect(screen.getByText('Duyurular y├╝klenemedi')).toBeInTheDocument()
++  })
++
++  it('falls back to direction-based filtering when metadata is absent and route_code has no variants', () => {
++    setupMocks({
++      metadata: null,
++      stops: [
++        { stop_code: '1001', stop_name: 'Fallback Stop G', direction: 'G', sequence: 1, latitude: 41.0, longitude: 29.0, route_code: '15TY_G' },
++        { stop_code: '1002', stop_name: 'Fallback Stop D', direction: 'D', sequence: 2, latitude: 41.1, longitude: 29.1, route_code: '15TY_D' },
++      ]
++    })
++    renderPage()
++    
++    fireEvent.click(screen.getByRole('button', { name: /Duraklar/i }))
++    
++    // Open dropdown first
++    fireEvent.click(screen.getAllByText('15TY_G')[0])
++    fireEvent.click(screen.getAllByText('15TY_D')[0])
++    // After selection, dropdown closes. The selected value is now 15TY_D
++    expect(screen.getAllByText('15TY_D').length).toBeGreaterThan(0)
++    
++    // Check if the correct stops are filtered
++    expect(screen.getByText('Fallback Stop D')).toBeInTheDocument()
++    expect(screen.queryByText('Fallback Stop G')).not.toBeInTheDocument()
++
++    fireEvent.click(screen.getAllByText('15TY_D')[0])
++    fireEvent.click(screen.getAllByText('15TY_G')[0])
++    expect(screen.getByText('Fallback Stop G')).toBeInTheDocument()
++    expect(screen.queryByText('Fallback Stop D')).not.toBeInTheDocument()
++  })
++
++  it('supports split labels with more than 2 parts', () => {
++    setupMocks({
++      metadata: [
++        {
++          direction: 0,
++          direction_name: 'TOKATK├ûY - BE┼×─░KTA┼× - HEK─░MBA┼×I',
++          variant_code: '15TY_G_D0',
++          full_name: 'TOKATK├ûY - BE┼×─░KTA┼× - HEK─░MBA┼×I',
++        },
++        {
++          direction: 0,
++          direction_name: 'TOKATK├ûY - BE┼×─░KTA┼× - HEK─░MBA┼×I - EK',
++          variant_code: '15TY_G_D1',
++          full_name: 'TOKATK├ûY - BE┼×─░KTA┼× - HEK─░MBA┼×I - EK',
++        }
++      ],
++      stops: [
++        { stop_code: '1001', stop_name: 'Test Stop 1', route_code: '15TY_G_D0', direction: 'G', sequence: 1, latitude: 41.0, longitude: 29.0 },
++        { stop_code: '1002', stop_name: 'Test Stop EK', route_code: '15TY_G_D1', direction: 'G', sequence: 1, latitude: 41.1, longitude: 29.1 },
++      ]
++    })
++    renderPage()
++    fireEvent.click(screen.getByRole('button', { name: /Duraklar/i }))
++    
++    // Open the dropdown
++    fireEvent.click(screen.getAllByText('TOKATK├ûY > HEK─░MBA┼×I')[0])
++    
++    expect(screen.getAllByText('TOKATK├ûY > HEK─░MBA┼×I').length).toBeGreaterThan(0)
++    expect(screen.getByText('TOKATK├ûY > EK (D1)')).toBeInTheDocument()
++  })
++})
+diff --git a/src/pages/__tests__/StopPage.test.tsx b/src/pages/__tests__/StopPage.test.tsx
+new file mode 100644
+index 0000000..8fe5555
+--- /dev/null
++++ b/src/pages/__tests__/StopPage.test.tsx
+@@ -0,0 +1,140 @@
++/* eslint-disable @typescript-eslint/no-explicit-any */
++import { afterEach, describe, expect, it, vi } from 'vitest'
++import { render, screen, fireEvent } from '@testing-library/react'
++import { MemoryRouter, Route, Routes } from 'react-router-dom'
++import StopPage from '@/pages/StopPage'
++
++const mocks = vi.hoisted(() => ({
++  useArrivals: vi.fn(),
++  usePolling: vi.fn(),
++  useFavorites: vi.fn(() => ({ isFavorite: () => false, toggle: vi.fn() })),
++  useUserPrefs: vi.fn(() => ({ prefs: { pinnedStops: [] }, isPinned: () => false, pinStop: vi.fn(), unpinStop: vi.fn() })),
++}))
++
++vi.mock('@/hooks/useArrivals', () => ({ useArrivals: mocks.useArrivals }))
++vi.mock('@/hooks/usePolling', () => ({ usePolling: mocks.usePolling }))
++vi.mock('@/hooks/useFavorites', () => ({ useFavorites: mocks.useFavorites }))
++vi.mock('@/hooks/useUserPrefs', () => ({
++  useUserPrefs: mocks.useUserPrefs,
++  PINNED_STOPS_MAX: 5,
++}))
++vi.mock('@/hooks/useBottomBar', () => ({ useBottomBar: vi.fn() }))
++vi.mock('react-leaflet', () => ({
++  MapContainer: ({ children }: any) => <div data-testid="map-container">{children}</div>,
++  TileLayer: () => <div />,
++  Marker: ({ children }: any) => <div data-testid="map-marker">{children}</div>,
++  Popup: ({ children }: any) => <div>{children}</div>,
++  CircleMarker: () => <div data-testid="circle-marker" />,
++}))
++
++afterEach(() => {
++  vi.clearAllMocks()
++})
++
++describe('StopPage', () => {
++  function renderPage(entry = '/stops/1002') {
++    return render(
++      <MemoryRouter initialEntries={[entry]}>
++        <Routes>
++          <Route path="/stops/:dcode" element={<StopPage />} />
++        </Routes>
++      </MemoryRouter>
++    )
++  }
++
++  function setupMocks(options: any = {}) {
++    mocks.useArrivals.mockReturnValue({
++      data: options.arrivals !== undefined ? options.arrivals : [
++        { route_code: '15TY', destination: 'HEK─░MBA┼×I', eta_minutes: 10, kapino: 'B123', plate: '34ABC123', sequence: 1 },
++      ],
++      loading: options.arrivalsLoading || false,
++      error: options.arrivalsError || null,
++      stale: options.arrivalsStale || false,
++      refresh: vi.fn(),
++      lastUpdated: options.lastUpdated !== undefined ? options.lastUpdated : new Date('2026-05-23T04:00:00.000Z'),
++      iettUpdated: options.iettUpdated !== undefined ? options.iettUpdated : new Date('2026-05-23T03:59:00.000Z'),
++    })
++
++    let callCount = 0
++    mocks.usePolling.mockImplementation(() => {
++      const index = callCount % 3
++      callCount++
++      if (index === 0) { // routes
++        return {
++          data: options.routes !== undefined ? options.routes : ['15TY'],
++          error: null,
++          refresh: vi.fn(),
++        }
++      }
++      if (index === 1) { // stopDetail
++        return {
++          data: options.stopDetail !== undefined ? options.stopDetail : {
++            code: '1002',
++            name: 'Test Stop 2',
++            lat: 41.1,
++            lon: 29.1,
++          },
++          error: null,
++          refresh: vi.fn(),
++        }
++      }
++      if (index === 2) { // announcements
++        return {
++          data: options.announcements !== undefined ? options.announcements : [],
++          error: null,
++          refresh: vi.fn(),
++        }
++      }
++    })
++  }
++
++  it('renders stop name and arrivals correctly', () => {
++    setupMocks()
++    renderPage()
++    expect(screen.getByText('Test Stop 2')).toBeInTheDocument()
++    expect(screen.getAllByText('15TY')[0]).toBeInTheDocument()
++    expect(screen.getByText('HEK─░MBA┼×I')).toBeInTheDocument()
++  })
++
++  it('displays the secondary IETT source timestamp when available', () => {
++    setupMocks()
++    renderPage()
++    expect(screen.getByText(/g├╝ncellendi: 07:00/i)).toBeInTheDocument() // 04:00Z formatted in local time +3
++    expect(screen.getByText(/, ─░ETT: 06:59/i)).toBeInTheDocument() // 03:59Z formatted in local time +3
++  })
++
++  it('opens and closes the Zaman Damgalar─▒ InfoModal via backdrop click', () => {
++    setupMocks()
++    renderPage()
++
++    // Trigger opening the InfoModal by clicking the 'i' button
++    const infoBtn = screen.getByLabelText('Neden iki farkl─▒ saat var?')
++    expect(infoBtn).toBeInTheDocument()
++    fireEvent.click(infoBtn)
++
++    // Modal should be visible
++    expect(screen.getByRole('dialog')).toBeInTheDocument()
++    expect(screen.getByText('Zaman Damgalar─▒')).toBeInTheDocument()
++
++    // Close the modal by clicking the backdrop
++    const backdrop = screen.getByText('Zaman Damgalar─▒').closest('.fixed')
++    expect(backdrop).toBeInTheDocument()
++    fireEvent.click(backdrop!)
++
++    // Modal should be closed
++    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
++  })
++
++  it('closes InfoModal when clicking the Anlad─▒m button', () => {
++    setupMocks()
++    renderPage()
++
++    const infoBtn = screen.getByLabelText('Neden iki farkl─▒ saat var?')
++    fireEvent.click(infoBtn)
++    expect(screen.getByRole('dialog')).toBeInTheDocument()
++
++    const closeBtn = screen.getByRole('button', { name: 'Anlad─▒m' })
++    fireEvent.click(closeBtn)
++    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
++  })
++})
+diff --git a/src/utils/formatStopName.ts b/src/utils/formatStopName.ts
+new file mode 100644
+index 0000000..012222f
+--- /dev/null
++++ b/src/utils/formatStopName.ts
+@@ -0,0 +1,8 @@
++export function formatStopName(rawName: string) {
++  const parts = rawName.split('-').map(p => p.trim()).filter(Boolean)
++  if (parts.length <= 1) return rawName
++  const stopName = parts[0]
++  let directionPart = parts.slice(1).find(p => p.toUpperCase().includes('Y├ûN')) || parts[1]
++  directionPart = directionPart.replace(/Y├ûN├£/i, 'Y├Ân├╝').trim()
++  return `${stopName} - ${directionPart}`
++}
+diff --git a/src/utils/routeDirectionLabels.ts b/src/utils/routeDirectionLabels.ts
+index 6421b6f..b751199 100644
+--- a/src/utils/routeDirectionLabels.ts
++++ b/src/utils/routeDirectionLabels.ts
+@@ -7,33 +7,50 @@ import type { RouteMetadata } from '@/api/client'
+  * Returns an empty map when metadata is absent; Turkish fallback labels are
+  * applied by `getDirectionLabel()`.
+  */
+-export function getDirectionLabelMap(metadata: RouteMetadata[] | null): Record<string, string> {
++function buildLabelMap(metadata: RouteMetadata[] | null, type: 'origin' | 'destination'): Record<string, string> {
+   const map: Record<string, string> = {}
+   const fullNameByDir: Record<string, string> = {}
+   if (!metadata) return map
+ 
+   for (const m of metadata) {
+     if (!m.variant_code || !m.direction_name) continue
++    const isBase = m.variant_code.endsWith('_D0') || m.variant_code.endsWith('_G0')
+     const dir = m.variant_code.includes('_D_') ? 'D'
+       : m.variant_code.includes('_G_') ? 'G'
+-        : null
++        : (m.direction === 0 || m.direction === 119) ? 'G'
++          : (m.direction === 1 || m.direction === 120) ? 'D'
++            : null
+     if (!dir) continue
+-    const parts = m.direction_name.split(' - ')
+-    map[dir] = parts[0].trim()
+-    fullNameByDir[dir] = m.direction_name
++    
++    if (!map[dir] || isBase) {
++      const parts = m.direction_name.split(' - ')
++      map[dir] = (type === 'origin' ? parts[0] : parts[parts.length - 1]).trim()
++      fullNameByDir[dir] = m.direction_name
++    }
+   }
+ 
+   if (map.D && !map.G) {
+     const parts = fullNameByDir.D?.split(' - ') ?? []
+-    if (parts.length >= 2) map.G = parts[parts.length - 1].trim()
++    if (parts.length >= 2) map.G = (type === 'origin' ? parts[parts.length - 1] : parts[0]).trim()
+   } else if (map.G && !map.D) {
+     const parts = fullNameByDir.G?.split(' - ') ?? []
+-    if (parts.length >= 2) map.D = parts[parts.length - 1].trim()
++    if (parts.length >= 2) map.D = (type === 'origin' ? parts[parts.length - 1] : parts[0]).trim()
+   }
+ 
+   return map
+ }
+ 
++/**
++ * Extract direction labels (D/G) from route metadata.
++ * Handles cases where only one direction has metadata by deriving the other
++ * terminal name from the full "A - B" direction_name string.
++ * Returns an empty map when metadata is absent; Turkish fallback labels are
++ * applied by `getDirectionLabel()`.
++ */
++export function getDirectionLabelMap(metadata: RouteMetadata[] | null): Record<string, string> {
++  return buildLabelMap(metadata, 'origin')
++}
++
+ /**
+  * Get a label for a direction code, with optional Turkish fallback.
+  */
+@@ -41,3 +58,12 @@ export function getDirectionLabel(code: string, metadata: RouteMetadata[] | null
+   const map = getDirectionLabelMap(metadata)
+   return map[code] ?? (hasMetadata ? code : code === 'G' ? 'Gidi┼ƒ' : code === 'D' ? 'D├Ân├╝┼ƒ' : code)
+ }
++
++export function getDestinationLabelMap(metadata: RouteMetadata[] | null): Record<string, string> {
++  return buildLabelMap(metadata, 'destination')
++}
++
++export function getDestinationLabel(code: string, metadata: RouteMetadata[] | null, hasMetadata: boolean = !!metadata?.length): string {
++  const map = getDestinationLabelMap(metadata)
++  return map[code] ?? (hasMetadata ? code : code === 'G' ? 'Gidi┼ƒ' : code === 'D' ? 'D├Ân├╝┼ƒ' : code)
++}
+diff --git a/vite.config.ts b/vite.config.ts
+index 574b12e..c754822 100644
+--- a/vite.config.ts
++++ b/vite.config.ts
+@@ -106,10 +106,16 @@ const viteConfig = defineConfig({
+     cssCodeSplit: true,
+     rollupOptions: {
+       output: {
+-        manualChunks: {
+-          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+-          'vendor-map': ['leaflet', 'react-leaflet'],
+-          'vendor-motion': ['framer-motion'],
++        manualChunks(id) {
++          if (id.includes('react') || id.includes('react-dom') || id.includes('react-router-dom')) {
++            return 'vendor-react'
++          }
++          if (id.includes('leaflet') || id.includes('react-leaflet')) {
++            return 'vendor-map'
++          }
++          if (id.includes('framer-motion')) {
++            return 'vendor-motion'
++          }
+         },
+       },
+     },

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { MapContainer, TileLayer, Marker, Polyline, useMap } from 'react-leaflet'
 import * as L from 'leaflet'
-import * as api from '@/api/client'
+import { api } from '@/api/client'
 import type { Amenities } from '@/api/client'
 
 /** Haversine distance in metres between two lat/lon points. */
@@ -122,10 +122,8 @@ export default function BusDetailSheet({
     // StopPage passes full amenities directly, RoutePage might not have them initially
     if (fetchAmenitiesForKapino) {
       setIsLoadingAmenities(true)
-      // fetch indirectly because api client isn't exported with getBusDetail
-      fetch(`/v1/fleet/${fetchAmenitiesForKapino}/detail`)
-        .then(res => res.json())
-        .then(data => {
+      api.fleet.detail(fetchAmenitiesForKapino)
+        .then((data) => {
           if (data.plate) setLivePlate(data.plate)
           if (data.speed != null) setLiveSpeed(data.speed)
           if (data.direction) setLiveDestination(data.direction)
@@ -139,7 +137,7 @@ export default function BusDetailSheet({
             })
           }
         })
-        .catch(err => console.error('Failed to load amenities:', err))
+        .catch((err: unknown) => console.error('Failed to load amenities:', err))
         .finally(() => setIsLoadingAmenities(false))
     } else if (amenities) {
       setLiveAmenities(amenities)
@@ -291,7 +289,7 @@ export default function BusDetailSheet({
         {/* CTA */}
         <div className="px-4 pb-6 pt-2">
           <div className={`grid gap-2 ${showRouteButton ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1'}`}>
-            {showRouteButton && (
+            {showRouteButton && routeCode && (
               <Link
                 to={`/routes/${routeCode}`}
                 onClick={onClose}
@@ -311,7 +309,7 @@ export default function BusDetailSheet({
               className={`w-full text-center border border-[#2a2a2a] text-[#00AFF0] font-semibold
                          py-3 rounded-xl text-sm transition-colors disabled:text-slate-600
                          disabled:border-[#1a1a1a] disabled:cursor-not-allowed hover:border-[#00AFF0]/60 ${
-                           !showRouteButton && 'bg-surface'
+                           !showRouteButton ? 'bg-surface' : ''
                          }`}
             >
               Daha Fazla Detay

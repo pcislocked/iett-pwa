@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { MapContainer, TileLayer, CircleMarker, Popup, Marker, Polyline, useMap } from 'react-leaflet'
+import { MapContainer, TileLayer, CircleMarker, Popup, Marker, useMap } from 'react-leaflet'
 import * as L from 'leaflet'
 import { useArrivals } from '@/hooks/useArrivals'
 import { usePolling } from '@/hooks/usePolling'
@@ -43,24 +43,7 @@ function makeBusIcon(color: string): L.DivIcon {
   })
 }
 
-/** Haversine distance in metres between two lat/lon points. */
-function haversineM(lat1: number, lon1: number, lat2: number, lon2: number): number {
-  const R = 6_371_000
-  const rad = Math.PI / 180
-  const dLat = (lat2 - lat1) * rad
-  const dLon = (lon2 - lon1) * rad
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(lat1 * rad) * Math.cos(lat2 * rad) * Math.sin(dLon / 2) ** 2
-  return R * 2 * Math.asin(Math.sqrt(a))
-}
 
-/** Auto-fits map to given bounds on mount. */
-function FitBoundsEffect({ bounds }: { bounds: [[number, number], [number, number]] }) {
-  const map = useMap()
-  useEffect(() => { map.fitBounds(bounds, { padding: [32, 32] }) }, []) // eslint-disable-line react-hooks/exhaustive-deps
-  return null
-}
 
 /**
  * Fits the map to include the stop marker + up to 3 nearest buses (those
