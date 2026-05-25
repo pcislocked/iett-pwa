@@ -890,21 +890,7 @@ export default function StopPage() {
             busLon={effectiveLon}
             stopLat={stopDetail.latitude}
             stopLon={stopDetail.longitude}
-            amenities={selectedArrival.amenities || {
-              usb: (() => {
-                const h = (selectedArrival.kapino || '').split('').reduce((a, b) => a + b.charCodeAt(0), 0)
-                return h % 2 === 0
-              })(),
-              wifi: (() => {
-                const h = (selectedArrival.kapino || '').split('').reduce((a, b) => a + b.charCodeAt(0), 0)
-                return h % 3 !== 0
-              })(),
-              ac: (() => {
-                const h = (selectedArrival.kapino || '').split('').reduce((a, b) => a + b.charCodeAt(0), 0)
-                return h % 5 !== 0
-              })(),
-              accessible: true
-            }}
+            amenities={selectedArrival.amenities}
             onClose={() => setSelectedArrival(null)}
           />
         )

@@ -667,19 +667,10 @@ export default function RoutePage() {
                 busLon={selectedBus.longitude}
                 showMap={true}
                 amenities={{
-                  usb: (() => {
-                    const h = selectedBus.kapino.split('').reduce((a, b) => a + b.charCodeAt(0), 0)
-                    return h % 2 === 0
-                  })(),
-                  wifi: (() => {
-                    const h = selectedBus.kapino.split('').reduce((a, b) => a + b.charCodeAt(0), 0)
-                    return h % 3 !== 0
-                  })(),
-                  ac: (() => {
-                    const h = selectedBus.kapino.split('').reduce((a, b) => a + b.charCodeAt(0), 0)
-                    return h % 5 !== 0 // mostly true
-                  })(),
-                  accessible: true // assume all modern buses are accessible
+                  usb: selectedBus.has_usb ?? null,
+                  wifi: selectedBus.has_wifi ?? null,
+                  ac: selectedBus.is_air_conditioned ?? null,
+                  accessible: selectedBus.accessible ?? null
                 }}
                 onClose={() => setSelectedBus(null)}
               />
