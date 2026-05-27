@@ -484,9 +484,10 @@ export default function RoutePage() {
   const scrollRef = useRef<HTMLDivElement>(null)
   const [selectedVariant, setSelectedVariant] = useState('all')
   type RouteBus = import('@/api/client').BusPosition
-  const [selectedBus, setSelectedBus] = useState<RouteBus | null>(null)
+  const [selectedKapino, setSelectedKapino] = useState<string | null>(null)
 
   const { data: buses, stale } = useRouteBuses(hatKodu ?? '')
+  const selectedBus = useMemo(() => buses?.find(b => b.kapino === selectedKapino) ?? null, [buses, selectedKapino])
 
   const stopsFetcher = useCallback(() => api.routes.stops(hatKodu ?? ''), [hatKodu])
   const scheduleFetcher = useCallback(() => api.routes.schedule(hatKodu ?? ''), [hatKodu])
@@ -776,6 +777,7 @@ export default function RoutePage() {
               
               {stops && (
                 <MapContainer
+                  key={center.join(',')}
                   center={center}
                   zoom={11}
                   className="w-full h-full"
@@ -804,14 +806,14 @@ export default function RoutePage() {
                         key={b.kapino}
                         position={[b.latitude, b.longitude]}
                         icon={b.direction_letter === 'G' ? busIconG : b.direction_letter === 'D' ? busIconD : busIconUnknown}
-                        eventHandlers={{ click: () => setSelectedBus(b) }}
+                        eventHandlers={{ click: () => setSelectedKapino(b.kapino) }}
                       />
                     ))}
                 </MapContainer>
               )}
             </div>
             
-            {selectedBus && (
+            {selectedBus && selectedKapino && (
               <BusDetailSheet
                 routeCode={selectedBus.route_code || hatKodu}
                 destination={selectedBus.direction || (selectedBus.direction_letter === 'G' ? 'Gidiş' : 'Dönüş')}
@@ -822,7 +824,7 @@ export default function RoutePage() {
                 busLon={selectedBus.longitude}
                 showMap={true}
                 fetchAmenitiesForKapino={selectedBus.kapino}
-                onClose={() => setSelectedBus(null)}
+                onClose={() => setSelectedKapino(null)}
               />
             )}
           </div>

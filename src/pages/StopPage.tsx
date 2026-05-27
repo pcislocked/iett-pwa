@@ -415,13 +415,19 @@ export default function StopPage() {
   const allRoutesAtStop = useMemo(() => Array.from(new Set([...(Array.isArray(routes) ? routes : []), ...arrivalRouteOrder])), [routes, arrivalRouteOrder])
   const annsFetcher = useCallback(async () => {
     if (!allRoutesAtStop.length) return []
-    const results = await Promise.allSettled(allRoutesAtStop.map(r => api.routes.announcements(r)))
     const combined: RouteAnnouncement[] = []
-    results.forEach((res, i) => {
-      if (res.status === 'fulfilled' && res.value.length > 0) {
-        res.value.forEach(a => combined.push({ ...a, route_code: allRoutesAtStop[i] }))
-      }
-    })
+    
+    // Chunk requests to avoid browser connection exhaustion (max 6 concurrent per origin)
+    const chunkSize = 5
+    for (let i = 0; i < allRoutesAtStop.length; i += chunkSize) {
+      const chunk = allRoutesAtStop.slice(i, i + chunkSize)
+      const results = await Promise.allSettled(chunk.map(r => api.routes.announcements(r)))
+      results.forEach((res, j) => {
+        if (res.status === 'fulfilled' && res.value.length > 0) {
+          res.value.forEach(a => combined.push({ ...a, route_code: chunk[j] }))
+        }
+      })
+    }
     return combined
   }, [allRoutesAtStop])
 

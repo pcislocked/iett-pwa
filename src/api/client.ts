@@ -398,7 +398,7 @@ export const api = {
   fleet: {
     all: () => get<BusPosition[]>('/v1/fleet'),
     byPlate: (kapino: string) => get<BusPosition>(`/v1/fleet/${encodeURIComponent(kapino)}`),
-    detail: (kapino: string) => get<BusDetail>(`/v1/fleet/${encodeURIComponent(kapino)}/detail`),
+    detail: (kapino: string, init?: RequestInit) => get<BusDetail>(`/v1/fleet/${encodeURIComponent(kapino)}/detail`, init),
     meta: () => get<{ bus_count: number; updated_at: string | null }>('/v1/fleet/meta'),
     refresh: () => post<FleetRefreshResponse>('/v1/fleet/refresh'),
   },

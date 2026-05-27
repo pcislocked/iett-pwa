@@ -127,11 +127,12 @@ export default function BusDetailSheet({
   // Fetch live amenities if requested
   useEffect(() => {
     let isMounted = true
+    const controller = new AbortController()
 
     // StopPage passes full amenities directly, RoutePage might not have them initially
     if (fetchAmenitiesForKapino) {
       setIsLoadingAmenities(true)
-      api.fleet.detail(fetchAmenitiesForKapino)
+      api.fleet.detail(fetchAmenitiesForKapino, { signal: controller.signal })
         .then((data) => {
           if (!isMounted) return
           if (data.plate) setLivePlate(data.plate)
@@ -142,13 +143,15 @@ export default function BusDetailSheet({
             setLiveAmenities({
               usb: data.has_usb ?? null,
               wifi: data.has_wifi ?? null,
-              ac: data.is_air_conditioned ?? null,
-              accessible: data.accessible ?? null
+              ac: data.has_ac ?? null,
+              accessible: data.is_accessible ?? null
             })
           }
         })
         .catch((err: unknown) => {
-          if (isMounted) console.error('Failed to load amenities:', err)
+          if (err instanceof Error && err.name !== 'AbortError') {
+            console.error('Failed to fetch amenities:', err)
+          }
         })
         .finally(() => {
           if (isMounted) setIsLoadingAmenities(false)
@@ -159,6 +162,7 @@ export default function BusDetailSheet({
 
     return () => {
       isMounted = false
+      controller.abort()
     }
   }, [fetchAmenitiesForKapino, amenities])
 
