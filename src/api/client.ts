@@ -175,6 +175,12 @@ export interface BusDetail extends BusPosition {
   route_is_live: boolean
   /** Ordered stop list for all directions — filter by direction to draw polyline. */
   route_stops: RouteStop[]
+
+  // Dynamic amenities populated during detail probe
+  has_usb?: boolean | null
+  has_wifi?: boolean | null
+  is_air_conditioned?: boolean | null
+  is_accessible?: boolean | null
 }
 
 export interface Amenities {

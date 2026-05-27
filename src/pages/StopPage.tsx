@@ -412,7 +412,7 @@ export default function StopPage() {
   type RouteAnnouncement = Announcement & { route_code: string }
 
   // Announcements for ALL routes present at this stop
-  const allRoutesAtStop = useMemo(() => Array.from(new Set([...(Array.isArray(routes) ? routes : []), ...arrivalRouteOrder])), [routes, arrivalRouteOrder])
+  const allRoutesAtStop = useMemo(() => Array.from(new Set([...(Array.isArray(routes) ? routes : []), ...arrivalRouteOrder])).sort(), [routes, arrivalRouteOrder])
   const annsFetcher = useCallback(async () => {
     if (!allRoutesAtStop.length) return []
     const combined: RouteAnnouncement[] = []

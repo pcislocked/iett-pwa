@@ -50,6 +50,15 @@ function VariantSelect({
   const [isOpen, setIsOpen] = useState(false)
   const selected = options.find(o => o.value === value)
 
+  useEffect(() => {
+    if (!isOpen) return
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsOpen(false)
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [isOpen])
+
   return (
     <div className={`relative ${className || ''}`}>
       <button 
@@ -483,7 +492,6 @@ export default function RoutePage() {
   const [tab, setTab] = useState<Tab>('schedule')
   const scrollRef = useRef<HTMLDivElement>(null)
   const [selectedVariant, setSelectedVariant] = useState('all')
-  type RouteBus = import('@/api/client').BusPosition
   const [selectedKapino, setSelectedKapino] = useState<string | null>(null)
 
   const { data: buses, stale } = useRouteBuses(hatKodu ?? '')
@@ -630,7 +638,15 @@ export default function RoutePage() {
 
     if (effectiveVariant === 'all') return stops // Fallback
 
-    return stops.filter((s) => s.route_code === effectiveVariant || s.route_code === hatKodu)
+    return stops.filter((s) => {
+      if (s.route_code === effectiveVariant) return true
+      if (s.route_code === hatKodu) {
+        if (effectiveVariant === `${hatKodu}_G`) return s.direction === 'G'
+        if (effectiveVariant === `${hatKodu}_D`) return s.direction === 'D'
+        return true
+      }
+      return false
+    })
   }, [stops, selectedVariant, stopsVariantOptions, tab, hatKodu])
 
   // Build map of stop_sequence to bus directions

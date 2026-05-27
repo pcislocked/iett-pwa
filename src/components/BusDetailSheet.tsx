@@ -143,7 +143,7 @@ export default function BusDetailSheet({
             setLiveAmenities({
               usb: data.has_usb ?? null,
               wifi: data.has_wifi ?? null,
-              ac: data.has_ac ?? null,
+              ac: data.is_air_conditioned ?? null,
               accessible: data.is_accessible ?? null
             })
           }
@@ -156,8 +156,11 @@ export default function BusDetailSheet({
         .finally(() => {
           if (isMounted) setIsLoadingAmenities(false)
         })
-    } else if (amenities) {
-      if (isMounted) setLiveAmenities(amenities)
+    } else {
+      if (isMounted) setIsLoadingAmenities(false)
+      if (amenities && isMounted) {
+        setLiveAmenities(amenities)
+      }
     }
 
     return () => {
