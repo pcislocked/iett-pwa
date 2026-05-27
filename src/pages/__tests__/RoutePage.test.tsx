@@ -158,7 +158,7 @@ describe('RoutePage', () => {
     // Check buses
     expect(screen.getAllByTestId('map-marker').length).toBeGreaterThan(0)
     
-    // Switch to stops tabrker
+    // Switch to stops tab marker
     const circleMarkers = screen.getAllByTestId('circle-marker')
     fireEvent.click(circleMarkers[0])
   })

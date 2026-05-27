@@ -2,8 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { MapContainer, TileLayer, Marker, Polyline, useMap } from 'react-leaflet'
 import * as L from 'leaflet'
-import { api } from '@/api/client'
-import type { Amenities } from '@/api/client'
+import { api, type Amenities } from '@/api/client'
 
 /** Haversine distance in metres between two lat/lon points. */
 function haversineM(lat1: number, lon1: number, lat2: number, lon2: number): number {
@@ -230,7 +229,7 @@ export default function BusDetailSheet({
               </p>
             )}
           </div>
-          <button onClick={onClose} className="p-1.5 text-slate-500 hover:text-slate-300 shrink-0">
+          <button onClick={onClose} aria-label="Kapat" className="p-1.5 text-slate-500 hover:text-slate-300 shrink-0">
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>

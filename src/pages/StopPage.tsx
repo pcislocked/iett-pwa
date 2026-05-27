@@ -226,13 +226,14 @@ function AnnouncementsModal({ announcements, onClose }: { announcements: (Announ
       <div 
         role="dialog"
         aria-modal="true"
+        aria-labelledby="announcements-title"
         className="bg-surface-card border border-surface-muted rounded-2xl w-full max-w-md p-5 shadow-xl relative max-h-[80vh] flex flex-col"
       >
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-base font-bold text-amber-400 flex items-center gap-2">
+          <h2 id="announcements-title" className="text-base font-bold text-amber-400 flex items-center gap-2">
             <span>🔔</span> Duyurular
           </h2>
-          <button onClick={onClose} className="p-1 text-slate-500 hover:text-slate-300 transition-colors">
+          <button onClick={onClose} aria-label="Kapat" className="p-1 text-slate-500 hover:text-slate-300 transition-colors">
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -408,7 +409,10 @@ export default function StopPage() {
   const [announcements, setAnnouncements] = useState<RouteAnnouncement[]>([])
 
   useEffect(() => {
-    if (!allRoutesAtStop.length) return
+    if (!allRoutesAtStop.length) {
+      setAnnouncements([])
+      return
+    }
     let isMounted = true
     const fetchAnns = async () => {
       const results = await Promise.allSettled(allRoutesAtStop.map(r => api.routes.announcements(r)))

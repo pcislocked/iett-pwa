@@ -481,8 +481,8 @@ export default function RoutePage() {
   const [tab, setTab] = useState<Tab>('schedule')
   const scrollRef = useRef<HTMLDivElement>(null)
   const [selectedVariant, setSelectedVariant] = useState('all')
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [selectedBus, setSelectedBus] = useState<any>(null)
+  type RouteBus = import('@/api/client').BusPosition
+  const [selectedBus, setSelectedBus] = useState<RouteBus | null>(null)
 
   const { data: buses, stale } = useRouteBuses(hatKodu ?? '')
 
@@ -627,8 +627,8 @@ export default function RoutePage() {
 
     if (effectiveVariant === 'all') return stops // Fallback
 
-    return stops.filter((s) => s.route_code === effectiveVariant)
-  }, [stops, selectedVariant, stopsVariantOptions, tab])
+    return stops.filter((s) => s.route_code === effectiveVariant || s.route_code === hatKodu)
+  }, [stops, selectedVariant, stopsVariantOptions, tab, hatKodu])
 
   // Build map of stop_sequence to bus directions
   const busAtSequence = useMemo(() => {
