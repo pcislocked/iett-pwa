@@ -800,6 +800,7 @@ export default function RoutePage() {
                   zoomControl={false}
                 >
                   <TileLayer
+                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
                     url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
                   />
                   {/* Stop markers */}
@@ -831,7 +832,7 @@ export default function RoutePage() {
             
             {selectedBus && selectedKapino && (
               <BusDetailSheet
-                routeCode={selectedBus.route_code || hatKodu}
+                routeCode={selectedBus.route_code || hatKodu || null}
                 destination={selectedBus.direction || (selectedBus.direction_letter === 'G' ? 'Gidiş' : 'Dönüş')}
                 plate={selectedBus.plate}
                 kapino={selectedBus.kapino}

@@ -11,6 +11,7 @@ import { useBottomBar } from '@/hooks/useBottomBar'
 import { PINNED_STOPS_MAX, useUserPrefs } from '@/hooks/useUserPrefs'
 import { etaChipClass } from '@/utils/etaColor'
 import { POLLING } from '@/config/polling'
+import BusDetailSheet from '@/components/BusDetailSheet'
 
 /** Calls map.invalidateSize() whenever the container height percentage changes. */
 function MapResizer({ heightPct }: { heightPct: number }) {
@@ -122,8 +123,6 @@ function AmenityIcons({ amenities }: { amenities: Amenities | null }) {
   )
 }
 
-import BusDetailSheet from '@/components/BusDetailSheet'
-
 function EtaChip({ minutes, raw }: { minutes: number | null; raw: string }) {
   const chipCls = etaChipClass(minutes)
   if (minutes === null)
@@ -211,7 +210,13 @@ function AnnouncementsModal({ announcements, onClose }: { announcements: (Announ
   useEffect(() => {
     prevFocusRef.current = document.activeElement
     btnRef.current?.focus()
-    const handleKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+      if (e.key === 'Tab') {
+        e.preventDefault()
+        btnRef.current?.focus()
+      }
+    }
     document.addEventListener('keydown', handleKey)
     return () => {
       document.removeEventListener('keydown', handleKey)
