@@ -54,7 +54,7 @@ function VariantSelect({
     <div className={`relative ${className || ''}`}>
       <button 
         type="button"
-        aria-haspopup="listbox"
+        aria-haspopup="menu"
         aria-expanded={isOpen}
         onClick={() => setIsOpen(!isOpen)}
         className="w-full flex items-center justify-between bg-surface cursor-pointer border border-brand-500/50 hover:border-brand-500 transition-colors rounded-xl px-3 py-2.5 text-left"
@@ -69,10 +69,12 @@ function VariantSelect({
         <>
           <div className="fixed inset-0 z-[990]" onClick={() => setIsOpen(false)} />
           <div className="absolute top-full left-0 right-0 mt-2 bg-surface-card border border-surface-muted rounded-xl overflow-hidden z-[1000] shadow-xl shadow-black/50">
-            <div className="max-h-[300px] overflow-y-auto overscroll-contain">
+            <div role="menu" className="max-h-[300px] overflow-y-auto overscroll-contain">
               {options.map(o => (
                 <div key={o.value}>
                   <button
+                    role="menuitemradio"
+                    aria-checked={value === o.value}
                     onClick={() => { onChange(o.value); setIsOpen(false) }}
                     className={`w-full text-left px-3 py-3 text-sm transition-colors hover:bg-surface-muted flex items-center justify-between ${
                       value === o.value ? 'bg-brand-500/10 text-brand-400' : 'text-slate-300'
@@ -783,7 +785,7 @@ export default function RoutePage() {
                     url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
                   />
                   {/* Stop markers */}
-                  {selectedVariant !== 'all' && stopsForVariant.map((s) => (
+                  {stopsForVariant.map((s) => (
                     <CircleMarker
                       key={`${s.direction}-${s.stop_code}-${s.sequence}`}
                       center={[s.latitude, s.longitude]}

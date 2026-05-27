@@ -206,12 +206,19 @@ function InfoModal({ onClose }: { onClose: () => void }) {
 
 function AnnouncementsModal({ announcements, onClose }: { announcements: (Announcement & { route_code: string })[], onClose: () => void }) {
   const btnRef = useRef<HTMLButtonElement>(null)
+  const prevFocusRef = useRef<Element | null>(null)
   
   useEffect(() => {
+    prevFocusRef.current = document.activeElement
     btnRef.current?.focus()
     const handleKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
     document.addEventListener('keydown', handleKey)
-    return () => document.removeEventListener('keydown', handleKey)
+    return () => {
+      document.removeEventListener('keydown', handleKey)
+      if (prevFocusRef.current instanceof HTMLElement) {
+        prevFocusRef.current.focus()
+      }
+    }
   }, [onClose])
 
   const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -395,7 +402,7 @@ export default function StopPage() {
   // Build for ALL routes at this stop (arrivalRouteOrder + routes fallback).
   const routeIconMap = useMemo(() => {
     const m = new Map<string, L.DivIcon>()
-    const allRouteSet = new Set([...arrivalRouteOrder, ...(routes ?? [])])
+    const allRouteSet = new Set([...arrivalRouteOrder, ...(Array.isArray(routes) ? routes : [])])
     allRouteSet.forEach((r) => {
       m.set(r, makeBusIcon(getRouteColor(r, arrivalRouteOrder)))
     })
@@ -405,7 +412,7 @@ export default function StopPage() {
   type RouteAnnouncement = Announcement & { route_code: string }
 
   // Announcements for ALL routes present at this stop
-  const allRoutesAtStop = useMemo(() => Array.from(new Set([...(routes ?? []), ...arrivalRouteOrder])), [routes, arrivalRouteOrder])
+  const allRoutesAtStop = useMemo(() => Array.from(new Set([...(Array.isArray(routes) ? routes : []), ...arrivalRouteOrder])), [routes, arrivalRouteOrder])
   const [announcements, setAnnouncements] = useState<RouteAnnouncement[]>([])
 
   useEffect(() => {
@@ -425,7 +432,11 @@ export default function StopPage() {
       if (isMounted) setAnnouncements(combined)
     }
     fetchAnns()
-    return () => { isMounted = false }
+    const timer = setInterval(fetchAnns, POLLING.ANNOUNCEMENTS_MS)
+    return () => {
+      isMounted = false
+      clearInterval(timer)
+    }
   }, [allRoutesAtStop])
 
   const { isFavorite, toggle } = useFavorites()

@@ -116,6 +116,14 @@ export default function BusDetailSheet({
   const [liveDestination, setLiveDestination] = useState<string | null>(destination || null)
   const [isLoadingAmenities, setIsLoadingAmenities] = useState(false)
 
+  // Keep derived state in sync when the selected bus changes.
+  useEffect(() => {
+    setLiveAmenities(amenities || null)
+    setLivePlate(plate || null)
+    setLiveSpeed(speedKmh ?? null)
+    setLiveDestination(destination || null)
+  }, [amenities, plate, speedKmh, destination, fetchAmenitiesForKapino])
+
   // Fetch live amenities if requested
   useEffect(() => {
     let isMounted = true
