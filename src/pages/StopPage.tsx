@@ -413,31 +413,21 @@ export default function StopPage() {
 
   // Announcements for ALL routes present at this stop
   const allRoutesAtStop = useMemo(() => Array.from(new Set([...(Array.isArray(routes) ? routes : []), ...arrivalRouteOrder])), [routes, arrivalRouteOrder])
-  const [announcements, setAnnouncements] = useState<RouteAnnouncement[]>([])
-
-  useEffect(() => {
-    if (!allRoutesAtStop.length) {
-      setAnnouncements([])
-      return
-    }
-    let isMounted = true
-    const fetchAnns = async () => {
-      const results = await Promise.allSettled(allRoutesAtStop.map(r => api.routes.announcements(r)))
-      const combined: RouteAnnouncement[] = []
-      results.forEach((res, i) => {
-        if (res.status === 'fulfilled' && res.value.length > 0) {
-          res.value.forEach(a => combined.push({ ...a, route_code: allRoutesAtStop[i] }))
-        }
-      })
-      if (isMounted) setAnnouncements(combined)
-    }
-    fetchAnns()
-    const timer = setInterval(fetchAnns, POLLING.ANNOUNCEMENTS_MS)
-    return () => {
-      isMounted = false
-      clearInterval(timer)
-    }
+  const annsFetcher = useCallback(async () => {
+    if (!allRoutesAtStop.length) return []
+    const results = await Promise.allSettled(allRoutesAtStop.map(r => api.routes.announcements(r)))
+    const combined: RouteAnnouncement[] = []
+    results.forEach((res, i) => {
+      if (res.status === 'fulfilled' && res.value.length > 0) {
+        res.value.forEach(a => combined.push({ ...a, route_code: allRoutesAtStop[i] }))
+      }
+    })
+    return combined
   }, [allRoutesAtStop])
+
+  const allRoutesKey = allRoutesAtStop.join(',')
+  const { data: polledAnnouncements } = usePolling<RouteAnnouncement[]>(annsFetcher, POLLING.ANNOUNCEMENTS_MS, allRoutesKey)
+  const announcements = polledAnnouncements ?? []
 
   const { isFavorite, toggle } = useFavorites()
   const { prefs, isPinned, pinStop, unpinStop } = useUserPrefs()
