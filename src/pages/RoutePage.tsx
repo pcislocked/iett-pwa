@@ -455,15 +455,7 @@ type Tab = 'schedule' | 'map' | 'stops' | 'alerts'
 
 function StopPopupContent({ s }: { s: RouteStop }) {
   const navigate = useNavigate()
-  const [direction, setDirection] = useState(s.stop_direction)
-
-  useEffect(() => {
-    if (!s.stop_direction) {
-      api.stops.detail(s.stop_code).then(res => {
-        if (res.direction) setDirection(res.direction)
-      }).catch(() => {})
-    }
-  }, [s.stop_code, s.stop_direction])
+  const direction = s.stop_direction
 
   return (
     <div className="text-center min-w-[150px] max-w-[200px] px-1 py-1">
@@ -728,6 +720,7 @@ export default function RoutePage() {
         {/* Timetable tab */}
         {tab === 'schedule' && (
           <TimetableView 
+            hatKodu={hatKodu}
             schedule={schedule} 
             scheduleError={scheduleError} 
             onRetry={refreshSchedule} 

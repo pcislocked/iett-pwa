@@ -1,3 +1,4 @@
+import type React from 'react'
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { MapContainer, TileLayer, CircleMarker, Popup, Marker, useMap } from 'react-leaflet'
@@ -122,9 +123,6 @@ function AmenityIcons({ amenities }: { amenities: Amenities | null }) {
 }
 
 import BusDetailSheet from '@/components/BusDetailSheet'
-
-/** Bottom-sheet showing a single bus relative to the stop. */
-
 
 function EtaChip({ minutes, raw }: { minutes: number | null; raw: string }) {
   const chipCls = etaChipClass(minutes)
@@ -407,23 +405,24 @@ export default function StopPage() {
 
   // Announcements for ALL routes present at this stop
   const allRoutesAtStop = useMemo(() => Array.from(new Set([...(routes ?? []), ...arrivalRouteOrder])), [routes, arrivalRouteOrder])
-  const announceFetcher = useCallback(async () => {
-    if (!allRoutesAtStop.length) return []
-    const results = await Promise.allSettled(allRoutesAtStop.map(r => api.routes.announcements(r)))
-    const combined: RouteAnnouncement[] = []
-    results.forEach((res, i) => {
-      if (res.status === 'fulfilled' && res.value.length > 0) {
-        res.value.forEach(a => combined.push({ ...a, route_code: allRoutesAtStop[i] }))
-      }
-    })
-    return combined
-  }, [allRoutesAtStop])
+  const [announcements, setAnnouncements] = useState<RouteAnnouncement[]>([])
 
-  const { data: announcements } = usePolling<RouteAnnouncement[]>(
-    announceFetcher,
-    POLLING.ANNOUNCEMENTS_MS,
-    allRoutesAtStop.join(','),
-  )
+  useEffect(() => {
+    if (!allRoutesAtStop.length) return
+    let isMounted = true
+    const fetchAnns = async () => {
+      const results = await Promise.allSettled(allRoutesAtStop.map(r => api.routes.announcements(r)))
+      const combined: RouteAnnouncement[] = []
+      results.forEach((res, i) => {
+        if (res.status === 'fulfilled' && res.value.length > 0) {
+          res.value.forEach(a => combined.push({ ...a, route_code: allRoutesAtStop[i] }))
+        }
+      })
+      if (isMounted) setAnnouncements(combined)
+    }
+    fetchAnns()
+    return () => { isMounted = false }
+  }, [allRoutesAtStop])
 
   const { isFavorite, toggle } = useFavorites()
   const { prefs, isPinned, pinStop, unpinStop } = useUserPrefs()

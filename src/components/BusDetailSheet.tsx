@@ -119,11 +119,14 @@ export default function BusDetailSheet({
 
   // Fetch live amenities if requested
   useEffect(() => {
+    let isMounted = true
+
     // StopPage passes full amenities directly, RoutePage might not have them initially
     if (fetchAmenitiesForKapino) {
       setIsLoadingAmenities(true)
       api.fleet.detail(fetchAmenitiesForKapino)
         .then((data) => {
+          if (!isMounted) return
           if (data.plate) setLivePlate(data.plate)
           if (data.speed != null) setLiveSpeed(data.speed)
           if (data.direction) setLiveDestination(data.direction)
@@ -137,10 +140,18 @@ export default function BusDetailSheet({
             })
           }
         })
-        .catch((err: unknown) => console.error('Failed to load amenities:', err))
-        .finally(() => setIsLoadingAmenities(false))
+        .catch((err: unknown) => {
+          if (isMounted) console.error('Failed to load amenities:', err)
+        })
+        .finally(() => {
+          if (isMounted) setIsLoadingAmenities(false)
+        })
     } else if (amenities) {
-      setLiveAmenities(amenities)
+      if (isMounted) setLiveAmenities(amenities)
+    }
+
+    return () => {
+      isMounted = false
     }
   }, [fetchAmenitiesForKapino, amenities])
 
