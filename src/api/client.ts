@@ -423,7 +423,7 @@ export const api = {
     buses: (hatKodu: string) => get<BusPosition[]>(`/v1/routes/${hatKodu}/buses`),
     stops: (hatKodu: string) => get<RouteStop[]>(`/v1/routes/${hatKodu}/stops`),
     schedule: (hatKodu: string) => get<ScheduledDeparture[]>(`/v1/routes/${hatKodu}/schedule`),
-    announcements: (hatKodu: string) => get<Announcement[]>(`/v1/routes/${hatKodu}/announcements`),
+    announcements: (hatKodu: string, init?: RequestInit) => get<Announcement[]>(`/v1/routes/${hatKodu}/announcements`, init),
   },
   garages: {
     list: () => get<Garage[]>('/v1/garages'),

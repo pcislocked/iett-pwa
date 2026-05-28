@@ -3,7 +3,7 @@
  * Fetches immediately, then re-fetches every `intervalMs` milliseconds.
  * Returns { data, loading, error, refresh }.
  */
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useLayoutEffect } from 'react'
 
 interface UsePollingResult<T> {
   data: T | null
@@ -16,7 +16,7 @@ interface UsePollingResult<T> {
 }
 
 export function usePolling<T>(
-  fetcher: () => Promise<T>,
+  fetcher: (opts?: { signal?: AbortSignal }) => Promise<T>,
   intervalMs = 20_000,
   key?: string | number | boolean | null,
 ): UsePollingResult<T> {
@@ -29,17 +29,26 @@ export function usePolling<T>(
   const fetcherRef = useRef(fetcher)
   fetcherRef.current = fetcher
   const dataRef = useRef(data)
-  dataRef.current = data
+  useLayoutEffect(() => {
+    dataRef.current = data
+  }, [data])
   // Tracks whether the component is still mounted; prevents setState after unmount.
   const mountedRef = useRef(false)
   // Incremented on every doFetch call; out-of-order responses from slower earlier
   // requests are dropped so only the most recent fetch wins.
   const fetchIdRef = useRef(0)
+  const abortControllerRef = useRef<AbortController | null>(null)
 
   const doFetch = useCallback(async () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+    }
+    const ac = new AbortController()
+    abortControllerRef.current = ac
+
     const id = ++fetchIdRef.current
     try {
-      const result = await fetcherRef.current()
+      const result = await fetcherRef.current({ signal: ac.signal })
       if (id !== fetchIdRef.current || !mountedRef.current) return
       setData(result)
       setError(null)
@@ -68,6 +77,9 @@ export function usePolling<T>(
       mountedRef.current = false
       // Invalidate any in-flight request on unmount.
       fetchIdRef.current += 1
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort()
+      }
     }
   }, [])
 
@@ -78,6 +90,9 @@ export function usePolling<T>(
     return () => {
       // Invalidate in-flight requests from the previous polling cycle.
       fetchIdRef.current += 1
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort()
+      }
       clearInterval(id)
     }
   }, [doFetch, intervalMs, key])

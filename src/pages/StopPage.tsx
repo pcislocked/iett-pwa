@@ -141,6 +141,7 @@ function EtaChip({ minutes, raw }: { minutes: number | null; raw: string }) {
 }
 
 function InfoModal({ onClose }: { onClose: () => void }) {
+  const modalRef = useRef<HTMLDivElement>(null)
   const btnRef = useRef<HTMLButtonElement>(null)
   const prevFocusRef = useRef<Element | null>(null)
 
@@ -149,10 +150,26 @@ function InfoModal({ onClose }: { onClose: () => void }) {
     btnRef.current?.focus()
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose()
-      // Basic focus trap: keep focus on button if tab pressed
       if (e.key === 'Tab') {
-        e.preventDefault()
-        btnRef.current?.focus()
+        if (!modalRef.current) return
+        const focusable = modalRef.current.querySelectorAll<HTMLElement>(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        )
+        if (focusable.length === 0) return
+        const first = focusable[0]
+        const last = focusable[focusable.length - 1]
+        
+        if (e.shiftKey) {
+          if (document.activeElement === first) {
+            e.preventDefault()
+            last.focus()
+          }
+        } else {
+          if (document.activeElement === last) {
+            e.preventDefault()
+            first.focus()
+          }
+        }
       }
     }
     document.addEventListener('keydown', handleKey)
@@ -176,6 +193,7 @@ function InfoModal({ onClose }: { onClose: () => void }) {
       className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4"
     >
       <div 
+        ref={modalRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="info-title"
@@ -204,6 +222,7 @@ function InfoModal({ onClose }: { onClose: () => void }) {
 }
 
 function AnnouncementsModal({ announcements, onClose }: { announcements: (Announcement & { route_code: string })[], onClose: () => void }) {
+  const modalRef = useRef<HTMLDivElement>(null)
   const btnRef = useRef<HTMLButtonElement>(null)
   const prevFocusRef = useRef<Element | null>(null)
   
@@ -213,8 +232,25 @@ function AnnouncementsModal({ announcements, onClose }: { announcements: (Announ
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose()
       if (e.key === 'Tab') {
-        e.preventDefault()
-        btnRef.current?.focus()
+        if (!modalRef.current) return
+        const focusable = modalRef.current.querySelectorAll<HTMLElement>(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        )
+        if (focusable.length === 0) return
+        const first = focusable[0]
+        const last = focusable[focusable.length - 1]
+        
+        if (e.shiftKey) {
+          if (document.activeElement === first) {
+            e.preventDefault()
+            last.focus()
+          }
+        } else {
+          if (document.activeElement === last) {
+            e.preventDefault()
+            first.focus()
+          }
+        }
       }
     }
     document.addEventListener('keydown', handleKey)
@@ -236,6 +272,7 @@ function AnnouncementsModal({ announcements, onClose }: { announcements: (Announ
       className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4"
     >
       <div 
+        ref={modalRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="announcements-title"
@@ -418,15 +455,17 @@ export default function StopPage() {
 
   // Announcements for ALL routes present at this stop
   const allRoutesAtStop = useMemo(() => Array.from(new Set([...(Array.isArray(routes) ? routes : []), ...arrivalRouteOrder])).sort(), [routes, arrivalRouteOrder])
-  const annsFetcher = useCallback(async () => {
+  const annsFetcher = useCallback(async (opts?: { signal?: AbortSignal }) => {
     if (!allRoutesAtStop.length) return []
     const combined: RouteAnnouncement[] = []
     
     // Chunk requests to avoid browser connection exhaustion (max 6 concurrent per origin)
     const chunkSize = 5
     for (let i = 0; i < allRoutesAtStop.length; i += chunkSize) {
+      if (opts?.signal?.aborted) break
+      
       const chunk = allRoutesAtStop.slice(i, i + chunkSize)
-      const results = await Promise.allSettled(chunk.map(r => api.routes.announcements(r)))
+      const results = await Promise.allSettled(chunk.map(r => api.routes.announcements(r, { signal: opts?.signal })))
       results.forEach((res, j) => {
         if (res.status === 'fulfilled' && res.value.length > 0) {
           res.value.forEach(a => combined.push({ ...a, route_code: chunk[j] }))
