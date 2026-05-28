@@ -138,6 +138,7 @@ export default mergeConfig(
     test: {
       environment: 'jsdom',
       globals: true,
+      testTimeout: 15000,
       setupFiles: ['./src/test/setup.ts'],
       alias: { '@': path.resolve(__dirname, 'src') },
       coverage: {
