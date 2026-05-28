@@ -192,6 +192,14 @@ export default function Home() {
   const favStops = favorites.filter((f) => f.kind === 'stop')
   const favRoutes = favorites.filter((f) => f.kind === 'route')
 
+  const isMountedRef = useRef(true)
+  useEffect(() => {
+    isMountedRef.current = true
+    return () => {
+      isMountedRef.current = false
+    }
+  }, [])
+
   // ── Recent searches ───────────────────────────────────────────────────────
   const [recents, setRecents] = useState<RecentSearch[]>([])
   useEffect(() => { setRecents(getRecent()) }, [])
@@ -208,6 +216,7 @@ export default function Home() {
     // Some mobile WebView/PWA contexts can intermittently fail to invoke either
     // callback on background/foreground transitions; guard against endless locating.
     const watchdogId = window.setTimeout(() => {
+      if (!isMountedRef.current) return
       setGpsPhase((phase) => (phase === 'locating' ? 'unavailable' : phase))
     }, 20_000)
 
@@ -233,6 +242,7 @@ export default function Home() {
       }
 
       const stops = await api.stops.nearby(pos.coords.latitude, pos.coords.longitude)
+      if (!isMountedRef.current) return
       setNearbyStops(
         [...stops]
           .sort((a, b) => (Number(a.distance_m) || 0) - (Number(b.distance_m) || 0))
@@ -240,6 +250,7 @@ export default function Home() {
       )
       setGpsPhase('done')
     } catch (err) {
+      if (!isMountedRef.current) return
       setGpsPhase(getGeoErrorCode(err) === 1 ? 'denied' : 'unavailable')
     } finally {
       window.clearTimeout(watchdogId)

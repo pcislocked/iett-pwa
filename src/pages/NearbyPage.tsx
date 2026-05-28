@@ -143,6 +143,14 @@ export default function NearbyPage() {
   const [pickedLat, setPickedLat] = useState<number | null>(null)
   const [pickedLon, setPickedLon] = useState<number | null>(null)
 
+  const isMountedRef = useRef(true)
+  useEffect(() => {
+    isMountedRef.current = true
+    return () => {
+      isMountedRef.current = false
+    }
+  }, [])
+
   // ── Selection state ─────────────────────────────────────────────────────────
   const [selectedCode, setSelectedCode] = useState<string | null>(null)
   const listRef = useRef<HTMLDivElement>(null)
@@ -171,7 +179,7 @@ export default function NearbyPage() {
     if (!el) return
     el.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
     // Reset flag after smooth-scroll animation settles (~400ms)
-    const t = window.setTimeout(() => { isProgrammaticScrollRef.current = false }, 400)
+    const t = window.setTimeout(() => { if (isMountedRef.current) isProgrammaticScrollRef.current = false }, 400)
     return () => clearTimeout(t)
   }, [selectedCode])
 
@@ -182,7 +190,7 @@ export default function NearbyPage() {
     if (scrollRafRef.current !== null) cancelAnimationFrame(scrollRafRef.current)
     scrollRafRef.current = requestAnimationFrame(() => {
       scrollRafRef.current = null
-      if (!listRef.current) return
+      if (!listRef.current || !isMountedRef.current) return
       const containerTop = listRef.current.getBoundingClientRect().top
       let bestCode: string | null = null
       let bestOffset = Infinity
@@ -213,7 +221,7 @@ export default function NearbyPage() {
     perms
       .query({ name: 'geolocation' as PermissionName })
       .then((status) => {
-        if (cancelled) return
+        if (cancelled || !isMountedRef.current) return
         if (status.state === 'granted') void locate()
         else if (status.state === 'denied') {
           setPhase('error')
@@ -231,6 +239,7 @@ export default function NearbyPage() {
     if (!perms || typeof perms.query !== 'function') { setPhase('consent'); return }
     try {
       const status = await perms.query({ name: 'geolocation' as PermissionName })
+      if (!isMountedRef.current) return
       if (status.state === 'denied') {
         setPhase('error')
         setErrorMsg('Konum izni reddedildi. Tarayıcı ayarlarından izin verin.')
@@ -241,7 +250,7 @@ export default function NearbyPage() {
       } else {
         setPhase('consent')
       }
-    } catch { setPhase('consent') }
+    } catch { if (isMountedRef.current) setPhase('consent') }
   }
 
   async function locate() {
@@ -249,6 +258,7 @@ export default function NearbyPage() {
     setErrorMsg('')
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
+        if (!isMountedRef.current) return
         const lat = pos.coords.latitude
         const lon = pos.coords.longitude
         setUserLat(lat)
@@ -256,6 +266,7 @@ export default function NearbyPage() {
         await fetchNearby(lat, lon)
       },
       (err) => {
+        if (!isMountedRef.current) return
         setPhase('error')
         setErrorMsg(
           err.code === 1
@@ -272,6 +283,7 @@ export default function NearbyPage() {
     setSelectedCode(null)
     try {
       const nearby = await api.stops.nearby(lat, lon)
+      if (!isMountedRef.current) return
       const base: NearbyStop[] = [...nearby]
         .sort((a, b) => (Number(a.distance_m) || 0) - (Number(b.distance_m) || 0))
         .map((s) => ({ ...s, routes: [] }))
@@ -282,11 +294,12 @@ export default function NearbyPage() {
       const enriched = await Promise.allSettled(
         nearby.map((s) => api.stops.routes(s.stop_code)),
       )
+      if (!isMountedRef.current) return
       // Build stop_code → routes map (enriched is indexed by original nearby order)
       const routeMap = new Map(
         nearby.map((s, i) => [
           s.stop_code,
-          enriched[i].status === 'fulfilled' ? enriched[i].value : [],
+          enriched[i].status === 'fulfilled' ? (enriched[i] as PromiseFulfilledResult<string[]>).value : [],
         ]),
       )
       setAllStops(
@@ -298,6 +311,7 @@ export default function NearbyPage() {
           })),
       )
     } catch {
+      if (!isMountedRef.current) return
       setPhase('error')
       setErrorMsg('Duraklar yüklenemedi. Lütfen tekrar deneyin.')
     }
@@ -307,7 +321,7 @@ export default function NearbyPage() {
     if (pickedLat !== null && pickedLon !== null) {
       setUserLat(pickedLat)
       setUserLon(pickedLon)
-      fetchNearby(pickedLat, pickedLon)
+      void fetchNearby(pickedLat, pickedLon)
     }
   }
 

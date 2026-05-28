@@ -103,6 +103,8 @@ export default function BottomTabBar() {
           {/* ≡ Menu button — opens sheet, not a NavLink */}
           <button
             onClick={() => setMenuOpen(true)}
+            aria-haspopup="dialog"
+            aria-expanded={menuOpen}
             className="flex-1 flex flex-col items-center justify-center py-2 gap-0.5
                        text-slate-600 hover:text-slate-400 transition-colors"
           >

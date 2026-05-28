@@ -102,6 +102,7 @@ export default function MapPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState<RouteSearchResult[]>([])
   const [showDropdown, setShowDropdown] = useState(false)
+  const [highlightedRouteIndex, setHighlightedRouteIndex] = useState(-1)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
   // Per-route bus fetch: hat_kodu → kapino set (fleet route_code is unreliable)
@@ -143,6 +144,23 @@ export default function MapPage() {
     return () => { cancelled = true; window.clearTimeout(t) }
   }, [searchQuery])
 
+  useEffect(() => {
+    setHighlightedRouteIndex(-1)
+  }, [searchResults])
+
+  useEffect(() => {
+    if (showDropdown && highlightedRouteIndex >= 0 && dropdownRef.current) {
+      const listContainer = dropdownRef.current.querySelector('[role="listbox"]')
+      if (listContainer) {
+        const buttons = listContainer.querySelectorAll('button')
+        const activeBtn = buttons[highlightedRouteIndex]
+        if (activeBtn) {
+          activeBtn.scrollIntoView({ block: 'nearest' })
+        }
+      }
+    }
+  }, [highlightedRouteIndex, showDropdown])
+
   function addRoute(hatKodu: string) {
     if (!selectedRoutes.includes(hatKodu)) {
       setSelectedRoutes((prev) => [...prev, hatKodu])
@@ -161,6 +179,7 @@ export default function MapPage() {
   const [selectedEntities, setSelectedEntities] = useState<string[]>([])
   const [entityQuery, setEntityQuery] = useState('')
   const [showEntityDropdown, setShowEntityDropdown] = useState(false)
+  const [highlightedEntityIndex, setHighlightedEntityIndex] = useState(-1)
   const entityDropdownRef = useRef<HTMLDivElement>(null)
 
   const entityResults = useMemo(() => {
@@ -170,6 +189,23 @@ export default function MapPage() {
       .filter((b) => b.kapino.toUpperCase().includes(q) || (b.plate?.toUpperCase().includes(q) ?? false))
       .slice(0, 8)
   }, [entityQuery, buses])
+
+  useEffect(() => {
+    setHighlightedEntityIndex(-1)
+  }, [entityResults])
+
+  useEffect(() => {
+    if (showEntityDropdown && highlightedEntityIndex >= 0 && entityDropdownRef.current) {
+      const listContainer = entityDropdownRef.current.querySelector('[role="listbox"]')
+      if (listContainer) {
+        const buttons = listContainer.querySelectorAll('button')
+        const activeBtn = buttons[highlightedEntityIndex]
+        if (activeBtn) {
+          activeBtn.scrollIntoView({ block: 'nearest' })
+        }
+      }
+    }
+  }, [highlightedEntityIndex, showEntityDropdown])
 
   function addEntity(kapino: string) {
     if (!selectedEntities.includes(kapino)) setSelectedEntities((prev) => [...prev, kapino])
@@ -181,6 +217,56 @@ export default function MapPage() {
   }
 
   const hasFilter = selectedRoutes.length > 0 || selectedEntities.length > 0
+
+  const handleRouteBlur = (e: React.FocusEvent) => {
+    if (!e.currentTarget.contains(e.relatedTarget)) {
+      setShowDropdown(false)
+    }
+  }
+
+  const handleRouteKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!showDropdown || searchResults.length === 0) return
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      setHighlightedRouteIndex((prev) => (prev + 1) % searchResults.length)
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      setHighlightedRouteIndex((prev) => (prev - 1 + searchResults.length) % searchResults.length)
+    } else if (e.key === 'Enter') {
+      if (highlightedRouteIndex >= 0 && highlightedRouteIndex < searchResults.length) {
+        e.preventDefault()
+        addRoute(searchResults[highlightedRouteIndex].hat_kodu)
+      }
+    } else if (e.key === 'Escape') {
+      setShowDropdown(false)
+    }
+  }
+
+  const handleEntityBlur = (e: React.FocusEvent) => {
+    if (!e.currentTarget.contains(e.relatedTarget)) {
+      setShowEntityDropdown(false)
+    }
+  }
+
+  const handleEntityKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!showEntityDropdown || entityResults.length === 0) return
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      setHighlightedEntityIndex((prev) => (prev + 1) % entityResults.length)
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      setHighlightedEntityIndex((prev) => (prev - 1 + entityResults.length) % entityResults.length)
+    } else if (e.key === 'Enter') {
+      if (highlightedEntityIndex >= 0 && highlightedEntityIndex < entityResults.length) {
+        e.preventDefault()
+        addEntity(entityResults[highlightedEntityIndex].kapino)
+      }
+    } else if (e.key === 'Escape') {
+      setShowEntityDropdown(false)
+    }
+  }
 
   // ── Selected bus detail (fetched on marker click) ────────────────────────────────
   const [selectedKapino, setSelectedKapino] = useState<string | null>(null)
@@ -240,31 +326,50 @@ export default function MapPage() {
       {/* Filter panel */}
       <div className="absolute top-16 left-1/2 -translate-x-1/2 z-[1000] w-full max-w-sm px-4 flex flex-col gap-2">
         {/* Route autocomplete search bar */}
-        <div className="relative" ref={dropdownRef}>
+        <div className="relative" ref={dropdownRef} onBlur={handleRouteBlur}>
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => { setSearchQuery(e.target.value); setShowDropdown(true) }}
             onFocus={() => { if (searchQuery.length > 0) setShowDropdown(true) }}
-            onBlur={() => setTimeout(() => setShowDropdown(false), 150)}
+            onKeyDown={handleRouteKeyDown}
             placeholder="Hat kodu ara (ör: 500T, 14M)…"
+            role="combobox"
+            aria-autocomplete="list"
+            aria-expanded={showDropdown}
+            aria-haspopup="listbox"
+            aria-controls="route-search-results"
+            aria-activedescendant={highlightedRouteIndex >= 0 ? `route-opt-${highlightedRouteIndex}` : undefined}
             className="w-full border border-[#333] px-4 py-2 text-sm text-slate-100 placeholder-slate-500
                        focus:outline-none focus:border-[#00AFF0] shadow-xl"
             style={{ background: '#0d0d0d' }}
           />
           {showDropdown && searchResults.length > 0 && (
-            <div className="absolute top-full left-0 right-0 mt-1 border border-[#333]
-                            shadow-2xl overflow-hidden z-10 max-h-48 overflow-y-auto"
-                 style={{ background: '#0d0d0d' }}>
-              {searchResults.map((r) => (
+            <div
+              id="route-search-results"
+              role="listbox"
+              aria-label="Hat kodu arama sonuçları"
+              className="absolute top-full left-0 right-0 mt-1 border border-[#333]
+                              shadow-2xl overflow-hidden z-10 max-h-48 overflow-y-auto"
+              style={{ background: '#0d0d0d' }}
+            >
+              {searchResults.map((r, i) => (
                 <button
                   key={r.hat_kodu}
-                  onMouseDown={() => addRoute(r.hat_kodu)}
-                  className="w-full text-left px-4 py-2.5 text-sm
-                             flex items-center gap-2 transition-colors"
-                  style={{ borderBottom: '1px solid #1a1a1a' }}
+                  role="option"
+                  id={`route-opt-${i}`}
+                  aria-selected={highlightedRouteIndex === i}
+                  onClick={() => addRoute(r.hat_kodu)}
+                  className={`w-full text-left px-4 py-2.5 text-sm
+                             flex items-center gap-2 transition-colors ${
+                               highlightedRouteIndex === i ? 'bg-surface-muted outline-none ring-1 ring-inset ring-brand-500/50' : ''
+                             }`}
+                  style={{
+                    borderBottom: '1px solid #1a1a1a',
+                    background: highlightedRouteIndex === i ? '#1a1a1a' : 'transparent'
+                  }}
                   onMouseEnter={(e) => (e.currentTarget.style.background = '#1a1a1a')}
-                  onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = highlightedRouteIndex === i ? '#1a1a1a' : 'transparent')}
                 >
                   <span className="font-mono font-bold text-brand-400 text-xs shrink-0">{r.hat_kodu}</span>
                   <span className="text-slate-300 truncate">{r.name}</span>
@@ -299,31 +404,50 @@ export default function MapPage() {
         )}
 
         {/* Kapino / plate chip filter */}
-        <div className="relative" ref={entityDropdownRef}>
+        <div className="relative" ref={entityDropdownRef} onBlur={handleEntityBlur}>
           <input
             type="text"
             value={entityQuery}
             onChange={(e) => { setEntityQuery(e.target.value); setShowEntityDropdown(true) }}
             onFocus={() => { if (entityQuery.length > 0) setShowEntityDropdown(true) }}
-            onBlur={() => setTimeout(() => setShowEntityDropdown(false), 150)}
+            onKeyDown={handleEntityKeyDown}
             placeholder="Kapı kodu / plaka ara (ör: C-1515)"
+            role="combobox"
+            aria-autocomplete="list"
+            aria-expanded={showEntityDropdown}
+            aria-haspopup="listbox"
+            aria-controls="entity-search-results"
+            aria-activedescendant={highlightedEntityIndex >= 0 ? `entity-opt-${highlightedEntityIndex}` : undefined}
             className="w-full border border-[#333] px-4 py-2 text-sm text-slate-100 placeholder-slate-500
                        focus:outline-none focus:border-[#00AFF0] shadow-xl"
             style={{ background: '#0d0d0d' }}
           />
           {showEntityDropdown && entityResults.length > 0 && (
-            <div className="absolute top-full left-0 right-0 mt-1 border border-[#333]
-                            shadow-2xl overflow-hidden z-10 max-h-48 overflow-y-auto"
-                 style={{ background: '#0d0d0d' }}>
-              {entityResults.map((b) => (
+            <div
+              id="entity-search-results"
+              role="listbox"
+              aria-label="Kapı kodu plaka arama sonuçları"
+              className="absolute top-full left-0 right-0 mt-1 border border-[#333]
+                              shadow-2xl overflow-hidden z-10 max-h-48 overflow-y-auto"
+              style={{ background: '#0d0d0d' }}
+            >
+              {entityResults.map((b, i) => (
                 <button
                   key={b.kapino}
-                  onMouseDown={() => addEntity(b.kapino)}
-                  className="w-full text-left px-4 py-2.5 text-sm
-                             flex items-center gap-2 transition-colors"
-                  style={{ borderBottom: '1px solid #1a1a1a' }}
+                  role="option"
+                  id={`entity-opt-${i}`}
+                  aria-selected={highlightedEntityIndex === i}
+                  onClick={() => addEntity(b.kapino)}
+                  className={`w-full text-left px-4 py-2.5 text-sm
+                             flex items-center gap-2 transition-colors ${
+                               highlightedEntityIndex === i ? 'bg-surface-muted outline-none ring-1 ring-inset ring-brand-500/50' : ''
+                             }`}
+                  style={{
+                    borderBottom: '1px solid #1a1a1a',
+                    background: highlightedEntityIndex === i ? '#1a1a1a' : 'transparent'
+                  }}
                   onMouseEnter={(e) => (e.currentTarget.style.background = '#1a1a1a')}
-                  onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = highlightedEntityIndex === i ? '#1a1a1a' : 'transparent')}
                 >
                   <span className="font-mono font-bold text-brand-400 text-xs shrink-0">{b.kapino}</span>
                   {b.plate && <span className="text-slate-500 text-xs shrink-0">{b.plate}</span>}

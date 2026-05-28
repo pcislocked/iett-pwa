@@ -107,6 +107,8 @@ function VariantSelect({
         type="button"
         aria-haspopup="menu"
         aria-expanded={isOpen}
+        aria-controls="variant-menu"
+        aria-activedescendant={isOpen && highlightedIndex >= 0 ? `variant-opt-${highlightedIndex}` : undefined}
         onClick={() => setIsOpen(!isOpen)}
         onKeyDown={handleTriggerKeyDown}
         className="w-full flex items-center justify-between bg-surface cursor-pointer border border-brand-500/50 hover:border-brand-500 transition-colors rounded-xl px-3 py-2.5 text-left"
@@ -121,11 +123,12 @@ function VariantSelect({
         <>
           <div className="fixed inset-0 z-[990]" onClick={() => setIsOpen(false)} />
           <div className="absolute top-full left-0 right-0 mt-2 bg-surface-card border border-surface-muted rounded-xl overflow-hidden z-[1000] shadow-xl shadow-black/50">
-            <div ref={listRef} role="menu" className="max-h-[300px] overflow-y-auto overscroll-contain">
+            <div ref={listRef} id="variant-menu" role="menu" className="max-h-[300px] overflow-y-auto overscroll-contain">
               {options.map((o, index) => (
                 <div key={o.value}>
                   <button
                     role="menuitemradio"
+                    id={`variant-opt-${index}`}
                     aria-checked={value === o.value}
                     onClick={() => { onChange(o.value); setIsOpen(false) }}
                     className={`w-full text-left px-3 py-3 text-sm transition-colors hover:bg-surface-muted flex items-center justify-between ${

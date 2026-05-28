@@ -110,7 +110,6 @@ export default function BusDetailSheet({
 }: BusDetailSheetProps) {
   const navigate = useNavigate()
   const sheetRef = useRef<HTMLDivElement>(null)
-  const prevFocusRef = useRef<Element | null>(null)
   
   const [liveAmenities, setLiveAmenities] = useState<Amenities | null>(amenities || null)
   const [livePlate, setLivePlate] = useState<string | null>(plate || null)
@@ -172,7 +171,7 @@ export default function BusDetailSheet({
   }, [fetchAmenitiesForKapino, amenities])
 
   useEffect(() => {
-    prevFocusRef.current = document.activeElement
+    const previouslyFocused = document.activeElement
     
     // Focus the first focusable element inside the modal or the modal container itself
     const focusable = sheetRef.current?.querySelectorAll<HTMLElement>(
@@ -184,6 +183,14 @@ export default function BusDetailSheet({
       sheetRef.current?.focus()
     }
 
+    return () => {
+      if (previouslyFocused instanceof HTMLElement) {
+        previouslyFocused.focus()
+      }
+    }
+  }, [])
+
+  useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose()
       if (e.key === 'Tab') {
@@ -211,9 +218,6 @@ export default function BusDetailSheet({
     document.addEventListener('keydown', handleKey)
     return () => {
       document.removeEventListener('keydown', handleKey)
-      if (prevFocusRef.current instanceof HTMLElement) {
-        prevFocusRef.current.focus()
-      }
     }
   }, [onClose])
 

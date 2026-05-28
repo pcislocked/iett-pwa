@@ -143,11 +143,18 @@ function EtaChip({ minutes, raw }: { minutes: number | null; raw: string }) {
 function InfoModal({ onClose }: { onClose: () => void }) {
   const modalRef = useRef<HTMLDivElement>(null)
   const btnRef = useRef<HTMLButtonElement>(null)
-  const prevFocusRef = useRef<Element | null>(null)
 
   useEffect(() => {
-    prevFocusRef.current = document.activeElement
+    const previouslyFocused = document.activeElement
     btnRef.current?.focus()
+    return () => {
+      if (previouslyFocused instanceof HTMLElement) {
+        previouslyFocused.focus()
+      }
+    }
+  }, [])
+
+  useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose()
       if (e.key === 'Tab') {
@@ -175,9 +182,6 @@ function InfoModal({ onClose }: { onClose: () => void }) {
     document.addEventListener('keydown', handleKey)
     return () => {
       document.removeEventListener('keydown', handleKey)
-      if (prevFocusRef.current instanceof HTMLElement) {
-        prevFocusRef.current.focus()
-      }
     }
   }, [onClose])
 
@@ -224,11 +228,18 @@ function InfoModal({ onClose }: { onClose: () => void }) {
 function AnnouncementsModal({ announcements, onClose }: { announcements: (Announcement & { route_code: string })[], onClose: () => void }) {
   const modalRef = useRef<HTMLDivElement>(null)
   const btnRef = useRef<HTMLButtonElement>(null)
-  const prevFocusRef = useRef<Element | null>(null)
   
   useEffect(() => {
-    prevFocusRef.current = document.activeElement
+    const previouslyFocused = document.activeElement
     btnRef.current?.focus()
+    return () => {
+      if (previouslyFocused instanceof HTMLElement) {
+        previouslyFocused.focus()
+      }
+    }
+  }, [])
+
+  useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose()
       if (e.key === 'Tab') {
@@ -256,9 +267,6 @@ function AnnouncementsModal({ announcements, onClose }: { announcements: (Announ
     document.addEventListener('keydown', handleKey)
     return () => {
       document.removeEventListener('keydown', handleKey)
-      if (prevFocusRef.current instanceof HTMLElement) {
-        prevFocusRef.current.focus()
-      }
     }
   }, [onClose])
 
