@@ -69,7 +69,36 @@ function createTimeoutSignal(timeoutMs: number): TimeoutSignal {
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const { signal, clear } = createTimeoutSignal(REQUEST_TIMEOUT_MS)
+  const timeoutObj = createTimeoutSignal(REQUEST_TIMEOUT_MS)
+  let signal = timeoutObj.signal
+  let clear = timeoutObj.clear
+
+  const incomingSignal = init?.signal
+  if (incomingSignal && timeoutObj.signal) {
+    if (typeof AbortSignal.any === 'function') {
+      signal = AbortSignal.any([incomingSignal, timeoutObj.signal])
+    } else {
+      const controller = new AbortController()
+      const onAbort = () => controller.abort()
+      incomingSignal.addEventListener('abort', onAbort)
+      timeoutObj.signal.addEventListener('abort', onAbort)
+      signal = controller.signal
+      const originalClear = clear
+      clear = () => {
+        incomingSignal.removeEventListener('abort', onAbort)
+        if (timeoutObj.signal) {
+          timeoutObj.signal.removeEventListener('abort', onAbort)
+        }
+        originalClear()
+      }
+      if (incomingSignal.aborted || timeoutObj.signal.aborted) {
+        controller.abort()
+      }
+    }
+  } else if (incomingSignal) {
+    signal = incomingSignal
+  }
+
   try {
     const requestInit = signal ? { ...init, signal } : init
     const configuredBase = getConfiguredBase()
@@ -402,35 +431,35 @@ function aracAuthHeaders(session: AracSessionCredentials): HeadersInit {
 
 export const api = {
   fleet: {
-    all: () => get<BusPosition[]>('/v1/fleet'),
-    byPlate: (kapino: string) => get<BusPosition>(`/v1/fleet/${encodeURIComponent(kapino)}`),
+    all: (init?: RequestInit) => get<BusPosition[]>('/v1/fleet', init),
+    byPlate: (kapino: string, init?: RequestInit) => get<BusPosition>(`/v1/fleet/${encodeURIComponent(kapino)}`, init),
     detail: (kapino: string, init?: RequestInit) => get<BusDetail>(`/v1/fleet/${encodeURIComponent(kapino)}/detail`, init),
-    meta: () => get<{ bus_count: number; updated_at: string | null }>('/v1/fleet/meta'),
-    refresh: () => post<FleetRefreshResponse>('/v1/fleet/refresh'),
+    meta: (init?: RequestInit) => get<{ bus_count: number; updated_at: string | null }>('/v1/fleet/meta', init),
+    refresh: (init?: RequestInit) => post<FleetRefreshResponse>('/v1/fleet/refresh', undefined, init),
   },
   stops: {
-    search: (q: string) => get<StopSearchResult[]>(`/v1/stops/search?q=${encodeURIComponent(q)}`),
-    nearby: (lat: number, lon: number, radius = 500) =>
-      get<NearbyStop[]>(`/v1/stops/nearby?lat=${lat}&lon=${lon}&radius=${radius}`),
-    detail: (dcode: string) => get<StopDetail>(`/v1/stops/${encodeURIComponent(dcode)}`),
-    arrivals: (dcode: string, via?: string) =>
-      get<Arrival[]>(`/v1/stops/${dcode}/arrivals${via ? `?via=${via}` : ''}`),
-    routes: (dcode: string) => get<string[]>(`/v1/stops/${dcode}/routes`),
+    search: (q: string, init?: RequestInit) => get<StopSearchResult[]>(`/v1/stops/search?q=${encodeURIComponent(q)}`, init),
+    nearby: (lat: number, lon: number, radius = 500, init?: RequestInit) =>
+      get<NearbyStop[]>(`/v1/stops/nearby?lat=${lat}&lon=${lon}&radius=${radius}`, init),
+    detail: (dcode: string, init?: RequestInit) => get<StopDetail>(`/v1/stops/${encodeURIComponent(dcode)}`, init),
+    arrivals: (dcode: string, via?: string, init?: RequestInit) =>
+      get<Arrival[]>(`/v1/stops/${dcode}/arrivals${via ? `?via=${via}` : ''}`, init),
+    routes: (dcode: string, init?: RequestInit) => get<string[]>(`/v1/stops/${dcode}/routes`, init),
   },
   routes: {
-    search: (q: string) => get<RouteSearchResult[]>(`/v1/routes/search?q=${encodeURIComponent(q)}`),
-    metadata: (hatKodu: string) => get<RouteMetadata[]>(`/v1/routes/${hatKodu}`),
-    buses: (hatKodu: string) => get<BusPosition[]>(`/v1/routes/${hatKodu}/buses`),
-    stops: (hatKodu: string) => get<RouteStop[]>(`/v1/routes/${hatKodu}/stops`),
-    schedule: (hatKodu: string) => get<ScheduledDeparture[]>(`/v1/routes/${hatKodu}/schedule`),
+    search: (q: string, init?: RequestInit) => get<RouteSearchResult[]>(`/v1/routes/search?q=${encodeURIComponent(q)}`, init),
+    metadata: (hatKodu: string, init?: RequestInit) => get<RouteMetadata[]>(`/v1/routes/${hatKodu}`, init),
+    buses: (hatKodu: string, init?: RequestInit) => get<BusPosition[]>(`/v1/routes/${hatKodu}/buses`, init),
+    stops: (hatKodu: string, init?: RequestInit) => get<RouteStop[]>(`/v1/routes/${hatKodu}/stops`, init),
+    schedule: (hatKodu: string, init?: RequestInit) => get<ScheduledDeparture[]>(`/v1/routes/${hatKodu}/schedule`, init),
     announcements: (hatKodu: string, init?: RequestInit) => get<Announcement[]>(`/v1/routes/${hatKodu}/announcements`, init),
   },
   garages: {
-    list: () => get<Garage[]>('/v1/garages'),
+    list: (init?: RequestInit) => get<Garage[]>('/v1/garages', init),
   },
   traffic: {
-    index: () => get<TrafficIndex>('/v1/traffic/index'),
-    segments: () => get<TrafficSegment[]>('/v1/traffic/segments'),
+    index: (init?: RequestInit) => get<TrafficIndex>('/v1/traffic/index', init),
+    segments: (init?: RequestInit) => get<TrafficSegment[]>('/v1/traffic/segments', init),
   },
   arac: {
     captcha: () => post<AracCaptchaResponse>('/v1/arac/session/captcha'),

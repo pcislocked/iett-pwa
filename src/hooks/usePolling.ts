@@ -27,7 +27,9 @@ export function usePolling<T>(
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
   const [iettUpdated, setIettUpdated] = useState<Date | null>(null)
   const fetcherRef = useRef(fetcher)
-  fetcherRef.current = fetcher
+  useLayoutEffect(() => {
+    fetcherRef.current = fetcher
+  }, [fetcher])
   const dataRef = useRef(data)
   useLayoutEffect(() => {
     dataRef.current = data

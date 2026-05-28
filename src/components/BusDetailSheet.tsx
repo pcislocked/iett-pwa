@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { MapContainer, TileLayer, Marker, Polyline, useMap } from 'react-leaflet'
 import * as L from 'leaflet'
@@ -109,6 +109,8 @@ export default function BusDetailSheet({
   showRouteButton = true,
 }: BusDetailSheetProps) {
   const navigate = useNavigate()
+  const sheetRef = useRef<HTMLDivElement>(null)
+  const prevFocusRef = useRef<Element | null>(null)
   
   const [liveAmenities, setLiveAmenities] = useState<Amenities | null>(amenities || null)
   const [livePlate, setLivePlate] = useState<string | null>(plate || null)
@@ -170,9 +172,49 @@ export default function BusDetailSheet({
   }, [fetchAmenitiesForKapino, amenities])
 
   useEffect(() => {
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
-    document.addEventListener('keydown', handler)
-    return () => document.removeEventListener('keydown', handler)
+    prevFocusRef.current = document.activeElement
+    
+    // Focus the first focusable element inside the modal or the modal container itself
+    const focusable = sheetRef.current?.querySelectorAll<HTMLElement>(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    )
+    if (focusable && focusable.length > 0) {
+      focusable[0].focus()
+    } else {
+      sheetRef.current?.focus()
+    }
+
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+      if (e.key === 'Tab') {
+        if (!sheetRef.current) return
+        const focusableElements = sheetRef.current.querySelectorAll<HTMLElement>(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        )
+        if (focusableElements.length === 0) return
+        const first = focusableElements[0]
+        const last = focusableElements[focusableElements.length - 1]
+        
+        if (e.shiftKey) {
+          if (document.activeElement === first) {
+            e.preventDefault()
+            last.focus()
+          }
+        } else {
+          if (document.activeElement === last) {
+            e.preventDefault()
+            first.focus()
+          }
+        }
+      }
+    }
+    document.addEventListener('keydown', handleKey)
+    return () => {
+      document.removeEventListener('keydown', handleKey)
+      if (prevFocusRef.current instanceof HTMLElement) {
+        prevFocusRef.current.focus()
+      }
+    }
   }, [onClose])
 
   const hasBusPos = busLat != null && busLon != null
@@ -220,7 +262,11 @@ export default function BusDetailSheet({
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
 
       <div
-        className="relative w-full max-w-2xl mx-auto bg-surface-card border-t border-surface-muted rounded-t-2xl overflow-hidden shadow-2xl"
+        ref={sheetRef}
+        role="dialog"
+        aria-modal="true"
+        tabIndex={-1}
+        className="relative w-full max-w-2xl mx-auto bg-surface-card border-t border-surface-muted rounded-t-2xl overflow-hidden shadow-2xl focus:outline-none"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Drag handle */}

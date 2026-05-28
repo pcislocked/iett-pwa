@@ -201,7 +201,7 @@ function InfoModal({ onClose }: { onClose: () => void }) {
         className="bg-surface-card border border-surface-muted rounded-2xl w-full max-w-sm p-5 shadow-xl relative"
       >
         <h2 id="info-title" className="text-base font-bold text-slate-100 mb-3 text-center">Zaman Damgaları</h2>
-        <div id="info-desc">
+        <div id="info-desc" tabIndex={0} className="focus:outline-none focus-visible:ring-1 focus-visible:ring-brand-400 rounded-xl p-1 -m-1">
           <p className="text-sm text-slate-300 leading-relaxed mb-4">
             Gizliliğinizi korumak ve İETT sistemlerindeki yükü azaltmak için bu uygulama, verileri <strong>pcislocked.net</strong> üzerinden çekerek kısa süreliğine önbellekte tutar. Bu nedenle gördüğünüz ikinci saat, İETT'den alınan en güncel verinin asıl zaman damgasıdır.
           </p>
@@ -289,7 +289,7 @@ function AnnouncementsModal({ announcements, onClose }: { announcements: (Announ
           </button>
         </div>
         
-        <div className="flex-1 overflow-y-auto min-h-0 pr-1 -mr-1 space-y-3">
+        <div tabIndex={0} className="flex-1 overflow-y-auto min-h-0 pr-1 -mr-1 space-y-3 focus:outline-none focus-visible:ring-1 focus-visible:ring-amber-500/50 rounded-xl" aria-label="Duyurular listesi">
           {announcements.map((ann, idx) => (
             <div key={idx} className="bg-amber-950/20 border border-amber-800/50 rounded-xl p-3">
               <p className="text-xs font-bold text-amber-500 mb-1.5 uppercase tracking-wider">
@@ -393,8 +393,8 @@ export default function StopPage() {
 
   const { data: arrivals, loading, error, stale, refresh: refreshArrivals, lastUpdated, iettUpdated } = useArrivals(dcode ?? '')
 
-  const routesFetcher = useCallback(() => dcode ? api.stops.routes(dcode) : Promise.resolve([]), [dcode])
-  const stopDetailFetcher = useCallback(() => dcode ? api.stops.detail(dcode) : Promise.resolve(null), [dcode])
+  const routesFetcher = useCallback((opts?: { signal?: AbortSignal }) => dcode ? api.stops.routes(dcode, opts) : Promise.resolve([]), [dcode])
+  const stopDetailFetcher = useCallback((opts?: { signal?: AbortSignal }) => dcode ? api.stops.detail(dcode, opts) : Promise.resolve(null), [dcode])
 
   const { data: routes } = usePolling<string[]>(routesFetcher, POLLING.STOP_ROUTES_MS, dcode)
   const { data: stopDetail } = usePolling<StopDetail | null>(stopDetailFetcher, POLLING.STOP_DETAIL_MS, dcode)
@@ -466,6 +466,8 @@ export default function StopPage() {
       
       const chunk = allRoutesAtStop.slice(i, i + chunkSize)
       const results = await Promise.allSettled(chunk.map(r => api.routes.announcements(r, { signal: opts?.signal })))
+      if (opts?.signal?.aborted) break
+      
       results.forEach((res, j) => {
         if (res.status === 'fulfilled' && res.value.length > 0) {
           res.value.forEach(a => combined.push({ ...a, route_code: chunk[j] }))

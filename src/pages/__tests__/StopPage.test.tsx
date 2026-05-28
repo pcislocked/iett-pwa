@@ -137,4 +137,81 @@ describe('StopPage', () => {
     fireEvent.click(closeBtn)
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
+
+  it('traps focus in InfoModal and includes scrollable description', () => {
+    setupMocks()
+    renderPage()
+
+    const infoBtn = screen.getByLabelText('Neden iki farklı saat var?')
+    fireEvent.click(infoBtn)
+    const dialog = screen.getByRole('dialog')
+    expect(dialog).toBeInTheDocument()
+
+    const focusable = dialog.querySelectorAll<HTMLElement>(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    )
+    // Should have description div (tabIndex=0) and Anladım button (button)
+    expect(focusable.length).toBe(2)
+    const desc = focusable[0]
+    const button = focusable[1]
+
+    expect(desc).toHaveAttribute('id', 'info-desc')
+    expect(button).toHaveTextContent('Anladım')
+
+    // Start with focus on the last element (Anladım button)
+    button.focus()
+    // Tab forwards should wrap to the first element (description)
+    fireEvent.keyDown(document, { key: 'Tab', shiftKey: false })
+    expect(document.activeElement).toBe(desc)
+
+    // Tab backwards from first element should wrap to the last element (Anladım button)
+    desc.focus()
+    fireEvent.keyDown(document, { key: 'Tab', shiftKey: true })
+    expect(document.activeElement).toBe(button)
+  })
+
+  it('traps focus in AnnouncementsModal and includes scrollable announcements list', () => {
+    setupMocks({
+      announcements: [
+        { route_code: '15TY', route_name: 'HEKİMBAŞI', type: 'Duyuru', updated_at: '2026-05-23T04:00:00Z', message: 'Test announcement' }
+      ]
+    })
+    renderPage()
+
+    // Trigger opening announcements modal
+    const annBtn = screen.getByRole('button', { name: /1 duyuru/i })
+    expect(annBtn).toBeInTheDocument()
+    fireEvent.click(annBtn)
+
+    const dialog = screen.getByRole('dialog')
+    expect(dialog).toBeInTheDocument()
+
+    const focusable = dialog.querySelectorAll<HTMLElement>(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    )
+    // Should have: close icon button, announcements list (tabIndex=0), and bottom Close button
+    expect(focusable.length).toBe(3)
+    const closeIcon = focusable[0]
+    const list = focusable[1]
+    const closeBtn = focusable[2]
+
+    expect(closeIcon).toHaveAttribute('aria-label', 'Kapat')
+    expect(list).toHaveAttribute('aria-label', 'Duyurular listesi')
+    expect(closeBtn).toHaveTextContent('Kapat')
+
+    // Start at bottom Close button
+    closeBtn.focus()
+    // Tab forwards should wrap to Close icon button
+    fireEvent.keyDown(document, { key: 'Tab', shiftKey: false })
+    expect(document.activeElement).toBe(closeIcon)
+
+    // Tab backwards from Close icon button should wrap to bottom Close button
+    closeIcon.focus()
+    fireEvent.keyDown(document, { key: 'Tab', shiftKey: true })
+    expect(document.activeElement).toBe(closeBtn)
+
+    // Escape should close modal
+    fireEvent.keyDown(document, { key: 'Escape' })
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
 })

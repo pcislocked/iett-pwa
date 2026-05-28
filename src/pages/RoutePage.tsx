@@ -48,16 +48,58 @@ function VariantSelect({
   className?: string
 }) {
   const [isOpen, setIsOpen] = useState(false)
+  const [highlightedIndex, setHighlightedIndex] = useState(-1)
+  const listRef = useRef<HTMLDivElement>(null)
   const selected = options.find(o => o.value === value)
+
+  useEffect(() => {
+    if (isOpen) {
+      const initialIndex = options.findIndex(o => o.value === value)
+      setHighlightedIndex(initialIndex >= 0 ? initialIndex : 0)
+    } else {
+      setHighlightedIndex(-1)
+    }
+  }, [isOpen, options, value])
+
+  useEffect(() => {
+    if (isOpen && highlightedIndex >= 0 && listRef.current) {
+      const buttons = listRef.current.querySelectorAll('button')
+      const activeBtn = buttons[highlightedIndex]
+      if (activeBtn && typeof activeBtn.scrollIntoView === 'function') {
+        activeBtn.scrollIntoView({ block: 'nearest' })
+      }
+    }
+  }, [highlightedIndex, isOpen])
 
   useEffect(() => {
     if (!isOpen) return
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setIsOpen(false)
+      if (e.key === 'Escape') {
+        setIsOpen(false)
+      } else if (e.key === 'ArrowDown') {
+        e.preventDefault()
+        setHighlightedIndex(prev => (prev + 1) % options.length)
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault()
+        setHighlightedIndex(prev => (prev - 1 + options.length) % options.length)
+      } else if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault()
+        if (highlightedIndex >= 0 && highlightedIndex < options.length) {
+          onChange(options[highlightedIndex].value)
+          setIsOpen(false)
+        }
+      }
     }
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [isOpen])
+  }, [isOpen, highlightedIndex, options, onChange])
+
+  const handleTriggerKeyDown = (e: React.KeyboardEvent<HTMLButtonElement>) => {
+    if (!isOpen && (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'Enter' || e.key === ' ')) {
+      e.preventDefault()
+      setIsOpen(true)
+    }
+  }
 
   return (
     <div className={`relative ${className || ''}`}>
@@ -66,6 +108,7 @@ function VariantSelect({
         aria-haspopup="menu"
         aria-expanded={isOpen}
         onClick={() => setIsOpen(!isOpen)}
+        onKeyDown={handleTriggerKeyDown}
         className="w-full flex items-center justify-between bg-surface cursor-pointer border border-brand-500/50 hover:border-brand-500 transition-colors rounded-xl px-3 py-2.5 text-left"
       >
         <span className="text-sm font-semibold text-slate-100 truncate pr-2">{selected?.label || 'Seçiniz'}</span>
@@ -78,8 +121,8 @@ function VariantSelect({
         <>
           <div className="fixed inset-0 z-[990]" onClick={() => setIsOpen(false)} />
           <div className="absolute top-full left-0 right-0 mt-2 bg-surface-card border border-surface-muted rounded-xl overflow-hidden z-[1000] shadow-xl shadow-black/50">
-            <div role="menu" className="max-h-[300px] overflow-y-auto overscroll-contain">
-              {options.map(o => (
+            <div ref={listRef} role="menu" className="max-h-[300px] overflow-y-auto overscroll-contain">
+              {options.map((o, index) => (
                 <div key={o.value}>
                   <button
                     role="menuitemradio"
@@ -87,7 +130,9 @@ function VariantSelect({
                     onClick={() => { onChange(o.value); setIsOpen(false) }}
                     className={`w-full text-left px-3 py-3 text-sm transition-colors hover:bg-surface-muted flex items-center justify-between ${
                       value === o.value ? 'bg-brand-500/10 text-brand-400' : 'text-slate-300'
-                    } ${o.isCanonical ? 'font-bold' : ''}`}
+                    } ${o.isCanonical ? 'font-bold' : ''} ${
+                      highlightedIndex === index ? 'bg-surface-muted outline-none ring-1 ring-inset ring-brand-500/50' : ''
+                    }`}
                   >
                     <span className="truncate">{o.label}</span>
                   </button>
