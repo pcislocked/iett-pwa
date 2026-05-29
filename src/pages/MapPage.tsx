@@ -276,12 +276,18 @@ export default function MapPage() {
   useEffect(() => {
     if (!selectedKapino) { setSelectedDetail(null); return }
     let alive = true
+    const controller = new AbortController()
     setDetailLoading(true)
     setSelectedDetail(null)
-    api.fleet.detail(selectedKapino)
+    api.fleet.detail(selectedKapino, { signal: controller.signal })
       .then((d) => { if (alive) { setSelectedDetail(d); setDetailLoading(false) } })
-      .catch(() => { if (alive) { setDetailLoading(false) } })
-    return () => { alive = false }
+      .catch((err) => {
+        if (alive && err.name !== 'AbortError') { setDetailLoading(false) }
+      })
+    return () => {
+      alive = false
+      controller.abort()
+    }
   }, [selectedKapino])
 
   const selectedBusSnapshot = useMemo(() => {

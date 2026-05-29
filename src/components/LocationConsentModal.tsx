@@ -31,7 +31,7 @@ export default function LocationConsentModal({ onConfirm, onDismiss }: Props) {
       if (e.key !== 'Tab' || !dialogRef.current) return
       const focusable = Array.from(
         dialogRef.current.querySelectorAll<HTMLElement>(
-          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+          'button:not([disabled]), [href]:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
         ),
       )
       if (focusable.length === 0) return

@@ -19,7 +19,7 @@ function haversineM(lat1: number, lon1: number, lat2: number, lon2: number): num
 /** Auto-fits map to given bounds on mount. */
 function FitBoundsEffect({ bounds }: { bounds: [[number, number], [number, number]] }) {
   const map = useMap()
-  useEffect(() => { map.fitBounds(bounds, { padding: [32, 32] }) }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { map.fitBounds(bounds, { padding: [32, 32] }) }, [map, bounds])
   return null
 }
 
@@ -175,7 +175,7 @@ export default function BusDetailSheet({
     
     // Focus the first focusable element inside the modal or the modal container itself
     const focusable = sheetRef.current?.querySelectorAll<HTMLElement>(
-      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
     )
     if (focusable && focusable.length > 0) {
       focusable[0].focus()
@@ -198,7 +198,7 @@ export default function BusDetailSheet({
       if (e.key === 'Tab') {
         if (!sheetRef.current) return
         const focusableElements = sheetRef.current.querySelectorAll<HTMLElement>(
-          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
         )
         if (focusableElements.length === 0) return
         const first = focusableElements[0]
@@ -271,6 +271,7 @@ export default function BusDetailSheet({
         ref={sheetRef}
         role="dialog"
         aria-modal="true"
+        aria-label="Araç Detayları"
         tabIndex={-1}
         className="relative w-full max-w-2xl mx-auto bg-surface-card border-t border-surface-muted rounded-t-2xl overflow-hidden shadow-2xl focus:outline-none"
         onClick={(e) => e.stopPropagation()}

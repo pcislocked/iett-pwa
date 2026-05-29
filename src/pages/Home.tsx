@@ -193,10 +193,12 @@ export default function Home() {
   const favRoutes = favorites.filter((f) => f.kind === 'route')
 
   const isMountedRef = useRef(true)
+  const abortControllerRef = useRef(new AbortController())
   useEffect(() => {
     isMountedRef.current = true
     return () => {
       isMountedRef.current = false
+      abortControllerRef.current.abort()
     }
   }, [])
 
@@ -241,7 +243,7 @@ export default function Home() {
         })
       }
 
-      const stops = await api.stops.nearby(pos.coords.latitude, pos.coords.longitude)
+      const stops = await api.stops.nearby(pos.coords.latitude, pos.coords.longitude, 500, { signal: abortControllerRef.current.signal })
       if (!isMountedRef.current) return
       setNearbyStops(
         [...stops]

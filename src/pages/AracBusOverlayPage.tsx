@@ -174,6 +174,7 @@ export default function AracBusOverlayPage() {
   const containerRef = useRef<HTMLDivElement>(null)
   const { kapino } = useParams<{ kapino: string }>()
   const aliveRef = useRef(true)
+  const abortControllerRef = useRef(new AbortController())
 
   const [viewState, setViewState] = useState<ViewState>('booting')
   const [profile, setProfile] = useState<BusPosition | null>(null)
@@ -190,6 +191,7 @@ export default function AracBusOverlayPage() {
   useEffect(() => {
     return () => {
       aliveRef.current = false
+      abortControllerRef.current.abort()
     }
   }, [])
 
@@ -197,7 +199,7 @@ export default function AracBusOverlayPage() {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key !== 'Tab' || !containerRef.current) return
       const focusable = containerRef.current.querySelectorAll<HTMLElement>(
-        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
       )
       if (focusable.length === 0) return
       const first = focusable[0]
@@ -311,7 +313,7 @@ export default function AracBusOverlayPage() {
       const created = await api.arac.createSession({
         captchaId,
         captchaAnswer: answer,
-      })
+      }, { signal: abortControllerRef.current.signal })
 
       const credentials = saveAracSession({
         sessionId: created.sessionId,

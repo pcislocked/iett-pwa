@@ -463,8 +463,8 @@ export const api = {
   },
   arac: {
     captcha: () => post<AracCaptchaResponse>('/v1/arac/session/captcha'),
-    createSession: (payload: AracSessionCreateRequest) =>
-      post<AracSessionCreateResponse>('/v1/arac/session/create', payload),
+    createSession: (payload: AracSessionCreateRequest, init?: RequestInit) =>
+      post<AracSessionCreateResponse>('/v1/arac/session/create', payload, init),
     fleet: (session: AracSessionCredentials) =>
       get<BusPosition[]>('/v1/arac/fleet', { headers: aracAuthHeaders(session) }),
     bus: (kapino: string, session: AracSessionCredentials) =>

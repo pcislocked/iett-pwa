@@ -18,7 +18,7 @@ export default function MenuSheet({ onClose }: MenuSheetProps) {
   useEffect(() => {
     previouslyFocused.current = document.activeElement
     dialogRef.current?.querySelector<HTMLElement>(
-      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+      'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
     )?.focus()
     return () => {
       if (previouslyFocused.current instanceof HTMLElement) {
@@ -35,7 +35,7 @@ export default function MenuSheet({ onClose }: MenuSheetProps) {
       if (e.key === 'Escape') { onClose(); return }
       if (e.key !== 'Tab') return
       const focusable = dialogRef.current?.querySelectorAll<HTMLElement>(
-        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+        'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
       )
       if (!focusable || focusable.length === 0) return
       const first = focusable[0]
