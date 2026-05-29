@@ -42,7 +42,15 @@ function PinnedRow({
   const top2 = arrivals?.slice(0, 2) ?? []
 
   useEffect(() => {
-    api.stops.detail(dcode).then(setStopDetail).catch(() => {})
+    let isMounted = true
+    api.stops.detail(dcode)
+      .then((detail) => {
+        if (isMounted) setStopDetail(detail)
+      })
+      .catch(() => {})
+    return () => {
+      isMounted = false
+    }
   }, [dcode])
 
   return (

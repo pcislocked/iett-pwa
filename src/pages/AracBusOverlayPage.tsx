@@ -171,6 +171,7 @@ function formatMissionValue(
 
 export default function AracBusOverlayPage() {
   const navigate = useNavigate()
+  const containerRef = useRef<HTMLDivElement>(null)
   const { kapino } = useParams<{ kapino: string }>()
   const aliveRef = useRef(true)
 
@@ -190,6 +191,31 @@ export default function AracBusOverlayPage() {
     return () => {
       aliveRef.current = false
     }
+  }, [])
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== 'Tab' || !containerRef.current) return
+      const focusable = containerRef.current.querySelectorAll<HTMLElement>(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      )
+      if (focusable.length === 0) return
+      const first = focusable[0]
+      const last = focusable[focusable.length - 1]
+      if (e.shiftKey) {
+        if (document.activeElement === first) {
+          e.preventDefault()
+          last.focus()
+        }
+      } else {
+        if (document.activeElement === last) {
+          e.preventDefault()
+          first.focus()
+        }
+      }
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
   }, [])
 
   const fetchBusData = useCallback(async (credentials: AracSessionCredentials) => {
@@ -331,7 +357,7 @@ export default function AracBusOverlayPage() {
   }, [profile])
 
   return (
-    <div className="fixed inset-0 z-[2200] bg-black flex flex-col">
+    <div ref={containerRef} className="fixed inset-0 z-[2200] bg-black flex flex-col">
       <div className="safe-area-pt border-b border-[#111] bg-black px-4 py-3 shrink-0">
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">

@@ -22,7 +22,9 @@ export default function MenuSheet({ onClose }: MenuSheetProps) {
     )?.focus()
     return () => {
       if (previouslyFocused.current instanceof HTMLElement) {
-        previouslyFocused.current.focus()
+        if (dialogRef.current?.contains(document.activeElement)) {
+          previouslyFocused.current.focus()
+        }
       }
     }
   }, [])

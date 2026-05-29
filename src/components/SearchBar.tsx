@@ -21,6 +21,7 @@ export default function SearchBar({ placeholder = 'Hat kodu, durak adı...', aut
   const navigate = useNavigate()
   const inputRef = useRef<HTMLInputElement>(null)
   const dropdownRef = useRef<HTMLUListElement>(null)
+  const reqIdRef = useRef(0)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
@@ -28,25 +29,30 @@ export default function SearchBar({ placeholder = 'Hat kodu, durak adı...', aut
   }, [autoFocus])
 
   useEffect(() => {
+    let isMounted = true
     const q = query.trim()
     if (q.length < 2) {
+      reqIdRef.current++
       setResults([])
       setOpen(false)
       return
     }
     // Numeric-only input ≥ 4 digits → treat as dcode, skip API
     if (/^\d{4,}$/.test(q)) {
+      reqIdRef.current++
       setResults([{ kind: 'stop-direct', dcode: q }])
       setOpen(true)
       return
     }
     if (timerRef.current) clearTimeout(timerRef.current)
+    const myId = ++reqIdRef.current
     timerRef.current = setTimeout(async () => {
       try {
         const [stops, routes] = await Promise.all([
-          api.stops.search(query),
-          api.routes.search(query),
+          api.stops.search(q),
+          api.routes.search(q),
         ])
+        if (!isMounted || myId !== reqIdRef.current) return
         const combined: SearchResult[] = [
           ...stops.map((s) => ({ kind: 'stop' as const, ...s })),
           ...routes.map((r) => ({ kind: 'route' as const, ...r })),
@@ -54,10 +60,15 @@ export default function SearchBar({ placeholder = 'Hat kodu, durak adı...', aut
         setResults(combined)
         setOpen(combined.length > 0)
       } catch {
-        setResults([])
+        if (isMounted && myId === reqIdRef.current) {
+          setResults([])
+        }
       }
     }, 300)
-    return () => { if (timerRef.current) clearTimeout(timerRef.current) }
+    return () => {
+      isMounted = false
+      if (timerRef.current) clearTimeout(timerRef.current)
+    }
   }, [query])
 
   useEffect(() => {

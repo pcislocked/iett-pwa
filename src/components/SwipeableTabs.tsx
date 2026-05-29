@@ -57,7 +57,10 @@ export default function SwipeableTabs({
         {children.map((child, i) => (
           <div
             key={i}
-            style={{ width: `${100 / count}%` }}
+            style={{
+              width: `${100 / count}%`,
+              visibility: i === index ? 'visible' : 'hidden',
+            }}
             className="flex-shrink-0 h-full overflow-y-auto"
           >
             {child}

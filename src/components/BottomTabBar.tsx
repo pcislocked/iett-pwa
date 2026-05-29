@@ -51,11 +51,13 @@ export default function BottomTabBar() {
   if (customTabs) {
     return (
       <nav className="flex-none bg-surface-card border-t border-surface-border safe-area-pb">
-        <div className="max-w-2xl mx-auto flex">
+        <div className="max-w-2xl mx-auto flex" role="tablist">
           {customTabs.map((tab, i) => (
             <button
               key={i}
               onClick={tab.onPress}
+              role="tab"
+              aria-selected={tab.active}
               className={`flex-1 flex flex-col items-center justify-center py-2 gap-0.5 relative
                           transition-colors ${tab.active ? 'text-white' : 'text-slate-600'}`}
             >

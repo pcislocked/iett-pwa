@@ -24,13 +24,15 @@ export default function PivotHeader() {
 
   return (
     <div className="flex-none overflow-hidden safe-area-pt">
-      <div className="flex items-baseline pl-4 pt-1 gap-5">
+      <div className="flex items-baseline pl-4 pt-1 gap-5" role="tablist">
         {(MAIN_PATHS as readonly string[]).map((path) => {
           const active = location.pathname === path
           return (
             <button
               key={path}
               onClick={() => navigate(path)}
+              role="tab"
+              aria-selected={active}
               className="metro-tilt shrink-0"
             >
               <span

@@ -32,6 +32,7 @@ export default function SearchPage() {
   }, [])
 
   useEffect(() => {
+    let isMounted = true
     const q = query.trim()
     if (q.length < 2) {
       if (timerRef.current) clearTimeout(timerRef.current)
@@ -57,20 +58,24 @@ export default function SearchPage() {
           api.stops.search(q),
           api.routes.search(q),
         ])
-        if (myId !== reqIdRef.current) return   // stale — a newer query is in flight
+        if (!isMounted || myId !== reqIdRef.current) return   // stale or unmounted
         const combined: SearchResult[] = [
           ...routes.map((r) => ({ kind: 'route' as const, ...r })),
           ...stops.map((s) => ({ kind: 'stop' as const, ...s })),
         ]
         setResults(combined)
       } catch {
-        if (myId !== reqIdRef.current) return
-        setResults([])
+        if (isMounted && myId === reqIdRef.current) {
+          setResults([])
+        }
       } finally {
-        if (myId === reqIdRef.current) setLoading(false)
+        if (isMounted && myId === reqIdRef.current) setLoading(false)
       }
     }, 300)
-    return () => { if (timerRef.current) clearTimeout(timerRef.current) }
+    return () => {
+      isMounted = false
+      if (timerRef.current) clearTimeout(timerRef.current)
+    }
   }, [query])
 
   function handleSelect(r: SearchResult) {

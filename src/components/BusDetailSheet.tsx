@@ -185,7 +185,9 @@ export default function BusDetailSheet({
 
     return () => {
       if (previouslyFocused instanceof HTMLElement) {
-        previouslyFocused.focus()
+        if (sheetRef.current?.contains(document.activeElement)) {
+          previouslyFocused.focus()
+        }
       }
     }
   }, [])
