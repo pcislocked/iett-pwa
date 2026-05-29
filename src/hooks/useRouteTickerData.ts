@@ -1,7 +1,6 @@
 import { useMemo } from 'react'
 import { usePolling } from './usePolling'
 import { api, type ScheduledDeparture, type RouteMetadata } from '@/api/client'
-import { POLLING } from '@/config/polling'
 
 type CacheEntry = { schedule: ScheduledDeparture[]; metadata: RouteMetadata[] | null }
 type CacheRecord = { data: CacheEntry; timestamp: number; lastAccess: number }
@@ -66,5 +65,7 @@ export function useRouteTickerData(code: string) {
     [code],
   )
 
-  return usePolling(fetcher, POLLING.TICKER_MS)
+  // Poll every 5 minutes; reuses cache during interval
+  return usePolling(fetcher, 300_000)
 }
+

@@ -9,7 +9,6 @@ import { useFavorites } from '@/hooks/useFavorites'
 import { useBottomBar } from '@/hooks/useBottomBar'
 import { PINNED_STOPS_MAX, useUserPrefs } from '@/hooks/useUserPrefs'
 import { etaChipClass } from '@/utils/etaColor'
-import { POLLING } from '@/config/polling'
 
 /** Calls map.invalidateSize() whenever the container height percentage changes. */
 function MapResizer({ heightPct }: { heightPct: number }) {
@@ -72,31 +71,18 @@ function FitToBusesOnLoad({
   stopLat,
   stopLon,
   buses,
-  activeRoutes,
-  hasData,
 }: {
   stopLat: number
   stopLon: number
   buses: BusPosition[]
-  activeRoutes: Set<string>
-  hasData: boolean
 }) {
   const map = useMap()
   const firedRef = useRef(false)
-  const prevRoutesRef = useRef<Set<string>>(activeRoutes)
 
   useEffect(() => {
-    if (prevRoutesRef.current !== activeRoutes) {
-      firedRef.current = false
-      prevRoutesRef.current = activeRoutes
-    }
-
     if (firedRef.current) return
-    if (!hasData) return
-
     const withPos = buses.filter((b) => b.latitude != null && b.longitude != null).slice(0, 3)
-    if (withPos.length === 0 && activeRoutes.size === 0) return
-
+    if (withPos.length === 0) return  // wait for data
     firedRef.current = true
     const points: L.LatLngExpression[] = [
       [stopLat, stopLon],
@@ -104,7 +90,7 @@ function FitToBusesOnLoad({
     ]
     const bounds = L.latLngBounds(points)
     map.fitBounds(bounds, { padding: [48, 48], maxZoom: 16 })
-  }, [buses, stopLat, stopLon, map, activeRoutes, hasData])
+  }, [buses, stopLat, stopLon, map])
 
   return null
 }
@@ -341,69 +327,6 @@ function EtaChip({ minutes, raw }: { minutes: number | null; raw: string }) {
   )
 }
 
-function InfoModal({ onClose }: { onClose: () => void }) {
-  const btnRef = useRef<HTMLButtonElement>(null)
-  const prevFocusRef = useRef<Element | null>(null)
-
-  useEffect(() => {
-    prevFocusRef.current = document.activeElement
-    btnRef.current?.focus()
-    const handleKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
-      // Basic focus trap: keep focus on button if tab pressed
-      if (e.key === 'Tab') {
-        e.preventDefault()
-        btnRef.current?.focus()
-      }
-    }
-    document.addEventListener('keydown', handleKey)
-    return () => {
-      document.removeEventListener('keydown', handleKey)
-      if (prevFocusRef.current instanceof HTMLElement) {
-        prevFocusRef.current.focus()
-      }
-    }
-  }, [onClose])
-
-  const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (e.target === e.currentTarget) {
-      onClose()
-    }
-  }
-
-  return (
-    <div 
-      onClick={handleBackdropClick}
-      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4"
-    >
-      <div 
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="info-title"
-        aria-describedby="info-desc"
-        className="bg-surface-card border border-surface-muted rounded-2xl w-full max-w-sm p-5 shadow-xl relative"
-      >
-        <h2 id="info-title" className="text-base font-bold text-slate-100 mb-3 text-center">Zaman Damgaları</h2>
-        <div id="info-desc">
-          <p className="text-sm text-slate-300 leading-relaxed mb-4">
-            Gizliliğinizi korumak ve İETT sistemlerindeki yükü azaltmak için bu uygulama, verileri <strong>pcislocked.net</strong> üzerinden çekerek kısa süreliğine önbellekte tutar. Bu nedenle gördüğünüz ikinci saat, İETT'den alınan en güncel verinin asıl zaman damgasıdır.
-          </p>
-          <p className="text-sm text-slate-400 leading-relaxed mb-6">
-            Araçların konum bildirme aralıkları, İETT sunucularındaki olağan gecikmeler ve bizim önbellek süremiz birleştiğinde, ekrandaki konum gerçek hayattan 90 saniyeye kadar geride kalabilir. Yine de bu yapı, resmi uygulamaya kıyasla size çok daha hızlı ve akıcı bir deneyim sunar.
-          </p>
-        </div>
-        <button
-          ref={btnRef}
-          onClick={onClose}
-          className="w-full bg-brand-600 hover:bg-brand-500 text-white font-semibold py-3 rounded-xl text-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#111]"
-        >
-          Anladım
-        </button>
-      </div>
-    </div>
-  )
-}
-
 export default function StopPage() {
   const { dcode } = useParams<{ dcode: string }>()
   const navigate = useNavigate()
@@ -411,7 +334,6 @@ export default function StopPage() {
   const [showAnnouncements, setShowAnnouncements] = useState(false)
   const [selectedArrival, setSelectedArrival] = useState<Arrival | null>(null)
   const [activeTab, setActiveTab] = useState<'gelis' | 'hatlar' | 'bilgi'>('gelis')
-  const [showInfo, setShowInfo] = useState(false)
 
   // Sliding panel state — map height as percentage of split container
   const [mapHeightPct, setMapHeightPct] = useState(40)
@@ -479,13 +401,17 @@ export default function StopPage() {
 
   useBottomBar(bottomBarTabs)
 
-  const { data: arrivals, loading, error, stale, refresh: refreshArrivals, lastUpdated, iettUpdated } = useArrivals(dcode ?? '')
+  const { data: arrivals, loading, error, stale, refresh: refreshArrivals, lastUpdated } = useArrivals(dcode ?? '')
 
-  const routesFetcher = useCallback(() => dcode ? api.stops.routes(dcode) : Promise.resolve([]), [dcode])
-  const stopDetailFetcher = useCallback(() => dcode ? api.stops.detail(dcode) : Promise.resolve(null), [dcode])
+  const { data: routes } = usePolling<string[]>(
+    useMemo(() => () => api.stops.routes(dcode ?? ''), [dcode]),
+    300_000,
+  )
 
-  const { data: routes } = usePolling<string[]>(routesFetcher, POLLING.STOP_ROUTES_MS, dcode)
-  const { data: stopDetail } = usePolling<StopDetail>(stopDetailFetcher, POLLING.STOP_DETAIL_MS, dcode)
+  const { data: stopDetail } = usePolling<StopDetail>(
+    useMemo(() => () => api.stops.detail(dcode ?? ''), [dcode]),
+    3_600_000,
+  )
 
   // Ordered unique routes from live arrivals (used for colour assignment)
   const arrivalRouteOrder = useMemo(() => {
@@ -500,11 +426,8 @@ export default function StopPage() {
   // Full fleet polled every 30 s via the shared cache — no per-route calls needed.
   // Derive bus positions from arrivals (which already carry lat/lon from YBS response).
   const routeBuses = useMemo<BusPosition[]>(
-    () => {
-      const base = activeRoutes.size > 0
-        ? (arrivals ?? []).filter((a) => activeRoutes.has(a.route_code))
-        : (arrivals ?? [])
-      return base
+    () =>
+      (arrivals ?? [])
         .filter((a): a is Arrival & { lat: number; lon: number } =>
           a.lat != null && a.lon != null && a.kapino != null,
         )
@@ -523,9 +446,8 @@ export default function StopPage() {
           nearest_stop: null,
           stop_sequence: null,
           trail: [],
-        }))
-    },
-    [arrivals, activeRoutes],
+        })),
+    [arrivals],
   )
 
   // One cached Leaflet DivIcon per route_code — avoids creating a new DOM object every render.
@@ -541,11 +463,12 @@ export default function StopPage() {
 
   // Announcements for the first selected route
   const firstActive = useMemo(() => Array.from(activeRoutes)[0] ?? null, [activeRoutes])
-  const announceFetcher = useCallback(() => firstActive ? api.routes.announcements(firstActive) : Promise.resolve([]), [firstActive])
   const { data: announcements } = usePolling<Announcement[]>(
-    announceFetcher,
-    POLLING.ANNOUNCEMENTS_MS,
-    firstActive,
+    useMemo(
+      () => () => firstActive ? api.routes.announcements(firstActive) : Promise.resolve([]),
+      [firstActive],
+    ),
+    300_000,
   )
 
   const { isFavorite, toggle } = useFavorites()
@@ -752,8 +675,6 @@ export default function StopPage() {
                 stopLat={stopDetail.latitude}
                 stopLon={stopDetail.longitude}
                 buses={routeBuses}
-                activeRoutes={activeRoutes}
-                hasData={arrivals !== null}
               />
               <CircleMarker
                 center={[stopDetail.latitude, stopDetail.longitude]}
@@ -921,29 +842,11 @@ export default function StopPage() {
         <div className="shrink-0 border-t border-surface-muted bg-surface-card pb-2">
           {/* Last updated row */}
           <div className="px-4 pt-2 pb-1 flex items-center justify-between">
-            <div className="flex flex-col">
-              <div className="flex items-center gap-2">
-                <span className="text-[11px] text-slate-600">
-                  {lastUpdated
-                    ? `güncellendi: ${lastUpdated.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`
-                    : 'yükleniyor...'}
-                </span>
-                {lastUpdated && (
-                  <button
-                    onClick={() => setShowInfo(true)}
-                    className="w-3.5 h-3.5 rounded-full border border-slate-600 text-slate-600 flex items-center justify-center hover:bg-slate-700 hover:text-slate-300 transition-colors"
-                    aria-label="Neden iki farklı saat var?"
-                  >
-                    <span className="text-[9px] font-bold">i</span>
-                  </button>
-                )}
-              </div>
-              {iettUpdated && (
-                <span className="text-[10px] text-slate-500 font-mono mt-0.5">
-                  İETT Kaynak: {iettUpdated.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-                </span>
-              )}
-            </div>
+            <span className="text-[11px] text-slate-600">
+              {lastUpdated
+                ? `güncellendi: ${lastUpdated.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`
+                : 'yükleniyor...'}
+            </span>
             <button
               onClick={refreshArrivals}
               className="flex items-center gap-1 text-[11px] text-slate-400 hover:text-white transition-colors active:scale-95"
@@ -954,7 +857,16 @@ export default function StopPage() {
               Yenile
             </button>
           </div>
-
+          {stopDetail?.direction && (
+            <div className="px-4 pt-2">
+              <span className="inline-flex items-center gap-1 text-[11px] text-slate-400 bg-surface-muted px-2 py-0.5 rounded-md">
+                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                </svg>
+                {stopDetail.direction}
+              </span>
+            </div>
+          )}
           {(routes ?? []).length > 0 && (
             <div className="px-4 py-2 flex gap-2 overflow-x-auto no-scrollbar">
               <button
@@ -1013,8 +925,6 @@ export default function StopPage() {
           onClose={() => setSelectedArrival(null)}
         />
       )}
-      {/* Info Modal */}
-      {showInfo && <InfoModal onClose={() => setShowInfo(false)} />}
     </div>
   )
 }

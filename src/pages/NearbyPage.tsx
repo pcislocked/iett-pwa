@@ -376,10 +376,8 @@ export default function NearbyPage() {
             <div className="text-center">
               <h2 className="text-lg font-bold text-slate-100 mb-1">Konum İzni</h2>
               <p className="text-sm text-slate-400 leading-relaxed max-w-xs">
-                Yakın durakları listelemek için konumunuza ihtiyaç var. Konumunuz pcislocked.net gizlilik politikalarına göre İstanbul ve Amsterdam'daki sunucularımıza anlık gönderilir fakat kalıcı olarak kayıt altına alınmaz.{' '}
-                <a href="https://pcislocked.net/kvkk/" target="_blank" rel="noreferrer" className="text-brand-400 hover:underline">
-                  Gizlilik Politikası (KVKK)
-                </a>
+                Yakın durakları listelemek için konumunuza ihtiyaç var.
+                Konumunuz yalnızca bu cihazda işlenir; hiçbir sunucuya kaydedilmez.
               </p>
             </div>
           </div>

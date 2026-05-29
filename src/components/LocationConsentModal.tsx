@@ -75,10 +75,8 @@ export default function LocationConsentModal({ onConfirm, onDismiss }: Props) {
         <div className="text-center">
           <h2 id="consent-title" className="text-base font-bold text-slate-100 mb-1">Konum İzni</h2>
           <p id="consent-desc" className="text-xs text-slate-400 leading-relaxed">
-            Yakın durakları listelemek için konumunuza ihtiyaç var. Konumunuz pcislocked.net gizlilik politikalarına göre İstanbul ve Amsterdam'daki sunucularımıza anlık gönderilir fakat kalıcı olarak kayıt altına alınmaz.{' '}
-            <a href="https://pcislocked.net/kvkk/" target="_blank" rel="noreferrer" className="text-brand-400 hover:underline">
-              Gizlilik Politikası (KVKK)
-            </a>
+            Yakın durakları listelemek için konumunuza ihtiyaç var. Konumunuz yalnızca
+            bu cihazda işlenir; hiçbir sunucuya kaydedilmez.
           </p>
         </div>
 

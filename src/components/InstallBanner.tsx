@@ -14,7 +14,7 @@ export default function InstallBanner({ onDismiss, onInstall }: InstallBannerPro
       <span className="text-2xl shrink-0">🚌</span>
       <div className="flex-1 min-w-0">
         <p className="text-sm font-semibold text-white leading-tight">Ana Ekrana Ekle</p>
-        <p className="text-xs text-slate-400 leading-tight mt-0.5">Daha hızlı ve tam ekran deneyim için</p>
+        <p className="text-xs text-slate-400 leading-tight mt-0.5">çevrimdışı çalışır, pil dostu</p>
       </div>
       <button
         onClick={onInstall}
