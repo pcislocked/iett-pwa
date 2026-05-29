@@ -96,6 +96,13 @@ export default function MapPage() {
     86_400_000, // 24 h — garages rarely change
   )
 
+  const [showErrorModal, setShowErrorModal] = useState(false)
+  useEffect(() => {
+    if (error) {
+      setShowErrorModal(true)
+    }
+  }, [error])
+
   // ── Route filter: autocomplete search + chips ──────────────────────────────
   const [selectedRoutes, setSelectedRoutes] = useState<string[]>([])
   const [searchQuery, setSearchQuery] = useState('')
@@ -105,17 +112,22 @@ export default function MapPage() {
 
   // Per-route bus fetch: hat_kodu → kapino set (fleet route_code is unreliable)
   const [routeBusMap, setRouteBusMap] = useState<Map<string, string[]>>(new Map())
+  const inFlight = useRef<Set<string>>(new Set())
 
   useEffect(() => {
     let alive = true
     for (const route of selectedRoutes) {
-      if (routeBusMap.has(route)) continue
+      if (routeBusMap.has(route) || inFlight.current.has(route)) continue
+      
+      inFlight.current.add(route)
       api.routes.buses(route)
         .then((bs: BusPosition[]) => {
+          inFlight.current.delete(route)
           if (!alive) return
           setRouteBusMap((prev) => new Map(prev).set(route, bs.map((b) => b.kapino.toUpperCase())))
         })
         .catch(() => {
+          inFlight.current.delete(route)
           if (!alive) return
           setRouteBusMap((prev) => new Map(prev).set(route, []))
         })
@@ -363,10 +375,47 @@ export default function MapPage() {
           </div>
         </div>
       )}
-      {error && (
-        <div className="absolute top-36 left-4 right-4 z-[1001] bg-red-900/80 border
-                        border-red-600 rounded-xl px-4 py-2 text-red-200 text-sm">
-          Hata: {error}
+      
+      {showErrorModal && (
+        <div 
+          className="absolute inset-0 z-[2000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') setShowErrorModal(false)
+            if (e.key === 'Tab') {
+              e.preventDefault()
+              document.getElementById('ibb-modal-close')?.focus()
+            }
+          }}
+        >
+          <div 
+            className="bg-surface-card border border-red-900/50 rounded-2xl max-w-md w-full p-6 shadow-2xl relative"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="ibb-error-title"
+          >
+            <h2 id="ibb-error-title" className="text-xl font-bold text-red-400 mb-3">İBB Tarafından Engellendi 🛑</h2>
+            <p className="text-slate-300 text-sm mb-4 space-y-3 leading-relaxed">
+              <span>İBB Yönetimi, halkın vergileriyle çalışan kamu otobüslerinin global konum verilerini (Tüm Filo) halka kapatma kararı aldığından ötürü bu veri şu an <strong className="text-white">tam anlamıyla sağlanamamaktadır.</strong></span>
+              <br/><br/>
+              <span><code>iettnext</code> projesinin de isyan ettiği gibi: Kamuya ait bir verinin halktan gizlenmesi, kısıtlı "resmi" kanallara hapsedilmesi; rezalet Google Maps entegrasyonlarına, Moovit'e el altından yedirilen paralara ve yarrak gibi çalışan kendi "Otobüsüm Nerede" applerine insanları mahkum etmeye çalışmaları kabul edilemez.</span>
+              <br/><br/>
+              <span>Biz, mümkün olan legal veya illegal her türlü yoldan, koparabildiğimiz kadar veriyi çekmeye ve bu sansürü delmeye sonuna kadar devam edeceğiz.</span>
+              <br/><br/>
+              <span className="text-brand-300 bg-brand-900/30 p-2 rounded block border border-brand-800/50">
+                <strong>Not:</strong> Arama çubuğundan belirli bir hat numarası (örn: 14M) aratarak otobüsleri haritada <b>görmeye sorunsuzca devam edebilirsiniz.</b> Yalnızca tüm filonun aynı anda haritada görünmesi sabote edilmiştir.
+              </span>
+            </p>
+            <div className="flex justify-end">
+              <button
+                id="ibb-modal-close"
+                autoFocus
+                onClick={() => setShowErrorModal(false)}
+                className="bg-red-500/20 hover:bg-red-500/30 text-red-300 px-5 py-2 rounded-lg font-medium transition-colors"
+              >
+                Anladım
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

@@ -106,10 +106,16 @@ const viteConfig = defineConfig({
     cssCodeSplit: true,
     rollupOptions: {
       output: {
-        manualChunks: {
-          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
-          'vendor-map': ['leaflet', 'react-leaflet'],
-          'vendor-motion': ['framer-motion'],
+        manualChunks(id) {
+          if (id.includes('node_modules/react/') || id.includes('node_modules/react-dom/') || id.includes('node_modules/react-router-dom/')) {
+            return 'vendor-react'
+          }
+          if (id.includes('node_modules/leaflet/') || id.includes('node_modules/react-leaflet/')) {
+            return 'vendor-map'
+          }
+          if (id.includes('node_modules/framer-motion/')) {
+            return 'vendor-motion'
+          }
         },
       },
     },

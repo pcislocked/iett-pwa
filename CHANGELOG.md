@@ -5,6 +5,19 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [0.3.23] - 2026-05-30
+
+### Fixed
+- Endpoint swap compatibility release (sync with `iett-middle` which replaced dead IETT SOAP endpoints with official Mobiett JSON endpoints).
+
+### Changed
+- App version bumped to `0.3.23`.
+
+### Release Notes
+- Released as `v0.3.23`.
+
+---
+
 ## [0.3.17] - 2026-04-20
 
 ### Fixed

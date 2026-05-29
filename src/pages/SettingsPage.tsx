@@ -186,8 +186,13 @@ export default function SettingsPage() {
         <p className="text-slate-400 leading-relaxed">
           İstanbul otobüs ve tramvay hatlarını gerçek zamanlı takip etmek için açık kaynaklı PWA.
         </p>
-        <div className="flex flex-col gap-1">
+        <div className="flex flex-col gap-2">
           <p>Veri kaynağı: İETT / İBB açık API</p>
+          <p className="text-[10px] text-slate-500 border-l-2 border-brand-500/30 pl-2">
+            <a href="https://data.ibb.gov.tr/license" target="_blank" rel="noopener noreferrer" className="hover:text-brand-400 underline decoration-slate-600 underline-offset-2">
+              Atıf 4.0 Uluslararası (CC BY 4.0) kapsamında lisanslanan kamu sektörü bilgilerini içerir.
+            </a>
+          </p>
           <p>Arka uç: iett-middle (FastAPI)</p>
         </div>
         <a
