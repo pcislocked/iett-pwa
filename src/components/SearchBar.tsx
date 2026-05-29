@@ -23,6 +23,7 @@ export default function SearchBar({ placeholder = 'Hat kodu, durak adı...', aut
   const dropdownRef = useRef<HTMLUListElement>(null)
   const reqIdRef = useRef(0)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const abortControllerRef = useRef<AbortController | null>(null)
 
   useEffect(() => {
     if (autoFocus) inputRef.current?.focus()
@@ -45,12 +46,15 @@ export default function SearchBar({ placeholder = 'Hat kodu, durak adı...', aut
       return
     }
     if (timerRef.current) clearTimeout(timerRef.current)
+    if (abortControllerRef.current) abortControllerRef.current.abort()
     const myId = ++reqIdRef.current
+    const controller = new AbortController()
+    abortControllerRef.current = controller
     timerRef.current = setTimeout(async () => {
       try {
         const [stops, routes] = await Promise.all([
-          api.stops.search(q),
-          api.routes.search(q),
+          api.stops.search(q, { signal: controller.signal }),
+          api.routes.search(q, { signal: controller.signal }),
         ])
         if (!isMounted || myId !== reqIdRef.current) return
         const combined: SearchResult[] = [
@@ -59,8 +63,8 @@ export default function SearchBar({ placeholder = 'Hat kodu, durak adı...', aut
         ]
         setResults(combined)
         setOpen(combined.length > 0)
-      } catch {
-        if (isMounted && myId === reqIdRef.current) {
+      } catch (err: any) {
+        if (isMounted && myId === reqIdRef.current && err.name !== 'AbortError') {
           setResults([])
         }
       }
@@ -68,6 +72,7 @@ export default function SearchBar({ placeholder = 'Hat kodu, durak adı...', aut
     return () => {
       isMounted = false
       if (timerRef.current) clearTimeout(timerRef.current)
+      if (abortControllerRef.current) abortControllerRef.current.abort()
     }
   }, [query])
 

@@ -142,12 +142,14 @@ export default function NearbyPage() {
   const [allStops, setAllStops] = useState<NearbyStop[]>([])
   const [pickedLat, setPickedLat] = useState<number | null>(null)
   const [pickedLon, setPickedLon] = useState<number | null>(null)
+  const fetchAbortControllerRef = useRef<AbortController | null>(null)
 
   const isMountedRef = useRef(true)
   useEffect(() => {
     isMountedRef.current = true
     return () => {
       isMountedRef.current = false
+      if (fetchAbortControllerRef.current) fetchAbortControllerRef.current.abort()
     }
   }, [])
 
@@ -279,11 +281,17 @@ export default function NearbyPage() {
   }
 
   async function fetchNearby(lat: number, lon: number) {
+    if (fetchAbortControllerRef.current) {
+      fetchAbortControllerRef.current.abort()
+    }
+    const controller = new AbortController()
+    fetchAbortControllerRef.current = controller
+
     setPhase('loading')
     setSelectedCode(null)
     try {
-      const nearby = await api.stops.nearby(lat, lon)
-      if (!isMountedRef.current) return
+      const nearby = await api.stops.nearby(lat, lon, 500, { signal: controller.signal })
+      if (!isMountedRef.current || fetchAbortControllerRef.current !== controller) return
       const base: NearbyStop[] = [...nearby]
         .sort((a, b) => (Number(a.distance_m) || 0) - (Number(b.distance_m) || 0))
         .map((s) => ({ ...s, routes: [] }))
@@ -292,9 +300,9 @@ export default function NearbyPage() {
       setPhase('done')
       // Silently enrich route pills in the background
       const enriched = await Promise.allSettled(
-        nearby.map((s) => api.stops.routes(s.stop_code)),
+        nearby.map((s) => api.stops.routes(s.stop_code, { signal: controller.signal })),
       )
-      if (!isMountedRef.current) return
+      if (!isMountedRef.current || fetchAbortControllerRef.current !== controller) return
       // Build stop_code → routes map (enriched is indexed by original nearby order)
       const routeMap = new Map(
         nearby.map((s, i) => [
@@ -310,8 +318,8 @@ export default function NearbyPage() {
             routes: routeMap.get(s.stop_code) ?? [],
           })),
       )
-    } catch {
-      if (!isMountedRef.current) return
+    } catch (err: any) {
+      if (!isMountedRef.current || fetchAbortControllerRef.current !== controller || err.name === 'AbortError') return
       setPhase('error')
       setErrorMsg('Duraklar yüklenemedi. Lütfen tekrar deneyin.')
     }

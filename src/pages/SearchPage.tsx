@@ -16,6 +16,7 @@ export default function SearchPage() {
   const inputRef = useRef<HTMLInputElement>(null)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const reqIdRef = useRef(0)
+  const abortControllerRef = useRef<AbortController | null>(null)
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<SearchResult[]>([])
   const [loading, setLoading] = useState(false)
@@ -51,12 +52,15 @@ export default function SearchPage() {
     }
     setLoading(true)
     if (timerRef.current) clearTimeout(timerRef.current)
+    if (abortControllerRef.current) abortControllerRef.current.abort()
     const myId = ++reqIdRef.current
+    const controller = new AbortController()
+    abortControllerRef.current = controller
     timerRef.current = setTimeout(async () => {
       try {
         const [stops, routes] = await Promise.all([
-          api.stops.search(q),
-          api.routes.search(q),
+          api.stops.search(q, { signal: controller.signal }),
+          api.routes.search(q, { signal: controller.signal }),
         ])
         if (!isMounted || myId !== reqIdRef.current) return   // stale or unmounted
         const combined: SearchResult[] = [
@@ -64,8 +68,8 @@ export default function SearchPage() {
           ...stops.map((s) => ({ kind: 'stop' as const, ...s })),
         ]
         setResults(combined)
-      } catch {
-        if (isMounted && myId === reqIdRef.current) {
+      } catch (err: any) {
+        if (isMounted && myId === reqIdRef.current && err.name !== 'AbortError') {
           setResults([])
         }
       } finally {
@@ -75,6 +79,7 @@ export default function SearchPage() {
     return () => {
       isMounted = false
       if (timerRef.current) clearTimeout(timerRef.current)
+      if (abortControllerRef.current) abortControllerRef.current.abort()
     }
   }, [query])
 

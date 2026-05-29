@@ -225,8 +225,8 @@ export default function AracBusOverlayPage() {
 
     setViewState('loading-data')
     const [bus, missionData] = await Promise.all([
-      api.arac.bus(kapino, credentials),
-      api.arac.missions(kapino, credentials),
+      api.arac.bus(kapino, credentials, { signal: abortControllerRef.current.signal }),
+      api.arac.missions(kapino, credentials, { signal: abortControllerRef.current.signal }),
     ])
 
     if (!aliveRef.current) return
@@ -266,8 +266,8 @@ export default function AracBusOverlayPage() {
       try {
         await fetchBusData(existing)
         return
-      } catch (error) {
-        if (!aliveRef.current) return
+      } catch (error: any) {
+        if (!aliveRef.current || error.name === 'AbortError') return
         if (hasSessionError(error)) {
           clearAracSession()
           setInlineWarning('aracapi oturumu suresi doldu. Yeniden captcha akisi baslatiliyor.')
@@ -284,8 +284,8 @@ export default function AracBusOverlayPage() {
       if (!aliveRef.current) return
       setManualAnswer('')
       setViewState('manual-required')
-    } catch (error) {
-      if (!aliveRef.current) return
+    } catch (error: any) {
+        if (!aliveRef.current || error.name === 'AbortError') return
       setViewState('error')
       setFatalError(errorText(error))
     }

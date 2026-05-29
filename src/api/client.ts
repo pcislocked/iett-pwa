@@ -465,15 +465,17 @@ export const api = {
     captcha: () => post<AracCaptchaResponse>('/v1/arac/session/captcha'),
     createSession: (payload: AracSessionCreateRequest, init?: RequestInit) =>
       post<AracSessionCreateResponse>('/v1/arac/session/create', payload, init),
-    fleet: (session: AracSessionCredentials) =>
-      get<BusPosition[]>('/v1/arac/fleet', { headers: aracAuthHeaders(session) }),
-    bus: (kapino: string, session: AracSessionCredentials) =>
+    fleet: (session: AracSessionCredentials, init?: RequestInit) =>
+      get<BusPosition[]>('/v1/arac/fleet', { ...init, headers: { ...init?.headers, ...aracAuthHeaders(session) } }),
+    bus: (kapino: string, session: AracSessionCredentials, init?: RequestInit) =>
       get<BusPosition>(`/v1/arac/fleet/${encodeURIComponent(kapino)}`, {
-        headers: aracAuthHeaders(session),
+        ...init,
+        headers: { ...init?.headers, ...aracAuthHeaders(session) },
       }),
-    missions: (kapino: string, session: AracSessionCredentials) =>
+    missions: (kapino: string, session: AracSessionCredentials, init?: RequestInit) =>
       get<AracMissionsResponse>(`/v1/arac/fleet/${encodeURIComponent(kapino)}/missions`, {
-        headers: aracAuthHeaders(session),
+        ...init,
+        headers: { ...init?.headers, ...aracAuthHeaders(session) },
       }),
   },
 }

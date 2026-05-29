@@ -110,15 +110,16 @@ export default function MapPage() {
 
   useEffect(() => {
     let alive = true
+    const controller = new AbortController()
     for (const route of selectedRoutes) {
       if (routeBusMap.has(route)) continue
-      api.routes.buses(route)
+      api.routes.buses(route, { signal: controller.signal })
         .then((bs: BusPosition[]) => {
           if (!alive) return
           setRouteBusMap((prev) => new Map(prev).set(route, bs.map((b) => b.kapino.toUpperCase())))
         })
-        .catch(() => {
-          if (!alive) return
+        .catch((err) => {
+          if (!alive || err.name === 'AbortError') return
           setRouteBusMap((prev) => new Map(prev).set(route, []))
         })
     }
@@ -128,7 +129,10 @@ export default function MapPage() {
       for (const key of next.keys()) if (!selectedRoutes.includes(key)) next.delete(key)
       return next
     })
-    return () => { alive = false }
+    return () => { 
+      alive = false
+      controller.abort()
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedRoutes])
 
@@ -136,12 +140,17 @@ export default function MapPage() {
   useEffect(() => {
     if (searchQuery.trim().length < 1) { setSearchResults([]); return }
     let cancelled = false
+    const controller = new AbortController()
     const t = window.setTimeout(() => {
-      api.routes.search(searchQuery)
+      api.routes.search(searchQuery, { signal: controller.signal })
         .then((r) => { if (!cancelled) setSearchResults(r.slice(0, 8)) })
-        .catch(() => { if (!cancelled) setSearchResults([]) })
+        .catch((err) => { if (!cancelled && err.name !== 'AbortError') setSearchResults([]) })
     }, 300)
-    return () => { cancelled = true; window.clearTimeout(t) }
+    return () => { 
+      cancelled = true
+      window.clearTimeout(t)
+      controller.abort()
+    }
   }, [searchQuery])
 
   useEffect(() => {
