@@ -300,8 +300,9 @@ export default function AracBusOverlayPage() {
       setInlineWarning(`Captcha dogrulanamadi: ${errorText(error)}`)
       try {
         await fetchCaptcha()
-      } catch {
-        // Best effort refresh only.
+      } catch (captchaErr) {
+        setInlineWarning(`Captcha dogrulanamadi: ${errorText(error)} | Ayrica yeni captcha alinamadi: ${errorText(captchaErr)}`)
+        setCaptchaImage('')
       }
     }
   }, [captchaId, fetchBusData, fetchCaptcha, manualAnswer])

@@ -200,15 +200,19 @@ export default function Home() {
   const [gpsPhase, setGpsPhase] = useState<GpsPhase>('unavailable')
   const [nearbyStops, setNearbyStops] = useState<NearbyStop[]>([])
   const [showConsentModal, setShowConsentModal] = useState(false)
+  const isRequestingGpsRef = useRef(false)
 
   const requestGps = useCallback(async () => {
+    if (isRequestingGpsRef.current) return
     if (!navigator.geolocation) { setGpsPhase('unavailable'); return }
+    isRequestingGpsRef.current = true
     setGpsPhase('locating')
 
     // Some mobile WebView/PWA contexts can intermittently fail to invoke either
     // callback on background/foreground transitions; guard against endless locating.
     const watchdogId = window.setTimeout(() => {
       setGpsPhase((phase) => (phase === 'locating' ? 'unavailable' : phase))
+      isRequestingGpsRef.current = false
     }, 20_000)
 
     try {
@@ -243,17 +247,18 @@ export default function Home() {
       setGpsPhase(getGeoErrorCode(err) === 1 ? 'denied' : 'unavailable')
     } finally {
       window.clearTimeout(watchdogId)
+      isRequestingGpsRef.current = false
     }
   }, [])
 
   const handleConsentConfirm = useCallback(() => {
-    try { localStorage.setItem(LOCATION_CONSENT_KEY, 'granted') } catch { /* storage unavailable */ }
+    try { localStorage.setItem(LOCATION_CONSENT_KEY, 'granted') } catch (e) { console.warn('localStorage failed', e) }
     setShowConsentModal(false)
     requestGps()
   }, [requestGps])
 
   const handleConsentDismiss = useCallback(() => {
-    try { localStorage.setItem(LOCATION_CONSENT_KEY, 'dismissed') } catch { /* storage unavailable */ }
+    try { localStorage.setItem(LOCATION_CONSENT_KEY, 'dismissed') } catch (e) { console.warn('localStorage failed', e) }
     setShowConsentModal(false)
     setGpsPhase('denied')
   }, [])

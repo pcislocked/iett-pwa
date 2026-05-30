@@ -142,10 +142,62 @@ function BusDetailSheet({
 }) {
   const navigate = useNavigate()
 
+  const dialogRef = useRef<HTMLDivElement>(null)
+  const previouslyFocused = useRef<Element | null>(null)
+
   useEffect(() => {
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
-    document.addEventListener('keydown', handler)
-    return () => document.removeEventListener('keydown', handler)
+    previouslyFocused.current = document.activeElement
+    // Delay initial focus slightly to allow Leaflet map to mount and not steal focus
+    const timer = setTimeout(() => {
+      if (dialogRef.current) {
+        const firstBtn = dialogRef.current.querySelector('button')
+        firstBtn?.focus()
+      }
+    }, 50)
+    return () => {
+      clearTimeout(timer)
+      if (previouslyFocused.current instanceof HTMLElement) {
+        previouslyFocused.current.focus()
+      }
+    }
+  }, [])
+
+  useEffect(() => {
+    function handleKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') {
+        onClose()
+        return
+      }
+      if (e.key !== 'Tab' || !dialogRef.current) return
+      const focusable = Array.from(
+        dialogRef.current.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ),
+      )
+      if (focusable.length === 0) return
+      const first = focusable[0]
+      const last = focusable[focusable.length - 1]
+
+      if (!dialogRef.current.contains(document.activeElement)) {
+        e.preventDefault()
+        first.focus()
+        return
+      }
+
+      if (e.shiftKey) {
+        if (document.activeElement === first) {
+          e.preventDefault()
+          last.focus()
+        }
+      } else {
+        if (document.activeElement === last) {
+          e.preventDefault()
+          first.focus()
+        }
+      }
+    }
+    document.addEventListener('keydown', handleKey)
+    return () => document.removeEventListener('keydown', handleKey)
   }, [onClose])
 
   // Prefer live position from ntcapi ybs arrival; fall back to fleet-store busPos.
@@ -192,6 +244,10 @@ function BusDetailSheet({
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
 
       <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="bus-detail-title"
         className="relative w-full max-w-2xl mx-auto bg-surface-card border-t border-surface-muted rounded-t-2xl overflow-hidden shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
@@ -209,7 +265,7 @@ function BusDetailSheet({
             {arrival.route_code}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-slate-100 truncate">{arrival.destination}</p>
+            <p id="bus-detail-title" className="text-sm font-semibold text-slate-100 truncate">{arrival.destination}</p>
             {(arrival.plate || arrival.kapino) && (
               <p className="text-xs text-slate-400 font-mono">
                 {[arrival.plate, arrival.kapino].filter(Boolean).join('  ·  ')}

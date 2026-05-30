@@ -23,10 +23,7 @@ export function usePolling<T>(
   const [error, setError] = useState<string | null>(null)
   const [stale, setStale] = useState(false)
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
-  const fetcherRef = useRef(fetcher)
-  fetcherRef.current = fetcher
-  const dataRef = useRef(data)
-  dataRef.current = data
+  
   // Tracks whether the component is still mounted; prevents setState after unmount.
   const mountedRef = useRef(false)
   // Incremented on every doFetch call; out-of-order responses from slower earlier
@@ -36,7 +33,7 @@ export function usePolling<T>(
   const doFetch = useCallback(async () => {
     const id = ++fetchIdRef.current
     try {
-      const result = await fetcherRef.current()
+      const result = await fetcher()
       if (id !== fetchIdRef.current || !mountedRef.current) return
       setData(result)
       setError(null)
@@ -45,11 +42,11 @@ export function usePolling<T>(
     } catch (e) {
       if (id !== fetchIdRef.current || !mountedRef.current) return
       setError(e instanceof Error ? e.message : String(e))
-      if (dataRef.current !== null) setStale(true)  // keep showing old data
+      setStale(true)  // keep showing old data
     } finally {
       if (id === fetchIdRef.current && mountedRef.current) setLoading(false)
     }
-  }, [])
+  }, [fetcher])
 
   const refresh = useCallback(() => {
     setLoading(true)
@@ -64,6 +61,14 @@ export function usePolling<T>(
       fetchIdRef.current += 1
     }
   }, [])
+
+  useEffect(() => {
+    // Clear state when fetcher changes to prevent showing stale data from previous fetcher
+    setData(null)
+    setError(null)
+    setStale(false)
+    setLoading(true)
+  }, [fetcher])
 
   useEffect(() => {
     void doFetch()

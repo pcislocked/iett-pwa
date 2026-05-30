@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, afterEach } from 'vitest'
+import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest'
 import { api } from '@/api/client'
 
 // ---------------------------------------------------------------------------
@@ -19,6 +19,15 @@ function mockFetch(body: unknown, status = 200) {
 
 afterEach(() => {
   vi.unstubAllGlobals()
+})
+
+beforeEach(() => {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn().mockImplementation((url: string) => {
+      throw new Error(`Hermeticity violation: Network request to ${url} attempted in test without mockFetch!`)
+    }),
+  )
 })
 
 // ---------------------------------------------------------------------------

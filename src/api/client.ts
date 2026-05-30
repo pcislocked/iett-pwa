@@ -29,7 +29,10 @@ function getConfiguredBase(): string {
 }
 
 function isNetworkError(error: unknown): boolean {
-  return error instanceof TypeError
+  if (error instanceof TypeError) return true
+  if (error instanceof DOMException && (error.name === 'AbortError' || error.name === 'TimeoutError')) return true
+  if (error instanceof Error && (error.name === 'AbortError' || error.name === 'TimeoutError')) return true
+  return false
 }
 
 export class ApiHttpError extends Error {
@@ -69,20 +72,24 @@ function createTimeoutSignal(timeoutMs: number): TimeoutSignal {
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const { signal, clear } = createTimeoutSignal(REQUEST_TIMEOUT_MS)
-  try {
-    const requestInit = signal ? { ...init, signal } : init
-    const configuredBase = getConfiguredBase()
+  const configuredBase = getConfiguredBase()
 
-    const execute = async (url: string): Promise<T> => {
+  const execute = async (url: string): Promise<T> => {
+    const { signal, clear } = createTimeoutSignal(REQUEST_TIMEOUT_MS)
+    try {
+      const requestInit = signal ? { ...init, signal } : init
       const res = await fetch(url, requestInit)
       if (!res.ok) {
         const text = await res.text().catch(() => '')
         throw new ApiHttpError(path, res.status, text)
       }
-      return res.json() as Promise<T>
+      return await res.json() as T
+    } finally {
+      clear()
     }
+  }
 
+  try {
     try {
       return await execute(`${configuredBase}${path}`)
     } catch (error) {
@@ -97,8 +104,6 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
       throw new Error(NETWORK_ERROR_TEXT)
     }
     throw error
-  } finally {
-    clear()
   }
 }
 
