@@ -1,4 +1,4 @@
-import { memo, useState, useMemo, useEffect, useRef } from 'react'
+import { memo, useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet'
 import * as L from 'leaflet'
 import { useNavigate } from 'react-router-dom'
@@ -87,12 +87,15 @@ const busIcon = L.divIcon({
 export default function MapPage() {
   const navigate = useNavigate()
   const { data: buses, loading, error, refresh } = useFleet()
+  const fetchFleetMeta = useCallback(() => api.fleet.meta(), [])
+  const fetchGarages = useCallback(() => api.garages.list(), [])
+
   const { data: fleetMeta, refresh: refreshFleetMeta } = usePolling<{ bus_count: number; updated_at: string | null }>(
-    () => api.fleet.meta(),
+    fetchFleetMeta,
     15_000,
   )
   const { data: garages } = usePolling<Garage[]>(
-    () => api.garages.list(),
+    fetchGarages,
     86_400_000, // 24 h — garages rarely change
   )
 
@@ -105,6 +108,9 @@ export default function MapPage() {
 
   // ── Route filter: autocomplete search + chips ──────────────────────────────
   const [selectedRoutes, setSelectedRoutes] = useState<string[]>([])
+  const selectedRoutesRef = useRef(selectedRoutes)
+  useEffect(() => { selectedRoutesRef.current = selectedRoutes }, [selectedRoutes])
+
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState<RouteSearchResult[]>([])
   const [showDropdown, setShowDropdown] = useState(false)
@@ -123,12 +129,12 @@ export default function MapPage() {
       api.routes.buses(route)
         .then((bs: BusPosition[]) => {
           inFlight.current.delete(route)
-          if (!alive) return
+          if (!alive && !selectedRoutesRef.current.includes(route)) return
           setRouteBusMap((prev) => new Map(prev).set(route, bs))
         })
         .catch(() => {
           inFlight.current.delete(route)
-          if (!alive) return
+          if (!alive && !selectedRoutesRef.current.includes(route)) return
           setRouteBusMap((prev) => new Map(prev).set(route, []))
         })
     }
@@ -218,13 +224,17 @@ export default function MapPage() {
   const selectedLastSeen = selectedDetail?.last_seen ?? selectedBusSnapshot?.last_seen ?? null
 
   const filtered = useMemo(() => {
-    // Combine global fleet buses with the per-route fetched buses
     const combinedMap = new Map<string, BusPosition>()
     if (buses) {
       for (const b of buses) combinedMap.set(b.kapino, b)
     }
     for (const routeBuses of routeBusMap.values()) {
-      for (const b of routeBuses) combinedMap.set(b.kapino, b)
+      for (const b of routeBuses) {
+        const existing = combinedMap.get(b.kapino)
+        if (!existing || new Date(b.last_seen).getTime() > new Date(existing.last_seen).getTime()) {
+          combinedMap.set(b.kapino, b)
+        }
+      }
     }
     
     const all = Array.from(combinedMap.values())
@@ -393,17 +403,15 @@ export default function MapPage() {
           className="absolute inset-0 z-[2000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
           onKeyDown={(e) => {
             if (e.key === 'Escape') setShowErrorModal(false)
-            if (e.key === 'Tab') {
-              e.preventDefault()
-              document.getElementById('ibb-modal-close')?.focus()
-            }
           }}
+          onClick={() => setShowErrorModal(false)}
         >
           <div 
             className="bg-surface-card border border-red-900/50 rounded-2xl max-w-md w-full p-6 shadow-2xl relative"
             role="dialog"
             aria-modal="true"
             aria-labelledby="ibb-error-title"
+            onClick={(e) => e.stopPropagation()}
           >
             <h2 id="ibb-error-title" className="text-xl font-bold text-red-400 mb-3">İBB Tarafından Engellendi 🛑</h2>
             <p className="text-slate-300 text-sm mb-4 space-y-3 leading-relaxed">
