@@ -110,8 +110,8 @@ export default function MapPage() {
   const [showDropdown, setShowDropdown] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
-  // Per-route bus fetch: hat_kodu → kapino set (fleet route_code is unreliable)
-  const [routeBusMap, setRouteBusMap] = useState<Map<string, string[]>>(new Map())
+  // Per-route bus fetch: hat_kodu → BusPosition[]
+  const [routeBusMap, setRouteBusMap] = useState<Map<string, BusPosition[]>>(new Map())
   const inFlight = useRef<Set<string>>(new Set())
 
   useEffect(() => {
@@ -124,7 +124,7 @@ export default function MapPage() {
         .then((bs: BusPosition[]) => {
           inFlight.current.delete(route)
           if (!alive) return
-          setRouteBusMap((prev) => new Map(prev).set(route, bs.map((b) => b.kapino.toUpperCase())))
+          setRouteBusMap((prev) => new Map(prev).set(route, bs))
         })
         .catch(() => {
           inFlight.current.delete(route)
@@ -218,11 +218,23 @@ export default function MapPage() {
   const selectedLastSeen = selectedDetail?.last_seen ?? selectedBusSnapshot?.last_seen ?? null
 
   const filtered = useMemo(() => {
-    const all = buses ?? []
+    // Combine global fleet buses with the per-route fetched buses
+    const combinedMap = new Map<string, BusPosition>()
+    if (buses) {
+      for (const b of buses) combinedMap.set(b.kapino, b)
+    }
+    for (const routeBuses of routeBusMap.values()) {
+      for (const b of routeBuses) combinedMap.set(b.kapino, b)
+    }
+    
+    const all = Array.from(combinedMap.values())
     if (!hasFilter) return all
-    // Build kapino set from per-route fetches (primary)
+
     const routeKapinos = new Set<string>()
-    for (const kapinos of routeBusMap.values()) for (const k of kapinos) routeKapinos.add(k)
+    for (const routeBuses of routeBusMap.values()) {
+      for (const b of routeBuses) routeKapinos.add(b.kapino.toUpperCase())
+    }
+
     return all.filter((b) => {
       const kUp = b.kapino.toUpperCase()
       // Route match: kapino lookup first, then fuzzy route_code fallback
