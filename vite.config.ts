@@ -1,5 +1,5 @@
+/// <reference types="vitest" />
 import { defineConfig, type Plugin } from 'vite'
-import { mergeConfig, defineConfig as defineTestConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 import path from 'path'
@@ -31,7 +31,7 @@ const emitVersionManifest: Plugin = {
   },
 }
 
-const viteConfig = defineConfig({
+export default defineConfig({
   define: {
     __APP_VERSION__: JSON.stringify(APP_VERSION),
   },
@@ -45,9 +45,9 @@ const viteConfig = defineConfig({
       injectRegister: false,
       registerType: 'autoUpdate',
       manifest: {
-        name: 'İETT Canlı',
-        short_name: 'İETT',
-        description: 'İstanbul otobüslerini gerçek zamanlı takip et',
+        name: 'Ä°ETT CanlÄ±',
+        short_name: 'Ä°ETT',
+        description: 'Ä°stanbul otobÃ¼slerini gerÃ§ek zamanlÄ± takip et',
         theme_color: '#000000',
         background_color: '#000000',
         display: 'standalone',
@@ -76,12 +76,10 @@ const viteConfig = defineConfig({
         cleanupOutdatedCaches: true,
         runtimeCaching: [
           {
-            // Version manifest must always come from network to detect new deploys.
             urlPattern: ({ url }) => url.pathname.endsWith('/version.json'),
             handler: 'NetworkOnly',
           },
           {
-            // Cache iett-middle API responses for 20 s
             urlPattern: /\/v1\//,
             handler: 'NetworkFirst',
             options: {
@@ -90,7 +88,6 @@ const viteConfig = defineConfig({
             },
           },
           {
-            // Cache map tiles longer
             urlPattern: /cartodb|openstreetmap/,
             handler: 'CacheFirst',
             options: {
@@ -131,19 +128,3 @@ const viteConfig = defineConfig({
     },
   },
 })
-
-export default mergeConfig(
-  viteConfig,
-  defineTestConfig({
-    test: {
-      environment: 'jsdom',
-      globals: true,
-      setupFiles: ['./src/test/setup.ts'],
-      alias: { '@': path.resolve(__dirname, 'src') },
-      coverage: {
-        provider: 'v8',
-        reporter: ['text', 'lcov'],
-      },
-    },
-  }),
-)

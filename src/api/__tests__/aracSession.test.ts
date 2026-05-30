@@ -2,11 +2,11 @@ import { afterEach, describe, expect, it } from 'vitest'
 
 import { clearAracSession, loadAracSession, saveAracSession } from '@/api/aracSession'
 
-afterEach(() => {
-  sessionStorage.clear()
-})
-
 describe('aracSession storage helpers', () => {
+  afterEach(() => {
+    sessionStorage.clear()
+  })
+
   it('saves and loads aracapi session from sessionStorage', () => {
     saveAracSession({ sessionId: 'sid-1', sessionKey: 'key-1' })
     const loaded = loadAracSession()

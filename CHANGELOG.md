@@ -5,6 +5,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [0.3.25] - 2026-05-30
+
+### Fixed
+- Fixed 'zombie buses' race condition by switching to reference-based in-flight markers in MapPage.
+- Added error stack trace preservation using the 'cause' property in API client.
+- Improved accessibility focus trapping on modals and dropdown closures.
+
+
+
 ## [0.3.23] - 2026-05-30
 
 ### Fixed

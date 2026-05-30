@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest'
+﻿import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest'
 import { api } from '@/api/client'
 
 // ---------------------------------------------------------------------------
@@ -62,7 +62,7 @@ describe('api.fleet.meta', () => {
 
 describe('api.stops.search', () => {
   it('returns stop list', async () => {
-    const payload = [{ dcode: '220602', name: 'AHMET MİTHAT EFENDİ', path: null }]
+    const payload = [{ dcode: '220602', name: 'AHMET MÄ°THAT EFENDÄ°', path: null }]
     mockFetch(payload)
     const result = await api.stops.search('ahmet')
     expect(result[0].dcode).toBe('220602')
@@ -90,7 +90,7 @@ describe('api.stops.nearby', () => {
   })
 
   it('returns nearby stops', async () => {
-    const payload = [{ stop_code: '301341', stop_name: '4.LEVENT METRO', latitude: 41.08, longitude: 29.0, district: 'Şişli', distance_m: 120 }]
+    const payload = [{ stop_code: '301341', stop_name: '4.LEVENT METRO', latitude: 41.08, longitude: 29.0, district: 'ÅžiÅŸli', distance_m: 120 }]
     mockFetch(payload)
     const result = await api.stops.nearby(41.08, 29.0)
     expect(result[0].stop_code).toBe('301341')
@@ -176,7 +176,7 @@ describe('api.garages.list', () => {
 })
 
 // ---------------------------------------------------------------------------
-// api.fleet — byPlate, detail, refresh
+// api.fleet â€” byPlate, detail, refresh
 // ---------------------------------------------------------------------------
 
 describe('api.fleet.byPlate', () => {
@@ -247,12 +247,12 @@ describe('api.fleet.refresh', () => {
 })
 
 // ---------------------------------------------------------------------------
-// api.stops — detail, routes
+// api.stops â€” detail, routes
 // ---------------------------------------------------------------------------
 
 describe('api.stops.detail', () => {
   it('returns stop detail', async () => {
-    mockFetch({ dcode: '220602', name: 'AHMET MİTHAT EFENDİ', latitude: 41.12, longitude: 29.08 })
+    mockFetch({ dcode: '220602', name: 'AHMET MÄ°THAT EFENDÄ°', latitude: 41.12, longitude: 29.08 })
     const result = await api.stops.detail('220602')
     expect(result.dcode).toBe('220602')
   })
@@ -272,7 +272,7 @@ describe('api.stops.routes', () => {
 })
 
 // ---------------------------------------------------------------------------
-// api.routes — metadata, buses, stops, announcements
+// api.routes â€” metadata, buses, stops, announcements
 // ---------------------------------------------------------------------------
 
 describe('api.routes.metadata', () => {
@@ -305,7 +305,7 @@ describe('api.routes.stops', () => {
 
 describe('api.routes.announcements', () => {
   it('returns announcements', async () => {
-    mockFetch([{ route_code: '500T', route_name: 'X', type: 'Günlük', updated_at: '09:00', message: 'Test' }])
+    mockFetch([{ route_code: '500T', route_name: 'X', type: 'GÃ¼nlÃ¼k', updated_at: '09:00', message: 'Test' }])
     const result = await api.routes.announcements('500T')
     expect(result[0].route_code).toBe('500T')
   })

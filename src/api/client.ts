@@ -101,7 +101,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     }
   } catch (error) {
     if (isNetworkError(error)) {
-      throw new Error(NETWORK_ERROR_TEXT)
+      throw new Error(NETWORK_ERROR_TEXT, { cause: error })
     }
     throw error
   }

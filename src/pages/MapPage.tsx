@@ -107,6 +107,15 @@ export default function MapPage() {
   }, [error])
 
   // ── Route filter: autocomplete search + chips ──────────────────────────────
+  useEffect(() => {
+    if (!showErrorModal) return
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setShowErrorModal(false)
+    }
+    document.addEventListener('keydown', handleKey)
+    return () => document.removeEventListener('keydown', handleKey)
+  }, [showErrorModal])
+
   const [selectedRoutes, setSelectedRoutes] = useState<string[]>([])
   const selectedRoutesRef = useRef(selectedRoutes)
   useEffect(() => { selectedRoutesRef.current = selectedRoutes }, [selectedRoutes])
@@ -122,30 +131,40 @@ export default function MapPage() {
 
   useEffect(() => {
     let alive = true
-    for (const route of selectedRoutes) {
-      if (routeBusMap.has(route) || inFlight.current.has(route)) continue
-      
-      inFlight.current.add(route)
-      api.routes.buses(route)
-        .then((bs: BusPosition[]) => {
-          inFlight.current.delete(route)
-          if (!alive && !selectedRoutesRef.current.includes(route)) return
-          setRouteBusMap((prev) => new Map(prev).set(route, bs))
-        })
-        .catch(() => {
-          inFlight.current.delete(route)
-          if (!alive && !selectedRoutesRef.current.includes(route)) return
-          setRouteBusMap((prev) => new Map(prev).set(route, []))
-        })
+
+    const fetchBuses = () => {
+      for (const route of selectedRoutes) {
+        if (inFlight.current.has(route)) continue
+        
+        inFlight.current.add(route)
+        api.routes.buses(route)
+          .then((bs: BusPosition[]) => {
+            inFlight.current.delete(route)
+            if (!selectedRoutesRef.current.includes(route)) return
+            setRouteBusMap((prev) => new Map(prev).set(route, bs))
+          })
+          .catch(() => {
+            inFlight.current.delete(route)
+            if (!selectedRoutesRef.current.includes(route)) return
+            setRouteBusMap((prev) => new Map(prev).set(route, []))
+          })
+      }
     }
+
+    fetchBuses()
+    const interval = setInterval(fetchBuses, 15_000)
+
     // prune deselected routes
     setRouteBusMap((prev) => {
       const next = new Map(prev)
       for (const key of next.keys()) if (!selectedRoutes.includes(key)) next.delete(key)
       return next
     })
-    return () => { alive = false }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+
+    return () => { 
+      alive = false
+      clearInterval(interval)
+    }
   }, [selectedRoutes])
 
   // Fetch autocomplete suggestions when query changes (debounced 300 ms)
@@ -181,12 +200,23 @@ export default function MapPage() {
   const entityDropdownRef = useRef<HTMLDivElement>(null)
 
   const entityResults = useMemo(() => {
-    const q = entityQuery.trim().toUpperCase()
-    if (q.length < 2 || !buses) return [] as BusPosition[]
-    return buses
-      .filter((b) => b.kapino.toUpperCase().includes(q) || (b.plate?.toUpperCase().includes(q) ?? false))
-      .slice(0, 8)
-  }, [entityQuery, buses])
+    if (entityQuery.length < 2) return []
+    const q = entityQuery.toUpperCase()
+    return (buses || []).filter((b) => b.kapino.toUpperCase().includes(q) || (b.plate?.toUpperCase().includes(q) ?? false)).slice(0, 10)
+  }, [buses, entityQuery])
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setShowDropdown(false)
+      }
+      if (entityDropdownRef.current && !entityDropdownRef.current.contains(e.target as Node)) {
+        setShowEntityDropdown(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   function addEntity(kapino: string) {
     if (!selectedEntities.includes(kapino)) setSelectedEntities((prev) => [...prev, kapino])
@@ -231,7 +261,7 @@ export default function MapPage() {
     for (const routeBuses of routeBusMap.values()) {
       for (const b of routeBuses) {
         const existing = combinedMap.get(b.kapino)
-        if (!existing || new Date(b.last_seen).getTime() > new Date(existing.last_seen).getTime()) {
+        if (!existing || (parseIsoDate(b.last_seen)?.getTime() ?? 0) > (parseIsoDate(existing.last_seen)?.getTime() ?? 0)) {
           combinedMap.set(b.kapino, b)
         }
       }
@@ -273,13 +303,18 @@ export default function MapPage() {
       {/* Filter panel */}
       <div className="absolute top-16 left-1/2 -translate-x-1/2 z-[1000] w-full max-w-sm px-4 flex flex-col gap-2">
         {/* Route autocomplete search bar */}
-        <div className="relative" ref={dropdownRef}>
+        <div
+          className="relative"
+          ref={dropdownRef}
+          onBlur={(e) => {
+            if (e.relatedTarget && !e.currentTarget.contains(e.relatedTarget)) setShowDropdown(false)
+          }}
+        >
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => { setSearchQuery(e.target.value); setShowDropdown(true) }}
             onFocus={() => { if (searchQuery.length > 0) setShowDropdown(true) }}
-            onBlur={() => setTimeout(() => setShowDropdown(false), 150)}
             placeholder="Hat kodu ara (ör: 500T, 14M)…"
             className="w-full border border-[#333] px-4 py-2 text-sm text-slate-100 placeholder-slate-500
                        focus:outline-none focus:border-[#00AFF0] shadow-xl"
@@ -292,7 +327,7 @@ export default function MapPage() {
               {searchResults.map((r) => (
                 <button
                   key={r.hat_kodu}
-                  onMouseDown={() => addRoute(r.hat_kodu)}
+                  onClick={() => { addRoute(r.hat_kodu); setShowDropdown(false); }}
                   className="w-full text-left px-4 py-2.5 text-sm
                              flex items-center gap-2 transition-colors"
                   style={{ borderBottom: '1px solid #1a1a1a' }}
@@ -332,13 +367,18 @@ export default function MapPage() {
         )}
 
         {/* Kapino / plate chip filter */}
-        <div className="relative" ref={entityDropdownRef}>
+        <div
+          className="relative"
+          ref={entityDropdownRef}
+          onBlur={(e) => {
+            if (e.relatedTarget && !e.currentTarget.contains(e.relatedTarget)) setShowEntityDropdown(false)
+          }}
+        >
           <input
             type="text"
             value={entityQuery}
             onChange={(e) => { setEntityQuery(e.target.value); setShowEntityDropdown(true) }}
             onFocus={() => { if (entityQuery.length > 0) setShowEntityDropdown(true) }}
-            onBlur={() => setTimeout(() => setShowEntityDropdown(false), 150)}
             placeholder="Kapı kodu / plaka ara (ör: C-1515)"
             className="w-full border border-[#333] px-4 py-2 text-sm text-slate-100 placeholder-slate-500
                        focus:outline-none focus:border-[#00AFF0] shadow-xl"
@@ -351,7 +391,7 @@ export default function MapPage() {
               {entityResults.map((b) => (
                 <button
                   key={b.kapino}
-                  onMouseDown={() => addEntity(b.kapino)}
+                  onClick={() => { addEntity(b.kapino); setShowEntityDropdown(false); }}
                   className="w-full text-left px-4 py-2.5 text-sm
                              flex items-center gap-2 transition-colors"
                   style={{ borderBottom: '1px solid #1a1a1a' }}
@@ -401,10 +441,13 @@ export default function MapPage() {
       {showErrorModal && (
         <div 
           className="absolute inset-0 z-[2000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
-          onKeyDown={(e) => {
-            if (e.key === 'Escape') setShowErrorModal(false)
-          }}
           onClick={() => setShowErrorModal(false)}
+          onKeyDown={(e) => {
+            if (e.key === 'Tab') {
+              e.preventDefault();
+              document.getElementById('ibb-modal-close')?.focus();
+            }
+          }}
         >
           <div 
             className="bg-surface-card border border-red-900/50 rounded-2xl max-w-md w-full p-6 shadow-2xl relative"
