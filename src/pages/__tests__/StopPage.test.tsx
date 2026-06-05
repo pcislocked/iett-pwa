@@ -1,0 +1,108 @@
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { MemoryRouter, Route, Routes } from 'react-router-dom'
+
+import StopPage from '@/pages/StopPage'
+import { api } from '@/api/client'
+
+vi.mock('@/api/client', () => ({
+  api: {
+    stops: {
+      detail: vi.fn(),
+      arrivals: vi.fn(),
+      routes: vi.fn(),
+    },
+    routes: {
+      announcements: vi.fn(),
+    },
+  },
+}))
+
+describe('StopPage Announcements', () => {
+  afterEach(() => {
+    vi.clearAllMocks()
+  })
+
+  function renderPage(dcode = '1234') {
+    return render(
+      <MemoryRouter initialEntries={[`/stops/${dcode}`]}>
+        <Routes>
+          <Route path="/stops/:dcode" element={<StopPage />} />
+        </Routes>
+      </MemoryRouter>
+    )
+  }
+
+  it('fetches announcements for all routes at the stop and renders accordion', async () => {
+    vi.mocked(api.stops.detail).mockResolvedValue({
+      id: 1, dcode: '1234', name: 'Test Stop', latitude: 41, longitude: 29, ilce: 'Test'
+    })
+    vi.mocked(api.stops.arrivals).mockResolvedValue([
+      { route_code: '15TY', destination: 'HEKİMBAŞI', eta_minutes: 5, eta_raw: '5 dk', is_live: true, sequence: 1 },
+      { route_code: '11H', destination: 'ÜMRANİYE', eta_minutes: 10, eta_raw: '10 dk', is_live: true, sequence: 2 },
+    ] as any)
+    vi.mocked(api.stops.routes).mockResolvedValue(['15TY', '11H'])
+
+    // Mock different announcements for different routes
+    vi.mocked(api.routes.announcements).mockImplementation(async (route) => {
+      if (route === '15TY') {
+        return [{ type: 'Duyuru', updated_at: '2026-06-05', message: '15TY is delayed' }]
+      }
+      if (route === '11H') {
+        return [{ type: 'Bilgi', updated_at: '2026-06-05', message: '11H extra bus added' }]
+      }
+      return []
+    })
+
+    renderPage()
+
+    // Wait for the accordion button to appear (2 announcements)
+    const btn = await screen.findByRole('button', { name: /Duyurular \(2\)/i })
+    expect(btn).toBeInTheDocument()
+
+    // Click accordion
+    fireEvent.click(btn)
+
+    // Verify announcements are rendered
+    await waitFor(() => {
+      expect(screen.getByText(/15TY is delayed/i)).toBeInTheDocument()
+      expect(screen.getByText(/11H extra bus added/i)).toBeInTheDocument()
+    })
+  })
+
+  it('tolerates one route failing in announcement fetch', async () => {
+    vi.mocked(api.stops.detail).mockResolvedValue({
+      id: 1, dcode: '1234', name: 'Test Stop', latitude: 41, longitude: 29, ilce: 'Test'
+    })
+    vi.mocked(api.stops.arrivals).mockResolvedValue([
+      { route_code: '15TY', destination: 'HEKİMBAŞI', eta_minutes: 5, eta_raw: '5 dk', is_live: true, sequence: 1 },
+      { route_code: '11H', destination: 'ÜMRANİYE', eta_minutes: 10, eta_raw: '10 dk', is_live: true, sequence: 2 },
+    ] as any)
+    vi.mocked(api.stops.routes).mockResolvedValue(['15TY', '11H'])
+
+    // One succeeds, one fails
+    vi.mocked(api.routes.announcements).mockImplementation(async (route) => {
+      if (route === '15TY') {
+        return [{ type: 'Duyuru', updated_at: '2026-06-05', message: '15TY is delayed' }]
+      }
+      if (route === '11H') {
+        throw new Error('API Error')
+      }
+      return []
+    })
+
+    renderPage()
+
+    // Should still show 1 announcement
+    const btn = await screen.findByRole('button', { name: /Duyurular \(1\)/i })
+    expect(btn).toBeInTheDocument()
+
+    // Click accordion
+    fireEvent.click(btn)
+
+    // Verify 15TY announcement is rendered
+    await waitFor(() => {
+      expect(screen.getByText(/15TY is delayed/i)).toBeInTheDocument()
+    })
+  })
+})
