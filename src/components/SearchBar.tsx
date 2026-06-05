@@ -41,10 +41,14 @@ export default function SearchBar({ placeholder = 'Hat kodu, durak adı...', aut
     if (timerRef.current) clearTimeout(timerRef.current)
     timerRef.current = setTimeout(async () => {
       try {
-        const [stops, routes] = await Promise.all([
+        const resultsList = await Promise.allSettled([
           api.stops.search(query),
           api.routes.search(query),
         ])
+        
+        const stops = resultsList[0].status === 'fulfilled' ? resultsList[0].value : []
+        const routes = resultsList[1].status === 'fulfilled' ? resultsList[1].value : []
+        
         const combined: SearchResult[] = [
           ...stops.map((s) => ({ kind: 'stop' as const, ...s })),
           ...routes.map((r) => ({ kind: 'route' as const, ...r })),
