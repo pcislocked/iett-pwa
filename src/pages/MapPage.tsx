@@ -130,6 +130,7 @@ export default function MapPage() {
   const inFlight = useRef<Set<string>>(new Set())
 
   useEffect(() => {
+    let alive = true
 
     const fetchBuses = () => {
       for (const route of selectedRoutes) {
@@ -160,7 +161,8 @@ export default function MapPage() {
       return next
     })
 
-    return () => {
+    return () => { 
+      alive = false
       clearInterval(interval)
     }
   }, [selectedRoutes])

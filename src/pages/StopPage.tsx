@@ -517,30 +517,15 @@ export default function StopPage() {
     return m
   }, [arrivalRouteOrder, routes])
 
-  type RouteAnnouncement = Announcement & { route_code: string }
-
-  // Announcements for ALL routes present at this stop
-  const allRoutesAtStop = useMemo(() => Array.from(new Set([...(Array.isArray(routes) ? routes : []), ...arrivalRouteOrder])).sort(), [routes, arrivalRouteOrder])
-  const annsFetcher = useCallback(async () => {
-    if (!allRoutesAtStop.length) return []
-    const combined: RouteAnnouncement[] = []
-    
-    const chunkSize = 5
-    for (let i = 0; i < allRoutesAtStop.length; i += chunkSize) {
-      const chunk = allRoutesAtStop.slice(i, i + chunkSize)
-      const results = await Promise.allSettled(chunk.map(r => api.routes.announcements(r)))
-      
-      results.forEach((res, j) => {
-        if (res.status === 'fulfilled' && res.value.length > 0) {
-          res.value.forEach(a => combined.push({ ...a, route_code: chunk[j] }))
-        }
-      })
-    }
-    return combined
-  }, [allRoutesAtStop])
-
-  const { data: polledAnnouncements } = usePolling<RouteAnnouncement[]>(annsFetcher, 300_000)
-  const announcements = polledAnnouncements ?? []
+  // Announcements for the first selected route
+  const firstActive = useMemo(() => Array.from(activeRoutes)[0] ?? null, [activeRoutes])
+  const { data: announcements } = usePolling<Announcement[]>(
+    useMemo(
+      () => () => firstActive ? api.routes.announcements(firstActive) : Promise.resolve([]),
+      [firstActive],
+    ),
+    300_000,
+  )
 
   const { isFavorite, toggle } = useFavorites()
   const { prefs, isPinned, pinStop, unpinStop } = useUserPrefs()
@@ -835,36 +820,6 @@ export default function StopPage() {
             </div>
           )}
 
-          {/* Announcements Accordion */}
-          {(announcements ?? []).length > 0 && (
-            <div className="mb-2">
-              <button
-                onClick={() => setShowAnnouncements(!showAnnouncements)}
-                className="w-full card flex items-center justify-between text-sm text-amber-400 font-semibold"
-              >
-                <span>🔔 Duyurular ({(announcements ?? []).length})</span>
-                <svg className={`w-4 h-4 transition-transform ${showAnnouncements ? 'rotate-180' : ''}`}
-                     fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/>
-                </svg>
-              </button>
-              {showAnnouncements && (
-                <div className="mt-2 flex flex-col gap-2">
-                  {(announcements ?? []).map((ann, idx) => (
-                    <div key={idx} className="card border-amber-800/50 bg-amber-950/20">
-                      <p className="text-xs font-semibold text-amber-400 mb-1">
-                        {ann.route_code && <span className="text-amber-200 mr-1">[{ann.route_code}]</span>}
-                        {ann.type}
-                      </p>
-                      <p className="text-sm text-slate-300">{ann.message}</p>
-                      <p className="text-[10px] text-slate-600 mt-1">{ann.updated_at}</p>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
           {filteredArrivals.map((a, i) => {
             const routeColor = getRouteColor(a.route_code, arrivalRouteOrder)
             const hasVehicle = !!(a.kapino || a.plate)
@@ -911,7 +866,32 @@ export default function StopPage() {
             )
           })}
 
-
+          {/* Announcements for first selected route */}
+          {firstActive && (announcements ?? []).length > 0 && (
+            <div className="mt-2">
+              <button
+                onClick={() => setShowAnnouncements(!showAnnouncements)}
+                className="w-full card flex items-center justify-between text-sm text-amber-400 font-semibold"
+              >
+                <span>🔔 Duyurular ({(announcements ?? []).length})</span>
+                <svg className={`w-4 h-4 transition-transform ${showAnnouncements ? 'rotate-180' : ''}`}
+                     fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/>
+                </svg>
+              </button>
+              {showAnnouncements && (
+                <div className="mt-2 flex flex-col gap-2">
+                  {(announcements ?? []).map((ann, idx) => (
+                    <div key={idx} className="card border-amber-800/50 bg-amber-950/20">
+                      <p className="text-xs font-semibold text-amber-400 mb-1">{ann.type}</p>
+                      <p className="text-sm text-slate-300">{ann.message}</p>
+                      <p className="text-[10px] text-slate-600 mt-1">{ann.updated_at}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* ── Bottom strip: last updated + refresh + route filter chips ────── */}
