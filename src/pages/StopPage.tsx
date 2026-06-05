@@ -525,17 +525,28 @@ export default function StopPage() {
     if (!allRoutesAtStop.length) return []
     const combined: RouteAnnouncement[] = []
     
+    let totalRequests = 0
+    let failedRequests = 0
+    
     const chunkSize = 5
     for (let i = 0; i < allRoutesAtStop.length; i += chunkSize) {
       const chunk = allRoutesAtStop.slice(i, i + chunkSize)
+      totalRequests += chunk.length
       const results = await Promise.allSettled(chunk.map(r => api.routes.announcements(r)))
       
       results.forEach((res, j) => {
-        if (res.status === 'fulfilled' && res.value.length > 0) {
+        if (res.status === 'fulfilled') {
           res.value.forEach(a => combined.push({ ...a, route_code: chunk[j] }))
+        } else {
+          failedRequests++
         }
       })
     }
+    
+    if (totalRequests > 0 && failedRequests === totalRequests) {
+      throw new Error('All announcement requests failed')
+    }
+    
     return combined
   }, [allRoutesAtStop])
 
@@ -839,6 +850,9 @@ export default function StopPage() {
           {(announcements ?? []).length > 0 && (
             <div className="mb-2">
               <button
+                type="button"
+                aria-expanded={showAnnouncements}
+                aria-controls="announcements-list"
                 onClick={() => setShowAnnouncements(!showAnnouncements)}
                 className="w-full card flex items-center justify-between text-sm text-amber-400 font-semibold"
               >
@@ -849,9 +863,9 @@ export default function StopPage() {
                 </svg>
               </button>
               {showAnnouncements && (
-                <div className="mt-2 flex flex-col gap-2">
-                  {(announcements ?? []).map((ann, idx) => (
-                    <div key={idx} className="card border-amber-800/50 bg-amber-950/20">
+                <div id="announcements-list" className="mt-2 flex flex-col gap-2">
+                  {(announcements ?? []).map((ann) => (
+                    <div key={`${ann.route_code}-${ann.type}-${ann.message}-${ann.updated_at}`} className="card border-amber-800/50 bg-amber-950/20">
                       <p className="text-xs font-semibold text-amber-400 mb-1">
                         {ann.route_code && <span className="text-amber-200 mr-1">[{ann.route_code}]</span>}
                         {ann.type}
