@@ -45,9 +45,9 @@ export default defineConfig({
       injectRegister: false,
       registerType: 'autoUpdate',
       manifest: {
-        name: 'Ä°ETT CanlÄ±',
-        short_name: 'Ä°ETT',
-        description: 'Ä°stanbul otobÃ¼slerini gerÃ§ek zamanlÄ± takip et',
+        name: 'İETT Canlı',
+        short_name: 'İETT',
+        description: 'İstanbul otobüslerini gerçek zamanlı takip et',
         theme_color: '#000000',
         background_color: '#000000',
         display: 'standalone',
