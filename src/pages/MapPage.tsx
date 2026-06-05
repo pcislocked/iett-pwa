@@ -100,15 +100,24 @@ export default function MapPage() {
   )
 
   const [showErrorModal, setShowErrorModal] = useState(false)
+  const previousFocusRef = useRef<HTMLElement | null>(null)
+
   useEffect(() => {
     if (error) {
+      previousFocusRef.current = document.activeElement as HTMLElement
       setShowErrorModal(true)
     }
   }, [error])
 
   // ── Route filter: autocomplete search + chips ──────────────────────────────
   useEffect(() => {
-    if (!showErrorModal) return
+    if (!showErrorModal) {
+      if (previousFocusRef.current) {
+        previousFocusRef.current.focus()
+        previousFocusRef.current = null
+      }
+      return
+    }
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setShowErrorModal(false)
     }
@@ -128,22 +137,34 @@ export default function MapPage() {
   // Per-route bus fetch: hat_kodu → BusPosition[]
   const [routeBusMap, setRouteBusMap] = useState<Map<string, BusPosition[]>>(new Map())
   const inFlight = useRef<Set<string>>(new Set())
+  const fetchIdMap = useRef<Map<string, number>>(new Map())
+  const fetchIdCounter = useRef(0)
 
   useEffect(() => {
+    let isMounted = true
 
     const fetchBuses = () => {
+      if (!isMounted) return
       for (const route of selectedRoutes) {
         if (inFlight.current.has(route)) continue
         
+        fetchIdCounter.current += 1
+        const currentFetchId = fetchIdCounter.current
+        fetchIdMap.current.set(route, currentFetchId)
+
         inFlight.current.add(route)
         api.routes.buses(route)
           .then((bs: BusPosition[]) => {
+            if (!isMounted) return
             inFlight.current.delete(route)
+            if (fetchIdMap.current.get(route) !== currentFetchId) return // Stale request
             if (!selectedRoutesRef.current.includes(route)) return
             setRouteBusMap((prev) => new Map(prev).set(route, bs))
           })
           .catch(() => {
+            if (!isMounted) return
             inFlight.current.delete(route)
+            if (fetchIdMap.current.get(route) !== currentFetchId) return // Stale request
             if (!selectedRoutesRef.current.includes(route)) return
             setRouteBusMap((prev) => new Map(prev).set(route, []))
           })
@@ -156,11 +177,17 @@ export default function MapPage() {
     // prune deselected routes
     setRouteBusMap((prev) => {
       const next = new Map(prev)
-      for (const key of next.keys()) if (!selectedRoutes.includes(key)) next.delete(key)
+      for (const key of next.keys()) {
+        if (!selectedRoutes.includes(key)) {
+          next.delete(key)
+          inFlight.current.delete(key)
+        }
+      }
       return next
     })
 
     return () => {
+      isMounted = false
       clearInterval(interval)
     }
   }, [selectedRoutes])
