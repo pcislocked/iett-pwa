@@ -41,13 +41,13 @@ export default function SearchBar({ placeholder = 'Hat kodu, durak adı...', aut
     if (timerRef.current) clearTimeout(timerRef.current)
     timerRef.current = setTimeout(async () => {
       try {
-        const resultsList = await Promise.allSettled([
-          api.stops.search(query),
-          api.routes.search(query),
+        const [stopsResult, routesResult] = await Promise.allSettled([
+          api.stops.search(q),
+          api.routes.search(q),
         ])
         
-        const stops = resultsList[0].status === 'fulfilled' ? resultsList[0].value : []
-        const routes = resultsList[1].status === 'fulfilled' ? resultsList[1].value : []
+        const stops = stopsResult.status === 'fulfilled' ? stopsResult.value : []
+        const routes = routesResult.status === 'fulfilled' ? routesResult.value : []
         
         const combined: SearchResult[] = [
           ...stops.map((s) => ({ kind: 'stop' as const, ...s })),
@@ -57,6 +57,7 @@ export default function SearchBar({ placeholder = 'Hat kodu, durak adı...', aut
         setOpen(combined.length > 0)
       } catch {
         setResults([])
+        setOpen(false)
       }
     }, 300)
     return () => { if (timerRef.current) clearTimeout(timerRef.current) }
