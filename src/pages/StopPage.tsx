@@ -14,7 +14,9 @@ import { etaChipClass } from '@/utils/etaColor'
 function MapResizer({ heightPct }: { heightPct: number }) {
   const map = useMap()
   useEffect(() => {
-    requestAnimationFrame(() => { map.invalidateSize() })
+    let frameId: number
+    frameId = requestAnimationFrame(() => { map.invalidateSize() })
+    return () => cancelAnimationFrame(frameId)
   }, [heightPct, map])
   return null
 }
@@ -543,8 +545,17 @@ export default function StopPage() {
       })
     }
     
-    if (totalRequests > 0 && failedRequests === totalRequests) {
-      throw new Error('All announcement requests failed')
+    if (failedRequests > 0) {
+      if (failedRequests === totalRequests) {
+        throw new Error('All announcement requests failed')
+      }
+      combined.push({
+        route_code: 'SİSTEM',
+        route_name: '',
+        type: 'Uyarı',
+        message: 'Bazı hatların duyuruları yüklenirken geçici bir hata oluştu.',
+        updated_at: new Date().toLocaleTimeString('tr-TR')
+      })
     }
     
     return combined
