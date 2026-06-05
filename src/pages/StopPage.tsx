@@ -551,6 +551,7 @@ export default function StopPage() {
       }
       combined.push({
         route_code: 'SİSTEM',
+        route_name: '',
         type: 'Uyarı',
         message: 'Bazı hatların duyuruları yüklenirken geçici bir hata oluştu.',
         updated_at: new Date().toLocaleTimeString('tr-TR')

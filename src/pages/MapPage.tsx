@@ -155,15 +155,15 @@ export default function MapPage() {
         inFlight.current.add(route)
         api.routes.buses(route)
           .then((bs: BusPosition[]) => {
-            if (!isMounted) return
             inFlight.current.delete(route)
+            if (!isMounted) return
             if (fetchIdMap.current.get(route) !== currentFetchId) return // Stale request
             if (!selectedRoutesRef.current.includes(route)) return
             setRouteBusMap((prev) => new Map(prev).set(route, bs))
           })
           .catch(() => {
-            if (!isMounted) return
             inFlight.current.delete(route)
+            if (!isMounted) return
             if (fetchIdMap.current.get(route) !== currentFetchId) return // Stale request
             if (!selectedRoutesRef.current.includes(route)) return
             setRouteBusMap((prev) => new Map(prev).set(route, []))
@@ -181,6 +181,7 @@ export default function MapPage() {
         if (!selectedRoutes.includes(key)) {
           next.delete(key)
           inFlight.current.delete(key)
+          fetchIdMap.current.delete(key)
         }
       }
       return next
