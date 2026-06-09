@@ -395,6 +395,8 @@ function EtaChip({ minutes, raw }: { minutes: number | null; raw: string }) {
   )
 }
 
+const globalRouteIconCache = new Map<string, L.DivIcon>()
+
 export default function StopPage() {
   const { dcode } = useParams<{ dcode: string }>()
   const navigate = useNavigate()
@@ -535,9 +537,6 @@ export default function StopPage() {
     return routeBuses.filter(b => activeRoutes.has(b.route_code ?? ''))
   }, [routeBuses, activeRoutes])
 
-  // Global cache for icons to prevent Leaflet DOM churn
-  const routeIconCacheRef = useRef<Map<string, L.DivIcon>>(new Map())
-
   // One cached Leaflet DivIcon per route_code — avoids creating a new DOM object every render.
   const routeIconMap = useMemo(() => {
     const m = new Map<string, L.DivIcon>()
@@ -545,10 +544,11 @@ export default function StopPage() {
     allRouteSet.forEach((r) => {
       const color = getRouteColor(r, orderedForColors)
       const cacheKey = `${r}-${color}`
-      if (!routeIconCacheRef.current.has(cacheKey)) {
-        routeIconCacheRef.current.set(cacheKey, makeBusIcon(color))
+      if (!globalRouteIconCache.has(cacheKey)) {
+        globalRouteIconCache.set(cacheKey, makeBusIcon(color))
       }
-      m.set(r, routeIconCacheRef.current.get(cacheKey)!)
+      const icon = globalRouteIconCache.get(cacheKey)!
+      m.set(r, icon)
     })
     return m
   }, [arrivalRouteOrder, routes, orderedForColors])
@@ -580,7 +580,7 @@ export default function StopPage() {
     enabled: !!dcode && allRoutesAtStop.length > 0,
     placeholderData: (prev) => prev,
   })
-  const announcements = polledAnnouncements ?? []
+  const stopAnnouncements = polledAnnouncements ?? []
 
   const { isFavorite, toggle } = useFavorites()
   const { prefs, isPinned, pinStop, unpinStop } = useUserPrefs()
@@ -769,7 +769,7 @@ export default function StopPage() {
       <div ref={splitContainerRef} className="flex-1 flex flex-col overflow-hidden max-w-2xl w-full mx-auto min-h-0">
 
         {/* Map — dynamically sized via drag */}
-        <div className="shrink-0 border-b border-surface-muted relative" style={{ height: `${mapHeightPctRef.current}%` }}>
+        <div className="shrink-0 border-b border-surface-muted relative" style={{ height: '50%' }} ref={(el) => { if (el) el.style.height = `${mapHeightPctRef.current}%` }}>
           {stopDetail && stopDetail.latitude != null && stopDetail.longitude != null ? (
             <MapContainer
               center={[stopDetail.latitude, stopDetail.longitude]}
@@ -877,7 +877,7 @@ export default function StopPage() {
           )}
 
           {/* Announcements Accordion */}
-          {(announcements ?? []).length > 0 && (
+          {(stopAnnouncements ?? []).length > 0 && (
             <div className="mb-2">
               <button
                 type="button"
@@ -886,7 +886,7 @@ export default function StopPage() {
                 onClick={() => setShowAnnouncements(!showAnnouncements)}
                 className="w-full card flex items-center justify-between text-sm text-amber-400 font-semibold"
               >
-                <span>🔔 Duyurular ({(announcements ?? []).length})</span>
+                <span>🔔 Duyurular ({(stopAnnouncements ?? []).length})</span>
                 <svg className={`w-4 h-4 transition-transform ${showAnnouncements ? 'rotate-180' : ''}`}
                      fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/>
@@ -894,7 +894,7 @@ export default function StopPage() {
               </button>
               {showAnnouncements && (
                 <div id="announcements-list" className="mt-2 flex flex-col gap-2">
-                  {(announcements ?? []).map((ann) => (
+                  {(stopAnnouncements ?? []).map((ann) => (
                     <div key={`${ann.route_code}-${ann.type}-${ann.message}-${ann.updated_at}`} className="card border-amber-800/50 bg-amber-950/20">
                       <p className="text-xs font-semibold text-amber-400 mb-1">
                         {ann.route_code && <span className="text-amber-200 mr-1">[{ann.route_code}]</span>}
