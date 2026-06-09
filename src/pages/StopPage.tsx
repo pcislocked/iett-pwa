@@ -82,20 +82,33 @@ function AutoFitBuses({
   filterKey: string
 }) {
   const map = useMap()
+  const lastFilterKey = useRef<string | null>(null)
+  const hasFitOnce = useRef(false)
 
   useEffect(() => {
     const withPos = buses.filter((b) => b.latitude != null && b.longitude != null).slice(0, 3)
+    
+    const isFilterChange = lastFilterKey.current !== filterKey
+    const isInitialData = !hasFitOnce.current && withPos.length > 0
+    
+    if (withPos.length > 0) hasFitOnce.current = true
+
+    if (!isFilterChange && !isInitialData) return
+
+    lastFilterKey.current = filterKey
+
     if (withPos.length === 0) {
       map.flyTo([stopLat, stopLon], 16, { animate: true, duration: 0.8 })
       return
     }
+
     const points: L.LatLngExpression[] = [
       [stopLat, stopLon],
       ...withPos.map((b): L.LatLngExpression => [b.latitude, b.longitude]),
     ]
     const bounds = L.latLngBounds(points)
     map.flyToBounds(bounds, { padding: [48, 48], maxZoom: 16, animate: true, duration: 0.8 })
-  }, [filterKey, buses.length, stopLat, stopLon, map])
+  }, [filterKey, buses, stopLat, stopLon, map])
 
   return null
 }
@@ -152,7 +165,9 @@ function BusDetailSheet({
 
   useEffect(() => {
     previouslyFocused.current = document.activeElement
-    // Delay initial focus slightly to allow Leaflet map to mount and not steal focus
+    const root = document.getElementById('root')
+    if (root) root.setAttribute('aria-hidden', 'true')
+    
     const timer = setTimeout(() => {
       if (dialogRef.current) {
         const firstBtn = dialogRef.current.querySelector('button')
@@ -161,6 +176,7 @@ function BusDetailSheet({
     }, 50)
     return () => {
       clearTimeout(timer)
+      if (root) root.removeAttribute('aria-hidden')
       if (previouslyFocused.current instanceof HTMLElement) {
         previouslyFocused.current.focus()
       }
@@ -397,22 +413,25 @@ export default function StopPage() {
   const [activeTab, setActiveTab] = useState<'gelis' | 'hatlar' | 'bilgi'>('gelis')
 
   // Sliding panel state — map height as percentage of split container
-  const [mapHeightPct, setMapHeightPct] = useState(40)
+  const mapHeightPctRef = useRef(40)
+  const mapContainerRef = useRef<HTMLDivElement>(null)
   const splitContainerRef = useRef<HTMLDivElement>(null)
   const dragState = useRef<{ startY: number; startPct: number } | null>(null)
 
   const onHandlePointerDown = useCallback((e: React.PointerEvent) => {
     e.currentTarget.setPointerCapture(e.pointerId)
-    dragState.current = { startY: e.clientY, startPct: mapHeightPct }
-  }, [mapHeightPct])
+    dragState.current = { startY: e.clientY, startPct: mapHeightPctRef.current }
+  }, [])
 
   const onHandlePointerMove = useCallback((e: React.PointerEvent) => {
-    if (!dragState.current || !splitContainerRef.current) return
+    if (!dragState.current || !splitContainerRef.current || !mapContainerRef.current) return
     const containerH = splitContainerRef.current.offsetHeight
     const dy = e.clientY - dragState.current.startY
     const deltaPct = (dy / containerH) * 100
     const newPct = Math.min(65, Math.max(15, dragState.current.startPct + deltaPct))
-    setMapHeightPct(newPct)
+    mapHeightPctRef.current = newPct
+    mapContainerRef.current.style.height = `${newPct}%`
+    window.dispatchEvent(new Event('resize'))
   }, [])
 
   const onHandlePointerUp = useCallback(() => { dragState.current = null }, [])
@@ -525,22 +544,29 @@ export default function StopPage() {
     [arrivals],
   )
 
+  // Global cache for icons to prevent Leaflet DOM churn
+  const routeIconCacheRef = useRef<Map<string, L.DivIcon>>(new Map())
+
   // One cached Leaflet DivIcon per route_code — avoids creating a new DOM object every render.
-  // Build for ALL routes at this stop (arrivalRouteOrder + routes fallback).
   const routeIconMap = useMemo(() => {
     const m = new Map<string, L.DivIcon>()
     const allRouteSet = new Set([...arrivalRouteOrder, ...(routes ?? [])])
     allRouteSet.forEach((r) => {
-      m.set(r, makeBusIcon(getRouteColor(r, orderedForColors)))
+      const color = getRouteColor(r, orderedForColors)
+      const cacheKey = `${r}-${color}`
+      if (!routeIconCacheRef.current.has(cacheKey)) {
+        routeIconCacheRef.current.set(cacheKey, makeBusIcon(color))
+      }
+      m.set(r, routeIconCacheRef.current.get(cacheKey)!)
     })
     return m
-  }, [arrivalRouteOrder, routes])
+  }, [arrivalRouteOrder, routes, orderedForColors])
 
   type RouteAnnouncement = Announcement & { route_code: string }
 
   // Announcements for ALL routes present at this stop
   const allRoutesAtStop = useMemo(() => Array.from(new Set([...(Array.isArray(routes) ? routes : []), ...arrivalRouteOrder])).sort(), [routes, arrivalRouteOrder])
-  const annsFetcher = useCallback(async () => {
+  const annsFetcher = useCallback(async ({ signal }: { signal: AbortSignal }) => {
     if (!allRoutesAtStop.length) return []
     const combined: RouteAnnouncement[] = []
     
@@ -549,6 +575,7 @@ export default function StopPage() {
     
     const chunkSize = 5
     for (let i = 0; i < allRoutesAtStop.length; i += chunkSize) {
+      if (signal.aborted) throw new Error('Aborted')
       const chunk = allRoutesAtStop.slice(i, i + chunkSize)
       totalRequests += chunk.length
       const results = await Promise.allSettled(chunk.map(r => api.routes.announcements(r)))
@@ -783,7 +810,7 @@ export default function StopPage() {
               key={dcode}
               attributionControl={false}
             >
-              <MapResizer heightPct={mapHeightPct} />
+              {/* MapResizer removed, relying on resize events */}
               <TileLayer
                 url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
               />
@@ -925,7 +952,7 @@ export default function StopPage() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.95 }}
                   transition={{ duration: 0.2 }}
-                  key={`${a.route_code}-${a.destination}-${a.kapino || i}`}
+                  key={`${a.route_code}-${a.destination}-${a.kapino || a.eta_raw || i}`}
                   className="mb-2 shrink-0 card flex items-stretch gap-0 py-0 overflow-hidden hover:border-slate-500 transition-colors"
                 >
                   {/* LEFT half — navigate to route page */}
