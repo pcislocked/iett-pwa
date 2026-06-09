@@ -1,9 +1,10 @@
-import { memo, useState, useMemo, useEffect, useRef, useCallback } from 'react'
+import { useState, useRef, useEffect, useMemo, memo } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet'
 import * as L from 'leaflet'
+import CanvasMarkers from '@/components/CanvasMarkers'
 import { useNavigate } from 'react-router-dom'
 import { useFleet } from '@/hooks/useFleet'
-import { usePolling } from '@/hooks/usePolling'
+import { useQuery } from '@tanstack/react-query'
 import { api, type BusDetail, type Garage, type RouteSearchResult, type BusPosition } from '@/api/client'
 
 function parseIsoDate(value: string | null | undefined): Date | null {
@@ -87,17 +88,18 @@ const busIcon = L.divIcon({
 export default function MapPage() {
   const navigate = useNavigate()
   const { data: buses, loading, error, refresh } = useFleet()
-  const fetchFleetMeta = useCallback(() => api.fleet.meta(), [])
-  const fetchGarages = useCallback(() => api.garages.list(), [])
 
-  const { data: fleetMeta, refresh: refreshFleetMeta } = usePolling<{ bus_count: number; updated_at: string | null }>(
-    fetchFleetMeta,
-    15_000,
-  )
-  const { data: garages } = usePolling<Garage[]>(
-    fetchGarages,
-    86_400_000, // 24 h — garages rarely change
-  )
+  const { data: fleetMeta, refetch: refreshFleetMeta } = useQuery<{ bus_count: number; updated_at: string | null }>({
+    queryKey: ['fleetMeta'],
+    queryFn: () => api.fleet.meta(),
+    refetchInterval: 15_000,
+  })
+
+  const { data: garages } = useQuery<Garage[]>({
+    queryKey: ['garages'],
+    queryFn: () => api.garages.list(),
+    refetchInterval: 86_400_000, // 24 h — garages rarely change
+  })
 
   const [showErrorModal, setShowErrorModal] = useState(false)
   const previousFocusRef = useRef<HTMLElement | null>(null)
@@ -228,7 +230,7 @@ export default function MapPage() {
   const entityResults = useMemo(() => {
     if (entityQuery.length < 2) return []
     const q = entityQuery.toUpperCase()
-    return (buses || []).filter((b) => b.kapino.toUpperCase().includes(q) || (b.plate?.toUpperCase().includes(q) ?? false)).slice(0, 10)
+    return (buses || []).filter((b: any) => b.kapino.toUpperCase().includes(q) || (b.plate?.toUpperCase().includes(q) ?? false)).slice(0, 10)
   }, [buses, entityQuery])
 
   useEffect(() => {
@@ -273,7 +275,7 @@ export default function MapPage() {
 
   const selectedBusSnapshot = useMemo(() => {
     if (!selectedKapino || !buses) return null
-    return buses.find((b) => b.kapino === selectedKapino) ?? null
+    return buses.find((b: any) => b.kapino === selectedKapino) ?? null
   }, [buses, selectedKapino])
 
   const selectedSpeed = selectedDetail?.speed ?? selectedBusSnapshot?.speed ?? null
@@ -301,7 +303,7 @@ export default function MapPage() {
       for (const b of routeBuses) routeKapinos.add(b.kapino.toUpperCase())
     }
 
-    return all.filter((b) => {
+    return all.filter((b: any) => {
       const kUp = b.kapino.toUpperCase()
       // Route match: kapino lookup first, then fuzzy route_code fallback
       if (selectedRoutes.length > 0) {
@@ -414,7 +416,7 @@ export default function MapPage() {
             <div className="absolute top-full left-0 right-0 mt-1 border border-[#333]
                             shadow-2xl overflow-hidden z-10 max-h-48 overflow-y-auto"
                  style={{ background: '#0d0d0d' }}>
-              {entityResults.map((b) => (
+              {entityResults.map((b: any) => (
                 <button
                   key={b.kapino}
                   onClick={() => { addEntity(b.kapino); setShowEntityDropdown(false); }}
@@ -550,15 +552,15 @@ export default function MapPage() {
           ) : null
         })()}
 
-        {filtered.map((b) => (
-          <Marker
-            key={b.kapino}
-            position={[b.latitude, b.longitude]}
-            icon={busIcon}
-            eventHandlers={{ click: () => setSelectedKapino(b.kapino) }}
-          />
-        ))}
-      </MapContainer>
+          {(() => {
+            const busMarkers = filtered.map((b: any) => ({
+              position: [b.latitude, b.longitude] as [number, number],
+              icon: busIcon,
+              onClick: () => setSelectedKapino(b.kapino)
+            }))
+            return <CanvasMarkers markers={busMarkers} />
+          })()}
+        </MapContainer>
 
       {/* Selected bus detail card */}
       {selectedKapino && (

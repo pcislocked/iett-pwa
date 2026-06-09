@@ -3,7 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom'
 import { MapContainer, TileLayer, CircleMarker, Popup, Marker, Polyline, useMap } from 'react-leaflet'
 import * as L from 'leaflet'
 import { useArrivals } from '@/hooks/useArrivals'
-import { usePolling } from '@/hooks/usePolling'
+import { useQuery } from '@tanstack/react-query'
 import { api, type Announcement, type StopDetail, type BusPosition, type Arrival, type Amenities } from '@/api/client'
 import { useFavorites } from '@/hooks/useFavorites'
 import { useBottomBar } from '@/hooks/useBottomBar'
@@ -461,15 +461,19 @@ export default function StopPage() {
 
   const { data: arrivals, loading, error, stale, refresh: refreshArrivals, lastUpdated } = useArrivals(dcode ?? '')
 
-  const { data: routes } = usePolling<string[]>(
-    useMemo(() => () => api.stops.routes(dcode ?? ''), [dcode]),
-    300_000,
-  )
+  const { data: routes } = useQuery<string[]>({
+    queryKey: ['routesAtStop', dcode],
+    queryFn: () => api.stops.routes(dcode ?? ''),
+    refetchInterval: 300_000,
+    enabled: !!dcode,
+  })
 
-  const { data: stopDetail } = usePolling<StopDetail>(
-    useMemo(() => () => api.stops.detail(dcode ?? ''), [dcode]),
-    3_600_000,
-  )
+  const { data: stopDetail } = useQuery<StopDetail>({
+    queryKey: ['stopDetail', dcode],
+    queryFn: () => api.stops.detail(dcode ?? ''),
+    refetchInterval: 3_600_000,
+    enabled: !!dcode,
+  })
 
   // Ordered unique routes from live arrivals (used for colour assignment)
   const arrivalRouteOrder = useMemo(() => {
@@ -561,7 +565,12 @@ export default function StopPage() {
     return combined
   }, [allRoutesAtStop])
 
-  const { data: polledAnnouncements } = usePolling<RouteAnnouncement[]>(annsFetcher, 300_000)
+  const { data: polledAnnouncements } = useQuery<RouteAnnouncement[]>({
+    queryKey: ['stopAnnouncements', dcode, allRoutesAtStop.join(',')],
+    queryFn: annsFetcher,
+    refetchInterval: 300_000,
+    enabled: !!dcode && allRoutesAtStop.length > 0,
+  })
   const announcements = polledAnnouncements ?? []
 
   const { isFavorite, toggle } = useFavorites()
@@ -682,7 +691,7 @@ export default function StopPage() {
 {/* ── Hatlar tab ────────────────────────────────────────────────────── */}
       {activeTab === 'hatlar' && (
         <div className="flex-1 overflow-y-auto px-4 py-3">
-          {routes === null ? (
+          {routes === null || routes === undefined ? (
             <p className="text-center text-slate-500 mt-10 text-sm">Yükleniyor...</p>
           ) : routes.length === 0 ? (
             <p className="text-center text-slate-500 mt-10 text-sm">Bu durakta kayıtlı hat bulunamadı.</p>
@@ -949,7 +958,7 @@ export default function StopPage() {
                 : 'yükleniyor...'}
             </span>
             <button
-              onClick={refreshArrivals}
+              onClick={() => refreshArrivals()}
               className="flex items-center gap-1 text-[11px] text-slate-400 hover:text-white transition-colors active:scale-95"
             >
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
