@@ -23,7 +23,7 @@ type Phase = 'idle' | 'consent' | 'locating' | 'loading' | 'done' | 'error'
 function MapPanner({ lat, lon }: { lat: number; lon: number }) {
   const map = useMap()
   useEffect(() => {
-    map.panTo([lat, lon], { animate: true, duration: 0.35 })
+    map.panTo([lat, lon], { animate: true, duration: 0.2 })
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lat, lon])
   return null
