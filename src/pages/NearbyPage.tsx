@@ -161,6 +161,14 @@ export default function NearbyPage() {
   // RAF token to deduplicate rapid scroll events.
   const scrollRafRef = useRef<number | null>(null)
 
+  useEffect(() => {
+    return () => {
+      if (scrollRafRef.current !== null) {
+        cancelAnimationFrame(scrollRafRef.current)
+      }
+    }
+  }, [])
+
   // When selectedCode changes from a map click, scroll the list to that item.
   // Guards against running during list-driven changes (isProgrammaticScrollRef
   // is only true when the change originated from handleMapSelect).
@@ -278,10 +286,15 @@ export default function NearbyPage() {
       setAllStops(base)
       setSelectedCode(base[0]?.stop_code ?? null)
       setPhase('done')
-      // Silently enrich route pills in the background
-      const enriched = await Promise.allSettled(
-        nearby.map((s) => api.stops.routes(s.stop_code)),
-      )
+      // Silently enrich route pills in the background in chunks of 5 to prevent unbounded concurrency
+      const enriched: PromiseSettledResult<string[]>[] = []
+      for (let i = 0; i < nearby.length; i += 5) {
+        const chunk = nearby.slice(i, i + 5)
+        const results = await Promise.allSettled(
+          chunk.map((s) => api.stops.routes(s.stop_code))
+        )
+        enriched.push(...results)
+      }
       // Build stop_code → routes map (enriched is indexed by original nearby order)
       const routeMap = new Map(
         nearby.map((s, i) => [

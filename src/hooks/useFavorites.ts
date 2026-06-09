@@ -25,7 +25,11 @@ function load(): Favorite[] {
 }
 
 function save(favs: Favorite[]) {
-  localStorage.setItem(KEY, JSON.stringify(favs))
+  try {
+    localStorage.setItem(KEY, JSON.stringify(favs))
+  } catch (e) {
+    console.warn('Failed to save favorites to localStorage', e)
+  }
 }
 
 function sameItem(a: Favorite, b: Favorite): boolean {
