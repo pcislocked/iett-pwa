@@ -649,7 +649,7 @@ export default function StopPage() {
               </span>
             </div>
             {stopDetail && stopDetail.direction && (
-              <p className="text-[11px] text-slate-500 truncate leading-tight">{stopDetail.direction}</p>
+              <p className="text-[11px] text-slate-400 truncate leading-tight uppercase tracking-wider">{stopDetail.direction} YÖNÜ</p>
             )}
             {stale && <p className="text-[11px] text-amber-400">⚠ Son güncelleme başarısız</p>}
           </div>
