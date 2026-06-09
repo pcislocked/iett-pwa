@@ -34,6 +34,8 @@ export default function CanvasMarkers({ markers }: CanvasMarkersProps) {
       const marker = L.marker(m.position, { icon: m.icon })
       if (m.onClick) {
         marker.on('click', m.onClick)
+        // @ts-ignore
+        marker._originalOnClick = m.onClick
       }
       return marker
     })
@@ -43,7 +45,11 @@ export default function CanvasMarkers({ markers }: CanvasMarkersProps) {
 
     return () => {
       if (ciLayerRef.current && markersRef.current.length > 0) {
-        markersRef.current.forEach(m => ciLayerRef.current.removeMarker(m, false))
+        markersRef.current.forEach(m => {
+          // @ts-ignore
+          if (m._originalOnClick) m.off('click', m._originalOnClick)
+          ciLayerRef.current.removeMarker(m, false)
+        })
         ciLayerRef.current.redraw()
         markersRef.current = []
       }

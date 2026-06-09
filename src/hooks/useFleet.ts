@@ -1,13 +1,13 @@
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, UseQueryResult } from '@tanstack/react-query'
 import { api } from '@/api/client'
 
-function mapQuery(query: any) {
+function mapQuery<T>(query: UseQueryResult<T, any>): { data: T | null; loading: boolean; error: string | null; refresh: () => void; stale: boolean; lastUpdated: Date | null } {
   return {
     data: query.data ?? null,
     loading: query.isLoading || (query.isFetching && !query.data),
     error: query.error ? String(query.error) : null,
     refresh: query.refetch,
-    stale: query.isError && !!query.data,
+    stale: query.isStale,
     lastUpdated: query.dataUpdatedAt ? new Date(query.dataUpdatedAt) : null,
   }
 }

@@ -326,6 +326,14 @@ export default function MapPage() {
     })
   }, [buses, routeBusMap, selectedRoutes, selectedEntities, hasFilter])
 
+  const busMarkers = useMemo(() => {
+    return filtered.map((b: any) => ({
+      position: [b.latitude, b.longitude] as [number, number],
+      icon: busIcon,
+      onClick: () => setSelectedKapino(b.kapino)
+    }))
+  }, [filtered])
+
   return (
     <div className="relative flex flex-col overflow-hidden h-full">
       {/* Filter panel */}
@@ -552,14 +560,7 @@ export default function MapPage() {
           ) : null
         })()}
 
-          {(() => {
-            const busMarkers = filtered.map((b: any) => ({
-              position: [b.latitude, b.longitude] as [number, number],
-              icon: busIcon,
-              onClick: () => setSelectedKapino(b.kapino)
-            }))
-            return <CanvasMarkers markers={busMarkers} />
-          })()}
+          <CanvasMarkers markers={busMarkers} />
         </MapContainer>
 
       {/* Selected bus detail card */}
