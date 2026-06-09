@@ -4,7 +4,7 @@ import { MapContainer, TileLayer, CircleMarker, Popup, Marker, Polyline, useMap 
 import * as L from 'leaflet'
 import { useArrivals } from '@/hooks/useArrivals'
 import { useQuery } from '@tanstack/react-query'
-import { api, type Announcement, type StopDetail, type BusPosition, type Arrival, type Amenities } from '@/api/client'
+import { api, type Announcement, RouteAnnouncement, type StopDetail, type BusPosition, type Arrival, type Amenities } from '@/api/client'
 import { useFavorites } from '@/hooks/useFavorites'
 import { useBottomBar } from '@/hooks/useBottomBar'
 import { PINNED_STOPS_MAX, useUserPrefs } from '@/hooks/useUserPrefs'
@@ -569,8 +569,9 @@ export default function StopPage() {
   const annsFetcher = useCallback(async ({ signal }: { signal: AbortSignal }) => {
     if (!allRoutesAtStop.length) return []
     try {
-      return await api.routes.batchAnnouncements(allRoutesAtStop)
-    } catch (e) {
+      return await api.routes.batchAnnouncements(allRoutesAtStop, { signal })
+    } catch (e: any) {
+      if (e.name === 'AbortError') throw e;
       return [{
         route_code: 'SİSTEM',
         route_name: '',
