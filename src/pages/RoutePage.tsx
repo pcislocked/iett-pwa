@@ -3,7 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom'
 import { MapContainer, TileLayer, Marker, Popup, CircleMarker } from 'react-leaflet'
 import * as L from 'leaflet'
 import { useRouteBuses } from '@/hooks/useFleet'
-import { usePolling } from '@/hooks/usePolling'
+import { useQuery } from '@tanstack/react-query'
 import { api, type RouteStop, type ScheduledDeparture, type Announcement, type RouteMetadata } from '@/api/client'
 import { useFavorites } from '@/hooks/useFavorites'
 import { getDirectionLabel } from '@/utils/routeDirectionLabels'
@@ -198,10 +198,10 @@ export default function RoutePage() {
   const announceFetcher = useMemo(() => () => api.routes.announcements(hatKodu ?? ''), [hatKodu])
   const metaFetcher = useMemo(() => () => api.routes.metadata(hatKodu ?? ''), [hatKodu])
 
-  const { data: stops, error: stopsError, refresh: refreshStops } = usePolling<RouteStop[]>(stopsFetcher, 300_000)
-  const { data: schedule, error: scheduleError, refresh: refreshSchedule } = usePolling<ScheduledDeparture[]>(scheduleFetcher, 300_000)
-  const { data: announcements, error: announcementsError, refresh: refreshAnnouncements } = usePolling<Announcement[]>(announceFetcher, 300_000)
-  const { data: metadata } = usePolling<RouteMetadata[]>(metaFetcher, 600_000)
+  const { data: stops, error: stopsError, refetch: refreshStops } = useQuery<RouteStop[]>({ queryKey: ['stops', hatKodu], queryFn: stopsFetcher, refetchInterval: 300_000, enabled: !!hatKodu })
+  const { data: schedule, error: scheduleError, refetch: refreshSchedule } = useQuery<ScheduledDeparture[]>({ queryKey: ['schedule', hatKodu], queryFn: scheduleFetcher, refetchInterval: 300_000, enabled: !!hatKodu })
+  const { data: announcements, error: announcementsError, refetch: refreshAnnouncements } = useQuery<Announcement[]>({ queryKey: ['announcements', hatKodu], queryFn: announceFetcher, refetchInterval: 300_000, enabled: !!hatKodu })
+  const { data: metadata } = useQuery<RouteMetadata[]>({ queryKey: ['metadata', hatKodu], queryFn: metaFetcher, refetchInterval: 600_000, enabled: !!hatKodu })
 
   // Unique direction keys from stops — "G" / "D"
   const stopsDirections = useMemo(
@@ -318,7 +318,7 @@ export default function RoutePage() {
 
         {/* Timetable tab */}
         {tab === 'schedule' && (
-          <TimetableView schedule={schedule} scheduleError={scheduleError} onRetry={refreshSchedule} metadata={metadata} />
+          <TimetableView schedule={schedule ?? null} scheduleError={scheduleError ? String(scheduleError) : null} onRetry={refreshSchedule} metadata={metadata ?? null} />
         )}
 
         {/* Map tab */}
@@ -345,7 +345,7 @@ export default function RoutePage() {
             {/* Bus direction legend */}
             {buses && buses.length > 0 && (
               <div className="flex items-center gap-4 px-1">
-                {[...new Map(buses.filter(b => b.direction_letter).map(b => [b.direction_letter, b])).values()].map((b) => (
+                {[...new Map(buses.filter((b: any) => b.direction_letter).map((b: any) => [b.direction_letter, b])).values()].map((b: any) => (
                   <div key={b.direction_letter} className="flex items-center gap-1.5">
                     <div className="w-3 h-3 rounded-full border border-white/40 shrink-0" style={{ background: b.direction_letter === 'G' ? '#2563eb' : '#f59e0b' }} />
                     <span className="text-[10px] text-[#888] truncate">{b.direction ?? b.direction_letter}</span>
@@ -370,8 +370,8 @@ export default function RoutePage() {
                   />
                 ))}
                 {buses
-                  ?.filter((b) => !effectiveMapDir || b.direction_letter === effectiveMapDir)
-                  .map((b) => (
+                  ?.filter((b: any) => !effectiveMapDir || b.direction_letter === effectiveMapDir)
+                  .map((b: any) => (
                     <Marker
                       key={b.kapino}
                       position={[b.latitude, b.longitude]}

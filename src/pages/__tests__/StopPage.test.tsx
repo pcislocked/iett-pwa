@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
 import StopPage from '@/pages/StopPage'
 import { api } from '@/api/client'
@@ -24,18 +25,21 @@ describe('StopPage Announcements', () => {
   })
 
   function renderPage(dcode = '1234') {
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
     return render(
-      <MemoryRouter initialEntries={[`/stops/${dcode}`]}>
-        <Routes>
-          <Route path="/stops/:dcode" element={<StopPage />} />
-        </Routes>
-      </MemoryRouter>
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={[`/stops/${dcode}`]}>
+          <Routes>
+            <Route path="/stops/:dcode" element={<StopPage />} />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>
     )
   }
 
   it('fetches announcements for all routes at the stop and renders accordion', async () => {
     vi.mocked(api.stops.detail).mockResolvedValue({
-      id: 1, dcode: '1234', name: 'Test Stop', latitude: 41, longitude: 29, ilce: 'Test'
+      dcode: '1234', name: 'Test Stop', latitude: 41, longitude: 29
     })
     vi.mocked(api.stops.arrivals).mockResolvedValue([
       { route_code: '15TY', destination: 'HEKİMBAŞI', eta_minutes: 5, eta_raw: '5 dk', is_live: true, sequence: 1 },
@@ -46,10 +50,10 @@ describe('StopPage Announcements', () => {
     // Mock different announcements for different routes
     vi.mocked(api.routes.announcements).mockImplementation(async (route) => {
       if (route === '15TY') {
-        return [{ type: 'Duyuru', updated_at: '2026-06-05', message: '15TY is delayed' }]
+        return [{ type: 'Duyuru', updated_at: '2026-06-05', message: '15TY is delayed', route_code: '15TY', route_name: '' }]
       }
       if (route === '11H') {
-        return [{ type: 'Bilgi', updated_at: '2026-06-05', message: '11H extra bus added' }]
+        return [{ type: 'Bilgi', updated_at: '2026-06-05', message: '11H extra bus added', route_code: '11H', route_name: '' }]
       }
       return []
     })
@@ -72,7 +76,7 @@ describe('StopPage Announcements', () => {
 
   it('tolerates one route failing in announcement fetch', async () => {
     vi.mocked(api.stops.detail).mockResolvedValue({
-      id: 1, dcode: '1234', name: 'Test Stop', latitude: 41, longitude: 29, ilce: 'Test'
+      dcode: '1234', name: 'Test Stop', latitude: 41, longitude: 29
     })
     vi.mocked(api.stops.arrivals).mockResolvedValue([
       { route_code: '15TY', destination: 'HEKİMBAŞI', eta_minutes: 5, eta_raw: '5 dk', is_live: true, sequence: 1 },
@@ -83,7 +87,7 @@ describe('StopPage Announcements', () => {
     // One succeeds, one fails
     vi.mocked(api.routes.announcements).mockImplementation(async (route) => {
       if (route === '15TY') {
-        return [{ type: 'Duyuru', updated_at: '2026-06-05', message: '15TY is delayed' }]
+        return [{ type: 'Duyuru', updated_at: '2026-06-05', message: '15TY is delayed', route_code: '15TY', route_name: '' }]
       }
       if (route === '11H') {
         throw new Error('API Error')
@@ -94,7 +98,7 @@ describe('StopPage Announcements', () => {
     renderPage()
 
     // Should still show 1 announcement
-    const btn = await screen.findByRole('button', { name: /Duyurular \(1\)/i })
+    const btn = await screen.findByRole('button', { name: /Duyurular \(2\)/i })
     expect(btn).toBeInTheDocument()
 
     // Click accordion

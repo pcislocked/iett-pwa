@@ -1,12 +1,32 @@
-import { useMemo } from 'react'
-import { usePolling } from './usePolling'
-import { api, type BusPosition } from '@/api/client'
+import { useQuery, UseQueryResult } from '@tanstack/react-query'
+import { api } from '@/api/client'
+
+function mapQuery<T>(query: UseQueryResult<T, any>): { data: T | null; loading: boolean; error: string | null; refresh: () => void; stale: boolean; lastUpdated: Date | null } {
+  return {
+    data: query.data ?? null,
+    loading: query.isLoading || (query.isFetching && !query.data),
+    error: query.error ? String(query.error) : null,
+    refresh: query.refetch,
+    stale: query.isStale,
+    lastUpdated: query.dataUpdatedAt ? new Date(query.dataUpdatedAt) : null,
+  }
+}
 
 export function useFleet() {
-  return usePolling<BusPosition[]>(api.fleet.all, 30_000)
+  const query = useQuery({
+    queryKey: ['fleet'],
+    queryFn: () => api.fleet.all(),
+    refetchInterval: 30_000,
+  })
+  return mapQuery(query)
 }
 
 export function useRouteBuses(hatKodu: string) {
-  const fetcher = useMemo(() => () => api.routes.buses(hatKodu), [hatKodu])
-  return usePolling<BusPosition[]>(fetcher, 15_000)
+  const query = useQuery({
+    queryKey: ['route_buses', hatKodu],
+    queryFn: () => api.routes.buses(hatKodu),
+    refetchInterval: 15_000,
+    enabled: !!hatKodu,
+  })
+  return mapQuery(query)
 }

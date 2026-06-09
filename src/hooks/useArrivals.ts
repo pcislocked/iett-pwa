@@ -1,11 +1,19 @@
-import { useMemo } from 'react'
-import { usePolling } from './usePolling'
-import { api, type Arrival } from '@/api/client'
+import { useQuery } from '@tanstack/react-query'
+import { api } from '@/api/client'
 
 export function useArrivals(dcode: string, via?: string) {
-  const fetcher = useMemo(
-    () => () => api.stops.arrivals(dcode, via),
-    [dcode, via],
-  )
-  return usePolling<Arrival[]>(fetcher, 20_000)
+  const query = useQuery({
+    queryKey: ['arrivals', dcode, via],
+    queryFn: () => api.stops.arrivals(dcode, via),
+    refetchInterval: 20_000,
+  })
+
+  return {
+    data: query.data ?? null,
+    loading: query.isLoading || query.isFetching && !query.data,
+    error: query.error ? String(query.error) : null,
+    refresh: query.refetch,
+    stale: query.isError && !!query.data, // Stale if previous data exists but latest fetch failed
+    lastUpdated: query.dataUpdatedAt ? new Date(query.dataUpdatedAt) : null,
+  }
 }
