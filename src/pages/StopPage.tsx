@@ -4,23 +4,14 @@ import { MapContainer, TileLayer, CircleMarker, Popup, Marker, Polyline, useMap 
 import * as L from 'leaflet'
 import { useArrivals } from '@/hooks/useArrivals'
 import { useQuery } from '@tanstack/react-query'
-import { api, type Announcement, type RouteAnnouncement, type StopDetail, type BusPosition, type Arrival, type Amenities } from '@/api/client'
+import { api, type RouteAnnouncement, type StopDetail, type BusPosition, type Arrival, type Amenities } from '@/api/client'
 import { useFavorites } from '@/hooks/useFavorites'
 import { useBottomBar } from '@/hooks/useBottomBar'
 import { PINNED_STOPS_MAX, useUserPrefs } from '@/hooks/useUserPrefs'
 import { etaChipClass } from '@/utils/etaColor'
 import { motion, AnimatePresence } from 'framer-motion'
 
-/** Calls map.invalidateSize() whenever the container height percentage changes. */
-function MapResizer({ heightPct }: { heightPct: number }) {
-  const map = useMap()
-  useEffect(() => {
-    let frameId: number
-    frameId = requestAnimationFrame(() => { map.invalidateSize() })
-    return () => cancelAnimationFrame(frameId)
-  }, [heightPct, map])
-  return null
-}
+
 
 /** Fixed palette for the first 3 routes at this stop — orange, violet, cyan */
 const ROUTE_PALETTE = ['#f97316', '#a855f7', '#22d3ee'] as const

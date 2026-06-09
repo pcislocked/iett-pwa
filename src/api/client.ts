@@ -266,6 +266,10 @@ export interface Announcement {
   message: string
 }
 
+export interface RouteAnnouncement extends Announcement {
+  route_code: string
+}
+
 export interface Garage {
   code: string | null
   name: string
@@ -414,6 +418,7 @@ export const api = {
     stops: (hatKodu: string, init?: RequestInit) => get<RouteStop[]>(`/v1/routes/${hatKodu}/stops`, init),
     schedule: (hatKodu: string, init?: RequestInit) => get<ScheduledDeparture[]>(`/v1/routes/${hatKodu}/schedule`, init),
     announcements: (hatKodu: string, init?: RequestInit) => get<Announcement[]>(`/v1/routes/${hatKodu}/announcements`, init),
+    batchAnnouncements: (routes: string[], init?: RequestInit) => get<RouteAnnouncement[]>(`/v1/routes/announcements/batch?routes=${encodeURIComponent(routes.join(','))}`, init),
   },
   garages: {
     list: (init?: RequestInit) => get<Garage[]>('/v1/garages', init),
