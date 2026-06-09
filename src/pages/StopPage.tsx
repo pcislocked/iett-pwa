@@ -562,7 +562,57 @@ export default function StopPage() {
     return m
   }, [arrivalRouteOrder, routes, orderedForColors])
 
-  
+  type RouteAnnouncement = Announcement & { route_code: string }
+
+  // Announcements for ALL routes present at this stop
+  const allRoutesAtStop = useMemo(() => Array.from(new Set([...(Array.isArray(routes) ? routes : []), ...arrivalRouteOrder])).sort(), [routes, arrivalRouteOrder])
+  const annsFetcher = useCallback(async ({ signal }: { signal: AbortSignal }) => {
+    if (!allRoutesAtStop.length) return []
+    const combined: RouteAnnouncement[] = []
+    
+    let totalRequests = 0
+    let failedRequests = 0
+    
+    const chunkSize = 5
+    for (let i = 0; i < allRoutesAtStop.length; i += chunkSize) {
+      if (signal.aborted) throw new Error('Aborted')
+      const chunk = allRoutesAtStop.slice(i, i + chunkSize)
+      totalRequests += chunk.length
+      const results = await Promise.allSettled(chunk.map(r => api.routes.announcements(r)))
+      
+      results.forEach((res, j) => {
+        if (res.status === 'fulfilled') {
+          res.value.forEach(a => combined.push({ ...a, route_code: chunk[j] }))
+        } else {
+          failedRequests++
+        }
+      })
+    }
+    
+    if (failedRequests > 0) {
+      if (failedRequests === totalRequests) {
+        throw new Error('All announcement requests failed')
+      }
+      combined.push({
+        route_code: 'SİSTEM',
+        route_name: '',
+        type: 'Uyarı',
+        message: 'Bazı hatların duyuruları yüklenirken geçici bir hata oluştu.',
+        updated_at: new Date().toLocaleTimeString('tr-TR')
+      })
+    }
+    
+    return combined
+  }, [allRoutesAtStop])
+
+  const { data: polledAnnouncements } = useQuery<RouteAnnouncement[]>({
+    queryKey: ['stopAnnouncements', dcode, allRoutesAtStop.join(',')],
+    queryFn: annsFetcher,
+    refetchInterval: 300_000,
+    enabled: !!dcode && allRoutesAtStop.length > 0,
+    placeholderData: (prev) => prev,
+  })
+  const announcements = polledAnnouncements ?? []
 
   const { isFavorite, toggle } = useFavorites()
   const { prefs, isPinned, pinStop, unpinStop } = useUserPrefs()
