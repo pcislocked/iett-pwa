@@ -4,7 +4,7 @@ import { MapContainer, TileLayer, CircleMarker, Popup, Marker, Polyline, useMap 
 import * as L from 'leaflet'
 import { useArrivals } from '@/hooks/useArrivals'
 import { useQuery } from '@tanstack/react-query'
-import { api, type Announcement, RouteAnnouncement, type StopDetail, type BusPosition, type Arrival, type Amenities } from '@/api/client'
+import { api, type Announcement, type RouteAnnouncement, type StopDetail, type BusPosition, type Arrival, type Amenities } from '@/api/client'
 import { useFavorites } from '@/hooks/useFavorites'
 import { useBottomBar } from '@/hooks/useBottomBar'
 import { PINNED_STOPS_MAX, useUserPrefs } from '@/hooks/useUserPrefs'
@@ -98,7 +98,7 @@ function AutoFitBuses({
     lastFilterKey.current = filterKey
 
     if (withPos.length === 0) {
-      map.flyTo([stopLat, stopLon], 16, { animate: !window.matchMedia('(prefers-reduced-motion: reduce)').matches, duration: 0.2 })
+      map.flyTo([stopLat, stopLon], 16, { animate: !window.matchMedia?.('(prefers-reduced-motion: reduce)').matches, duration: 0.2 })
       return
     }
 
@@ -107,7 +107,7 @@ function AutoFitBuses({
       ...withPos.map((b): L.LatLngExpression => [b.latitude, b.longitude]),
     ]
     const bounds = L.latLngBounds(points)
-    map.flyToBounds(bounds, { padding: [48, 48], maxZoom: 16, animate: !window.matchMedia('(prefers-reduced-motion: reduce)').matches, duration: 0.2 })
+    map.flyToBounds(bounds, { padding: [48, 48], maxZoom: 16, animate: !window.matchMedia?.('(prefers-reduced-motion: reduce)').matches, duration: 0.2 })
   }, [filterKey, buses, stopLat, stopLon, map])
 
   return null
@@ -571,7 +571,7 @@ export default function StopPage() {
     try {
       return await api.routes.batchAnnouncements(allRoutesAtStop, { signal })
     } catch (e: any) {
-      if (e.name === 'AbortError') throw e;
+      if (e?.name === 'AbortError') throw e;
       return [{
         route_code: 'SİSTEM',
         route_name: '',
