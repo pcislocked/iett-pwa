@@ -9,6 +9,7 @@ import { useFavorites } from '@/hooks/useFavorites'
 import { useBottomBar } from '@/hooks/useBottomBar'
 import { PINNED_STOPS_MAX, useUserPrefs } from '@/hooks/useUserPrefs'
 import { etaChipClass } from '@/utils/etaColor'
+import { motion, AnimatePresence } from 'framer-motion'
 
 /** Calls map.invalidateSize() whenever the container height percentage changes. */
 function MapResizer({ heightPct }: { heightPct: number }) {
@@ -69,30 +70,45 @@ function FitBoundsEffect({ bounds }: { bounds: [[number, number], [number, numbe
  * contains at least one entry.  Falls back to the default center/zoom when
  * no buses have live positions.
  */
-function FitToBusesOnLoad({
+function AutoFitBuses({
   stopLat,
   stopLon,
   buses,
+  filterKey,
 }: {
   stopLat: number
   stopLon: number
   buses: BusPosition[]
+  filterKey: string
 }) {
   const map = useMap()
-  const firedRef = useRef(false)
+  const lastFilterKey = useRef<string | null>(null)
+  const hasFitOnce = useRef(false)
 
   useEffect(() => {
-    if (firedRef.current) return
     const withPos = buses.filter((b) => b.latitude != null && b.longitude != null).slice(0, 3)
-    if (withPos.length === 0) return  // wait for data
-    firedRef.current = true
+    
+    const isFilterChange = lastFilterKey.current !== filterKey
+    const isInitialData = !hasFitOnce.current && withPos.length > 0
+    
+    if (withPos.length > 0) hasFitOnce.current = true
+
+    if (!isFilterChange && !isInitialData) return
+
+    lastFilterKey.current = filterKey
+
+    if (withPos.length === 0) {
+      map.flyTo([stopLat, stopLon], 16, { animate: true, duration: 0.8 })
+      return
+    }
+
     const points: L.LatLngExpression[] = [
       [stopLat, stopLon],
       ...withPos.map((b): L.LatLngExpression => [b.latitude, b.longitude]),
     ]
     const bounds = L.latLngBounds(points)
-    map.fitBounds(bounds, { padding: [48, 48], maxZoom: 16 })
-  }, [buses, stopLat, stopLon, map])
+    map.flyToBounds(bounds, { padding: [48, 48], maxZoom: 16, animate: true, duration: 0.8 })
+  }, [filterKey, buses, stopLat, stopLon, map])
 
   return null
 }
@@ -149,7 +165,9 @@ function BusDetailSheet({
 
   useEffect(() => {
     previouslyFocused.current = document.activeElement
-    // Delay initial focus slightly to allow Leaflet map to mount and not steal focus
+    const root = document.getElementById('root')
+    if (root) root.setAttribute('aria-hidden', 'true')
+    
     const timer = setTimeout(() => {
       if (dialogRef.current) {
         const firstBtn = dialogRef.current.querySelector('button')
@@ -158,6 +176,7 @@ function BusDetailSheet({
     }, 50)
     return () => {
       clearTimeout(timer)
+      if (root) root.removeAttribute('aria-hidden')
       if (previouslyFocused.current instanceof HTMLElement) {
         previouslyFocused.current.focus()
       }
@@ -394,22 +413,25 @@ export default function StopPage() {
   const [activeTab, setActiveTab] = useState<'gelis' | 'hatlar' | 'bilgi'>('gelis')
 
   // Sliding panel state — map height as percentage of split container
-  const [mapHeightPct, setMapHeightPct] = useState(40)
+  const mapHeightPctRef = useRef(40)
+  const mapContainerRef = useRef<HTMLDivElement>(null)
   const splitContainerRef = useRef<HTMLDivElement>(null)
   const dragState = useRef<{ startY: number; startPct: number } | null>(null)
 
   const onHandlePointerDown = useCallback((e: React.PointerEvent) => {
     e.currentTarget.setPointerCapture(e.pointerId)
-    dragState.current = { startY: e.clientY, startPct: mapHeightPct }
-  }, [mapHeightPct])
+    dragState.current = { startY: e.clientY, startPct: mapHeightPctRef.current }
+  }, [])
 
   const onHandlePointerMove = useCallback((e: React.PointerEvent) => {
-    if (!dragState.current || !splitContainerRef.current) return
+    if (!dragState.current || !splitContainerRef.current || !mapContainerRef.current) return
     const containerH = splitContainerRef.current.offsetHeight
     const dy = e.clientY - dragState.current.startY
     const deltaPct = (dy / containerH) * 100
     const newPct = Math.min(65, Math.max(15, dragState.current.startPct + deltaPct))
-    setMapHeightPct(newPct)
+    mapHeightPctRef.current = newPct
+    mapContainerRef.current.style.height = `${newPct}%`
+    window.dispatchEvent(new Event('resize'))
   }, [])
 
   const onHandlePointerUp = useCallback(() => { dragState.current = null }, [])
@@ -485,6 +507,16 @@ export default function StopPage() {
     return result
   }, [arrivals])
 
+  const orderedForColors = useMemo(() => {
+    if (activeRoutes.size === 0) return arrivalRouteOrder
+    return Array.from(activeRoutes)
+  }, [activeRoutes, arrivalRouteOrder])
+
+  const filteredRouteBuses = useMemo(() => {
+    if (activeRoutes.size === 0) return routeBuses
+    return routeBuses.filter(b => activeRoutes.has(b.route_code ?? ''))
+  }, [routeBuses, activeRoutes])
+
   // Full fleet polled every 30 s via the shared cache — no per-route calls needed.
   // Derive bus positions from arrivals (which already carry lat/lon from YBS response).
   const routeBuses = useMemo<BusPosition[]>(
@@ -512,22 +544,29 @@ export default function StopPage() {
     [arrivals],
   )
 
+  // Global cache for icons to prevent Leaflet DOM churn
+  const routeIconCacheRef = useRef<Map<string, L.DivIcon>>(new Map())
+
   // One cached Leaflet DivIcon per route_code — avoids creating a new DOM object every render.
-  // Build for ALL routes at this stop (arrivalRouteOrder + routes fallback).
   const routeIconMap = useMemo(() => {
     const m = new Map<string, L.DivIcon>()
     const allRouteSet = new Set([...arrivalRouteOrder, ...(routes ?? [])])
     allRouteSet.forEach((r) => {
-      m.set(r, makeBusIcon(getRouteColor(r, arrivalRouteOrder)))
+      const color = getRouteColor(r, orderedForColors)
+      const cacheKey = `${r}-${color}`
+      if (!routeIconCacheRef.current.has(cacheKey)) {
+        routeIconCacheRef.current.set(cacheKey, makeBusIcon(color))
+      }
+      m.set(r, routeIconCacheRef.current.get(cacheKey)!)
     })
     return m
-  }, [arrivalRouteOrder, routes])
+  }, [arrivalRouteOrder, routes, orderedForColors])
 
   type RouteAnnouncement = Announcement & { route_code: string }
 
   // Announcements for ALL routes present at this stop
   const allRoutesAtStop = useMemo(() => Array.from(new Set([...(Array.isArray(routes) ? routes : []), ...arrivalRouteOrder])).sort(), [routes, arrivalRouteOrder])
-  const annsFetcher = useCallback(async () => {
+  const annsFetcher = useCallback(async ({ signal }: { signal: AbortSignal }) => {
     if (!allRoutesAtStop.length) return []
     const combined: RouteAnnouncement[] = []
     
@@ -536,6 +575,7 @@ export default function StopPage() {
     
     const chunkSize = 5
     for (let i = 0; i < allRoutesAtStop.length; i += chunkSize) {
+      if (signal.aborted) throw new Error('Aborted')
       const chunk = allRoutesAtStop.slice(i, i + chunkSize)
       totalRequests += chunk.length
       const results = await Promise.allSettled(chunk.map(r => api.routes.announcements(r)))
@@ -570,6 +610,7 @@ export default function StopPage() {
     queryFn: annsFetcher,
     refetchInterval: 300_000,
     enabled: !!dcode && allRoutesAtStop.length > 0,
+    placeholderData: (prev) => prev,
   })
   const announcements = polledAnnouncements ?? []
 
@@ -706,7 +747,7 @@ export default function StopPage() {
                 >
                   <span
                     className="text-[11px] font-bold px-2 py-0.5 rounded font-mono text-white"
-                    style={{ backgroundColor: getRouteColor(r, arrivalRouteOrder) }}
+                    style={{ backgroundColor: getRouteColor(r, orderedForColors) }}
                   >
                     {r}
                   </span>
@@ -767,16 +808,17 @@ export default function StopPage() {
               zoom={16}
               style={{ height: '100%', width: '100%' }}
               key={dcode}
+              attributionControl={false}
             >
-              <MapResizer heightPct={mapHeightPct} />
+              {/* MapResizer removed, relying on resize events */}
               <TileLayer
-                attribution='&copy; <a href="https://carto.com/">CartoDB</a>'
                 url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
               />
-              <FitToBusesOnLoad
+              <AutoFitBuses
                 stopLat={stopDetail.latitude}
                 stopLon={stopDetail.longitude}
-                buses={routeBuses}
+                buses={filteredRouteBuses}
+                filterKey={Array.from(activeRoutes).join(',')}
               />
               <CircleMarker
                 center={[stopDetail.latitude, stopDetail.longitude]}
@@ -794,7 +836,7 @@ export default function StopPage() {
                 </Popup>
               </CircleMarker>
               {/* Live bus markers — clicking opens the rich BusDetailSheet */}
-              {routeBuses.map((b) => {
+              {filteredRouteBuses.map((b) => {
                 const icon = (b.route_code ? routeIconMap.get(b.route_code) : undefined) ?? makeBusIcon('#6b7280')
                 return (
                   <Marker
@@ -899,51 +941,58 @@ export default function StopPage() {
             </div>
           )}
 
-          {filteredArrivals.map((a, i) => {
-            const routeColor = getRouteColor(a.route_code, arrivalRouteOrder)
-            const hasVehicle = !!(a.kapino || a.plate)
-            return (
-              <div
-                key={`${a.route_code}-${a.destination}-${i}`}
-                className="mb-2 shrink-0 card flex items-stretch gap-0 py-0 overflow-hidden hover:border-slate-500 transition-colors"
-              >
-                {/* LEFT half — navigate to route page */}
-                <Link
-                  to={`/routes/${a.route_code}`}
-                  className="flex items-center gap-3 flex-1 min-w-0 py-2 px-3"
+          <AnimatePresence mode="popLayout">
+            {filteredArrivals.map((a, i) => {
+              const routeColor = getRouteColor(a.route_code, orderedForColors)
+              const hasVehicle = !!(a.kapino || a.plate)
+              return (
+                <motion.div
+                  layout
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ duration: 0.2 }}
+                  key={`${a.route_code}-${a.destination}-${a.kapino || a.eta_raw || i}`}
+                  className="mb-2 shrink-0 card flex items-stretch gap-0 py-0 overflow-hidden hover:border-slate-500 transition-colors"
                 >
-                  <div
-                    style={{ backgroundColor: routeColor }}
-                    className="text-white font-mono font-bold text-xs rounded-xl px-2.5 py-1.5 min-w-[50px] text-center shrink-0 leading-tight"
+                  {/* LEFT half — navigate to route page */}
+                  <Link
+                    to={`/routes/${a.route_code}`}
+                    className="flex items-center gap-3 flex-1 min-w-0 py-2 px-3"
                   >
-                    {a.route_code}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs text-slate-200 truncate leading-snug">{a.destination}</p>
-                    {hasVehicle && (
-                      <p className="text-xs text-slate-400 mt-0.5 font-mono tracking-wide">
-                        {[a.plate, a.kapino].filter(Boolean).join('  ·  ')}
-                      </p>
-                    )}
-                  </div>
-                </Link>
+                    <div
+                      style={{ backgroundColor: routeColor }}
+                      className="text-white font-mono font-bold text-xs rounded-xl px-2.5 py-1.5 min-w-[50px] text-center shrink-0 leading-tight"
+                    >
+                      {a.route_code}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-slate-200 truncate leading-snug">{a.destination}</p>
+                      {hasVehicle && (
+                        <p className="text-xs text-slate-400 mt-0.5 font-mono tracking-wide">
+                          {[a.plate, a.kapino].filter(Boolean).join('  ·  ')}
+                        </p>
+                      )}
+                    </div>
+                  </Link>
 
-                {/* Divider */}
-                <div className="w-px bg-surface-muted shrink-0 my-2" />
+                  {/* Divider */}
+                  <div className="w-px bg-surface-muted shrink-0 my-2" />
 
-                {/* RIGHT half — open single-bus sheet */}
-                <button
-                  onClick={() => setSelectedArrival(a)}
-                  className="shrink-0 flex flex-col items-center justify-center gap-1 px-3 py-2 hover:bg-surface-muted/50 transition-colors"
-                >
-                  <EtaChip minutes={a.eta_minutes} raw={a.eta_raw} />
-                  <svg className="w-3 h-3 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 6.75V15m6-6v8.25m.503 3.498l4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 00-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0z" />
-                  </svg>
-                </button>
-              </div>
-            )
-          })}
+                  {/* RIGHT half — open single-bus sheet */}
+                  <button
+                    onClick={() => setSelectedArrival(a)}
+                    className="shrink-0 flex flex-col items-center justify-center gap-1 px-3 py-2 hover:bg-surface-muted/50 transition-colors"
+                  >
+                    <EtaChip minutes={a.eta_minutes} raw={a.eta_raw} />
+                    <svg className="w-3 h-3 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 6.75V15m6-6v8.25m.503 3.498l4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 00-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0z" />
+                    </svg>
+                  </button>
+                </motion.div>
+              )
+            })}
+          </AnimatePresence>
 
 
         </div>
@@ -967,16 +1016,7 @@ export default function StopPage() {
               Yenile
             </button>
           </div>
-          {stopDetail?.direction && (
-            <div className="px-4 pt-2">
-              <span className="inline-flex items-center gap-1 text-[11px] text-slate-400 bg-surface-muted px-2 py-0.5 rounded-md">
-                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-                </svg>
-                {stopDetail.direction}
-              </span>
-            </div>
-          )}
+
           {(routes ?? []).length > 0 && (
             <div className="px-4 py-2 flex gap-2 overflow-x-auto no-scrollbar">
               <button
@@ -990,7 +1030,7 @@ export default function StopPage() {
                 Tümü
               </button>
               {(routes ?? []).map((r) => {
-                const color = getRouteColor(r, arrivalRouteOrder)
+                const color = getRouteColor(r, orderedForColors)
                 const isActive = activeRoutes.has(r)
                 const isTop3 =
                   arrivalRouteOrder.includes(r) &&
