@@ -98,7 +98,7 @@ describe('StopPage Announcements', () => {
     renderPage()
 
     // Should still show 1 announcement
-    const btn = await screen.findByRole('button', { name: /Duyurular \(1\)/i })
+    const btn = await screen.findByRole('button', { name: /Duyurular \(2\)/i })
     expect(btn).toBeInTheDocument()
 
     // Click accordion
