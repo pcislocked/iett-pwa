@@ -384,6 +384,12 @@ export interface AracMissionsResponse {
 function aracAuthHeaders(session: AracSessionCredentials): HeadersInit {
   return {
     'X-Arac-Session-Id': session.sessionId,
+    'X-Arac-Session-Key': session.sessionKey,
+  }
+}
+
+// ─── API calls ────────────────────────────────────────────────────────────────
+
 export const api = {
   fleet: {
     all: (init?: RequestInit) => get<BusPosition[]>('/v1/fleet', init),
@@ -398,7 +404,7 @@ export const api = {
       get<NearbyStop[]>(`/v1/stops/nearby?lat=${lat}&lon=${lon}&radius=${radius}`, init),
     detail: (dcode: string, init?: RequestInit) => get<StopDetail>(`/v1/stops/${encodeURIComponent(dcode)}`, init),
     arrivals: (dcode: string, via?: string, init?: RequestInit) =>
-      get<Arrival[]>(`/v1/stops/${dcode}/arrivals${via ? \`?via=${via}\` : ''}`, init),
+      get<Arrival[]>(`/v1/stops/${dcode}/arrivals${via ? `?via=${via}` : ''}`, init),
     routes: (dcode: string, init?: RequestInit) => get<string[]>(`/v1/stops/${dcode}/routes`, init),
   },
   routes: {
