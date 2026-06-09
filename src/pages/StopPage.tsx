@@ -512,11 +512,6 @@ export default function StopPage() {
     return Array.from(activeRoutes)
   }, [activeRoutes, arrivalRouteOrder])
 
-  const filteredRouteBuses = useMemo(() => {
-    if (activeRoutes.size === 0) return routeBuses
-    return routeBuses.filter(b => activeRoutes.has(b.route_code ?? ''))
-  }, [routeBuses, activeRoutes])
-
   // Full fleet polled every 30 s via the shared cache — no per-route calls needed.
   // Derive bus positions from arrivals (which already carry lat/lon from YBS response).
   const routeBuses = useMemo<BusPosition[]>(
@@ -543,6 +538,11 @@ export default function StopPage() {
         })),
     [arrivals],
   )
+
+  const filteredRouteBuses = useMemo(() => {
+    if (activeRoutes.size === 0) return routeBuses
+    return routeBuses.filter(b => activeRoutes.has(b.route_code ?? ''))
+  }, [routeBuses, activeRoutes])
 
   // Global cache for icons to prevent Leaflet DOM churn
   const routeIconCacheRef = useRef<Map<string, L.DivIcon>>(new Map())
@@ -801,7 +801,7 @@ export default function StopPage() {
       <div ref={splitContainerRef} className="flex-1 flex flex-col overflow-hidden max-w-2xl w-full mx-auto min-h-0">
 
         {/* Map — dynamically sized via drag */}
-        <div className="shrink-0 border-b border-surface-muted relative" style={{ height: `${mapHeightPct}%` }}>
+        <div className="shrink-0 border-b border-surface-muted relative" style={{ height: `${mapHeightPctRef.current}%` }}>
           {stopDetail && stopDetail.latitude != null && stopDetail.longitude != null ? (
             <MapContainer
               center={[stopDetail.latitude, stopDetail.longitude]}
