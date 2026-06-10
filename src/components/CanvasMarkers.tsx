@@ -19,7 +19,8 @@ export default function CanvasMarkers({ markers }: CanvasMarkersProps) {
   useEffect(() => {
     if (!ciLayerRef.current) {
       // @ts-expect-error L.canvasIconLayer is added by leaflet-canvas-marker
-      ciLayerRef.current = L.canvasIconLayer({}).addTo(map)
+      const createLayer = (window as any).L.canvasIconLayer || (L as any).canvasIconLayer
+      ciLayerRef.current = createLayer({}).addTo(map)
     }
 
     const layer = ciLayerRef.current
