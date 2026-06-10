@@ -41,7 +41,9 @@ export default function CanvasMarkers({ markers }: CanvasMarkersProps) {
       return marker
     })
 
-    layer.addLayers(newMarkers)
+    if (newMarkers.length > 0) {
+      layer.addLayers(newMarkers)
+    }
     markersRef.current = newMarkers
 
     return () => {
