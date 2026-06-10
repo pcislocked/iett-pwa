@@ -7,6 +7,7 @@ import { useQuery } from '@tanstack/react-query'
 import { api, type RouteStop, type ScheduledDeparture, type Announcement, type RouteMetadata } from '@/api/client'
 import { useFavorites } from '@/hooks/useFavorites'
 import { getDirectionLabel } from '@/utils/routeDirectionLabels'
+import { VariantSelect } from '@/components/VariantSelect'
 
 const busIconG = L.divIcon({
   className: '',
@@ -186,6 +187,8 @@ export default function RoutePage() {
   const [tab, setTab] = useState<Tab>('schedule')
   const [stopsDir, setStopsDir] = useState('')
   const [mapDir, setMapDir] = useState('')
+  const [stopsVariant, setStopsVariant] = useState('')
+  const [mapVariant, setMapVariant] = useState('')
 
   const { data: buses, stale } = useRouteBuses(hatKodu ?? '')
 
@@ -199,23 +202,38 @@ export default function RoutePage() {
   const { data: announcements, error: announcementsError, refetch: refreshAnnouncements } = useQuery<Announcement[]>({ queryKey: ['announcements', hatKodu], queryFn: announceFetcher, refetchInterval: 300_000, enabled: !!hatKodu })
   const { data: metadata } = useQuery<RouteMetadata[]>({ queryKey: ['metadata', hatKodu], queryFn: metaFetcher, refetchInterval: 600_000, enabled: !!hatKodu })
 
-  // Unique direction keys from stops â€” "G" / "D"
+  // Unique direction keys from stops — "G" / "D"
   const stopsDirections = useMemo(
     () => [...new Set((stops ?? []).map((s) => s.direction))].sort(),
     [stops],
   )
-  const dirLabel = (d: string) => d === 'G' ? 'GidiÅŸ' : d === 'D' ? 'DÃ¶nÃ¼ÅŸ' : d
+  const dirLabel = (d: string) => d === 'G' ? 'Gidiş' : d === 'D' ? 'Dönüş' : d
 
   const effectiveStopsDir = stopsDirections.includes(stopsDir)
     ? stopsDir
     : (stopsDirections[0] ?? '')
 
-  // Deduplicate by stop_code within the selected direction (ntcapi returns multiple variants)
+  // Get available variants for the effectiveStopsDir
+  const availableStopsVariants = useMemo(() => {
+    if (!metadata) return []
+    const dirNum = effectiveStopsDir === 'G' ? 0 : 1
+    return metadata.filter((m) => m.direction === dirNum).map((m) => m.variant_code)
+  }, [metadata, effectiveStopsDir])
+
+  const effectiveStopsVariant = availableStopsVariants.includes(stopsVariant)
+    ? stopsVariant
+    : (availableStopsVariants[0] ?? '')
+
+  // Deduplicate by stop_code within the selected direction AND variant
   const stopsForDir = useMemo(() => {
-    const dirStops = (stops ?? []).filter((s) => !effectiveStopsDir || s.direction === effectiveStopsDir)
+    const dirStops = (stops ?? []).filter((s) => {
+      if (effectiveStopsDir && s.direction !== effectiveStopsDir) return false
+      if (effectiveStopsVariant && s.route_code !== effectiveStopsVariant) return false
+      return true
+    })
     const seen = new Set<string>()
     return dirStops.filter((s) => { if (seen.has(s.stop_code)) return false; seen.add(s.stop_code); return true })
-  }, [stops, effectiveStopsDir])
+  }, [stops, effectiveStopsDir, effectiveStopsVariant])
 
   // Build set of stop_sequence values for buses currently in the active stops direction
   const busAtSequence = useMemo(() => {
@@ -231,11 +249,26 @@ export default function RoutePage() {
   const effectiveMapDir = stopsDirections.includes(mapDir)
     ? mapDir
     : (stopsDirections[0] ?? '')
+
+  const availableMapVariants = useMemo(() => {
+    if (!metadata) return []
+    const dirNum = effectiveMapDir === 'G' ? 0 : 1
+    return metadata.filter((m) => m.direction === dirNum).map((m) => m.variant_code)
+  }, [metadata, effectiveMapDir])
+
+  const effectiveMapVariant = availableMapVariants.includes(mapVariant)
+    ? mapVariant
+    : (availableMapVariants[0] ?? '')
+
   const stopsForMap = useMemo(() => {
-    const dirStops = (stops ?? []).filter((s) => !effectiveMapDir || s.direction === effectiveMapDir)
+    const dirStops = (stops ?? []).filter((s) => {
+      if (effectiveMapDir && s.direction !== effectiveMapDir) return false
+      if (effectiveMapVariant && s.route_code !== effectiveMapVariant) return false
+      return true
+    })
     const seen = new Set<string>()
     return dirStops.filter((s) => { if (seen.has(s.stop_code)) return false; seen.add(s.stop_code); return true })
-  }, [stops, effectiveMapDir])
+  }, [stops, effectiveMapDir, effectiveMapVariant])
 
   const { isFavorite, toggle } = useFavorites()
   const routeName = metadata?.[0]?.full_name ?? hatKodu ?? ''
@@ -266,7 +299,7 @@ export default function RoutePage() {
               {routeName && routeName !== hatKodu && (
                 <span className="text-xs text-slate-400 truncate">{routeName}</span>
               )}
-              {stale && <span className="text-xs text-amber-400 shrink-0">âš </span>}
+              {stale && <span className="text-xs text-amber-400 shrink-0">⚠️</span>}
             </div>
             <p className="text-[11px] text-slate-500">
               {buses?.length ?? 0} aktif araç
@@ -287,7 +320,7 @@ export default function RoutePage() {
           </button>
         </div>
 
-        {/* Tab bar â€” Metro flat style */}
+        {/* Tab bar — Metro flat style */}
         <div role="tablist" aria-label="Sekmeler" className="max-w-2xl mx-auto px-4 pb-0 flex gap-0 overflow-x-auto no-scrollbar border-b border-[#111]">
           {tabs.map(({ id, label, badge }) => (
             <button role="tab" aria-selected={tab === id} key={id} onClick={() => setTab(id)}
@@ -318,7 +351,7 @@ export default function RoutePage() {
         {/* Map tab */}
         {tab === 'map' && (
           <div className="flex flex-col gap-2">
-            {/* Direction pills â€” map tab, Metro flat */}
+            {/* Direction pills — map tab, Metro flat */}
             {stopsDirections.length > 1 && (
               <div role="tablist" aria-label="Gün seçimi" className="flex border-b border-[#222]">
                 {stopsDirections.map((dir) => (
@@ -332,6 +365,17 @@ export default function RoutePage() {
                     {dirLabel(dir)}
                   </button>
                 ))}
+              </div>
+            )}
+            {/* Variant Select */}
+            {effectiveMapDir && (
+              <div className="px-1 mt-2">
+                <VariantSelect
+                  metadata={metadata ?? null}
+                  direction={effectiveMapDir}
+                  selectedVariant={effectiveMapVariant}
+                  onChange={setMapVariant}
+                />
               </div>
             )}
             {/* Bus direction legend */}
@@ -383,7 +427,7 @@ export default function RoutePage() {
         {/* Stops tab */}
         {tab === 'stops' && (
           <div className="flex flex-col gap-1">
-            {/* Direction filter pills â€” stops tab, Metro flat */}
+            {/* Direction filter pills — stops tab, Metro flat */}
             {stopsDirections.length > 1 && (
               <div className="flex border-b border-[#222] mb-1">
                 {stopsDirections.map((dir) => (
@@ -397,6 +441,17 @@ export default function RoutePage() {
                     {dirLabel(dir)}
                   </button>
                 ))}
+              </div>
+            )}
+            {/* Variant Select */}
+            {effectiveStopsDir && (
+              <div className="px-1 mt-1">
+                <VariantSelect
+                  metadata={metadata ?? null}
+                  direction={effectiveStopsDir}
+                  selectedVariant={effectiveStopsVariant}
+                  onChange={setStopsVariant}
+                />
               </div>
             )}
             {!stops && !stopsError && (
