@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo, memo } from 'react'
+﻿import { useState, useRef, useEffect, useMemo, memo } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet'
 import * as L from 'leaflet'
 import CanvasMarkers from '@/components/CanvasMarkers'
@@ -20,13 +20,13 @@ function parseIsoDate(value: string | null | undefined): Date | null {
 }
 
 function formatAgo(from: Date | null, nowMs: number): string {
-  if (!from) return '—'
+  if (!from) return 'â€”'
   const diffSeconds = Math.max(0, Math.floor((nowMs - from.getTime()) / 1000))
-  if (diffSeconds < 60) return `${diffSeconds} sn önce`
+  if (diffSeconds < 60) return `${diffSeconds} sn Ã¶nce`
   const diffMinutes = Math.floor(diffSeconds / 60)
-  if (diffMinutes < 60) return `${diffMinutes} dk önce`
+  if (diffMinutes < 60) return `${diffMinutes} dk Ã¶nce`
   const diffHours = Math.floor(diffMinutes / 60)
-  return `${diffHours} sa önce`
+  return `${diffHours} sa Ã¶nce`
 }
 
 const FleetMetaBadge = memo(function FleetMetaBadge({
@@ -46,7 +46,7 @@ const FleetMetaBadge = memo(function FleetMetaBadge({
   return (
     <div className="bg-surface-card/90 backdrop-blur px-3 py-1.5 rounded-xl
                     text-xs text-slate-400 border border-surface-muted">
-      son veri güncelleme: {formatAgo(updatedAtDate, nowMs)}
+      son veri gÃ¼ncelleme: {formatAgo(updatedAtDate, nowMs)}
     </div>
   )
 })
@@ -98,7 +98,7 @@ export default function MapPage() {
   const { data: garages } = useQuery<Garage[]>({
     queryKey: ['garages'],
     queryFn: () => api.garages.list(),
-    refetchInterval: 86_400_000, // 24 h — garages rarely change
+    refetchInterval: 86_400_000, // 24 h â€” garages rarely change
   })
 
   const [showErrorModal, setShowErrorModal] = useState(false)
@@ -111,7 +111,7 @@ export default function MapPage() {
     }
   }, [error])
 
-  // ── Route filter: autocomplete search + chips ──────────────────────────────
+  // â”€â”€ Route filter: autocomplete search + chips â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   useEffect(() => {
     if (!showErrorModal) {
       if (previousFocusRef.current) {
@@ -136,7 +136,7 @@ export default function MapPage() {
   const [showDropdown, setShowDropdown] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
-  // Per-route bus fetch: hat_kodu → BusPosition[]
+  // Per-route bus fetch: hat_kodu â†’ BusPosition[]
   const [routeBusMap, setRouteBusMap] = useState<Map<string, BusPosition[]>>(new Map())
   const inFlight = useRef<Set<string>>(new Set())
   const fetchIdMap = useRef<Map<string, number>>(new Map())
@@ -221,7 +221,7 @@ export default function MapPage() {
     setRouteBusMap((prev) => { const n = new Map(prev); n.delete(hatKodu); return n })
   }
 
-  // ── Kapino / plate chip filter ─────────────────────────────────────────────
+  // â”€â”€ Kapino / plate chip filter â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const [selectedEntities, setSelectedEntities] = useState<string[]>([])
   const [entityQuery, setEntityQuery] = useState('')
   const [showEntityDropdown, setShowEntityDropdown] = useState(false)
@@ -230,7 +230,7 @@ export default function MapPage() {
   const entityResults = useMemo(() => {
     if (entityQuery.length < 2) return []
     const q = entityQuery.toUpperCase()
-    return (buses || []).filter((b: any) => b.kapino.toUpperCase().includes(q) || (b.plate?.toUpperCase().includes(q) ?? false)).slice(0, 10)
+    return (buses || []).filter((b) => b.kapino.toUpperCase().includes(q) || (b.plate?.toUpperCase().includes(q) ?? false)).slice(0, 10)
   }, [buses, entityQuery])
 
   useEffect(() => {
@@ -257,7 +257,7 @@ export default function MapPage() {
 
   const hasFilter = selectedRoutes.length > 0 || selectedEntities.length > 0
 
-  // ── Selected bus detail (fetched on marker click) ────────────────────────────────
+  // â”€â”€ Selected bus detail (fetched on marker click) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const [selectedKapino, setSelectedKapino] = useState<string | null>(null)
   const [selectedDetail, setSelectedDetail] = useState<BusDetail | null>(null)
   const [detailLoading, setDetailLoading] = useState(false)
@@ -275,7 +275,7 @@ export default function MapPage() {
 
   const selectedBusSnapshot = useMemo(() => {
     if (!selectedKapino || !buses) return null
-    return buses.find((b: any) => b.kapino === selectedKapino) ?? null
+    return buses.find((b) => b.kapino === selectedKapino) ?? null
   }, [buses, selectedKapino])
 
   const selectedSpeed = selectedDetail?.speed ?? selectedBusSnapshot?.speed ?? null
@@ -303,7 +303,7 @@ export default function MapPage() {
       for (const b of routeBuses) routeKapinos.add(b.kapino.toUpperCase())
     }
 
-    return all.filter((b: any) => {
+    return all.filter((b) => {
       const kUp = b.kapino.toUpperCase()
       // Route match: kapino lookup first, then fuzzy route_code fallback
       if (selectedRoutes.length > 0) {
@@ -327,7 +327,7 @@ export default function MapPage() {
   }, [buses, routeBusMap, selectedRoutes, selectedEntities, hasFilter])
 
   const busMarkers = useMemo(() => {
-    return filtered.map((b: any) => ({
+    return filtered.map((b) => ({
       position: [b.latitude, b.longitude] as [number, number],
       icon: busIcon,
       onClick: () => setSelectedKapino(b.kapino)
@@ -351,7 +351,7 @@ export default function MapPage() {
             value={searchQuery}
             onChange={(e) => { setSearchQuery(e.target.value); setShowDropdown(true) }}
             onFocus={() => { if (searchQuery.length > 0) setShowDropdown(true) }}
-            placeholder="Hat kodu ara (ör: 500T, 14M)…"
+            placeholder="Hat kodu ara (Ã¶r: 500T, 14M)â€¦"
             className="w-full border border-[#333] px-4 py-2 text-sm text-slate-100 placeholder-slate-500
                        focus:outline-none focus:border-[#00AFF0] shadow-xl"
             style={{ background: '#0d0d0d' }}
@@ -393,9 +393,9 @@ export default function MapPage() {
                   onClick={() => removeRoute(route)}
                   className="ml-0.5 text-brand-400 hover:text-brand-100 transition-colors
                              leading-none text-sm font-normal"
-                  aria-label={`${route} filtresini kaldır`}
+                  aria-label={`${route} filtresini kaldÄ±r`}
                 >
-                  ×
+                  Ã—
                 </button>
               </span>
             ))}
@@ -415,7 +415,7 @@ export default function MapPage() {
             value={entityQuery}
             onChange={(e) => { setEntityQuery(e.target.value); setShowEntityDropdown(true) }}
             onFocus={() => { if (entityQuery.length > 0) setShowEntityDropdown(true) }}
-            placeholder="Kapı kodu / plaka ara (ör: C-1515)"
+            placeholder="KapÄ± kodu / plaka ara (Ã¶r: C-1515)"
             className="w-full border border-[#333] px-4 py-2 text-sm text-slate-100 placeholder-slate-500
                        focus:outline-none focus:border-[#00AFF0] shadow-xl"
             style={{ background: '#0d0d0d' }}
@@ -424,7 +424,7 @@ export default function MapPage() {
             <div className="absolute top-full left-0 right-0 mt-1 border border-[#333]
                             shadow-2xl overflow-hidden z-10 max-h-48 overflow-y-auto"
                  style={{ background: '#0d0d0d' }}>
-              {entityResults.map((b: any) => (
+              {entityResults.map((b) => (
                 <button
                   key={b.kapino}
                   onClick={() => { addEntity(b.kapino); setShowEntityDropdown(false); }}
@@ -436,7 +436,7 @@ export default function MapPage() {
                 >
                   <span className="font-mono font-bold text-brand-400 text-xs shrink-0">{b.kapino}</span>
                   {b.plate && <span className="text-slate-500 text-xs shrink-0">{b.plate}</span>}
-                  {b.route_code && <span className="text-slate-400 truncate text-xs">→ {b.route_code}</span>}
+                  {b.route_code && <span className="text-slate-400 truncate text-xs">â†’ {b.route_code}</span>}
                 </button>
               ))}
             </div>
@@ -456,9 +456,9 @@ export default function MapPage() {
                   onClick={() => removeEntity(kapino)}
                   className="ml-0.5 text-brand-400 hover:text-brand-100 transition-colors
                              leading-none text-sm font-normal"
-                  aria-label={`${kapino} filtresini kaldır`}
+                  aria-label={`${kapino} filtresini kaldÄ±r`}
                 >
-                  ×
+                  Ã—
                 </button>
               </span>
             ))}
@@ -469,7 +469,7 @@ export default function MapPage() {
       {loading && !buses && (
         <div className="absolute inset-0 flex items-center justify-center z-[999]">
           <div className="bg-surface-card px-6 py-4 rounded-2xl shadow-xl text-slate-300">
-            Araç konumları yükleniyor…
+            AraÃ§ konumlarÄ± yÃ¼kleniyorâ€¦
           </div>
         </div>
       )}
@@ -492,16 +492,16 @@ export default function MapPage() {
             aria-labelledby="ibb-error-title"
             onClick={(e) => e.stopPropagation()}
           >
-            <h2 id="ibb-error-title" className="text-xl font-bold text-red-400 mb-3">İBB Tarafından Engellendi 🛑</h2>
+            <h2 id="ibb-error-title" className="text-xl font-bold text-red-400 mb-3">Ä°BB TarafÄ±ndan Engellendi ðŸ›‘</h2>
             <p className="text-slate-300 text-sm mb-4 space-y-3 leading-relaxed">
-              <span>İBB Yönetimi, halkın vergileriyle çalışan kamu otobüslerinin global konum verilerini (Tüm Filo) halka kapatma kararı aldığından ötürü bu veri şu an <strong className="text-white">tam anlamıyla sağlanamamaktadır.</strong></span>
+              <span>Ä°BB YÃ¶netimi, halkÄ±n vergileriyle Ã§alÄ±ÅŸan kamu otobÃ¼slerinin global konum verilerini (TÃ¼m Filo) halka kapatma kararÄ± aldÄ±ÄŸÄ±ndan Ã¶tÃ¼rÃ¼ bu veri ÅŸu an <strong className="text-white">tam anlamÄ±yla saÄŸlanamamaktadÄ±r.</strong></span>
               <br/><br/>
-              <span><code>iettnext</code> projesinin de isyan ettiği gibi: Kamuya ait bir verinin halktan gizlenmesi, kısıtlı "resmi" kanallara hapsedilmesi; rezalet Google Maps entegrasyonlarına, Moovit'e el altından yedirilen paralara ve yarrak gibi çalışan kendi "Otobüsüm Nerede" applerine insanları mahkum etmeye çalışmaları kabul edilemez.</span>
+              <span><code>iettnext</code> projesinin de isyan ettiÄŸi gibi: Kamuya ait bir verinin halktan gizlenmesi, kÄ±sÄ±tlÄ± "resmi" kanallara hapsedilmesi; rezalet Google Maps entegrasyonlarÄ±na, Moovit'e el altÄ±ndan yedirilen paralara ve yarrak gibi Ã§alÄ±ÅŸan kendi "OtobÃ¼sÃ¼m Nerede" applerine insanlarÄ± mahkum etmeye Ã§alÄ±ÅŸmalarÄ± kabul edilemez.</span>
               <br/><br/>
-              <span>Biz, mümkün olan legal veya illegal her türlü yoldan, koparabildiğimiz kadar veriyi çekmeye ve bu sansürü delmeye sonuna kadar devam edeceğiz.</span>
+              <span>Biz, mÃ¼mkÃ¼n olan legal veya illegal her tÃ¼rlÃ¼ yoldan, koparabildiÄŸimiz kadar veriyi Ã§ekmeye ve bu sansÃ¼rÃ¼ delmeye sonuna kadar devam edeceÄŸiz.</span>
               <br/><br/>
               <span className="text-brand-300 bg-brand-900/30 p-2 rounded block border border-brand-800/50">
-                <strong>Not:</strong> Arama çubuğundan belirli bir hat numarası (örn: 14M) aratarak otobüsleri haritada <b>görmeye sorunsuzca devam edebilirsiniz.</b> Yalnızca tüm filonun aynı anda haritada görünmesi sabote edilmiştir.
+                <strong>Not:</strong> Arama Ã§ubuÄŸundan belirli bir hat numarasÄ± (Ã¶rn: 14M) aratarak otobÃ¼sleri haritada <b>gÃ¶rmeye sorunsuzca devam edebilirsiniz.</b> YalnÄ±zca tÃ¼m filonun aynÄ± anda haritada gÃ¶rÃ¼nmesi sabote edilmiÅŸtir.
               </span>
             </p>
             <div className="flex justify-end">
@@ -511,7 +511,7 @@ export default function MapPage() {
                 onClick={() => setShowErrorModal(false)}
                 className="bg-red-500/20 hover:bg-red-500/30 text-red-300 px-5 py-2 rounded-lg font-medium transition-colors"
               >
-                Anladım
+                AnladÄ±m
               </button>
             </div>
           </div>
@@ -589,11 +589,11 @@ export default function MapPage() {
                     )
                   )}
                   {detailLoading && (
-                    <span className="text-[10px] text-slate-500">yükleniyor…</span>
+                    <span className="text-[10px] text-slate-500">yÃ¼kleniyorâ€¦</span>
                   )}
                 </div>
                 {selectedDetail?.direction && (
-                  <p className="text-xs text-slate-400 truncate">→ {selectedDetail.direction}</p>
+                  <p className="text-xs text-slate-400 truncate">â†’ {selectedDetail.direction}</p>
                 )}
                 {selectedDetail?.route_stops && selectedDetail.route_stops.length > 0 && (
                   <p className="text-[10px] text-slate-600 mt-0.5">
@@ -601,19 +601,19 @@ export default function MapPage() {
                   </p>
                 )}
                 <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1">
-                  <p className="text-[10px] text-slate-500 uppercase tracking-wide">Hız</p>
+                  <p className="text-[10px] text-slate-500 uppercase tracking-wide">HÄ±z</p>
                   <p className="text-[10px] text-slate-500 uppercase tracking-wide">Son Update (SOAP)</p>
-                  <p className="text-xs text-slate-200">{selectedSpeed !== null ? `${selectedSpeed} km/h` : '—'}</p>
-                  <p className="text-xs text-slate-200 truncate" title={selectedLastSeen ?? undefined}>{selectedLastSeen ?? '—'}</p>
+                  <p className="text-xs text-slate-200">{selectedSpeed !== null ? `${selectedSpeed} km/h` : 'â€”'}</p>
+                  <p className="text-xs text-slate-200 truncate" title={selectedLastSeen ?? undefined}>{selectedLastSeen ?? 'â€”'}</p>
                 </div>
               </div>
               <button
                 onClick={() => { setSelectedKapino(null); setSelectedDetail(null) }}
                 className="text-slate-500 hover:text-slate-300 text-lg leading-none shrink-0"
-                aria-label="Detayları kapat"
-                title="Detayları kapat"
+                aria-label="DetaylarÄ± kapat"
+                title="DetaylarÄ± kapat"
               >
-                ×
+                Ã—
               </button>
             </div>
 
@@ -639,14 +639,15 @@ export default function MapPage() {
           className="bg-surface-card/90 backdrop-blur px-2.5 py-1.5 rounded-xl
                      text-xs text-slate-400 border border-surface-muted hover:text-slate-200 transition-colors"
         >
-          ↻
+          â†»
         </button>
         <div className="bg-surface-card/90 backdrop-blur px-3 py-1.5 rounded-xl
                         text-xs text-slate-400 border border-surface-muted">
-          {filtered.length.toLocaleString()} araç
+          {filtered.length.toLocaleString()} araÃ§
           {hasFilter && ` / ${(buses ?? []).length.toLocaleString()} toplam`}
         </div>
       </div>
     </div>
   )
 }
+

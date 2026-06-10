@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+﻿import { useEffect, useRef } from 'react'
 import { useMap } from 'react-leaflet'
 import * as L from 'leaflet'
 import 'leaflet-canvas-marker'
@@ -18,7 +18,6 @@ export default function CanvasMarkers({ markers }: CanvasMarkersProps) {
 
   useEffect(() => {
     if (!ciLayerRef.current) {
-      // @ts-expect-error L.canvasIconLayer is added by leaflet-canvas-marker
       const createLayer = (window as any).L.canvasIconLayer || (L as any).canvasIconLayer
       ciLayerRef.current = createLayer({}).addTo(map)
     }
@@ -71,3 +70,4 @@ export default function CanvasMarkers({ markers }: CanvasMarkersProps) {
 
   return null
 }
+

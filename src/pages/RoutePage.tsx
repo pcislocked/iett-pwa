@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+﻿import { useState, useMemo } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { MapContainer, TileLayer, Marker, Popup, CircleMarker } from 'react-leaflet'
 import * as L from 'leaflet'
@@ -28,7 +28,7 @@ const busIconUnknown = L.divIcon({
 })
 
 const DAY_TYPES = [
-  { key: 'H', label: 'Hafta İçi' },
+  { key: 'H', label: 'Hafta Ä°Ã§i' },
   { key: 'C', label: 'Cumartesi' },
   { key: 'P', label: 'Pazar' },
 ]
@@ -54,7 +54,7 @@ function TimetableView({ schedule, scheduleError, onRetry, metadata }: {
   const [dayType, setDayType] = useState('H')
   const [direction, setDirection] = useState('')
 
-  // Map direction code ('D'/'G') → short terminal label from metadata
+  // Map direction code ('D'/'G') â†’ short terminal label from metadata
   const dirLabel = useMemo(() => {
     const hasMetadata = !!metadata?.length
     return (code: string) => getDirectionLabel(code, metadata, hasMetadata)
@@ -99,15 +99,13 @@ function TimetableView({ schedule, scheduleError, onRetry, metadata }: {
     return new Set(schedule.map((d) => d.day_type))
   }, [schedule])
 
-  /* ── Metro-style day type selector ── */
+  /* â”€â”€ Metro-style day type selector â”€â”€ */
   return (
     <div className="flex flex-col gap-4">
       {/* Day type selector */}
-      <div className="flex border-b border-[#222]">
+      <div role="tablist" aria-label="Gün seçimi" className="flex border-b border-[#222]">
         {DAY_TYPES.map(({ key, label }) => (
-          <button
-            key={key}
-            onClick={() => { setDayType(key); setDirection('') }}
+          <button role="tab" aria-selected={dayType === key} key={key} onClick={() => { setDayType(key); setDirection('') }}
             disabled={!availableDays.has(key)}
             className={`flex-1 text-sm py-2.5 font-medium transition-colors disabled:opacity-25 border-b-2 -mb-px ${
               dayType === key
@@ -120,13 +118,11 @@ function TimetableView({ schedule, scheduleError, onRetry, metadata }: {
         ))}
       </div>
 
-      {/* Direction pill toggle — flat Metro style */}
+      {/* Direction pill toggle â€” flat Metro style */}
       {availableDirections.length > 1 && (
-        <div className="flex gap-0 border-b border-[#222]">
+        <div role="tablist" aria-label="Yön seçimi" className="flex gap-0 border-b border-[#222]">
           {availableDirections.map((dir) => (
-            <button
-              key={dir}
-              onClick={() => setDirection(dir)}
+            <button role="tab" aria-selected={direction === dir} key={dir} onClick={() => setDirection(dir)}
               className={`flex-1 text-xs py-2 px-2 font-medium transition-colors truncate border-b-2 -mb-px ${
                 effectiveDirection === dir
                   ? 'border-[#00AFF0] text-[#00AFF0]'
@@ -149,12 +145,12 @@ function TimetableView({ schedule, scheduleError, onRetry, metadata }: {
       )}
 
       {!schedule && scheduleError && (
-        <ErrorRetry message="Sefer saatleri yüklenemedi" onRetry={onRetry} />
+        <ErrorRetry message="Sefer saatleri yÃ¼klenemedi" onRetry={onRetry} />
       )}
 
       {schedule && hours.length === 0 && (
         <div className="text-center text-slate-500 py-12 text-sm">
-          Bu gün tipi için sefer bilgisi yok
+          Bu gÃ¼n tipi iÃ§in sefer bilgisi yok
         </div>
       )}
 
@@ -203,12 +199,12 @@ export default function RoutePage() {
   const { data: announcements, error: announcementsError, refetch: refreshAnnouncements } = useQuery<Announcement[]>({ queryKey: ['announcements', hatKodu], queryFn: announceFetcher, refetchInterval: 300_000, enabled: !!hatKodu })
   const { data: metadata } = useQuery<RouteMetadata[]>({ queryKey: ['metadata', hatKodu], queryFn: metaFetcher, refetchInterval: 600_000, enabled: !!hatKodu })
 
-  // Unique direction keys from stops — "G" / "D"
+  // Unique direction keys from stops â€” "G" / "D"
   const stopsDirections = useMemo(
     () => [...new Set((stops ?? []).map((s) => s.direction))].sort(),
     [stops],
   )
-  const dirLabel = (d: string) => d === 'G' ? 'Gidiş' : d === 'D' ? 'Dönüş' : d
+  const dirLabel = (d: string) => d === 'G' ? 'GidiÅŸ' : d === 'D' ? 'DÃ¶nÃ¼ÅŸ' : d
 
   const effectiveStopsDir = stopsDirections.includes(stopsDir)
     ? stopsDir
@@ -270,10 +266,10 @@ export default function RoutePage() {
               {routeName && routeName !== hatKodu && (
                 <span className="text-xs text-slate-400 truncate">{routeName}</span>
               )}
-              {stale && <span className="text-xs text-amber-400 shrink-0">⚠</span>}
+              {stale && <span className="text-xs text-amber-400 shrink-0">âš </span>}
             </div>
             <p className="text-[11px] text-slate-500">
-              {buses?.length ?? 0} aktif araç
+              {buses?.length ?? 0} aktif araÃ§
             </p>
           </div>
 
@@ -291,12 +287,10 @@ export default function RoutePage() {
           </button>
         </div>
 
-        {/* Tab bar — Metro flat style */}
-        <div className="max-w-2xl mx-auto px-4 pb-0 flex gap-0 overflow-x-auto no-scrollbar border-b border-[#111]">
+        {/* Tab bar â€” Metro flat style */}
+        <div role="tablist" aria-label="Sekmeler" className="max-w-2xl mx-auto px-4 pb-0 flex gap-0 overflow-x-auto no-scrollbar border-b border-[#111]">
           {tabs.map(({ id, label, badge }) => (
-            <button
-              key={id}
-              onClick={() => setTab(id)}
+            <button role="tab" aria-selected={tab === id} key={id} onClick={() => setTab(id)}
               className={`flex-1 shrink-0 text-sm py-2.5 px-2 font-medium border-b-2 -mb-px transition-colors
                           flex items-center justify-center gap-1 ${
                 tab === id
@@ -324,13 +318,11 @@ export default function RoutePage() {
         {/* Map tab */}
         {tab === 'map' && (
           <div className="flex flex-col gap-2">
-            {/* Direction pills — map tab, Metro flat */}
+            {/* Direction pills â€” map tab, Metro flat */}
             {stopsDirections.length > 1 && (
-              <div className="flex border-b border-[#222]">
+              <div role="tablist" aria-label="Gün seçimi" className="flex border-b border-[#222]">
                 {stopsDirections.map((dir) => (
-                  <button
-                    key={dir}
-                    onClick={() => setMapDir(dir)}
+                  <button role="tab" aria-selected={effectiveMapDir === dir} key={dir} onClick={() => setMapDir(dir)}
                     className={`flex-1 text-xs py-2 px-2 font-medium transition-colors truncate border-b-2 -mb-px ${
                       effectiveMapDir === dir
                         ? 'border-[#00AFF0] text-[#00AFF0]'
@@ -345,7 +337,7 @@ export default function RoutePage() {
             {/* Bus direction legend */}
             {buses && buses.length > 0 && (
               <div className="flex items-center gap-4 px-1">
-                {[...new Map(buses.filter((b: any) => b.direction_letter).map((b: any) => [b.direction_letter, b])).values()].map((b: any) => (
+                {[...new Map(buses.filter((b) => b.direction_letter).map((b) => [b.direction_letter, b])).values()].map((b) => (
                   <div key={b.direction_letter} className="flex items-center gap-1.5">
                     <div className="w-3 h-3 rounded-full border border-white/40 shrink-0" style={{ background: b.direction_letter === 'G' ? '#2563eb' : '#f59e0b' }} />
                     <span className="text-[10px] text-[#888] truncate">{b.direction ?? b.direction_letter}</span>
@@ -370,8 +362,8 @@ export default function RoutePage() {
                   />
                 ))}
                 {buses
-                  ?.filter((b: any) => !effectiveMapDir || b.direction_letter === effectiveMapDir)
-                  .map((b: any) => (
+                  ?.filter((b) => !effectiveMapDir || b.direction_letter === effectiveMapDir)
+                  .map((b) => (
                     <Marker
                       key={b.kapino}
                       position={[b.latitude, b.longitude]}
@@ -391,13 +383,11 @@ export default function RoutePage() {
         {/* Stops tab */}
         {tab === 'stops' && (
           <div className="flex flex-col gap-1">
-            {/* Direction filter pills — stops tab, Metro flat */}
+            {/* Direction filter pills â€” stops tab, Metro flat */}
             {stopsDirections.length > 1 && (
               <div className="flex border-b border-[#222] mb-1">
                 {stopsDirections.map((dir) => (
-                  <button
-                    key={dir}
-                    onClick={() => setStopsDir(dir)}
+                  <button role="tab" aria-selected={effectiveStopsDir === dir} key={dir} onClick={() => setStopsDir(dir)}
                     className={`flex-1 text-xs py-2 px-2 font-medium transition-colors truncate border-b-2 -mb-px ${
                       effectiveStopsDir === dir
                         ? 'border-[#00AFF0] text-[#00AFF0]'
@@ -417,7 +407,7 @@ export default function RoutePage() {
               </div>
             )}
             {!stops && stopsError && (
-              <ErrorRetry message="Durak listesi yüklenemedi" onRetry={refreshStops} />
+              <ErrorRetry message="Durak listesi yÃ¼klenemedi" onRetry={refreshStops} />
             )}
             {stops?.length === 0 && (
               <div className="flex flex-col items-center justify-center py-16 text-slate-500">
@@ -428,7 +418,7 @@ export default function RoutePage() {
                   <path strokeLinecap="round" strokeLinejoin="round"
                         d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
                 </svg>
-                <p className="text-sm">Bu hat için durak bulunamadı</p>
+                <p className="text-sm">Bu hat iÃ§in durak bulunamadÄ±</p>
               </div>
             )}
             {stopsForDir.map((s) => (
@@ -442,7 +432,7 @@ export default function RoutePage() {
                 </span>
                 <span className="flex-1 text-sm text-slate-200 truncate">{s.stop_name}</span>
                 {busAtSequence.has(s.sequence) && (
-                  <span title="Otobüs burada" className="w-2.5 h-2.5 rounded-full shrink-0 animate-pulse"
+                  <span title="OtobÃ¼s burada" className="w-2.5 h-2.5 rounded-full shrink-0 animate-pulse"
                         style={{ background: effectiveStopsDir === 'D' ? '#f59e0b' : '#2563eb' }} />
                 )}
                 <span className="text-xs text-slate-600 shrink-0">{s.stop_code}</span>
@@ -458,9 +448,9 @@ export default function RoutePage() {
         {/* Alerts tab */}
         {tab === 'alerts' && (
           <div className="flex flex-col gap-3">
-            {!announcements && !announcementsError && <p className="text-slate-400 text-sm">Yükleniyor...</p>}
+            {!announcements && !announcementsError && <p className="text-slate-400 text-sm">YÃ¼kleniyor...</p>}
             {!announcements && announcementsError && (
-              <ErrorRetry message="Duyurular yüklenemedi" onRetry={refreshAnnouncements} />
+              <ErrorRetry message="Duyurular yÃ¼klenemedi" onRetry={refreshAnnouncements} />
             )}
             {announcements?.length === 0 && (
               <div className="flex flex-col items-center py-16 text-slate-500">
@@ -474,7 +464,7 @@ export default function RoutePage() {
             )}
             {announcements?.map((a, i) => (
               <div key={i} className="card border-l-4 border-amber-500">
-                <p className="text-xs text-amber-400 mb-1">{a.type} · {a.updated_at}</p>
+                <p className="text-xs text-amber-400 mb-1">{a.type} Â· {a.updated_at}</p>
                 <p className="text-sm text-slate-200">{a.message}</p>
               </div>
             ))}
@@ -484,3 +474,8 @@ export default function RoutePage() {
     </div>
   )
 }
+
+
+
+
+

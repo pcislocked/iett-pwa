@@ -1,5 +1,6 @@
-import { useQuery, UseQueryResult } from '@tanstack/react-query'
+﻿import { useQuery, UseQueryResult } from '@tanstack/react-query'
 import { api } from '@/api/client'
+import { BusPosition } from '@/api/types'
 
 function mapQuery<T>(query: UseQueryResult<T, any>): { data: T | null; loading: boolean; error: string | null; refresh: () => void; stale: boolean; lastUpdated: Date | null } {
   return {
@@ -7,13 +8,13 @@ function mapQuery<T>(query: UseQueryResult<T, any>): { data: T | null; loading: 
     loading: query.isLoading || (query.isFetching && !query.data),
     error: query.error ? String(query.error) : null,
     refresh: query.refetch,
-    stale: query.isStale,
+    stale: query.isError && !!query.data,
     lastUpdated: query.dataUpdatedAt ? new Date(query.dataUpdatedAt) : null,
   }
 }
 
 export function useFleet() {
-  const query = useQuery({
+  const query = useQuery<BusPosition[]>({
     queryKey: ['fleet'],
     queryFn: () => api.fleet.all(),
     refetchInterval: 30_000,
@@ -22,7 +23,7 @@ export function useFleet() {
 }
 
 export function useRouteBuses(hatKodu: string) {
-  const query = useQuery({
+  const query = useQuery<BusPosition[]>({
     queryKey: ['route_buses', hatKodu],
     queryFn: () => api.routes.buses(hatKodu),
     refetchInterval: 15_000,

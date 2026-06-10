@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+﻿import { afterEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -43,8 +43,8 @@ describe('StopPage Announcements', () => {
       dcode: '1234', name: 'Test Stop', latitude: 41, longitude: 29
     })
     vi.mocked(api.stops.arrivals).mockResolvedValue([
-      { route_code: '15TY', destination: 'HEK─░MBA┼×I', eta_minutes: 5, eta_raw: '5 dk', is_live: true, sequence: 1 },
-      { route_code: '11H', destination: '├£MRAN─░YE', eta_minutes: 10, eta_raw: '10 dk', is_live: true, sequence: 2 },
+      { route_code: '15TY', destination: 'HEKâ”€â–‘MBAâ”¼Ã—I', eta_minutes: 5, eta_raw: '5 dk', is_live: true, sequence: 1 },
+      { route_code: '11H', destination: 'â”œÂ£MRANâ”€â–‘YE', eta_minutes: 10, eta_raw: '10 dk', is_live: true, sequence: 2 },
     ] as any)
     vi.mocked(api.stops.routes).mockResolvedValue(['15TY', '11H'])
 
@@ -71,7 +71,7 @@ describe('StopPage Announcements', () => {
 
   it('shows fallback message when announcement fetch fails', async () => {
     vi.mocked(api.stops.detail).mockResolvedValue({
-      stop_code: '1234',
+      dcode: '1234',
       name: 'Test Stop',
       direction: 'North',
       district: 'Test',
@@ -79,8 +79,8 @@ describe('StopPage Announcements', () => {
       longitude: 29
     })
     vi.mocked(api.stops.arrivals).mockResolvedValue([
-      { route_code: '15TY', destination: 'HEKİMBAŞI', eta_mins: 5, eta_raw: '5 dk', is_live: true },
-      { route_code: '11H', destination: 'TEPEÜSTÜ', eta_mins: 15, eta_raw: '15 dk', is_live: true },
+      { route_code: '15TY', destination: 'HEKÄ°MBAÅžI', eta_minutes: 5, eta_raw: '5 dk', is_live: true },
+      { route_code: '11H', destination: 'TEPEÃœSTÃœ', eta_minutes: 15, eta_raw: '15 dk', is_live: true },
     ])
     vi.mocked(api.stops.routes).mockResolvedValue(['15TY', '11H'])
 
@@ -101,3 +101,5 @@ describe('StopPage Announcements', () => {
     })
   })
 })
+
+

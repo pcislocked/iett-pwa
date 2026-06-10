@@ -156,18 +156,14 @@ function BusDetailSheet({
 
   useEffect(() => {
     previouslyFocused.current = document.activeElement
-    const root = document.getElementById('root')
-    if (root) root.setAttribute('aria-hidden', 'true')
     
     const timer = setTimeout(() => {
       if (dialogRef.current) {
-        const firstBtn = dialogRef.current.querySelector('button')
-        firstBtn?.focus()
+        dialogRef.current.focus()
       }
     }, 50)
     return () => {
       clearTimeout(timer)
-      if (root) root.removeAttribute('aria-hidden')
       if (previouslyFocused.current instanceof HTMLElement) {
         previouslyFocused.current.focus()
       }
@@ -407,8 +403,9 @@ export default function StopPage() {
 
   // Sliding panel state — map height as percentage of split container
   const mapHeightPctRef = useRef(40)
-  const mapContainerRef = useRef<HTMLDivElement>(null)
-  const splitContainerRef = useRef<HTMLDivElement>(null)
+  const mapContainerRef = useRef<HTMLDivElement | null>(null)
+  const splitContainerRef = useRef<HTMLDivElement | null>(null)
+  const dragHandleRef = useRef<HTMLDivElement | null>(null)
   const dragState = useRef<{ startY: number; startPct: number } | null>(null)
   const dragRafId = useRef<number | null>(null)
 
@@ -430,6 +427,9 @@ export default function StopPage() {
       if (!mapContainerRef.current) return
       mapHeightPctRef.current = newPct
       mapContainerRef.current.style.height = `${newPct}%`
+      if (dragHandleRef.current) {
+        dragHandleRef.current.setAttribute('aria-valuenow', Math.round(newPct).toString())
+      }
       window.dispatchEvent(new Event('resize'))
     })
   }, [])
@@ -457,6 +457,9 @@ export default function StopPage() {
     }
     mapHeightPctRef.current = newPct
     mapContainerRef.current.style.height = `${newPct}%`
+    if (dragHandleRef.current) {
+      dragHandleRef.current.setAttribute('aria-valuenow', Math.round(newPct).toString())
+    }
     window.dispatchEvent(new Event('resize'))
   }, [])
 
@@ -857,6 +860,7 @@ export default function StopPage() {
 
         {/* ── Drag handle ──────────────────────────────────────────────── */}
         <div
+            ref={dragHandleRef}
             role="separator"
             aria-valuenow={mapHeightPctRef.current}
             aria-valuemin={15}
