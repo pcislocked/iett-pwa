@@ -30,8 +30,8 @@ function getConfiguredBase(): string {
 
 function isNetworkError(error: unknown): boolean {
   if (error instanceof TypeError) return true
-  if (error instanceof DOMException && (error.name === 'AbortError' || error.name === 'TimeoutError')) return true
-  if (error instanceof Error && (error.name === 'AbortError' || error.name === 'TimeoutError')) return true
+  if (error instanceof DOMException && error.name === 'TimeoutError') return true
+  if (error instanceof Error && error.name === 'TimeoutError') return true
   return false
 }
 
@@ -49,18 +49,24 @@ export class ApiHttpError extends Error {
   }
 }
 
-function combineSignals(s1?: AbortSignal | null, s2?: AbortSignal | null): AbortSignal | undefined {
-  if (!s1) return s2 || undefined
-  if (!s2) return s1 || undefined
+function combineSignals(s1?: AbortSignal | null, s2?: AbortSignal | null): { signal?: AbortSignal, cleanup: () => void } {
+  if (!s1) return { signal: s2 || undefined, cleanup: () => {} }
+  if (!s2) return { signal: s1 || undefined, cleanup: () => {} }
   if (typeof AbortSignal !== 'undefined' && typeof AbortSignal.any === 'function') {
-    return AbortSignal.any([s1, s2])
+    return { signal: AbortSignal.any([s1, s2]), cleanup: () => {} }
   }
   const controller = new AbortController()
   const onAbort = () => controller.abort()
   s1.addEventListener('abort', onAbort)
   s2.addEventListener('abort', onAbort)
   if (s1.aborted || s2.aborted) controller.abort()
-  return controller.signal
+  return {
+    signal: controller.signal,
+    cleanup: () => {
+      s1.removeEventListener('abort', onAbort)
+      s2.removeEventListener('abort', onAbort)
+    }
+  }
 }
 
 type TimeoutSignal = {
@@ -90,9 +96,9 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
   const execute = async (url: string): Promise<T> => {
     const { signal, clear } = createTimeoutSignal(REQUEST_TIMEOUT_MS)
+    const combined = combineSignals(signal, init?.signal)
     try {
-      const combinedSignal = combineSignals(signal, init?.signal)
-      const requestInit = combinedSignal ? { ...init, signal: combinedSignal } : init
+      const requestInit = combined.signal ? { ...init, signal: combined.signal } : init
       const res = await fetch(url, requestInit)
       if (!res.ok) {
         const text = await res.text().catch(() => '')
@@ -101,6 +107,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
       return await res.json() as T
     } finally {
       clear()
+      combined.cleanup()
     }
   }
 
