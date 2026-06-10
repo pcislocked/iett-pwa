@@ -4,7 +4,7 @@ import * as L from 'leaflet'
 import CanvasMarkers from '@/components/CanvasMarkers'
 import { useNavigate } from 'react-router-dom'
 import { useFleet } from '@/hooks/useFleet'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueries } from '@tanstack/react-query'
 import { api, type BusDetail, type Garage, type RouteSearchResult, type BusPosition } from '@/api/client'
 
 function parseIsoDate(value: string | null | undefined): Date | null {
@@ -128,72 +128,30 @@ export default function MapPage() {
   }, [showErrorModal])
 
   const [selectedRoutes, setSelectedRoutes] = useState<string[]>([])
-  const selectedRoutesRef = useRef(selectedRoutes)
-  useEffect(() => { selectedRoutesRef.current = selectedRoutes }, [selectedRoutes])
-
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState<RouteSearchResult[]>([])
   const [showDropdown, setShowDropdown] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
-  // Per-route bus fetch: hat_kodu â†’ BusPosition[]
-  const [routeBusMap, setRouteBusMap] = useState<Map<string, BusPosition[]>>(new Map())
-  const inFlight = useRef<Set<string>>(new Set())
-  const fetchIdMap = useRef<Map<string, number>>(new Map())
-  const fetchIdCounter = useRef(0)
+  // Per-route bus fetch: hat_kodu -> BusPosition[]
+  const routeQueries = useQueries({
+    queries: selectedRoutes.map((route) => ({
+      queryKey: ['route_buses', route],
+      queryFn: ({ signal }: { signal?: AbortSignal }) => api.routes.buses(route, { signal }),
+      refetchInterval: 15_000,
+      staleTime: 10_000,
+    })),
+  })
 
-  useEffect(() => {
-    let isMounted = true
-
-    const fetchBuses = () => {
-      if (!isMounted) return
-      for (const route of selectedRoutes) {
-        if (inFlight.current.has(route)) continue
-        
-        fetchIdCounter.current += 1
-        const currentFetchId = fetchIdCounter.current
-        fetchIdMap.current.set(route, currentFetchId)
-
-        inFlight.current.add(route)
-        api.routes.buses(route)
-          .then((bs: BusPosition[]) => {
-            inFlight.current.delete(route)
-            if (!isMounted) return
-            if (fetchIdMap.current.get(route) !== currentFetchId) return // Stale request
-            if (!selectedRoutesRef.current.includes(route)) return
-            setRouteBusMap((prev) => new Map(prev).set(route, bs))
-          })
-          .catch(() => {
-            inFlight.current.delete(route)
-            if (!isMounted) return
-            if (fetchIdMap.current.get(route) !== currentFetchId) return // Stale request
-            if (!selectedRoutesRef.current.includes(route)) return
-            setRouteBusMap((prev) => new Map(prev).set(route, []))
-          })
-      }
-    }
-
-    fetchBuses()
-    const interval = setInterval(fetchBuses, 15_000)
-
-    // prune deselected routes
-    setRouteBusMap((prev) => {
-      const next = new Map(prev)
-      for (const key of next.keys()) {
-        if (!selectedRoutes.includes(key)) {
-          next.delete(key)
-          inFlight.current.delete(key)
-          fetchIdMap.current.delete(key)
-        }
-      }
-      return next
+  const routeBusMap = useMemo(() => {
+    const m = new Map<string, BusPosition[]>()
+    selectedRoutes.forEach((route, i) => {
+      const q = routeQueries[i]
+      if (q.data) m.set(route, q.data)
+      else m.set(route, [])
     })
-
-    return () => {
-      isMounted = false
-      clearInterval(interval)
-    }
-  }, [selectedRoutes])
+    return m
+  }, [selectedRoutes, routeQueries])
 
   // Fetch autocomplete suggestions when query changes (debounced 300 ms)
   useEffect(() => {
@@ -223,7 +181,6 @@ export default function MapPage() {
 
   function removeRoute(hatKodu: string) {
     setSelectedRoutes((prev) => prev.filter((r) => r !== hatKodu))
-    setRouteBusMap((prev) => { const n = new Map(prev); n.delete(hatKodu); return n })
   }
 
   // â”€â”€ Kapino / plate chip filter â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
