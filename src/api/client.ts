@@ -410,6 +410,7 @@ export const api = {
     arrivals: (dcode: string, via?: string, init?: RequestInit) =>
       get<Arrival[]>(`/v1/stops/${dcode}/arrivals${via ? `?via=${via}` : ''}`, init),
     routes: (dcode: string, init?: RequestInit) => get<string[]>(`/v1/stops/${dcode}/routes`, init),
+    announcements: (dcode: string, init?: RequestInit) => get<RouteAnnouncement[]>(`/v1/stops/${dcode}/announcements`, init),
   },
   routes: {
     search: (q: string, init?: RequestInit) => get<RouteSearchResult[]>(`/v1/routes/search?q=${encodeURIComponent(q)}`, init),

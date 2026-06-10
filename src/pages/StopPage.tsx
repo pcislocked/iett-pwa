@@ -416,7 +416,7 @@ export default function StopPage() {
     dragState.current = { startY: e.clientY, startPct: mapHeightPctRef.current }
   }, [])
 
-  const onHandlePointerMove = useCallback((e: React.PointerEvent) => {
+    const onHandlePointerMove = useCallback((e: React.PointerEvent) => {
     if (!dragState.current || !splitContainerRef.current || !mapContainerRef.current) return
     const containerH = splitContainerRef.current.offsetHeight
     const dy = e.clientY - dragState.current.startY
@@ -558,9 +558,9 @@ export default function StopPage() {
   // Announcements for ALL routes present at this stop
   const allRoutesAtStop = useMemo(() => Array.from(new Set([...(Array.isArray(routes) ? routes : []), ...arrivalRouteOrder])).sort(), [routes, arrivalRouteOrder])
   const annsFetcher = useCallback(async ({ signal }: { signal: AbortSignal }) => {
-    if (!allRoutesAtStop.length) return []
+    if (!dcode) return []
     try {
-      return await api.routes.batchAnnouncements(allRoutesAtStop, { signal })
+      return await api.stops.announcements(dcode, { signal })
     } catch (e: any) {
       if (e?.name === 'AbortError') throw e;
       return [{
@@ -571,13 +571,13 @@ export default function StopPage() {
         updated_at: new Date().toLocaleTimeString('tr-TR')
       }] as RouteAnnouncement[]
     }
-  }, [allRoutesAtStop])
+  }, [dcode])
 
   const { data: polledAnnouncements } = useQuery<RouteAnnouncement[]>({
-    queryKey: ['stopAnnouncements', dcode, allRoutesAtStop.join(',')],
+    queryKey: ['stopAnnouncements', dcode],
     queryFn: annsFetcher,
     refetchInterval: 300_000,
-    enabled: !!dcode && allRoutesAtStop.length > 0,
+    enabled: !!dcode,
     placeholderData: (prev) => prev,
   })
   const stopAnnouncements = polledAnnouncements ?? []
@@ -769,7 +769,7 @@ export default function StopPage() {
       <div ref={splitContainerRef} className="flex-1 flex flex-col overflow-hidden max-w-2xl w-full mx-auto min-h-0">
 
         {/* Map — dynamically sized via drag */}
-        <div className="shrink-0 border-b border-surface-muted relative" style={{ height: '50%' }} ref={(el) => { if (el) el.style.height = `${mapHeightPctRef.current}%` }}>
+        <div className="shrink-0 border-b border-surface-muted relative" style={{ height: '50%' }} ref={(el) => { mapContainerRef.current = el; if (el) el.style.height = `${mapHeightPctRef.current}%` }}>
           {stopDetail && stopDetail.latitude != null && stopDetail.longitude != null ? (
             <MapContainer
               center={[stopDetail.latitude, stopDetail.longitude]}
@@ -848,34 +848,6 @@ export default function StopPage() {
 
         {/* Arrivals — scrollable, items must not shrink */}
         <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 pt-2 pb-4">
-          {error && !stale && (
-            <div className="bg-red-900/30 border border-red-700 rounded-xl px-4 py-3 text-red-300 text-sm">
-              {error}
-            </div>
-          )}
-
-          {loading && !arrivals && (
-            <div className="flex flex-col gap-2">
-              {[1, 2, 3, 4].map((n) => (
-                <div key={n} className="card h-12 animate-pulse bg-surface-muted border-0" />
-              ))}
-            </div>
-          )}
-
-          {arrivals && filteredArrivals.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-10 text-slate-500">
-              <svg className="w-10 h-10 mb-2 opacity-40" fill="none" viewBox="0 0 24 24"
-                   stroke="currentColor" strokeWidth={1.5}>
-                <path strokeLinecap="round" strokeLinejoin="round"
-                      d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12" />
-              </svg>
-              <p className="text-sm font-medium">Şu an sefer bilgisi yok</p>
-              {activeRoutes.size > 0 && (
-                <p className="text-xs mt-1">{Array.from(activeRoutes).join(', ')} hattı için veri bulunamadı</p>
-              )}
-            </div>
-          )}
-
           {/* Announcements Accordion */}
           {(stopAnnouncements ?? []).length > 0 && (
             <div className="mb-2">
@@ -905,6 +877,34 @@ export default function StopPage() {
                     </div>
                   ))}
                 </div>
+              )}
+            </div>
+          )}
+
+          {error && !stale && (
+            <div className="bg-red-900/30 border border-red-700 rounded-xl px-4 py-3 text-red-300 text-sm">
+              {error}
+            </div>
+          )}
+
+          {loading && !arrivals && (
+            <div className="flex flex-col gap-2">
+              {[1, 2, 3, 4].map((n) => (
+                <div key={n} className="card h-12 animate-pulse bg-surface-muted border-0" />
+              ))}
+            </div>
+          )}
+
+          {arrivals && filteredArrivals.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-10 text-slate-500">
+              <svg className="w-10 h-10 mb-2 opacity-40" fill="none" viewBox="0 0 24 24"
+                   stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round"
+                      d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12" />
+              </svg>
+              <p className="text-sm font-medium">Şu an sefer bilgisi yok</p>
+              {activeRoutes.size > 0 && (
+                <p className="text-xs mt-1">{Array.from(activeRoutes).join(', ')} hattı için veri bulunamadı</p>
               )}
             </div>
           )}
