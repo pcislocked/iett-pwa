@@ -862,7 +862,7 @@ export default function StopPage() {
         <div
             ref={dragHandleRef}
             role="separator"
-            aria-valuenow={mapHeightPctRef.current}
+            aria-valuenow={40}
             aria-valuemin={15}
             aria-valuemax={65}
             aria-label="Harita yüksekliğini ayarla"

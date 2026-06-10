@@ -1,4 +1,4 @@
-﻿import { useEffect, useRef } from 'react'
+import { useEffect, useRef } from 'react'
 import { useMap } from 'react-leaflet'
 import * as L from 'leaflet'
 import 'leaflet-canvas-marker'
@@ -7,17 +7,23 @@ interface CanvasMarkersProps {
   markers: {
     position: [number, number]
     icon: L.Icon | L.DivIcon
-    onClick?: (e: any) => void
+    onClick?: (e: L.LeafletMouseEvent) => void
   }[]
+}
+
+interface ExtendedMarker extends L.Marker {
+  _originalOnClick?: (e: L.LeafletMouseEvent) => void
 }
 
 export default function CanvasMarkers({ markers }: CanvasMarkersProps) {
   const map = useMap()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const ciLayerRef = useRef<any>(null)
   const markersRef = useRef<L.Marker[]>([])
 
   useEffect(() => {
     if (!ciLayerRef.current) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const createLayer = (window as any).L.canvasIconLayer || (L as any).canvasIconLayer
       ciLayerRef.current = createLayer({}).addTo(map)
     }
@@ -31,10 +37,9 @@ export default function CanvasMarkers({ markers }: CanvasMarkersProps) {
 
     // Create new markers
     const newMarkers = markers.map((m) => {
-      const marker = L.marker(m.position, { icon: m.icon })
+      const marker = L.marker(m.position, { icon: m.icon }) as ExtendedMarker
       if (m.onClick) {
         marker.on('click', m.onClick)
-        // @ts-ignore
         marker._originalOnClick = m.onClick
       }
       return marker
@@ -48,8 +53,7 @@ export default function CanvasMarkers({ markers }: CanvasMarkersProps) {
     return () => {
       if (ciLayerRef.current && markersRef.current.length > 0) {
         markersRef.current.forEach(m => {
-          // @ts-ignore
-          if (m._originalOnClick) m.off('click', m._originalOnClick)
+          if ((m as ExtendedMarker)._originalOnClick) m.off('click', (m as ExtendedMarker)._originalOnClick)
           ciLayerRef.current.removeMarker(m, false)
         })
         ciLayerRef.current.redraw()

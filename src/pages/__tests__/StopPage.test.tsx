@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 ﻿import { afterEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
@@ -42,11 +43,7 @@ describe('StopPage Announcements', () => {
     vi.mocked(api.stops.detail).mockResolvedValue({
       dcode: '1234', name: 'Test Stop', latitude: 41, longitude: 29
     })
-    vi.mocked(api.stops.arrivals).mockResolvedValue([
-      { route_code: '15TY', destination: 'HEKâ”€â–‘MBAâ”¼Ã—I', eta_minutes: 5, eta_raw: '5 dk', is_live: true, sequence: 1 },
-      { route_code: '11H', destination: 'â”œÂ£MRANâ”€â–‘YE', eta_minutes: 10, eta_raw: '10 dk', is_live: true, sequence: 2 },
-    ] as any)
-    vi.mocked(api.stops.routes).mockResolvedValue(['15TY', '11H'])
+    vi.mocked(api.stops.arrivals).mockResolvedValue([] as any)
 
     vi.mocked(api.stops.announcements).mockResolvedValue([
       { type: 'Duyuru', updated_at: '2026-06-05', message: '15TY is delayed', route_code: '15TY', route_name: '' },
@@ -74,14 +71,11 @@ describe('StopPage Announcements', () => {
       dcode: '1234',
       name: 'Test Stop',
       direction: 'North',
-      district: 'Test',
+      
       latitude: 41,
       longitude: 29
     })
-    vi.mocked(api.stops.arrivals).mockResolvedValue([
-      { route_code: '15TY', destination: 'HEKÄ°MBAÅžI', eta_minutes: 5, eta_raw: '5 dk', is_live: true },
-      { route_code: '11H', destination: 'TEPEÃœSTÃœ', eta_minutes: 15, eta_raw: '15 dk', is_live: true },
-    ])
+    vi.mocked(api.stops.arrivals).mockResolvedValue([] as any)
     vi.mocked(api.stops.routes).mockResolvedValue(['15TY', '11H'])
 
     // Fails

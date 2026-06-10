@@ -1,8 +1,7 @@
-﻿import { useQuery, UseQueryResult } from '@tanstack/react-query'
-import { api } from '@/api/client'
-import { BusPosition } from '@/api/types'
+import { useQuery, UseQueryResult } from '@tanstack/react-query'
+import { api, BusPosition } from '@/api/client'
 
-function mapQuery<T>(query: UseQueryResult<T, any>): { data: T | null; loading: boolean; error: string | null; refresh: () => void; stale: boolean; lastUpdated: Date | null } {
+function mapQuery<T>(query: UseQueryResult<T, Error>): { data: T | null; loading: boolean; error: string | null; refresh: () => void; stale: boolean; lastUpdated: Date | null } {
   return {
     data: query.data ?? null,
     loading: query.isLoading || (query.isFetching && !query.data),
