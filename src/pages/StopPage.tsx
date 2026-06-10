@@ -416,7 +416,7 @@ export default function StopPage() {
     dragState.current = { startY: e.clientY, startPct: mapHeightPctRef.current }
   }, [])
 
-    const onHandlePointerMove = useCallback((e: React.PointerEvent) => {
+  const onHandlePointerMove = useCallback((e: React.PointerEvent) => {
     if (!dragState.current || !splitContainerRef.current || !mapContainerRef.current) return
     const containerH = splitContainerRef.current.offsetHeight
     const dy = e.clientY - dragState.current.startY
@@ -556,7 +556,6 @@ export default function StopPage() {
 
 
   // Announcements for ALL routes present at this stop
-  const allRoutesAtStop = useMemo(() => Array.from(new Set([...(Array.isArray(routes) ? routes : []), ...arrivalRouteOrder])).sort(), [routes, arrivalRouteOrder])
   const annsFetcher = useCallback(async ({ signal }: { signal: AbortSignal }) => {
     if (!dcode) return []
     try {

@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+﻿import { afterEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -12,6 +12,7 @@ vi.mock('@/api/client', () => ({
       detail: vi.fn(),
       arrivals: vi.fn(),
       routes: vi.fn(),
+      announcements: vi.fn(),
     },
     routes: {
       announcements: vi.fn(),
@@ -42,21 +43,13 @@ describe('StopPage Announcements', () => {
       dcode: '1234', name: 'Test Stop', latitude: 41, longitude: 29
     })
     vi.mocked(api.stops.arrivals).mockResolvedValue([
-      { route_code: '15TY', destination: 'HEKİMBAŞI', eta_minutes: 5, eta_raw: '5 dk', is_live: true, sequence: 1 },
-      { route_code: '11H', destination: 'ÜMRANİYE', eta_minutes: 10, eta_raw: '10 dk', is_live: true, sequence: 2 },
+      { route_code: '15TY', destination: 'HEKÄ°MBAÅžI', eta_minutes: 5, eta_raw: '5 dk', is_live: true, sequence: 1 },
+      { route_code: '11H', destination: 'ÃœMRANÄ°YE', eta_minutes: 10, eta_raw: '10 dk', is_live: true, sequence: 2 },
     ] as any)
     vi.mocked(api.stops.routes).mockResolvedValue(['15TY', '11H'])
 
     // Mock different announcements for different routes
-    vi.mocked(api.routes.announcements).mockImplementation(async (route) => {
-      if (route === '15TY') {
-        return [{ type: 'Duyuru', updated_at: '2026-06-05', message: '15TY is delayed', route_code: '15TY', route_name: '' }]
-      }
-      if (route === '11H') {
-        return [{ type: 'Bilgi', updated_at: '2026-06-05', message: '11H extra bus added', route_code: '11H', route_name: '' }]
-      }
-      return []
-    })
+    vi.mocked(api.stops.announcements).mockResolvedValue([{ type: 'Duyuru', updated_at: '2026-06-05', message: '15TY is delayed', route_code: '15TY', route_name: '' }, { type: 'Bilgi', updated_at: '2026-06-05', message: '11H extra bus added', route_code: '11H', route_name: '' }])
 
     renderPage()
 
@@ -79,21 +72,13 @@ describe('StopPage Announcements', () => {
       dcode: '1234', name: 'Test Stop', latitude: 41, longitude: 29
     })
     vi.mocked(api.stops.arrivals).mockResolvedValue([
-      { route_code: '15TY', destination: 'HEKİMBAŞI', eta_minutes: 5, eta_raw: '5 dk', is_live: true, sequence: 1 },
-      { route_code: '11H', destination: 'ÜMRANİYE', eta_minutes: 10, eta_raw: '10 dk', is_live: true, sequence: 2 },
+      { route_code: '15TY', destination: 'HEKÄ°MBAÅžI', eta_minutes: 5, eta_raw: '5 dk', is_live: true, sequence: 1 },
+      { route_code: '11H', destination: 'ÃœMRANÄ°YE', eta_minutes: 10, eta_raw: '10 dk', is_live: true, sequence: 2 },
     ] as any)
     vi.mocked(api.stops.routes).mockResolvedValue(['15TY', '11H'])
 
     // One succeeds, one fails
-    vi.mocked(api.routes.announcements).mockImplementation(async (route) => {
-      if (route === '15TY') {
-        return [{ type: 'Duyuru', updated_at: '2026-06-05', message: '15TY is delayed', route_code: '15TY', route_name: '' }]
-      }
-      if (route === '11H') {
-        throw new Error('API Error')
-      }
-      return []
-    })
+    vi.mocked(api.stops.announcements).mockResolvedValue([{ type: 'Duyuru', updated_at: '2026-06-05', message: '15TY is delayed', route_code: '15TY', route_name: '' }, { type: 'Bilgi', updated_at: '2026-06-05', message: '11H extra bus added', route_code: '11H', route_name: '' }])
 
     renderPage()
 
@@ -110,3 +95,7 @@ describe('StopPage Announcements', () => {
     })
   })
 })
+
+
+
+
