@@ -1,4 +1,4 @@
-﻿import { useState, useRef, useEffect, useMemo, memo } from 'react'
+import { useState, useRef, useEffect, useMemo, memo } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet'
 import * as L from 'leaflet'
 import CanvasMarkers from '@/components/CanvasMarkers'

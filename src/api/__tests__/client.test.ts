@@ -1,4 +1,4 @@
-﻿import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest'
+import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest'
 import { api } from '@/api/client'
 
 // ---------------------------------------------------------------------------

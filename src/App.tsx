@@ -1,4 +1,4 @@
-﻿import { BrowserRouter, Routes, Route, useNavigate, useLocation, useNavigationType } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, useNavigate, useLocation, useNavigationType } from 'react-router-dom'
 import { Suspense, lazy, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import AppBar from '@/components/AppBar'
 import InstallBanner, { useInstallBanner } from '@/components/InstallBanner'
