@@ -301,7 +301,7 @@ export default function NearbyPage() {
       // Silently enrich route pills in the background in chunks of 5 to prevent unbounded concurrency
       const enriched: PromiseSettledResult<string[]>[] = []
       for (let i = 0; i < nearby.length; i += 5) {
-        if (signal.aborted) break;
+        if (signal.aborted) return;
         const chunk = nearby.slice(i, i + 5)
         const results = await Promise.allSettled(
           chunk.map((s) => api.stops.routes(s.stop_code, { signal }))
