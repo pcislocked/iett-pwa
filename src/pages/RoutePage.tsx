@@ -185,10 +185,8 @@ export default function RoutePage() {
   const { hatKodu } = useParams<{ hatKodu: string }>()
   const navigate = useNavigate()
   const [tab, setTab] = useState<Tab>('schedule')
-  const [stopsDir, setStopsDir] = useState('')
-  const [mapDir, setMapDir] = useState('')
-  const [stopsVariant, setStopsVariant] = useState('')
-  const [mapVariant, setMapVariant] = useState('')
+  const [activeDir, setActiveDir] = useState('')
+  const [activeVariant, setActiveVariant] = useState('')
 
   const { data: buses, stale } = useRouteBuses(hatKodu ?? '')
 
@@ -209,66 +207,42 @@ export default function RoutePage() {
   )
   const dirLabel = (d: string) => d === 'G' ? 'Gidiş' : d === 'D' ? 'Dönüş' : d
 
-  const effectiveStopsDir = stopsDirections.includes(stopsDir)
-    ? stopsDir
+  const effectiveDir = stopsDirections.includes(activeDir)
+    ? activeDir
     : (stopsDirections[0] ?? '')
 
-  // Get available variants for the effectiveStopsDir
-  const availableStopsVariants = useMemo(() => {
+  // Get available variants for the effectiveDir
+  const availableVariants = useMemo(() => {
     if (!metadata) return []
-    const dirNum = effectiveStopsDir === 'G' ? 0 : 1
+    const dirNum = effectiveDir === 'G' ? 0 : 1
     return metadata.filter((m) => m.direction === dirNum).map((m) => m.variant_code)
-  }, [metadata, effectiveStopsDir])
+  }, [metadata, effectiveDir])
 
-  const effectiveStopsVariant = availableStopsVariants.includes(stopsVariant)
-    ? stopsVariant
-    : (availableStopsVariants[0] ?? '')
+  const effectiveVariant = availableVariants.includes(activeVariant)
+    ? activeVariant
+    : (availableVariants[0] ?? '')
 
   // Deduplicate by stop_code within the selected direction AND variant
   const stopsForDir = useMemo(() => {
     const dirStops = (stops ?? []).filter((s) => {
-      if (effectiveStopsDir && s.direction !== effectiveStopsDir) return false
-      if (effectiveStopsVariant && s.route_code !== effectiveStopsVariant) return false
+      if (effectiveDir && s.direction !== effectiveDir) return false
+      if (effectiveVariant && s.route_code !== effectiveVariant) return false
       return true
     })
     const seen = new Set<string>()
     return dirStops.filter((s) => { if (seen.has(s.stop_code)) return false; seen.add(s.stop_code); return true })
-  }, [stops, effectiveStopsDir, effectiveStopsVariant])
+  }, [stops, effectiveDir, effectiveVariant])
 
-  // Build set of stop_sequence values for buses currently in the active stops direction
   const busAtSequence = useMemo(() => {
     const seqs = new Set<number>()
     for (const b of (buses ?? [])) {
-      if (b.stop_sequence != null && (!effectiveStopsDir || b.direction_letter === effectiveStopsDir))
+      if (b.stop_sequence != null && (!effectiveDir || b.direction_letter === effectiveDir))
         seqs.add(b.stop_sequence)
     }
     return seqs
-  }, [buses, effectiveStopsDir])
+  }, [buses, effectiveDir])
 
-  // Direction state for the map tab
-  const effectiveMapDir = stopsDirections.includes(mapDir)
-    ? mapDir
-    : (stopsDirections[0] ?? '')
-
-  const availableMapVariants = useMemo(() => {
-    if (!metadata) return []
-    const dirNum = effectiveMapDir === 'G' ? 0 : 1
-    return metadata.filter((m) => m.direction === dirNum).map((m) => m.variant_code)
-  }, [metadata, effectiveMapDir])
-
-  const effectiveMapVariant = availableMapVariants.includes(mapVariant)
-    ? mapVariant
-    : (availableMapVariants[0] ?? '')
-
-  const stopsForMap = useMemo(() => {
-    const dirStops = (stops ?? []).filter((s) => {
-      if (effectiveMapDir && s.direction !== effectiveMapDir) return false
-      if (effectiveMapVariant && s.route_code !== effectiveMapVariant) return false
-      return true
-    })
-    const seen = new Set<string>()
-    return dirStops.filter((s) => { if (seen.has(s.stop_code)) return false; seen.add(s.stop_code); return true })
-  }, [stops, effectiveMapDir, effectiveMapVariant])
+  const stopsForMap = stopsForDir
 
   const { isFavorite, toggle } = useFavorites()
   const routeName = metadata?.[0]?.full_name ?? hatKodu ?? ''
@@ -355,9 +329,9 @@ export default function RoutePage() {
             {stopsDirections.length > 1 && (
               <div role="tablist" aria-label="Gün seçimi" className="flex border-b border-[#222]">
                 {stopsDirections.map((dir) => (
-                  <button role="tab" aria-selected={effectiveMapDir === dir} key={dir} onClick={() => setMapDir(dir)}
+                  <button role="tab" aria-selected={effectiveDir === dir} key={dir} onClick={() => setActiveDir(dir)}
                     className={`flex-1 text-xs py-2 px-2 font-medium transition-colors truncate border-b-2 -mb-px ${
-                      effectiveMapDir === dir
+                      effectiveDir === dir
                         ? 'border-[#00AFF0] text-[#00AFF0]'
                         : 'border-transparent text-[#404040] hover:text-[#888]'
                     }`}
@@ -368,13 +342,13 @@ export default function RoutePage() {
               </div>
             )}
             {/* Variant Select */}
-            {effectiveMapDir && (
+            {effectiveDir && (
               <div className="px-1 mt-2">
                 <VariantSelect
                   metadata={metadata ?? null}
-                  direction={effectiveMapDir}
-                  selectedVariant={effectiveMapVariant}
-                  onChange={setMapVariant}
+                  direction={effectiveDir}
+                  selectedVariant={effectiveVariant}
+                  onChange={setActiveVariant}
                 />
               </div>
             )}
@@ -406,7 +380,11 @@ export default function RoutePage() {
                   />
                 ))}
                 {buses
-                  ?.filter((b) => !effectiveMapDir || b.direction_letter === effectiveMapDir)
+                  ?.filter((b) => {
+                    if (effectiveDir && b.direction_letter !== effectiveDir) return false
+                    if (effectiveVariant && b.route_code && b.route_code.includes('_') && b.route_code !== effectiveVariant) return false
+                    return true
+                  })
                   .map((b) => (
                     <Marker
                       key={b.kapino}
@@ -431,9 +409,9 @@ export default function RoutePage() {
             {stopsDirections.length > 1 && (
               <div className="flex border-b border-[#222] mb-1">
                 {stopsDirections.map((dir) => (
-                  <button role="tab" aria-selected={effectiveStopsDir === dir} key={dir} onClick={() => setStopsDir(dir)}
+                  <button role="tab" aria-selected={effectiveDir === dir} key={dir} onClick={() => setActiveDir(dir)}
                     className={`flex-1 text-xs py-2 px-2 font-medium transition-colors truncate border-b-2 -mb-px ${
-                      effectiveStopsDir === dir
+                      effectiveDir === dir
                         ? 'border-[#00AFF0] text-[#00AFF0]'
                         : 'border-transparent text-[#404040] hover:text-[#888]'
                     }`}
@@ -444,13 +422,13 @@ export default function RoutePage() {
               </div>
             )}
             {/* Variant Select */}
-            {effectiveStopsDir && (
+            {effectiveDir && (
               <div className="px-1 mt-1">
                 <VariantSelect
                   metadata={metadata ?? null}
-                  direction={effectiveStopsDir}
-                  selectedVariant={effectiveStopsVariant}
-                  onChange={setStopsVariant}
+                  direction={effectiveDir}
+                  selectedVariant={effectiveVariant}
+                  onChange={setActiveVariant}
                 />
               </div>
             )}
@@ -488,7 +466,7 @@ export default function RoutePage() {
                 <span className="flex-1 text-sm text-slate-200 truncate">{s.stop_name}</span>
                 {busAtSequence.has(s.sequence) && (
                   <span title="OtobÃ¼s burada" className="w-2.5 h-2.5 rounded-full shrink-0 animate-pulse"
-                        style={{ background: effectiveStopsDir === 'D' ? '#f59e0b' : '#2563eb' }} />
+                        style={{ background: effectiveDir === 'D' ? '#f59e0b' : '#2563eb' }} />
                 )}
                 <span className="text-xs text-slate-600 shrink-0">{s.stop_code}</span>
                 <svg className="w-4 h-4 text-slate-600 shrink-0" fill="none" viewBox="0 0 24 24"

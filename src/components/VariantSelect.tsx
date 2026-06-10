@@ -17,11 +17,15 @@ export function VariantSelect({ metadata, direction, selectedVariant, onChange }
 
   return (
     <div className="flex flex-col gap-1.5 mb-3">
-      <label className="text-[10px] font-medium text-slate-500 uppercase tracking-wider px-1">
+      <label 
+        htmlFor={`variant-select-${direction}`}
+        className="text-[10px] font-medium text-slate-500 uppercase tracking-wider px-1"
+      >
         Güzergah Varyantı
       </label>
       <div className="relative">
         <select
+          id={`variant-select-${direction}`}
           value={selectedVariant}
           onChange={(e) => onChange(e.target.value)}
           className="w-full appearance-none bg-surface-muted/30 border border-surface-muted rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-brand-500 transition-colors"
