@@ -410,6 +410,7 @@ export default function StopPage() {
   const mapContainerRef = useRef<HTMLDivElement>(null)
   const splitContainerRef = useRef<HTMLDivElement>(null)
   const dragState = useRef<{ startY: number; startPct: number } | null>(null)
+  const dragRafId = useRef<number | null>(null)
 
   const onHandlePointerDown = useCallback((e: React.PointerEvent) => {
     e.currentTarget.setPointerCapture(e.pointerId)
@@ -422,12 +423,42 @@ export default function StopPage() {
     const dy = e.clientY - dragState.current.startY
     const deltaPct = (dy / containerH) * 100
     const newPct = Math.min(65, Math.max(15, dragState.current.startPct + deltaPct))
+    
+    if (dragRafId.current) cancelAnimationFrame(dragRafId.current)
+    
+    dragRafId.current = requestAnimationFrame(() => {
+      if (!mapContainerRef.current) return
+      mapHeightPctRef.current = newPct
+      mapContainerRef.current.style.height = `${newPct}%`
+      window.dispatchEvent(new Event('resize'))
+    })
+  }, [])
+
+  const onHandlePointerUp = useCallback(() => { 
+    dragState.current = null 
+    if (dragRafId.current) {
+      cancelAnimationFrame(dragRafId.current)
+      dragRafId.current = null
+    }
+  }, [])
+
+  const onHandleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (!mapContainerRef.current) return
+    const step = 5
+    let newPct = mapHeightPctRef.current
+    if (e.key === 'ArrowUp') {
+      newPct = Math.max(15, newPct - step)
+      e.preventDefault()
+    } else if (e.key === 'ArrowDown') {
+      newPct = Math.min(65, newPct + step)
+      e.preventDefault()
+    } else {
+      return
+    }
     mapHeightPctRef.current = newPct
     mapContainerRef.current.style.height = `${newPct}%`
     window.dispatchEvent(new Event('resize'))
   }, [])
-
-  const onHandlePointerUp = useCallback(() => { dragState.current = null }, [])
 
   // Reset to default tab whenever the stop changes (React Router may reuse this component)
   useEffect(() => { setActiveTab('gelis') }, [dcode])
@@ -553,33 +584,23 @@ export default function StopPage() {
     return m
   }, [arrivalRouteOrder, routes, orderedForColors])
 
-
-
-  // Announcements for ALL routes present at this stop
-  const annsFetcher = useCallback(async ({ signal }: { signal: AbortSignal }) => {
-    if (!dcode) return []
-    try {
-      return await api.stops.announcements(dcode, { signal })
-    } catch (e: any) {
-      if (e?.name === 'AbortError') throw e;
-      return [{
-        route_code: 'SİSTEM',
-        route_name: '',
-        type: 'Uyarı',
-        message: 'Duyurular yüklenirken geçici bir hata oluştu.',
-        updated_at: new Date().toLocaleTimeString('tr-TR')
-      }] as RouteAnnouncement[]
-    }
-  }, [dcode])
-
-  const { data: polledAnnouncements } = useQuery<RouteAnnouncement[]>({
+  const { data: polledAnnouncements, isError: isAnnsError } = useQuery<RouteAnnouncement[]>({
     queryKey: ['stopAnnouncements', dcode],
-    queryFn: annsFetcher,
+    queryFn: async ({ signal }) => {
+      if (!dcode) return []
+      return await api.stops.announcements(dcode, { signal })
+    },
     refetchInterval: 300_000,
     enabled: !!dcode,
     placeholderData: (prev) => prev,
   })
-  const stopAnnouncements = polledAnnouncements ?? []
+  const stopAnnouncements = isAnnsError ? [{
+    type: 'Uyarı',
+    updated_at: new Date().toLocaleTimeString('tr-TR'),
+    message: 'Duyurular yüklenirken geçici bir hata oluştu.',
+    route_code: '',
+    route_name: '',
+  } as RouteAnnouncement] : (polledAnnouncements ?? [])
 
   const { isFavorite, toggle } = useFavorites()
   const { prefs, isPinned, pinStop, unpinStop } = useUserPrefs()
@@ -836,12 +857,19 @@ export default function StopPage() {
 
         {/* ── Drag handle ──────────────────────────────────────────────── */}
         <div
-          className="shrink-0 flex items-center justify-center h-5 cursor-row-resize select-none touch-none bg-surface-card border-b border-surface-muted active:bg-surface-muted"
-          onPointerDown={onHandlePointerDown}
-          onPointerMove={onHandlePointerMove}
-          onPointerUp={onHandlePointerUp}
-          onPointerCancel={onHandlePointerUp}
-        >
+            role="separator"
+            aria-valuenow={mapHeightPctRef.current}
+            aria-valuemin={15}
+            aria-valuemax={65}
+            aria-label="Harita yüksekliğini ayarla"
+            tabIndex={0}
+            className="shrink-0 flex items-center justify-center h-5 cursor-row-resize select-none touch-none bg-surface-card border-b border-surface-muted active:bg-surface-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+            onPointerDown={onHandlePointerDown}
+            onPointerMove={onHandlePointerMove}
+            onPointerUp={onHandlePointerUp}
+            onPointerCancel={onHandlePointerUp}
+            onKeyDown={onHandleKeyDown}
+          >
           <div className="w-10 h-1 rounded-full bg-slate-600" />
         </div>
 
@@ -852,19 +880,20 @@ export default function StopPage() {
             <div className="mb-2">
               <button
                 type="button"
+                id="announcements-btn"
                 aria-expanded={showAnnouncements}
                 aria-controls="announcements-list"
                 onClick={() => setShowAnnouncements(!showAnnouncements)}
                 className="w-full card flex items-center justify-between text-sm text-amber-400 font-semibold"
               >
-                <span>🔔 Duyurular ({(stopAnnouncements ?? []).length})</span>
+                <span>⚠️ Duyurular ({(stopAnnouncements ?? []).length})</span>
                 <svg className={`w-4 h-4 transition-transform ${showAnnouncements ? 'rotate-180' : ''}`}
                      fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/>
                 </svg>
               </button>
               {showAnnouncements && (
-                <div id="announcements-list" className="mt-2 flex flex-col gap-2">
+                <div id="announcements-list" role="region" aria-labelledby="announcements-btn" className="mt-2 flex flex-col gap-2">
                   {(stopAnnouncements ?? []).map((ann) => (
                     <div key={`${ann.route_code}-${ann.type}-${ann.message}-${ann.updated_at}`} className="card border-amber-800/50 bg-amber-950/20">
                       <p className="text-xs font-semibold text-amber-400 mb-1">
