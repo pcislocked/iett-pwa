@@ -43,7 +43,10 @@ describe('StopPage Announcements', () => {
     vi.mocked(api.stops.detail).mockResolvedValue({
       dcode: '1234', name: 'Test Stop', latitude: 41, longitude: 29
     })
-    vi.mocked(api.stops.arrivals).mockResolvedValue([] as any)
+    vi.mocked(api.stops.arrivals).mockResolvedValue([
+        { route_code: '15TY', destination: 'Test Dest', eta_minutes: 5, eta_raw: '5 dk', plate: null, kapino: null, lat: null, lon: null },
+        { route_code: '11H', destination: 'Test Dest', eta_minutes: 15, eta_raw: '15 dk', plate: null, kapino: null, lat: null, lon: null },
+      ] as any)
 
     vi.mocked(api.stops.announcements).mockResolvedValue([
       { type: 'Duyuru', updated_at: '2026-06-05', message: '15TY is delayed', route_code: '15TY', route_name: '' },
@@ -75,7 +78,10 @@ describe('StopPage Announcements', () => {
       latitude: 41,
       longitude: 29
     })
-    vi.mocked(api.stops.arrivals).mockResolvedValue([] as any)
+    vi.mocked(api.stops.arrivals).mockResolvedValue([
+        { route_code: '15TY', destination: 'Test Dest', eta_minutes: 5, eta_raw: '5 dk', plate: null, kapino: null, lat: null, lon: null },
+        { route_code: '11H', destination: 'Test Dest', eta_minutes: 15, eta_raw: '15 dk', plate: null, kapino: null, lat: null, lon: null },
+      ] as any)
     vi.mocked(api.stops.routes).mockResolvedValue(['15TY', '11H'])
 
     // Fails
