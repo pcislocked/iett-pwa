@@ -269,7 +269,7 @@ export default function RoutePage() {
               {stale && <span className="text-xs text-amber-400 shrink-0">âš </span>}
             </div>
             <p className="text-[11px] text-slate-500">
-              {buses?.length ?? 0} aktif araÃ§
+              {buses?.length ?? 0} aktif araç
             </p>
           </div>
 
