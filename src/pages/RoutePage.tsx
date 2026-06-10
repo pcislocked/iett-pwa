@@ -190,10 +190,10 @@ export default function RoutePage() {
 
   const { data: buses, stale } = useRouteBuses(hatKodu ?? '')
 
-  const stopsFetcher = useMemo(() => () => api.routes.stops(hatKodu ?? ''), [hatKodu])
-  const scheduleFetcher = useMemo(() => () => api.routes.schedule(hatKodu ?? ''), [hatKodu])
-  const announceFetcher = useMemo(() => () => api.routes.announcements(hatKodu ?? ''), [hatKodu])
-  const metaFetcher = useMemo(() => () => api.routes.metadata(hatKodu ?? ''), [hatKodu])
+  const stopsFetcher = useMemo(() => ({ signal }: { signal?: AbortSignal }) => api.routes.stops(hatKodu ?? '', { signal }), [hatKodu])
+  const scheduleFetcher = useMemo(() => ({ signal }: { signal?: AbortSignal }) => api.routes.schedule(hatKodu ?? '', { signal }), [hatKodu])
+  const announceFetcher = useMemo(() => ({ signal }: { signal?: AbortSignal }) => api.routes.announcements(hatKodu ?? '', { signal }), [hatKodu])
+  const metaFetcher = useMemo(() => ({ signal }: { signal?: AbortSignal }) => api.routes.metadata(hatKodu ?? '', { signal }), [hatKodu])
 
   const { data: stops, error: stopsError, refetch: refreshStops } = useQuery<RouteStop[]>({ queryKey: ['stops', hatKodu], queryFn: stopsFetcher, refetchInterval: 300_000, enabled: !!hatKodu })
   const { data: schedule, error: scheduleError, refetch: refreshSchedule } = useQuery<ScheduledDeparture[]>({ queryKey: ['schedule', hatKodu], queryFn: scheduleFetcher, refetchInterval: 300_000, enabled: !!hatKodu })

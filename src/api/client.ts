@@ -49,6 +49,20 @@ export class ApiHttpError extends Error {
   }
 }
 
+function combineSignals(s1?: AbortSignal | null, s2?: AbortSignal | null): AbortSignal | undefined {
+  if (!s1) return s2 || undefined
+  if (!s2) return s1 || undefined
+  if (typeof AbortSignal !== 'undefined' && typeof AbortSignal.any === 'function') {
+    return AbortSignal.any([s1, s2])
+  }
+  const controller = new AbortController()
+  const onAbort = () => controller.abort()
+  s1.addEventListener('abort', onAbort)
+  s2.addEventListener('abort', onAbort)
+  if (s1.aborted || s2.aborted) controller.abort()
+  return controller.signal
+}
+
 type TimeoutSignal = {
   signal?: AbortSignal
   clear: () => void
@@ -77,7 +91,8 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const execute = async (url: string): Promise<T> => {
     const { signal, clear } = createTimeoutSignal(REQUEST_TIMEOUT_MS)
     try {
-      const requestInit = signal ? { ...init, signal } : init
+      const combinedSignal = combineSignals(signal, init?.signal)
+      const requestInit = combinedSignal ? { ...init, signal: combinedSignal } : init
       const res = await fetch(url, requestInit)
       if (!res.ok) {
         const text = await res.text().catch(() => '')

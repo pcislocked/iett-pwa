@@ -512,14 +512,14 @@ export default function StopPage() {
 
   const { data: routes } = useQuery<string[]>({
     queryKey: ['routesAtStop', dcode],
-    queryFn: () => api.stops.routes(dcode ?? ''),
+    queryFn: ({ signal }) => api.stops.routes(dcode ?? '', { signal }),
     refetchInterval: 300_000,
     enabled: !!dcode,
   })
 
   const { data: stopDetail } = useQuery<StopDetail>({
     queryKey: ['stopDetail', dcode],
-    queryFn: () => api.stops.detail(dcode ?? ''),
+    queryFn: ({ signal }) => api.stops.detail(dcode ?? '', { signal }),
     refetchInterval: 3_600_000,
     enabled: !!dcode,
   })

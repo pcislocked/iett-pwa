@@ -142,7 +142,8 @@ export default function NearbyPage() {
   const [allStops, setAllStops] = useState<NearbyStop[]>([])
   const [pickedLat, setPickedLat] = useState<number | null>(null)
   const [pickedLon, setPickedLon] = useState<number | null>(null)
-
+  const fetchControllerRef = useRef<AbortController | null>(null)
+  
   // ── Selection state ─────────────────────────────────────────────────────────
   const [selectedCode, setSelectedCode] = useState<string | null>(null)
   const listRef = useRef<HTMLDivElement>(null)
@@ -276,10 +277,15 @@ export default function NearbyPage() {
   }
 
   async function fetchNearby(lat: number, lon: number) {
+    if (fetchControllerRef.current) fetchControllerRef.current.abort()
+    const controller = new AbortController()
+    fetchControllerRef.current = controller
+    const signal = controller.signal
+
     setPhase('loading')
     setSelectedCode(null)
     try {
-      const nearby = await api.stops.nearby(lat, lon)
+      const nearby = await api.stops.nearby(lat, lon, 500, { signal })
       const base: NearbyStop[] = [...nearby]
         .sort((a, b) => (Number(a.distance_m) || 0) - (Number(b.distance_m) || 0))
         .map((s) => ({ ...s, routes: [] }))
@@ -291,7 +297,7 @@ export default function NearbyPage() {
       for (let i = 0; i < nearby.length; i += 5) {
         const chunk = nearby.slice(i, i + 5)
         const results = await Promise.allSettled(
-          chunk.map((s) => api.stops.routes(s.stop_code))
+          chunk.map((s) => api.stops.routes(s.stop_code, { signal }))
         )
         enriched.push(...results)
       }
@@ -310,7 +316,8 @@ export default function NearbyPage() {
             routes: routeMap.get(s.stop_code) ?? [],
           })),
       )
-    } catch {
+    } catch (err: any) {
+      if (err.name === 'AbortError' || err.message?.includes('AbortError')) return
       setPhase('error')
       setErrorMsg('Duraklar yüklenemedi. Lütfen tekrar deneyin.')
     }

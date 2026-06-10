@@ -20,6 +20,7 @@ export default function SearchBar({ placeholder = 'Hat kodu, durak adı...', aut
   const navigate = useNavigate()
   const inputRef = useRef<HTMLInputElement>(null)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const abortControllerRef = useRef<AbortController | null>(null)
 
   useEffect(() => {
     if (autoFocus) inputRef.current?.focus()
@@ -39,11 +40,16 @@ export default function SearchBar({ placeholder = 'Hat kodu, durak adı...', aut
       return
     }
     if (timerRef.current) clearTimeout(timerRef.current)
+    if (abortControllerRef.current) abortControllerRef.current.abort()
+    const controller = new AbortController()
+    abortControllerRef.current = controller
+    const signal = controller.signal
+
     timerRef.current = setTimeout(async () => {
       try {
         const [stopsResult, routesResult] = await Promise.allSettled([
-          api.stops.search(q),
-          api.routes.search(q),
+          api.stops.search(q, { signal }),
+          api.routes.search(q, { signal }),
         ])
         
         const stops = stopsResult.status === 'fulfilled' ? stopsResult.value : []
@@ -55,12 +61,16 @@ export default function SearchBar({ placeholder = 'Hat kodu, durak adı...', aut
         ]
         setResults(combined)
         setOpen(combined.length > 0)
-      } catch {
+      } catch (err: any) {
+        if (err.name === 'AbortError' || err.message?.includes('AbortError')) return
         setResults([])
         setOpen(false)
       }
     }, 300)
-    return () => { if (timerRef.current) clearTimeout(timerRef.current) }
+    return () => { 
+      if (timerRef.current) clearTimeout(timerRef.current) 
+      if (abortControllerRef.current) abortControllerRef.current.abort()
+    }
   }, [query])
 
   function handleSelect(r: SearchResult) {

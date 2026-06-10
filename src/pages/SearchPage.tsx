@@ -13,6 +13,7 @@ export default function SearchPage() {
   const navigate = useNavigate()
   const inputRef = useRef<HTMLInputElement>(null)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const abortControllerRef = useRef<AbortController | null>(null)
   const reqIdRef = useRef(0)
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<SearchResult[]>([])
@@ -48,12 +49,17 @@ export default function SearchPage() {
     }
     setLoading(true)
     if (timerRef.current) clearTimeout(timerRef.current)
+    if (abortControllerRef.current) abortControllerRef.current.abort()
+    const controller = new AbortController()
+    abortControllerRef.current = controller
+    const signal = controller.signal
+
     const myId = ++reqIdRef.current
     timerRef.current = setTimeout(async () => {
       try {
         const [stops, routes] = await Promise.all([
-          api.stops.search(q),
-          api.routes.search(q),
+          api.stops.search(q, { signal }),
+          api.routes.search(q, { signal }),
         ])
         if (myId !== reqIdRef.current) return   // stale — a newer query is in flight
         const combined: SearchResult[] = [
@@ -61,14 +67,18 @@ export default function SearchPage() {
           ...routes.map((r) => ({ kind: 'route' as const, ...r })),
         ]
         setResults(combined)
-      } catch {
+      } catch (err: any) {
+        if (err.name === 'AbortError' || err.message?.includes('AbortError')) return
         if (myId !== reqIdRef.current) return
         setResults([])
       } finally {
         if (myId === reqIdRef.current) setLoading(false)
       }
     }, 300)
-    return () => { if (timerRef.current) clearTimeout(timerRef.current) }
+    return () => { 
+      if (timerRef.current) clearTimeout(timerRef.current) 
+      if (abortControllerRef.current) abortControllerRef.current.abort()
+    }
   }, [query])
 
   function handleSelect(r: SearchResult) {

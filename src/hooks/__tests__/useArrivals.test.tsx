@@ -42,7 +42,7 @@ describe('useArrivals', () => {
 
     expect(result.current.data).toEqual(mockData)
     expect(result.current.error).toBeNull()
-    expect(api.stops.arrivals).toHaveBeenCalledWith('1234', undefined)
+    expect(api.stops.arrivals).toHaveBeenCalledWith('1234', undefined, expect.objectContaining({ signal: expect.any(AbortSignal) }))
   })
 
   it('handles error states', async () => {

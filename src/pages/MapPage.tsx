@@ -91,13 +91,13 @@ export default function MapPage() {
 
   const { data: fleetMeta, refetch: refreshFleetMeta } = useQuery<{ bus_count: number; updated_at: string | null }>({
     queryKey: ['fleetMeta'],
-    queryFn: () => api.fleet.meta(),
+    queryFn: ({ signal }) => api.fleet.meta({ signal }),
     refetchInterval: 15_000,
   })
 
   const { data: garages } = useQuery<Garage[]>({
     queryKey: ['garages'],
-    queryFn: () => api.garages.list(),
+    queryFn: ({ signal }) => api.garages.list({ signal }),
     refetchInterval: 86_400_000, // 24 h â€” garages rarely change
   })
 
@@ -199,12 +199,17 @@ export default function MapPage() {
   useEffect(() => {
     if (searchQuery.trim().length < 1) { setSearchResults([]); return }
     let cancelled = false
+    const controller = new AbortController()
+    const signal = controller.signal
     const t = window.setTimeout(() => {
-      api.routes.search(searchQuery)
+      api.routes.search(searchQuery, { signal })
         .then((r) => { if (!cancelled) setSearchResults(r.slice(0, 8)) })
-        .catch(() => { if (!cancelled) setSearchResults([]) })
+        .catch((e) => { 
+          if (e.name === 'AbortError' || e.message?.includes('AbortError')) return
+          if (!cancelled) setSearchResults([]) 
+        })
     }, 300)
-    return () => { cancelled = true; window.clearTimeout(t) }
+    return () => { cancelled = true; window.clearTimeout(t); controller.abort() }
   }, [searchQuery])
 
   function addRoute(hatKodu: string) {
