@@ -45,6 +45,8 @@ function ErrorRetry({ message, onRetry }: { message: string; onRetry: () => void
     </div>
   )
 }
+const formatStopName = (name: string) => name.split(' - ')[0]
+
 function TimetableView({ schedule, scheduleError, onRetry, metadata, stops, hatKodu }: {
   schedule: ScheduledDeparture[] | null
   scheduleError: string | null
@@ -56,8 +58,6 @@ function TimetableView({ schedule, scheduleError, onRetry, metadata, stops, hatK
   const [dayType, setDayType] = useState('H')
   const [direction, setDirection] = useState('')
   const [selectedVariant, setSelectedVariant] = useState<string | null>(null)
-
-  const formatStopName = (name: string) => name.split(' - ')[0]
 
   // Map direction code ('D'/'G') -> departure label (KALKIŞ / YÖNÜ)
   const dirLabel = useMemo(() => {
