@@ -178,32 +178,34 @@ function TimetableView({ schedule, scheduleError, onRetry, metadata, stops, hatK
 
   return (
     <div className="flex flex-col gap-4 relative">
-      <div role="tablist" aria-label="Gün seçimi" className="flex border-b border-[#222]">
-        {DAY_TYPES.map(({ key, label }) => (
-          <button role="tab" aria-selected={dayType === key} key={key} onClick={() => { setDayType(key); setDirection('') }}
-            disabled={!availableDays.has(key)}
-            className={`flex-1 text-sm py-2.5 font-medium transition-colors disabled:opacity-25 border-b-2 -mb-px ${
-              dayType === key ? 'border-white text-white' : 'border-transparent text-[#404040] hover:text-[#888]'
-            }`}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-
-      {availableDirections.length > 1 && (
-        <div role="tablist" aria-label="Yön seçimi" className="flex gap-0 border-b border-[#222]">
-          {availableDirections.map((dir) => (
-            <button role="tab" aria-selected={direction === dir} key={dir} onClick={() => setDirection(dir)}
-              className={`flex-1 text-xs py-2 px-2 font-medium transition-colors truncate border-b-2 -mb-px ${
-                effectiveDirection === dir ? 'border-[#00AFF0] text-[#00AFF0]' : 'border-transparent text-[#404040] hover:text-[#888]'
+      <div className="sticky top-0 z-20 bg-black/95 backdrop-blur-sm pt-2 pb-2 -mx-4 px-4 border-b border-[#222] shadow-[0_8px_16px_-8px_rgba(0,0,0,0.8)]">
+        <div role="tablist" aria-label="Gün seçimi" className="flex border-b border-[#222]">
+          {DAY_TYPES.map(({ key, label }) => (
+            <button role="tab" aria-selected={dayType === key} key={key} onClick={() => { setDayType(key); setDirection('') }}
+              disabled={!availableDays.has(key)}
+              className={`flex-1 text-sm py-2.5 font-medium transition-colors disabled:opacity-25 border-b-2 -mb-px ${
+                dayType === key ? 'border-white text-white' : 'border-transparent text-[#404040] hover:text-[#888]'
               }`}
             >
-              {dirLabel(dir)}
+              {label}
             </button>
           ))}
         </div>
-      )}
+
+        {availableDirections.length > 1 && (
+          <div role="tablist" aria-label="Yön seçimi" className="flex gap-0 pt-2">
+            {availableDirections.map((dir) => (
+              <button role="tab" aria-selected={direction === dir} key={dir} onClick={() => setDirection(dir)}
+                className={`flex-1 text-xs py-2 px-2 font-medium transition-colors truncate border-b-2 -mb-px ${
+                  effectiveDirection === dir ? 'border-[#00AFF0] text-[#00AFF0]' : 'border-transparent text-[#404040] hover:text-[#888]'
+                }`}
+              >
+                {dirLabel(dir)}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
 
       {!schedule && !scheduleError && (
         <div className="flex flex-col gap-2">
