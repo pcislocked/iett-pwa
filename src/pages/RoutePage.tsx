@@ -259,10 +259,12 @@ function TimetableView({ schedule, scheduleError, onRetry, metadata, stops, hatK
         </div>
       )}
 
-      <div className="mt-6 text-center">
-        <a href={`https://iett.istanbul/RouteDetail?hkod=${hatKodu}`} target="_blank" rel="noopener noreferrer" className="inline-flex flex-col items-center justify-center gap-1 text-xs text-slate-400 hover:text-white transition-colors p-3 bg-surface-muted/30 rounded-xl w-full">
-          <span className="font-semibold">Resmi iett.istanbul sitesinden teyit et</span>
-          <span className="text-[10px] opacity-75">Bağlantı yeni sekmede açılır</span>
+      <div className="mt-8 mb-4 text-center px-4">
+        <p className="text-[10px] text-slate-500 mb-2 leading-relaxed text-justify opacity-80">
+          Bu ekrandaki hareket saatleri ve yan sefer notları, sistemdeki çeşitli veri parçalarının bir araya getirilmesiyle oluşturulmuştur. Olası sistemsel tutarsızlıklara karşı lütfen yolculuğunuzdan önce resmi kaynağı referans alınız.
+        </p>
+        <a href={`https://iett.istanbul/RouteDetail?hkod=${hatKodu}`} target="_blank" rel="noopener noreferrer" className="inline-block text-[10px] text-slate-400 hover:text-white transition-colors border border-surface-muted/50 rounded px-2 py-1 bg-surface-muted/10">
+          iett.istanbul üzerinden teyit et ↗
         </a>
       </div>
 
