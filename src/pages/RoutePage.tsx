@@ -29,7 +29,7 @@ const busIconUnknown = L.divIcon({
 })
 
 const DAY_TYPES = [
-  { key: 'H', label: 'Hafta Ä°Ã§i' },
+  { key: 'H', label: 'Hafta İçi' },
   { key: 'C', label: 'Cumartesi' },
   { key: 'P', label: 'Pazar' },
 ]
@@ -45,23 +45,56 @@ function ErrorRetry({ message, onRetry }: { message: string; onRetry: () => void
     </div>
   )
 }
-
-function TimetableView({ schedule, scheduleError, onRetry, metadata }: {
+function TimetableView({ schedule, scheduleError, onRetry, metadata, stops, hatKodu }: {
   schedule: ScheduledDeparture[] | null
   scheduleError: string | null
   onRetry: () => void
   metadata: RouteMetadata[] | null
+  stops?: RouteStop[] | null
+  hatKodu?: string
 }) {
   const [dayType, setDayType] = useState('H')
   const [direction, setDirection] = useState('')
+  const [selectedVariant, setSelectedVariant] = useState<string | null>(null)
 
-  // Map direction code ('D'/'G') ÔåÆ short terminal label from metadata
+  const formatStopName = (name: string) => name.split(' - ')[0]
+
+  // Map direction code ('D'/'G') -> departure label (KALKIŞ / YÖNÜ)
   const dirLabel = useMemo(() => {
     const hasMetadata = !!metadata?.length
-    return (code: string) => getDirectionLabel(code, metadata, hasMetadata)
-  }, [metadata])
+    return (code: string) => {
+      if (stops && stops.length > 0) {
+        const dirStops = stops.filter(s => s.direction === code)
+        if (dirStops.length > 0) {
+          const variantsInDir = Array.from(new Set(dirStops.map(s => s.route_code)))
+          const firstStops = new Set<string>()
+          const lastStops = new Set<string>()
+          
+          for (const v of variantsInDir) {
+            const vStops = dirStops.filter(s => s.route_code === v)
+            if (vStops.length > 0) {
+              firstStops.add(formatStopName(vStops[0].stop_name))
+              lastStops.add(formatStopName(vStops[vStops.length - 1].stop_name))
+            }
+          }
+          
+          if (firstStops.size === 1) {
+            return `${Array.from(firstStops)[0]} KALKIŞ`
+          } else if (lastStops.size === 1) {
+            return `${Array.from(lastStops)[0]} YÖNÜ`
+          } else if (firstStops.size > 1) {
+            return `ÇEŞİTLİ KALKIŞLAR (${code === 'G' ? 'Gidiş' : 'Dönüş'})`
+          }
+        }
+      }
 
-  // Directions available for the current day type
+      const baseLabel = getDirectionLabel(code, metadata, hasMetadata)
+      return baseLabel !== code && baseLabel !== 'Gidiş' && baseLabel !== 'Dönüş'
+        ? `${baseLabel} KALKIŞ`
+        : baseLabel === 'Gidiş' ? 'Gidiş' : baseLabel === 'Dönüş' ? 'Dönüş' : code
+    }
+  }, [metadata, stops])
+
   const availableDirections = useMemo(() => {
     if (!schedule) return [] as string[]
     const seen = new Set<string>()
@@ -71,49 +104,86 @@ function TimetableView({ schedule, scheduleError, onRetry, metadata }: {
     return Array.from(seen).sort()
   }, [schedule, dayType])
 
-  // Auto-select first direction when day type changes or schedule loads
   const effectiveDirection = availableDirections.includes(direction)
     ? direction
     : (availableDirections[0] ?? '')
 
-  // Group filtered departures by hour
+  // Generate dynamic footnotes for sub-routes
+  const { footnotes, footnoteToName, footnoteToVariant } = useMemo(() => {
+    const fnMap = new Map<string, number>()
+    const fnNameMap = new Map<number, string>()
+    const fnVariantMap = new Map<number, string>()
+    if (!schedule || !effectiveDirection) return { footnotes: fnMap, footnoteToName: fnNameMap, footnoteToVariant: fnVariantMap }
+
+    const filtered = schedule.filter(d => d.day_type === dayType && d.direction === effectiveDirection)
+    const uniqueVariants = [...new Set(filtered.map(d => d.route_variant).filter(v => v && !v.endsWith('_D0') && !v.endsWith('_G0')))].sort()
+    
+    uniqueVariants.forEach((v, idx) => {
+      const num = idx + 1
+      fnMap.set(v, num)
+      
+      let label = v
+
+      let stopsLabel = ''
+      const variantStops = stops?.filter(s => s.route_code === v || (!metadata?.length && `${hatKodu}_${s.direction}` === v))
+      if (variantStops && variantStops.length > 1) {
+        const first = formatStopName(variantStops[0].stop_name)
+        const last = formatStopName(variantStops[variantStops.length - 1].stop_name)
+        stopsLabel = `${first} > ${last}`
+      }
+
+      if (stopsLabel) {
+        label = stopsLabel
+      } else {
+        const meta = metadata?.find(m => m.variant_code === v)
+        if (meta && meta.direction_name) {
+          const parts = meta.direction_name.split(' - ')
+          label = parts.length >= 2 ? `${parts[0].trim()} > ${parts[parts.length - 1].trim()}` : (meta.full_name || v)
+        }
+      }
+      
+      const isCanonical = v.endsWith('_D0') || v.endsWith('_G0')
+      if (!isCanonical && label !== v) {
+        const suffix = v.split('_').pop()
+        if (suffix && suffix !== 'G' && suffix !== 'D') {
+          label += ` (${suffix})`
+        }
+      }
+      
+      fnNameMap.set(num, label)
+      fnVariantMap.set(num, v)
+    })
+    return { footnotes: fnMap, footnoteToName: fnNameMap, footnoteToVariant: fnVariantMap }
+  }, [schedule, dayType, effectiveDirection, metadata, stops, hatKodu])
+
   const hourMap = useMemo(() => {
-    if (!schedule || !effectiveDirection) return new Map<number, number[]>()
-    const filtered = schedule.filter(
-      (d) => d.day_type === dayType && d.direction === effectiveDirection,
-    )
-    const map = new Map<number, number[]>()
+    if (!schedule || !effectiveDirection) return new Map<number, { m: number, fn?: number }[]>()
+    const filtered = schedule.filter(d => d.day_type === dayType && d.direction === effectiveDirection)
+    const map = new Map<number, { m: number, fn?: number }[]>()
     for (const dep of filtered) {
       const [h, m] = dep.departure_time.split(':').map(Number)
       if (!map.has(h)) map.set(h, [])
-      map.get(h)!.push(m)
+      map.get(h)!.push({ m, fn: footnotes.get(dep.route_variant) })
     }
-    for (const mins of map.values()) mins.sort((a, b) => a - b)
+    for (const mins of map.values()) mins.sort((a, b) => a.m - b.m)
     return map
-  }, [schedule, dayType, effectiveDirection])
+  }, [schedule, dayType, effectiveDirection, footnotes])
 
   const hours = Array.from(hourMap.keys()).sort((a, b) => a - b)
 
-  // Check which day types have data
   const availableDays = useMemo(() => {
     if (!schedule) return new Set<string>()
     return new Set(schedule.map((d) => d.day_type))
   }, [schedule])
 
-  /* ÔöÇÔöÇ Metro-style day type selector ÔöÇÔöÇ */
   return (
-    <div className="flex flex-col gap-4">
-      {/* Day type selector */}
-      <div className="flex border-b border-[#222]">
+    <div className="flex flex-col gap-4 relative">
+      <div role="tablist" aria-label="Gün seçimi" className="flex border-b border-[#222]">
         {DAY_TYPES.map(({ key, label }) => (
-          <button
-            key={key}
-            onClick={() => { setDayType(key); setDirection('') }}
+          <button role="tab" aria-selected={dayType === key} key={key} onClick={() => { setDayType(key); setDirection('') }}
             disabled={!availableDays.has(key)}
             className={`flex-1 text-sm py-2.5 font-medium transition-colors disabled:opacity-25 border-b-2 -mb-px ${
-              dayType === key
-                ? 'border-white text-white'
-                : 'border-transparent text-[#404040] hover:text-[#888]'
+              dayType === key ? 'border-white text-white' : 'border-transparent text-[#404040] hover:text-[#888]'
             }`}
           >
             {label}
@@ -121,17 +191,12 @@ function TimetableView({ schedule, scheduleError, onRetry, metadata }: {
         ))}
       </div>
 
-      {/* Direction pill toggle ÔÇö flat Metro style */}
       {availableDirections.length > 1 && (
-        <div className="flex gap-0 border-b border-[#222]">
+        <div role="tablist" aria-label="Yön seçimi" className="flex gap-0 border-b border-[#222]">
           {availableDirections.map((dir) => (
-            <button
-              key={dir}
-              onClick={() => setDirection(dir)}
+            <button role="tab" aria-selected={direction === dir} key={dir} onClick={() => setDirection(dir)}
               className={`flex-1 text-xs py-2 px-2 font-medium transition-colors truncate border-b-2 -mb-px ${
-                effectiveDirection === dir
-                  ? 'border-[#00AFF0] text-[#00AFF0]'
-                  : 'border-transparent text-[#404040] hover:text-[#888]'
+                effectiveDirection === dir ? 'border-[#00AFF0] text-[#00AFF0]' : 'border-transparent text-[#404040] hover:text-[#888]'
               }`}
             >
               {dirLabel(dir)}
@@ -140,45 +205,97 @@ function TimetableView({ schedule, scheduleError, onRetry, metadata }: {
         </div>
       )}
 
-      {/* Hour grid */}
       {!schedule && !scheduleError && (
         <div className="flex flex-col gap-2">
-          {[...Array(5)].map((_, i) => (
-            <div key={i} className="h-12 bg-surface-muted rounded-xl animate-pulse" />
-          ))}
+          {[...Array(5)].map((_, i) => <div key={i} className="h-12 bg-surface-muted rounded-xl animate-pulse" />)}
         </div>
       )}
 
-      {!schedule && scheduleError && (
-        <ErrorRetry message="Sefer saatleri y├╝klenemedi" onRetry={onRetry} />
-      )}
+      {!schedule && scheduleError && <ErrorRetry message="Sefer saatleri yüklenemedi" onRetry={onRetry} />}
 
       {schedule && hours.length === 0 && (
-        <div className="text-center text-slate-500 py-12 text-sm">
-          Bu g├╝n tipi i├ºin sefer bilgisi yok
-        </div>
+        <div className="text-center text-slate-500 py-12 text-sm">Bu gün tipi için sefer bilgisi yok</div>
       )}
 
       {hours.map((h) => (
         <div key={h} className="flex items-start gap-3">
           <div className="w-10 shrink-0 text-right">
-            <span className="text-sm font-mono font-bold text-brand-400">
-              {String(h).padStart(2, '0')}
-            </span>
+            <span className="text-sm font-mono font-bold text-brand-400">{String(h).padStart(2, '0')}</span>
           </div>
           <div className="flex-1 flex flex-wrap gap-1.5 pb-2 border-b border-surface-muted/50">
-            {hourMap.get(h)!.map((m) => (
-              <span
-                key={m}
-                className="text-xs font-mono text-slate-300 bg-surface-card border border-surface-muted
-                           rounded-md px-1.5 py-0.5 min-w-[30px] text-center"
-              >
-                {String(m).padStart(2, '0')}
-              </span>
-            ))}
+            {hourMap.get(h)!.map(({ m, fn }, idx) => {
+              const variantCode = fn ? footnoteToVariant.get(fn) : undefined
+              return (
+                <span key={`${m}-${idx}`} className="text-xs font-mono text-slate-300 bg-surface-card border border-surface-muted rounded-md px-1.5 py-0.5 min-w-[30px] text-center">
+                  {String(m).padStart(2, '0')}
+                  {fn && (
+                    <button onClick={() => variantCode && setSelectedVariant(variantCode)} className="ml-0.5 text-[#00AFF0] font-bold hover:underline">
+                      {fn}
+                    </button>
+                  )}
+                </span>
+              )
+            })}
           </div>
         </div>
       ))}
+
+      {footnoteToName.size > 0 && (
+        <div className="mt-4 p-3 bg-surface-card border border-surface-muted rounded-xl">
+          <h4 className="text-xs font-bold text-slate-400 mb-2 uppercase tracking-wider">Notlar (Yan Seferler)</h4>
+          <ul className="flex flex-col gap-1.5">
+            {Array.from(footnoteToName.entries()).map(([num, name]) => {
+              const variantCode = footnoteToVariant.get(num)
+              return (
+                <li key={num}>
+                  <button onClick={() => variantCode && setSelectedVariant(variantCode)} className="text-xs text-slate-300 flex items-start gap-2 text-left hover:text-brand-300 transition-colors w-full group">
+                    <span className="text-[#00AFF0] font-bold shrink-0 group-hover:underline">{num}:</span>
+                    <span className="group-hover:underline">{name}</span>
+                  </button>
+                </li>
+              )
+            })}
+          </ul>
+        </div>
+      )}
+
+      <div className="mt-6 text-center">
+        <a href={`https://iett.istanbul/RouteDetail?hkod=${hatKodu}`} target="_blank" rel="noopener noreferrer" className="inline-flex flex-col items-center justify-center gap-1 text-xs text-slate-400 hover:text-white transition-colors p-3 bg-surface-muted/30 rounded-xl w-full">
+          <span className="font-semibold">Resmi iett.istanbul sitesinden teyit et</span>
+          <span className="text-[10px] opacity-75">Bağlantı yeni sekmede açılır</span>
+        </a>
+      </div>
+
+      {selectedVariant && (
+        <div className="fixed inset-0 z-[600] flex items-end sm:items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setSelectedVariant(null)} />
+          <div className="relative w-full max-w-sm bg-surface-card border border-surface-muted rounded-2xl shadow-2xl flex flex-col max-h-[80vh] overflow-hidden animate-in slide-in-from-bottom-4">
+            <div className="p-4 border-b border-surface-muted flex items-center justify-between bg-surface-card z-10">
+              <div>
+                <h3 className="font-bold text-white text-sm">Güzergah Detayı</h3>
+                <p className="text-xs text-brand-400">{selectedVariant}</p>
+              </div>
+              <button onClick={() => setSelectedVariant(null)} className="p-2 text-slate-400 hover:text-white rounded-full bg-surface-muted/50">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3">
+              {stops?.filter(s => s.route_code === selectedVariant).map((s, idx) => (
+                <div key={s.stop_code + idx} className="flex items-start gap-3 relative">
+                  <div className="flex flex-col items-center mt-0.5">
+                    <div className="w-2.5 h-2.5 rounded-full bg-brand-500 z-10 ring-2 ring-surface-card" />
+                    <div className="w-px h-full bg-surface-muted absolute top-3 bottom-[-16px]" />
+                  </div>
+                  <div className="pb-3">
+                    <p className="text-sm font-medium text-slate-200 leading-tight">{s.stop_name}</p>
+                    <p className="text-[10px] text-slate-500 mt-0.5">Durağa Git: #{s.stop_code}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -323,7 +440,7 @@ export default function RoutePage() {
 
         {/* Timetable tab */}
         {tab === 'schedule' && (
-          <TimetableView schedule={schedule ?? null} scheduleError={scheduleError ? String(scheduleError) : null} onRetry={refreshSchedule} metadata={metadata ?? null} />
+          <TimetableView schedule={schedule ?? null} scheduleError={scheduleError ? String(scheduleError) : null} onRetry={refreshSchedule} metadata={metadata ?? null} stops={stops ?? null} hatKodu={hatKodu} />
         )}
 
         {/* Map tab */}
