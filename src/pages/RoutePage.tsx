@@ -118,8 +118,25 @@ function TimetableView({ schedule, scheduleError, onRetry, metadata, stops, hatK
     const filtered = schedule.filter(d => d.day_type === dayType && d.direction === effectiveDirection)
     const uniqueVariants = [...new Set(filtered.map(d => d.route_variant).filter(v => v && !v.endsWith('_D0') && !v.endsWith('_G0')))].sort()
     
-    uniqueVariants.forEach((v, idx) => {
-      const num = idx + 1
+    let fallbackCounter = 1
+    const usedNums = new Set<number>()
+    
+    uniqueVariants.forEach((v) => {
+      let num: number | null = null
+      if (metadata && metadata.length > 0) {
+        const meta = metadata.find(m => m.variant_code === v)
+        if (meta && meta.depar_no > 0) {
+          num = meta.depar_no
+        }
+      }
+      
+      if (num === null || usedNums.has(num)) {
+        while (usedNums.has(fallbackCounter)) fallbackCounter++
+        num = fallbackCounter
+        fallbackCounter++
+      }
+      
+      usedNums.add(num)
       fnMap.set(v, num)
       
       let label = v
