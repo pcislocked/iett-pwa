@@ -118,25 +118,8 @@ function TimetableView({ schedule, scheduleError, onRetry, metadata, stops, hatK
     const filtered = schedule.filter(d => d.day_type === dayType && d.direction === effectiveDirection)
     const uniqueVariants = [...new Set(filtered.map(d => d.route_variant).filter(v => v && !v.endsWith('_D0') && !v.endsWith('_G0')))].sort()
     
-    let fallbackCounter = 1
-    const usedNums = new Set<number>()
-    
-    uniqueVariants.forEach((v) => {
-      let num: number | null = null
-      if (metadata && metadata.length > 0) {
-        const meta = metadata.find(m => m.variant_code === v)
-        if (meta && meta.depar_no > 0) {
-          num = meta.depar_no
-        }
-      }
-      
-      if (num === null || usedNums.has(num)) {
-        while (usedNums.has(fallbackCounter)) fallbackCounter++
-        num = fallbackCounter
-        fallbackCounter++
-      }
-      
-      usedNums.add(num)
+    uniqueVariants.forEach((v, idx) => {
+      const num = idx + 1
       fnMap.set(v, num)
       
       let label = v
@@ -277,13 +260,17 @@ function TimetableView({ schedule, scheduleError, onRetry, metadata, stops, hatK
           </ul>
         </div>
       )}
-
       <div className="mt-8 mb-4 text-center px-4">
-        <p className="text-[10px] text-slate-500 mb-2 leading-relaxed text-justify opacity-80">
-          Bu ekrandaki hareket saatleri ve yan sefer notları, sistemdeki çeşitli veri parçalarının bir araya getirilmesiyle oluşturulmuştur. Olası sistemsel tutarsızlıklara karşı lütfen yolculuğunuzdan önce resmi kaynağı referans alınız.
+        <p className="text-[10px] text-slate-500 mb-3 leading-relaxed text-center opacity-80">
+          Bu ekrandaki hareket saatleri ve yan sefer notları bilgilendirme amaçlıdır.
         </p>
-        <a href={`https://iett.istanbul/RouteDetail?hkod=${hatKodu}`} target="_blank" rel="noopener noreferrer" className="inline-block text-[10px] text-slate-400 hover:text-white transition-colors border border-surface-muted/50 rounded px-2 py-1 bg-surface-muted/10">
-          iett.istanbul üzerinden teyit et ↗
+        <a 
+          href={`https://iett.istanbul/RouteDetail?hkod=${hatKodu}`} 
+          target="_blank" 
+          rel="noopener noreferrer"
+          className="inline-flex items-center justify-center gap-1.5 text-xs text-slate-400 hover:text-white transition-colors border border-surface-muted/50 rounded-lg px-3 py-1.5 bg-surface-card hover:bg-surface-muted"
+        >
+          iett.istanbul üzerinden doğrula ↗
         </a>
       </div>
     </div>
