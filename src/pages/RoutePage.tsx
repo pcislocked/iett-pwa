@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { MapContainer, TileLayer, Marker, Popup, CircleMarker } from 'react-leaflet'
 import * as L from 'leaflet'
@@ -47,17 +47,17 @@ function ErrorRetry({ message, onRetry }: { message: string; onRetry: () => void
 }
 const formatStopName = (name: string) => name.split(' - ')[0]
 
-function TimetableView({ schedule, scheduleError, onRetry, metadata, stops, hatKodu }: {
+function TimetableView({ schedule, scheduleError, onRetry, metadata, stops, hatKodu, onSelectVariant }: {
   schedule: ScheduledDeparture[] | null
   scheduleError: string | null
   onRetry: () => void
   metadata: RouteMetadata[] | null
   stops?: RouteStop[] | null
   hatKodu?: string
+  onSelectVariant?: (variantCode: string, directionCode: string) => void
 }) {
   const [dayType, setDayType] = useState('H')
   const [direction, setDirection] = useState('')
-  const [selectedVariant, setSelectedVariant] = useState<string | null>(null)
 
   // Map direction code ('D'/'G') -> departure label (KALKIŞ / YÖNÜ)
   const dirLabel = useMemo(() => {
@@ -231,7 +231,7 @@ function TimetableView({ schedule, scheduleError, onRetry, metadata, stops, hatK
                 <span key={`${m}-${idx}`} className="text-xs font-mono text-slate-300 bg-surface-card border border-surface-muted rounded-md px-1.5 py-0.5 min-w-[30px] text-center">
                   {String(m).padStart(2, '0')}
                   {fn && (
-                    <button onClick={() => variantCode && setSelectedVariant(variantCode)} className="ml-0.5 text-[#00AFF0] font-bold hover:underline">
+                    <button onClick={() => variantCode && onSelectVariant?.(variantCode, effectiveDirection)} className="ml-0.5 text-[#00AFF0] font-bold hover:underline">
                       {fn}
                     </button>
                   )}
@@ -250,7 +250,7 @@ function TimetableView({ schedule, scheduleError, onRetry, metadata, stops, hatK
               const variantCode = footnoteToVariant.get(num)
               return (
                 <li key={num}>
-                  <button onClick={() => variantCode && setSelectedVariant(variantCode)} className="text-xs text-slate-300 flex items-start gap-2 text-left hover:text-brand-300 transition-colors w-full group">
+                  <button onClick={() => variantCode && onSelectVariant?.(variantCode, effectiveDirection)} className="text-xs text-slate-300 flex items-start gap-2 text-left hover:text-brand-300 transition-colors w-full group">
                     <span className="text-[#00AFF0] font-bold shrink-0 group-hover:underline">{num}:</span>
                     <span className="group-hover:underline">{name}</span>
                   </button>
@@ -269,37 +269,6 @@ function TimetableView({ schedule, scheduleError, onRetry, metadata, stops, hatK
           iett.istanbul üzerinden teyit et ↗
         </a>
       </div>
-
-      {selectedVariant && (
-        <div className="fixed inset-0 z-[600] flex items-end sm:items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setSelectedVariant(null)} />
-          <div className="relative w-full max-w-sm bg-surface-card border border-surface-muted rounded-2xl shadow-2xl flex flex-col max-h-[80vh] overflow-hidden animate-in slide-in-from-bottom-4">
-            <div className="p-4 border-b border-surface-muted flex items-center justify-between bg-surface-card z-10">
-              <div>
-                <h3 className="font-bold text-white text-sm">Güzergah Detayı</h3>
-                <p className="text-xs text-brand-400">{selectedVariant}</p>
-              </div>
-              <button onClick={() => setSelectedVariant(null)} className="p-2 text-slate-400 hover:text-white rounded-full bg-surface-muted/50">
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-              </button>
-            </div>
-            <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3">
-              {stops?.filter(s => s.route_code === selectedVariant).map((s, idx) => (
-                <div key={s.stop_code + idx} className="flex items-start gap-3 relative">
-                  <div className="flex flex-col items-center mt-0.5">
-                    <div className="w-2.5 h-2.5 rounded-full bg-brand-500 z-10 ring-2 ring-surface-card" />
-                    <div className="w-px h-full bg-surface-muted absolute top-3 bottom-[-16px]" />
-                  </div>
-                  <div className="pb-3">
-                    <p className="text-sm font-medium text-slate-200 leading-tight">{s.stop_name}</p>
-                    <p className="text-[10px] text-slate-500 mt-0.5">Durağa Git: #{s.stop_code}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }
@@ -312,6 +281,13 @@ export default function RoutePage() {
   const [tab, setTab] = useState<Tab>('schedule')
   const [activeDir, setActiveDir] = useState('')
   const [activeVariant, setActiveVariant] = useState('')
+
+  const handleSelectVariant = useCallback((variantCode: string, directionCode: string) => {
+    setActiveDir(directionCode)
+    setActiveVariant(variantCode)
+    setTab('stops')
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }, [])
 
   const { data: buses, stale } = useRouteBuses(hatKodu ?? '')
 
@@ -444,7 +420,7 @@ export default function RoutePage() {
 
         {/* Timetable tab */}
         {tab === 'schedule' && (
-          <TimetableView schedule={schedule ?? null} scheduleError={scheduleError ? String(scheduleError) : null} onRetry={refreshSchedule} metadata={metadata ?? null} stops={stops ?? null} hatKodu={hatKodu} />
+          <TimetableView schedule={schedule ?? null} scheduleError={scheduleError ? String(scheduleError) : null} onRetry={refreshSchedule} metadata={metadata ?? null} stops={stops ?? null} hatKodu={hatKodu} onSelectVariant={handleSelectVariant} />
         )}
 
         {/* Map tab */}
