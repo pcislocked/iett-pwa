@@ -55,7 +55,7 @@ function TimetableView({ schedule, scheduleError, onRetry, metadata }: {
   const [dayType, setDayType] = useState('H')
   const [direction, setDirection] = useState('')
 
-  // Map direction code ('D'/'G') â†’ short terminal label from metadata
+  // Map direction code ('D'/'G') ÔåÆ short terminal label from metadata
   const dirLabel = useMemo(() => {
     const hasMetadata = !!metadata?.length
     return (code: string) => getDirectionLabel(code, metadata, hasMetadata)
@@ -100,13 +100,15 @@ function TimetableView({ schedule, scheduleError, onRetry, metadata }: {
     return new Set(schedule.map((d) => d.day_type))
   }, [schedule])
 
-  /* â”€â”€ Metro-style day type selector â”€â”€ */
+  /* ÔöÇÔöÇ Metro-style day type selector ÔöÇÔöÇ */
   return (
     <div className="flex flex-col gap-4">
       {/* Day type selector */}
-      <div role="tablist" aria-label="Gün seçimi" className="flex border-b border-[#222]">
+      <div className="flex border-b border-[#222]">
         {DAY_TYPES.map(({ key, label }) => (
-          <button role="tab" aria-selected={dayType === key} key={key} onClick={() => { setDayType(key); setDirection('') }}
+          <button
+            key={key}
+            onClick={() => { setDayType(key); setDirection('') }}
             disabled={!availableDays.has(key)}
             className={`flex-1 text-sm py-2.5 font-medium transition-colors disabled:opacity-25 border-b-2 -mb-px ${
               dayType === key
@@ -119,11 +121,13 @@ function TimetableView({ schedule, scheduleError, onRetry, metadata }: {
         ))}
       </div>
 
-      {/* Direction pill toggle â€” flat Metro style */}
+      {/* Direction pill toggle ÔÇö flat Metro style */}
       {availableDirections.length > 1 && (
-        <div role="tablist" aria-label="Yön seçimi" className="flex gap-0 border-b border-[#222]">
+        <div className="flex gap-0 border-b border-[#222]">
           {availableDirections.map((dir) => (
-            <button role="tab" aria-selected={direction === dir} key={dir} onClick={() => setDirection(dir)}
+            <button
+              key={dir}
+              onClick={() => setDirection(dir)}
               className={`flex-1 text-xs py-2 px-2 font-medium transition-colors truncate border-b-2 -mb-px ${
                 effectiveDirection === dir
                   ? 'border-[#00AFF0] text-[#00AFF0]'
@@ -146,12 +150,12 @@ function TimetableView({ schedule, scheduleError, onRetry, metadata }: {
       )}
 
       {!schedule && scheduleError && (
-        <ErrorRetry message="Sefer saatleri yÃ¼klenemedi" onRetry={onRetry} />
+        <ErrorRetry message="Sefer saatleri y├╝klenemedi" onRetry={onRetry} />
       )}
 
       {schedule && hours.length === 0 && (
         <div className="text-center text-slate-500 py-12 text-sm">
-          Bu gÃ¼n tipi iÃ§in sefer bilgisi yok
+          Bu g├╝n tipi i├ºin sefer bilgisi yok
         </div>
       )}
 
@@ -190,10 +194,10 @@ export default function RoutePage() {
 
   const { data: buses, stale } = useRouteBuses(hatKodu ?? '')
 
-  const stopsFetcher = useMemo(() => () => api.routes.stops(hatKodu ?? ''), [hatKodu])
-  const scheduleFetcher = useMemo(() => () => api.routes.schedule(hatKodu ?? ''), [hatKodu])
-  const announceFetcher = useMemo(() => () => api.routes.announcements(hatKodu ?? ''), [hatKodu])
-  const metaFetcher = useMemo(() => () => api.routes.metadata(hatKodu ?? ''), [hatKodu])
+  const stopsFetcher = useMemo(() => ({ signal }: { signal: AbortSignal }) => api.routes.stops(hatKodu ?? '', { signal }), [hatKodu])
+  const scheduleFetcher = useMemo(() => ({ signal }: { signal: AbortSignal }) => api.routes.schedule(hatKodu ?? '', { signal }), [hatKodu])
+  const announceFetcher = useMemo(() => ({ signal }: { signal: AbortSignal }) => api.routes.announcements(hatKodu ?? '', { signal }), [hatKodu])
+  const metaFetcher = useMemo(() => ({ signal }: { signal: AbortSignal }) => api.routes.metadata(hatKodu ?? '', { signal }), [hatKodu])
 
   const { data: stops, error: stopsError, refetch: refreshStops } = useQuery<RouteStop[]>({ queryKey: ['stops', hatKodu], queryFn: stopsFetcher, refetchInterval: 300_000, enabled: !!hatKodu })
   const { data: schedule, error: scheduleError, refetch: refreshSchedule } = useQuery<ScheduledDeparture[]>({ queryKey: ['schedule', hatKodu], queryFn: scheduleFetcher, refetchInterval: 300_000, enabled: !!hatKodu })
@@ -246,7 +250,7 @@ export default function RoutePage() {
 
   const { isFavorite, toggle } = useFavorites()
   const routeName = metadata?.[0]?.full_name ?? hatKodu ?? ''
-  const favItem = { kind: 'route' as const, hat_kodu: hatKodu ?? '', name: routeName }
+  const favItem = useMemo(() => ({ kind: 'route' as const, hat_kodu: hatKodu ?? '', name: routeName }), [hatKodu, routeName])
   const favorited = isFavorite(favItem)
 
   if (!hatKodu) return null

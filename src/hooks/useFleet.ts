@@ -15,7 +15,7 @@ function mapQuery<T>(query: UseQueryResult<T, Error>): { data: T | null; loading
 export function useFleet() {
   const query = useQuery<BusPosition[]>({
     queryKey: ['fleet'],
-    queryFn: () => api.fleet.all(),
+    queryFn: ({ signal }) => api.fleet.all({ signal }),
     refetchInterval: 30_000,
   })
   return mapQuery(query)
@@ -24,7 +24,7 @@ export function useFleet() {
 export function useRouteBuses(hatKodu: string) {
   const query = useQuery<BusPosition[]>({
     queryKey: ['route_buses', hatKodu],
-    queryFn: () => api.routes.buses(hatKodu),
+    queryFn: ({ signal }) => api.routes.buses(hatKodu, { signal }),
     refetchInterval: 15_000,
     enabled: !!hatKodu,
   })

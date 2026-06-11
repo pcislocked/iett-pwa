@@ -144,6 +144,7 @@ export default function MapPage() {
 
   useEffect(() => {
     let isMounted = true
+    const controller = new AbortController()
 
     const fetchBuses = () => {
       if (!isMounted) return
@@ -155,7 +156,7 @@ export default function MapPage() {
         fetchIdMap.current.set(route, currentFetchId)
 
         inFlight.current.add(route)
-        api.routes.buses(route)
+        api.routes.buses(route, { signal: controller.signal })
           .then((bs: BusPosition[]) => {
             inFlight.current.delete(route)
             if (!isMounted) return
@@ -192,6 +193,8 @@ export default function MapPage() {
     return () => {
       isMounted = false
       clearInterval(interval)
+      controller.abort()
+      inFlight.current.clear()
     }
   }, [selectedRoutes])
 
@@ -265,12 +268,13 @@ export default function MapPage() {
   useEffect(() => {
     if (!selectedKapino) { setSelectedDetail(null); return }
     let alive = true
+    const controller = new AbortController()
     setDetailLoading(true)
     setSelectedDetail(null)
-    api.fleet.detail(selectedKapino)
+    api.fleet.detail(selectedKapino, { signal: controller.signal })
       .then((d) => { if (alive) { setSelectedDetail(d); setDetailLoading(false) } })
       .catch(() => { if (alive) { setDetailLoading(false) } })
-    return () => { alive = false }
+    return () => { alive = false; controller.abort() }
   }, [selectedKapino])
 
   const selectedBusSnapshot = useMemo(() => {

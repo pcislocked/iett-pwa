@@ -75,9 +75,14 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const configuredBase = getConfiguredBase()
 
   const execute = async (url: string): Promise<T> => {
-    const { signal, clear } = createTimeoutSignal(REQUEST_TIMEOUT_MS)
+    const { signal: timeoutSignal, clear } = createTimeoutSignal(REQUEST_TIMEOUT_MS)
     try {
-      const requestInit = signal ? { ...init, signal } : init
+      let finalSignal = init?.signal || timeoutSignal
+      if (init?.signal && timeoutSignal && typeof AbortSignal !== 'undefined' && 'any' in AbortSignal) {
+        finalSignal = AbortSignal.any([init.signal, timeoutSignal])
+      }
+      
+      const requestInit = finalSignal ? { ...init, signal: finalSignal } : init
       const res = await fetch(url, requestInit)
       if (!res.ok) {
         const text = await res.text().catch(() => '')

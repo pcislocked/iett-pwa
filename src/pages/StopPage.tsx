@@ -2,6 +2,7 @@ import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { MapContainer, TileLayer, CircleMarker, Popup, Marker, Polyline, useMap } from 'react-leaflet'
 import * as L from 'leaflet'
+import { motion, AnimatePresence, useMotionValue, useTransform } from 'framer-motion'
 import { useArrivals } from '@/hooks/useArrivals'
 import { useQuery } from '@tanstack/react-query'
 import { api, type RouteAnnouncement, type StopDetail, type BusPosition, type Arrival, type Amenities } from '@/api/client'
@@ -9,8 +10,6 @@ import { useFavorites } from '@/hooks/useFavorites'
 import { useBottomBar } from '@/hooks/useBottomBar'
 import { PINNED_STOPS_MAX, useUserPrefs } from '@/hooks/useUserPrefs'
 import { etaChipClass } from '@/utils/etaColor'
-import { motion, AnimatePresence } from 'framer-motion'
-
 
 
 /** Fixed palette for the first 3 routes at this stop — orange, violet, cyan */
@@ -51,7 +50,7 @@ function haversineM(lat1: number, lon1: number, lat2: number, lon2: number): num
 /** Auto-fits map to given bounds on mount. */
 function FitBoundsEffect({ bounds }: { bounds: [[number, number], [number, number]] }) {
   const map = useMap()
-  useEffect(() => { map.fitBounds(bounds, { padding: [32, 32] }) }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { map.fitBounds(bounds, { padding: [32, 32] }) }, [map, bounds])
   return null
 }
 
@@ -226,12 +225,12 @@ function BusDetailSheet({
     ? [(effectiveLat! + stopLat) / 2, (effectiveLon! + stopLon) / 2]
     : [stopLat, stopLon]
 
-  const bounds: [[number, number], [number, number]] | null = hasPosition
+  const bounds: [[number, number], [number, number]] | null = useMemo(() => hasPosition
     ? [
         [Math.min(effectiveLat!, stopLat), Math.min(effectiveLon!, stopLon)],
         [Math.max(effectiveLat!, stopLat), Math.max(effectiveLon!, stopLon)],
       ]
-    : null
+    : null, [hasPosition, effectiveLat, stopLat, effectiveLon, stopLon])
 
   const busIcon = L.divIcon({
     className: '',
@@ -246,22 +245,46 @@ function BusDetailSheet({
     iconAnchor: [7, 7],
   })
 
-  return (
-    <div className="fixed inset-0 z-[500] flex items-end" onClick={onClose}>
-      {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
+  const y = useMotionValue(0)
+  const backdropOpacity = useTransform(y, [0, window.innerHeight / 2], [1, 0])
 
-      <div
-        ref={dialogRef}
+  return (
+    <div className="fixed inset-0 z-[500] flex items-end pointer-events-none">
+      {/* Backdrop */}
+      <motion.div 
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm pointer-events-auto"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.3 }}
+        style={{ opacity: backdropOpacity }}
+        onClick={onClose}
+      />
+
+      <motion.div
+        ref={dialogRef as any}
         role="dialog"
         aria-modal="true"
         aria-labelledby="bus-detail-title"
-        className="relative w-full max-w-2xl mx-auto bg-surface-card border-t border-surface-muted rounded-t-2xl overflow-hidden shadow-2xl"
+        drag="y"
+        dragConstraints={{ top: 0, bottom: 0 }}
+        dragElastic={0.2}
+        onDragEnd={(_, info) => {
+          if (info.offset.y > 100 || info.velocity.y > 500) {
+            onClose()
+          }
+        }}
+        style={{ y }}
+        initial={{ y: "100%" }}
+        animate={{ y: 0 }}
+        exit={{ y: "100%" }}
+        transition={{ type: "spring", bounce: 0, duration: 0.4 }}
+        className="relative w-full max-w-2xl mx-auto bg-surface-card border-t border-surface-muted rounded-t-2xl overflow-hidden shadow-2xl pointer-events-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Drag handle */}
-        <div className="flex justify-center pt-3 pb-1">
-          <div className="w-10 h-1 rounded-full bg-surface-muted" />
+        <div className="flex justify-center pt-3 pb-1" style={{ cursor: 'grab' }}>
+          <div className="w-10 h-1.5 rounded-full bg-slate-600/80 hover:bg-slate-500 transition-colors" />
         </div>
 
         {/* Header */}
@@ -369,7 +392,7 @@ function BusDetailSheet({
             </p>
           )}
         </div>
-      </div>
+      </motion.div>
     </div>
   )
 }
@@ -400,6 +423,8 @@ export default function StopPage() {
   const [showAnnouncements, setShowAnnouncements] = useState(false)
   const [selectedArrival, setSelectedArrival] = useState<Arrival | null>(null)
   const [activeTab, setActiveTab] = useState<'gelis' | 'hatlar' | 'bilgi'>('gelis')
+
+  const handleCloseBusSheet = useCallback(() => setSelectedArrival(null), [])
 
   // Sliding panel state — map height as percentage of split container
   const mapHeightPctRef = useRef(40)
@@ -1066,16 +1091,19 @@ export default function StopPage() {
       )}
 
       {/* Bus detail sheet — rendered outside the scroll container so it overlays everything */}
-      {selectedArrival && stopDetail?.latitude != null && stopDetail.longitude != null && (
-        <BusDetailSheet
-          arrival={selectedArrival}
-          busPos={selectedArrival.kapino ? (busByKapino.get(selectedArrival.kapino) ?? null) : null}
-          stopLat={stopDetail.latitude}
-          stopLon={stopDetail.longitude}
-          stopName={stopName}
-          onClose={() => setSelectedArrival(null)}
-        />
-      )}
+      <AnimatePresence>
+        {selectedArrival && stopDetail?.latitude != null && stopDetail.longitude != null && (
+          <BusDetailSheet
+            key="bus-detail-sheet"
+            arrival={selectedArrival}
+            busPos={selectedArrival.kapino ? (busByKapino.get(selectedArrival.kapino) ?? null) : null}
+            stopLat={stopDetail.latitude}
+            stopLon={stopDetail.longitude}
+            stopName={stopName}
+            onClose={handleCloseBusSheet}
+          />
+        )}
+      </AnimatePresence>
     </div>
   )
 }
