@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { api, type StopSearchResult, type RouteSearchResult } from '@/api/client'
 import { addRecent } from '@/hooks/useRecentSearches'
 
@@ -13,7 +14,9 @@ interface Props {
   autoFocus?: boolean
 }
 
-export default function SearchBar({ placeholder = 'Hat kodu, durak adı...', autoFocus }: Props) {
+export default function SearchBar({ placeholder, autoFocus }: Props) {
+  const { t } = useTranslation()
+  const actualPlaceholder = placeholder || t('search.placeholder', { defaultValue: 'Hat kodu, durak adı...' })
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<SearchResult[]>([])
   const [open, setOpen] = useState(false)
@@ -91,7 +94,7 @@ export default function SearchBar({ placeholder = 'Hat kodu, durak adı...', aut
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         onBlur={() => setTimeout(() => setOpen(false), 150)}
-        placeholder={placeholder}
+        placeholder={actualPlaceholder}
         className="w-full bg-surface-card border border-surface-muted rounded-2xl
                    pl-10 pr-4 py-3.5 text-slate-100 placeholder-slate-500 text-sm
                    focus:outline-none focus:ring-2 focus:ring-brand-500"
@@ -112,7 +115,7 @@ export default function SearchBar({ placeholder = 'Hat kodu, durak adı...', aut
                       #{r.dcode}
                     </span>
                     <span className="truncate text-sm text-slate-200">
-                      Durak sayfasına git
+                      {t('search.goToStopPage', { defaultValue: 'Durak sayfasına git' })}
                     </span>
                   </>
                 ) : (

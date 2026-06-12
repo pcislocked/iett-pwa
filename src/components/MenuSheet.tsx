@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 
 interface MenuSheetProps {
   onClose: () => void
@@ -10,6 +11,7 @@ interface MenuSheetProps {
  * Shown from BottomTabBar when the menu tab is pressed.
  */
 export default function MenuSheet({ onClose }: MenuSheetProps) {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const dialogRef = useRef<HTMLDivElement>(null)
   const previouslyFocused = useRef<Element | null>(null)
@@ -66,7 +68,7 @@ export default function MenuSheet({ onClose }: MenuSheetProps) {
         ref={dialogRef}
         role="dialog"
         aria-modal="true"
-        aria-label="Menü"
+        aria-label={t('common.menu', { defaultValue: 'Menü' })}
         className="fixed bottom-0 left-0 right-0 z-50 bg-surface-card rounded-t-2xl
                       border-t border-surface-border safe-area-pb"
       >
@@ -77,9 +79,9 @@ export default function MenuSheet({ onClose }: MenuSheetProps) {
 
         <div className="px-4 py-2 divide-y divide-surface-muted">
 
-          <MenuRow icon="⭐" label="Favoriler"      onPress={() => go('/favorites')} />
-          <MenuRow icon="🗺"  label="Filo Haritası" onPress={() => go('/map')} />
-          <MenuRow icon="⚙"  label="Ayarlar"        onPress={() => go('/settings')} />
+          <MenuRow icon="⭐" label={t('nav.favorites', { defaultValue: 'Favoriler' })}      onPress={() => go('/favorites')} />
+          <MenuRow icon="🗺"  label={t('nav.fleetMap', { defaultValue: 'Filo Haritası' })} onPress={() => go('/map')} />
+          <MenuRow icon="⚙"  label={t('nav.settings', { defaultValue: 'Ayarlar' })}        onPress={() => go('/settings')} />
 
           <div className="py-1" />
 

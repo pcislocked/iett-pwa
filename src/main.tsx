@@ -1,4 +1,5 @@
-import React from 'react'
+import React, { Suspense } from 'react'
+import './i18n'
 import ReactDOM from 'react-dom/client'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import App from './App'
@@ -36,8 +37,12 @@ const queryClient = new QueryClient({
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <App />
-    </QueryClientProvider>
+    <Suspense fallback={
+      <div style={{ color: '#94a3b8', padding: 32, textAlign: 'center' }}>…</div>
+    }>
+      <QueryClientProvider client={queryClient}>
+        <App />
+      </QueryClientProvider>
+    </Suspense>
   </React.StrictMode>,
 )

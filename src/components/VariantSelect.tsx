@@ -1,4 +1,5 @@
 import { RouteMetadata } from '@/api/client'
+import { useTranslation } from 'react-i18next'
 
 interface VariantSelectProps {
   metadata: RouteMetadata[] | null
@@ -8,6 +9,7 @@ interface VariantSelectProps {
 }
 
 export function VariantSelect({ metadata, direction, selectedVariant, onChange }: VariantSelectProps) {
+  const { t } = useTranslation()
   if (!metadata || metadata.length === 0) return null
 
   const dirNum = direction === 'G' ? 0 : 1
@@ -21,7 +23,7 @@ export function VariantSelect({ metadata, direction, selectedVariant, onChange }
         htmlFor={`variant-select-${direction}`}
         className="text-[10px] font-medium text-slate-500 uppercase tracking-wider px-1"
       >
-        Güzergah Varyantı
+        {t('route.variant', { defaultValue: 'Güzergah Varyantı' })}
       </label>
       <div className="relative">
         <select

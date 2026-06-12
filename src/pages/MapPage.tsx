@@ -6,6 +6,8 @@ import { useNavigate } from 'react-router-dom'
 import { useFleet } from '@/hooks/useFleet'
 import { useQuery } from '@tanstack/react-query'
 import { api, type BusDetail, type Garage, type RouteSearchResult, type BusPosition } from '@/api/client'
+import { useTranslation } from 'react-i18next'
+import { TFunction } from 'i18next'
 
 function parseIsoDate(value: string | null | undefined): Date | null {
   if (!value) return null
@@ -19,14 +21,14 @@ function parseIsoDate(value: string | null | undefined): Date | null {
   return Number.isNaN(parsed.getTime()) ? null : parsed
 }
 
-function formatAgo(from: Date | null, nowMs: number): string {
-  if (!from) return 'â€”'
+function formatAgo(from: Date | null, nowMs: number, t: TFunction): string {
+  if (!from) return '—'
   const diffSeconds = Math.max(0, Math.floor((nowMs - from.getTime()) / 1000))
-  if (diffSeconds < 60) return `${diffSeconds} sn Ã¶nce`
+  if (diffSeconds < 60) return t('map.secondsAgo', { defaultValue: '{{seconds}} sn önce', seconds: diffSeconds })
   const diffMinutes = Math.floor(diffSeconds / 60)
-  if (diffMinutes < 60) return `${diffMinutes} dk Ã¶nce`
+  if (diffMinutes < 60) return t('map.minutesAgo', { defaultValue: '{{minutes}} dk önce', minutes: diffMinutes })
   const diffHours = Math.floor(diffMinutes / 60)
-  return `${diffHours} sa Ã¶nce`
+  return t('map.hoursAgo', { defaultValue: '{{hours}} sa önce', hours: diffHours })
 }
 
 const FleetMetaBadge = memo(function FleetMetaBadge({
@@ -34,6 +36,7 @@ const FleetMetaBadge = memo(function FleetMetaBadge({
 }: {
   updatedAt: string | null | undefined
 }) {
+  const { t } = useTranslation()
   const [nowMs, setNowMs] = useState(() => Date.now())
 
   useEffect(() => {
@@ -46,7 +49,7 @@ const FleetMetaBadge = memo(function FleetMetaBadge({
   return (
     <div className="bg-surface-card/90 backdrop-blur px-3 py-1.5 rounded-xl
                     text-xs text-slate-400 border border-surface-muted">
-      son veri gÃ¼ncelleme: {formatAgo(updatedAtDate, nowMs)}
+      {t('map.lastUpdate', { defaultValue: 'son veri güncelleme:' })} {formatAgo(updatedAtDate, nowMs, t)}
     </div>
   )
 })
@@ -86,6 +89,7 @@ const busIcon = L.divIcon({
 
 
 export default function MapPage() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const { data: buses, loading, error, refresh } = useFleet()
 
@@ -356,7 +360,7 @@ export default function MapPage() {
             value={searchQuery}
             onChange={(e) => { setSearchQuery(e.target.value); setShowDropdown(true) }}
             onFocus={() => { if (searchQuery.length > 0) setShowDropdown(true) }}
-            placeholder="Hat kodu ara (Ã¶r: 500T, 14M)â€¦"
+            placeholder={t('map.searchRoutePlaceholder', { defaultValue: 'Hat kodu ara (ör: 500T, 14M)…' })}
             className="w-full border border-[#333] px-4 py-2 text-sm text-slate-100 placeholder-slate-500
                        focus:outline-none focus:border-[#00AFF0] shadow-xl"
             style={{ background: '#0d0d0d' }}
@@ -398,9 +402,9 @@ export default function MapPage() {
                   onClick={() => removeRoute(route)}
                   className="ml-0.5 text-brand-400 hover:text-brand-100 transition-colors
                              leading-none text-sm font-normal"
-                  aria-label={`${route} filtresini kaldÄ±r`}
+                  aria-label={t('map.removeRouteFilter', { defaultValue: '{{route}} filtresini kaldır', route })}
                 >
-                  Ã—
+                  ×
                 </button>
               </span>
             ))}
@@ -420,7 +424,7 @@ export default function MapPage() {
             value={entityQuery}
             onChange={(e) => { setEntityQuery(e.target.value); setShowEntityDropdown(true) }}
             onFocus={() => { if (entityQuery.length > 0) setShowEntityDropdown(true) }}
-            placeholder="KapÄ± kodu / plaka ara (Ã¶r: C-1515)"
+            placeholder={t('map.searchEntityPlaceholder', { defaultValue: 'Kapı kodu / plaka ara (ör: C-1515)' })}
             className="w-full border border-[#333] px-4 py-2 text-sm text-slate-100 placeholder-slate-500
                        focus:outline-none focus:border-[#00AFF0] shadow-xl"
             style={{ background: '#0d0d0d' }}
@@ -461,9 +465,9 @@ export default function MapPage() {
                   onClick={() => removeEntity(kapino)}
                   className="ml-0.5 text-brand-400 hover:text-brand-100 transition-colors
                              leading-none text-sm font-normal"
-                  aria-label={`${kapino} filtresini kaldÄ±r`}
+                  aria-label={t('map.removeEntityFilter', { defaultValue: '{{kapino}} filtresini kaldır', kapino })}
                 >
-                  Ã—
+                  ×
                 </button>
               </span>
             ))}
@@ -474,7 +478,7 @@ export default function MapPage() {
       {loading && !buses && (
         <div className="absolute inset-0 flex items-center justify-center z-[999]">
           <div className="bg-surface-card px-6 py-4 rounded-2xl shadow-xl text-slate-300">
-            AraÃ§ konumlarÄ± yÃ¼kleniyorâ€¦
+            {t('map.loadingPositions', { defaultValue: 'Araç konumları yükleniyor…' })}
           </div>
         </div>
       )}
@@ -497,16 +501,16 @@ export default function MapPage() {
             aria-labelledby="ibb-error-title"
             onClick={(e) => e.stopPropagation()}
           >
-            <h2 id="ibb-error-title" className="text-xl font-bold text-red-400 mb-3">Ä°BB TarafÄ±ndan Engellendi ðŸ›‘</h2>
+            <h2 id="ibb-error-title" className="text-xl font-bold text-red-400 mb-3">{t('map.errorTitle', { defaultValue: 'İBB Tarafından Engellendi 🛑' })}</h2>
             <p className="text-slate-300 text-sm mb-4 space-y-3 leading-relaxed">
-              <span>Ä°BB YÃ¶netimi, halkÄ±n vergileriyle Ã§alÄ±ÅŸan kamu otobÃ¼slerinin global konum verilerini (TÃ¼m Filo) halka kapatma kararÄ± aldÄ±ÄŸÄ±ndan Ã¶tÃ¼rÃ¼ bu veri ÅŸu an <strong className="text-white">tam anlamÄ±yla saÄŸlanamamaktadÄ±r.</strong></span>
+              <span>{t('map.errorText1', { defaultValue: 'İBB Yönetimi, halkın vergileriyle çalışan kamu otobüslerinin global konum verilerini (Tüm Filo) halka kapatma kararı aldığından ötürü bu veri şu an' })} <strong className="text-white">{t('map.errorText1Bold', { defaultValue: 'tam anlamıyla sağlanamamaktadır.' })}</strong></span>
               <br/><br/>
-              <span><code>iettnext</code> projesinin de isyan ettiÄŸi gibi: Kamuya ait bir verinin halktan gizlenmesi, kÄ±sÄ±tlÄ± "resmi" kanallara hapsedilmesi; rezalet Google Maps entegrasyonlarÄ±na, Moovit'e el altÄ±ndan yedirilen paralara ve yarrak gibi Ã§alÄ±ÅŸan kendi "OtobÃ¼sÃ¼m Nerede" applerine insanlarÄ± mahkum etmeye Ã§alÄ±ÅŸmalarÄ± kabul edilemez.</span>
+              <span>{t('map.errorText2', { defaultValue: 'iettnext projesinin de isyan ettiği gibi: Kamuya ait bir verinin halktan gizlenmesi, kısıtlı "resmi" kanallara hapsedilmesi; rezalet Google Maps entegrasyonlarına, Moovit\'e el altından yedirilen paralara ve yarrak gibi çalışan kendi "Otobüsüm Nerede" applerine insanları mahkum etmeye çalışmaları kabul edilemez.' })}</span>
               <br/><br/>
-              <span>Biz, mÃ¼mkÃ¼n olan legal veya illegal her tÃ¼rlÃ¼ yoldan, koparabildiÄŸimiz kadar veriyi Ã§ekmeye ve bu sansÃ¼rÃ¼ delmeye sonuna kadar devam edeceÄŸiz.</span>
+              <span>{t('map.errorText3', { defaultValue: 'Biz, mümkün olan legal veya illegal her türlü yoldan, koparabildiğimiz kadar veriyi çekmeye ve bu sansürü delmeye sonuna kadar devam edeceğiz.' })}</span>
               <br/><br/>
               <span className="text-brand-300 bg-brand-900/30 p-2 rounded block border border-brand-800/50">
-                <strong>Not:</strong> Arama Ã§ubuÄŸundan belirli bir hat numarasÄ± (Ã¶rn: 14M) aratarak otobÃ¼sleri haritada <b>gÃ¶rmeye sorunsuzca devam edebilirsiniz.</b> YalnÄ±zca tÃ¼m filonun aynÄ± anda haritada gÃ¶rÃ¼nmesi sabote edilmiÅŸtir.
+                <strong>{t('map.errorNotePrefix', { defaultValue: 'Not:' })}</strong> {t('map.errorNoteText', { defaultValue: 'Arama çubuğundan belirli bir hat numarası (örn: 14M) aratarak otobüsleri haritada görmeye sorunsuzca devam edebilirsiniz. Yalnızca tüm filonun aynı anda haritada görünmesi sabote edilmiştir.' })}
               </span>
             </p>
             <div className="flex justify-end">
@@ -516,7 +520,7 @@ export default function MapPage() {
                 onClick={() => setShowErrorModal(false)}
                 className="bg-red-500/20 hover:bg-red-500/30 text-red-300 px-5 py-2 rounded-lg font-medium transition-colors"
               >
-                AnladÄ±m
+                {t('common.ok', { defaultValue: 'Anladım' })}
               </button>
             </div>
           </div>
@@ -594,7 +598,7 @@ export default function MapPage() {
                     )
                   )}
                   {detailLoading && (
-                    <span className="text-[10px] text-slate-500">yÃ¼kleniyorâ€¦</span>
+                    <span className="text-[10px] text-slate-500">{t('common.loading')}</span>
                   )}
                 </div>
                 {selectedDetail?.direction && (
@@ -602,23 +606,23 @@ export default function MapPage() {
                 )}
                 {selectedDetail?.route_stops && selectedDetail.route_stops.length > 0 && (
                   <p className="text-[10px] text-slate-600 mt-0.5">
-                    {selectedDetail.route_stops.filter(s => s.direction === (selectedDetail.direction_letter ?? 'G')).length} durak
+                    {t('map.stopCount', { defaultValue: '{{count}} durak', count: selectedDetail.route_stops.filter(s => s.direction === (selectedDetail.direction_letter ?? 'G')).length })}
                   </p>
                 )}
                 <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1">
-                  <p className="text-[10px] text-slate-500 uppercase tracking-wide">HÄ±z</p>
-                  <p className="text-[10px] text-slate-500 uppercase tracking-wide">Son Update (SOAP)</p>
-                  <p className="text-xs text-slate-200">{selectedSpeed !== null ? `${selectedSpeed} km/h` : 'â€”'}</p>
+                  <p className="text-[10px] text-slate-500 uppercase tracking-wide">{t('stops.speed')}</p>
+                  <p className="text-[10px] text-slate-500 uppercase tracking-wide">{t('map.lastUpdateSoap', { defaultValue: 'Son Update (SOAP)' })}</p>
+                  <p className="text-xs text-slate-200">{selectedSpeed !== null ? `${selectedSpeed} km/h` : '—'}</p>
                   <p className="text-xs text-slate-200 truncate" title={selectedLastSeen ?? undefined}>{selectedLastSeen ?? 'â€”'}</p>
                 </div>
               </div>
               <button
                 onClick={() => { setSelectedKapino(null); setSelectedDetail(null) }}
                 className="text-slate-500 hover:text-slate-300 text-lg leading-none shrink-0"
-                aria-label="DetaylarÄ± kapat"
-                title="DetaylarÄ± kapat"
+                aria-label={t('map.closeDetails', { defaultValue: 'Detayları kapat' })}
+                title={t('map.closeDetails', { defaultValue: 'Detayları kapat' })}
               >
-                Ã—
+                ×
               </button>
             </div>
 
@@ -628,7 +632,7 @@ export default function MapPage() {
                 className="metro-tilt px-3 py-1.5 text-xs font-semibold border border-[#2a2a2a]
                            text-[#00AFF0] hover:border-[#00AFF0]/60"
               >
-                Daha Fazla Detay
+                {t('stops.moreDetail')}
               </button>
             </div>
           </div>
@@ -640,7 +644,7 @@ export default function MapPage() {
         <FleetMetaBadge updatedAt={fleetMeta?.updated_at} />
         <button
           onClick={() => { refresh(); refreshFleetMeta() }}
-          title="Yenile"
+          title={t('common.refresh')}
           className="bg-surface-card/90 backdrop-blur px-2.5 py-1.5 rounded-xl
                      text-xs text-slate-400 border border-surface-muted hover:text-slate-200 transition-colors"
         >
@@ -648,8 +652,8 @@ export default function MapPage() {
         </button>
         <div className="bg-surface-card/90 backdrop-blur px-3 py-1.5 rounded-xl
                         text-xs text-slate-400 border border-surface-muted">
-          {filtered.length.toLocaleString()} araÃ§
-          {hasFilter && ` / ${(buses ?? []).length.toLocaleString()} toplam`}
+          {t('map.vehicleCount', { defaultValue: '{{count}} araç', count: filtered.length.toLocaleString() })}
+          {hasFilter && t('map.totalCount', { defaultValue: ' / {{count}} toplam', count: (buses ?? []).length.toLocaleString() })}
         </div>
       </div>
     </div>

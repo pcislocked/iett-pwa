@@ -3,11 +3,13 @@ import { NavLink, useLocation } from 'react-router-dom'
 import { useBottomBarContext } from '@/hooks/useBottomBar'
 import MenuSheet from '@/components/MenuSheet'
 import { MAIN_PATHS } from '@/routes'
+import { useTranslation } from 'react-i18next'
 
 const DEFAULT_TABS_CFG = [
   {
     to: '/search',
-    label: 'Ara',
+    labelKey: 'nav.search',
+    fallback: 'Ara',
     icon: (active: boolean) => (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
            strokeWidth={active ? 2.5 : 2} className="w-5 h-5">
@@ -18,7 +20,8 @@ const DEFAULT_TABS_CFG = [
   },
   {
     to: '/',
-    label: 'Ana',
+    labelKey: 'nav.home',
+    fallback: 'Ana',
     icon: (active: boolean) => (
       <svg viewBox="0 0 24 24" fill={active ? 'currentColor' : 'none'} stroke="currentColor"
            strokeWidth={2} className="w-5 h-5">
@@ -29,7 +32,8 @@ const DEFAULT_TABS_CFG = [
   },
   {
     to: '/nearby',
-    label: 'Yakın',
+    labelKey: 'nav.nearby',
+    fallback: 'Yakın',
     icon: (active: boolean) => (
       <svg viewBox="0 0 24 24" fill={active ? 'currentColor' : 'none'} stroke="currentColor"
            strokeWidth={2} className="w-5 h-5">
@@ -43,6 +47,7 @@ const DEFAULT_TABS_CFG = [
 ]
 
 export default function BottomTabBar() {
+  const { t } = useTranslation()
   const { customTabs } = useBottomBarContext()
   const location = useLocation()
   const [menuOpen, setMenuOpen] = useState(false)
@@ -78,7 +83,7 @@ export default function BottomTabBar() {
     <>
       <nav className="flex-none bg-surface-card border-t border-surface-border safe-area-pb">
         <div className="max-w-2xl mx-auto flex">
-          {DEFAULT_TABS_CFG.map(({ to, label, icon }) => (
+          {DEFAULT_TABS_CFG.map(({ to, labelKey, fallback, icon }) => (
             <NavLink
               key={to}
               to={to}
@@ -94,7 +99,7 @@ export default function BottomTabBar() {
                     <span className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 rounded-full bg-brand-500" />
                   )}
                   {icon(isActive && isMain)}
-                  <span className="text-[9px] font-medium leading-none">{label}</span>
+                  <span className="text-[9px] font-medium leading-none">{t(labelKey, { defaultValue: fallback })}</span>
                 </>
               )}
             </NavLink>
@@ -111,7 +116,7 @@ export default function BottomTabBar() {
               <path strokeLinecap="round" strokeLinejoin="round"
                     d="M3.75 6.75h16.5M3.75 12h16.5M3.75 17.25h16.5" />
             </svg>
-            <span className="text-[9px] font-medium leading-none">Menü</span>
+            <span className="text-[9px] font-medium leading-none">{t('common.menu', { defaultValue: 'Menü' })}</span>
           </button>
         </div>
       </nav>

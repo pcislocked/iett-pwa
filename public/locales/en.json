@@ -1,0 +1,98 @@
+{
+  "common": {
+    "loading": "Loading…",
+    "error": "Error",
+    "retry": "Retry",
+    "close": "Close",
+    "back": "Back",
+    "refresh": "Refresh",
+    "unknown": "Unknown",
+    "noData": "No data found."
+  },
+  "nav": {
+    "map": "Map",
+    "stops": "Stops",
+    "routes": "Routes",
+    "home": "Home"
+  },
+  "stops": {
+    "title": "Stop",
+    "arrivals": "Arrivals",
+    "routes": "Routes",
+    "info": "Info",
+    "eta": "ETA",
+    "distance": "Distance",
+    "speed": "Speed",
+    "plate": "Plate",
+    "noArrivals": "No vehicles approaching.",
+    "loadingArrivals": "Loading arrival times…",
+    "staleWarning": "⚠ Last update failed",
+    "pinStop": "Pin to home",
+    "unpinStop": "Unpin",
+    "pinLimit": "Max {{max}} stops can be pinned",
+    "directionLabel": "{{direction}} DIRECTION",
+    "noPosition": "Vehicle position not yet available",
+    "openRoute": "Open Route →",
+    "moreDetail": "More Details",
+    "noKapinoWarning": "No door code in this record.",
+    "pinAtLimit": "Max {{max}} stops can be pinned",
+    "removeRouteFilter": "Remove {{route}} filter",
+    "removeEntityFilter": "Remove {{entity}} filter"
+  },
+  "routes": {
+    "title": "Route",
+    "timetable": "Timetable",
+    "stops": "Stops",
+    "buses": "Vehicles",
+    "info": "Info",
+    "direction": "Direction",
+    "variant": "Variant",
+    "departure": "Departure",
+    "noSchedule": "No schedule data found.",
+    "iettNote": "Some departures may be missing due to API limitations. For complete timetables, visit",
+    "iettNoteLink": "iett.istanbul",
+    "iettNoteSuffix": "."
+  },
+  "map": {
+    "searchPlaceholder": "Search route (e.g. 500T, 14M)…",
+    "entitySearchPlaceholder": "Search door code / plate (e.g. C-1515)",
+    "loadingVehicles": "Loading vehicle positions…",
+    "vehicleCount": "{{count}} vehicles",
+    "vehicleTotal": " / {{total}} total",
+    "lastUpdate": "last update: {{time}}",
+    "blockedTitle": "Blocked by İBB 🛑",
+    "understood": "Understood"
+  },
+  "fleet": {
+    "lastRoute": "Last: {{code}}",
+    "stopCount": "{{count}} stops",
+    "speed": "Speed",
+    "lastUpdate": "Last Update (SOAP)",
+    "loading": "loading…",
+    "removeFilter": "Remove {{id}} filter",
+    "moreDetail": "More Details",
+    "closeDetail": "Close details"
+  },
+  "amenities": {
+    "usb": "USB",
+    "wifi": "Wi-Fi",
+    "ac": "A/C",
+    "accessible": "Accessible"
+  },
+  "settings": {
+    "title": "Settings",
+    "language": "Language",
+    "theme": "Theme",
+    "themes": {
+      "dark": "Dark",
+      "amoled": "AMOLED",
+      "light": "Light"
+    },
+    "apiBase": "Server Address"
+  },
+  "embed": {
+    "poweredBy": "iett-pwa",
+    "noArrivals": "No vehicles approaching.",
+    "connectionError": "Connection error"
+  }
+}

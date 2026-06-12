@@ -8,6 +8,7 @@ import { api, type RouteStop, type ScheduledDeparture, type Announcement, type R
 import { useFavorites } from '@/hooks/useFavorites'
 import { getDirectionLabel } from '@/utils/routeDirectionLabels'
 import { VariantSelect } from '@/components/VariantSelect'
+import { useTranslation } from 'react-i18next'
 
 const busIconG = L.divIcon({
   className: '',
@@ -35,12 +36,13 @@ const DAY_TYPES = [
 ]
 
 function ErrorRetry({ message, onRetry }: { message: string; onRetry: () => void }) {
+  const { t } = useTranslation()
   return (
     <div className="flex flex-col items-center py-16 gap-4 text-slate-500">
       <p className="text-sm text-red-400">{message}</p>
       <button type="button" onClick={onRetry}
               className="px-4 py-2 bg-surface-muted rounded-xl text-sm text-slate-300 hover:bg-slate-600 transition-colors">
-        Tekrar Dene
+        {t('common.retry')}
       </button>
     </div>
   )
@@ -56,6 +58,7 @@ function TimetableView({ schedule, scheduleError, onRetry, metadata, stops, hatK
   hatKodu?: string
   onSelectVariant?: (variantCode: string, directionCode: string) => void
 }) {
+  const { t } = useTranslation()
   const [dayType, setDayType] = useState('H')
   const [direction, setDirection] = useState('')
 
@@ -97,7 +100,7 @@ function TimetableView({ schedule, scheduleError, onRetry, metadata, stops, hatK
               const firstPart = meta.direction_name.split(' - ')[0].trim()
               if (firstPart) return `${firstPart} KALKIŞ`
             }
-            return code === 'G' ? 'Gidiş' : 'Dönüş'
+            return code === 'G' ? t('routes.directionG', 'Gidiş') : t('routes.directionD', 'Dönüş')
           }
         }
       }
@@ -105,9 +108,9 @@ function TimetableView({ schedule, scheduleError, onRetry, metadata, stops, hatK
       const baseLabel = getDirectionLabel(code, metadata, hasMetadata)
       return baseLabel !== code && baseLabel !== 'Gidiş' && baseLabel !== 'Dönüş'
         ? `${baseLabel} KALKIŞ`
-        : baseLabel === 'Gidiş' ? 'Gidiş' : baseLabel === 'Dönüş' ? 'Dönüş' : code
+        : baseLabel === 'Gidiş' ? t('routes.directionG', 'Gidiş') : baseLabel === 'Dönüş' ? t('routes.directionD', 'Dönüş') : code
     }
-  }, [metadata, stops])
+  }, [metadata, stops, t])
 
   const availableDirections = useMemo(() => {
     if (!schedule) return [] as string[]
@@ -220,7 +223,7 @@ function TimetableView({ schedule, scheduleError, onRetry, metadata, stops, hatK
   return (
     <div className="flex flex-col gap-4 relative">
       <div className="-mx-4 px-4">
-        <div role="tablist" aria-label="Gün seçimi" className="flex border-b border-[#222]">
+        <div role="tablist" aria-label={t('routes.daySelect', 'Gün seçimi')} className="flex border-b border-[#222]">
           {DAY_TYPES.map(({ key, label }) => (
             <button role="tab" aria-selected={dayType === key} key={key} onClick={() => { setDayType(key); setDirection('') }}
               disabled={!availableDays.has(key)}
@@ -228,13 +231,13 @@ function TimetableView({ schedule, scheduleError, onRetry, metadata, stops, hatK
                 dayType === key ? 'border-white text-white' : 'border-transparent text-[#404040] hover:text-[#888]'
               }`}
             >
-              {label}
+              {t(`routes.dayType.${key}`, label)}
             </button>
           ))}
         </div>
 
         {availableDirections.length > 1 && (
-          <div role="tablist" aria-label="Yön seçimi" className="flex gap-0">
+          <div role="tablist" aria-label={t('routes.directionSelect', 'Yön seçimi')} className="flex gap-0">
             {availableDirections.map((dir) => (
               <button role="tab" aria-selected={direction === dir} key={dir} onClick={() => setDirection(dir)}
                 className={`flex-1 text-xs py-2 px-2 font-medium transition-colors truncate border-b-2 -mb-px ${
@@ -257,7 +260,7 @@ function TimetableView({ schedule, scheduleError, onRetry, metadata, stops, hatK
       {!schedule && scheduleError && <ErrorRetry message="Sefer saatleri yüklenemedi" onRetry={onRetry} />}
 
       {schedule && hours.length === 0 && (
-        <div className="text-center text-slate-500 py-12 text-sm">Bu gün tipi için sefer bilgisi yok</div>
+        <div className="text-center text-slate-500 py-12 text-sm">{t('routes.noSchedule')}</div>
       )}
 
       {hours.map((h) => (
@@ -285,7 +288,7 @@ function TimetableView({ schedule, scheduleError, onRetry, metadata, stops, hatK
 
       {footnoteToName.size > 0 && (
         <div className="mt-4 p-3 bg-surface-card border border-surface-muted rounded-xl">
-          <h4 className="text-xs font-bold text-slate-400 mb-2 uppercase tracking-wider">Notlar (Yan Seferler)</h4>
+          <h4 className="text-xs font-bold text-slate-400 mb-2 uppercase tracking-wider">{t('routes.footnotes', 'Notlar (Yan Seferler)')}</h4>
           <ul className="flex flex-col gap-1.5">
             {Array.from(footnoteToName.entries()).map(([num, name]) => {
               const variantCode = footnoteToVariant.get(num)
@@ -303,13 +306,14 @@ function TimetableView({ schedule, scheduleError, onRetry, metadata, stops, hatK
       )}
       <div className="mt-4 text-center">
         <p className="text-[10px] text-slate-600 leading-relaxed">
-          Resmi API'nin kısıtlamaları nedeniyle bazı sefer bilgileri eksik veya hatalı aktarılıyor olabilir.{' '}
-          Teyit etmek için <a 
+          {t('routes.iettNote')}{' '}
+          <a 
             href={`https://iett.istanbul/RouteDetail?hkod=${hatKodu}`} 
             target="_blank" 
             rel="noopener noreferrer"
             className="text-slate-500 hover:text-slate-400 underline"
-          >İETT üzerinden karşılaştırın ↗</a>
+          >{t('routes.iettNoteLink')} ↗</a>
+          {' '}{t('routes.iettNoteSuffix')}
         </p>
       </div>
     </div>
@@ -319,6 +323,7 @@ function TimetableView({ schedule, scheduleError, onRetry, metadata, stops, hatK
 type Tab = 'schedule' | 'map' | 'stops' | 'alerts'
 
 export default function RoutePage() {
+  const { t } = useTranslation()
   const { hatKodu } = useParams<{ hatKodu: string }>()
   const navigate = useNavigate()
   const [tab, setTab] = useState<Tab>('schedule')
@@ -400,10 +405,10 @@ export default function RoutePage() {
     : [41.015, 28.98]
 
   const tabs: { id: Tab; label: string; badge?: number }[] = [
-    { id: 'schedule', label: 'Sefer Saatleri' },
-    { id: 'map', label: 'Harita', badge: buses?.length },
-    { id: 'stops', label: 'Duraklar', badge: stopsForDir.length ?? stops?.length },
-    { id: 'alerts', label: 'Duyurular', badge: announcements?.length ? announcements.length : undefined },
+    { id: 'schedule', label: t('routes.timetable') },
+    { id: 'map', label: t('nav.map') },
+    { id: 'stops', label: t('routes.stops') },
+    { id: 'alerts', label: t('stops.announcements', 'Duyurular'), badge: announcements?.length ? announcements.length : undefined },
   ]
 
   return (
@@ -420,7 +425,7 @@ export default function RoutePage() {
               {stale && <span className="text-xs text-amber-400 shrink-0">⚠️</span>}
             </div>
             <p className="text-[11px] text-slate-500">
-              {buses?.length ?? 0} aktif araç
+              {t('routes.activeBuses', { defaultValue: '{{count}} aktif araç', count: buses?.length ?? 0 })}
             </p>
           </div>
 
@@ -439,7 +444,7 @@ export default function RoutePage() {
         </div>
 
         {/* Tab bar — Metro flat style */}
-        <div role="tablist" aria-label="Sekmeler" className="max-w-2xl mx-auto px-4 pb-0 flex gap-0 overflow-x-auto no-scrollbar">
+        <div role="tablist" aria-label={t('routes.tabs', 'Sekmeler')} className="max-w-2xl mx-auto px-4 pb-0 flex gap-0 overflow-x-auto no-scrollbar">
           {tabs.map(({ id, label, badge }) => (
             <button role="tab" aria-selected={tab === id} key={id} onClick={() => setTab(id)}
               className={`flex-1 shrink-0 text-sm py-2.5 px-2 font-medium border-b-2 -mb-px transition-colors
@@ -584,7 +589,7 @@ export default function RoutePage() {
               </div>
             )}
             {!stops && stopsError && (
-              <ErrorRetry message="Durak listesi yÃ¼klenemedi" onRetry={refreshStops} />
+              <ErrorRetry message={t('common.error', 'Durak listesi yüklenemedi')} onRetry={refreshStops} />
             )}
             {stops?.length === 0 && (
               <div className="flex flex-col items-center justify-center py-16 text-slate-500">
@@ -595,7 +600,7 @@ export default function RoutePage() {
                   <path strokeLinecap="round" strokeLinejoin="round"
                         d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
                 </svg>
-                <p className="text-sm">Bu hat iÃ§in durak bulunamadÄ±</p>
+                <p className="text-sm">{t('common.noData')}</p>
               </div>
             )}
             {stopsForDir.map((s) => (
@@ -609,7 +614,7 @@ export default function RoutePage() {
                 </span>
                 <span className="flex-1 text-sm text-slate-200 truncate">{s.stop_name}</span>
                 {busAtSequence.has(s.sequence) && (
-                  <span title="OtobÃ¼s burada" className="w-2.5 h-2.5 rounded-full shrink-0 animate-pulse"
+                  <span title={t('routes.busHere', 'Otobüs burada')} className="w-2.5 h-2.5 rounded-full shrink-0 animate-pulse"
                         style={{ background: effectiveDir === 'D' ? '#f59e0b' : '#2563eb' }} />
                 )}
                 <span className="text-xs text-slate-600 shrink-0">{s.stop_code}</span>
@@ -625,9 +630,9 @@ export default function RoutePage() {
         {/* Alerts tab */}
         {tab === 'alerts' && (
           <div className="flex flex-col gap-3">
-            {!announcements && !announcementsError && <p className="text-slate-400 text-sm">YÃ¼kleniyor...</p>}
+            {!announcements && !announcementsError && <p className="text-slate-400 text-sm">{t('common.loading')}</p>}
             {!announcements && announcementsError && (
-              <ErrorRetry message="Duyurular yÃ¼klenemedi" onRetry={refreshAnnouncements} />
+              <ErrorRetry message={t('common.error', 'Duyurular yüklenemedi')} onRetry={refreshAnnouncements} />
             )}
             {announcements?.length === 0 && (
               <div className="flex flex-col items-center py-16 text-slate-500">
@@ -636,7 +641,7 @@ export default function RoutePage() {
                   <path strokeLinecap="round" strokeLinejoin="round"
                         d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
                 </svg>
-                <p className="text-sm">Aktif duyuru yok</p>
+                <p className="text-sm">{t('stops.noAnnouncements', 'Aktif duyuru yok')}</p>
               </div>
             )}
             {announcements?.map((a, i) => (

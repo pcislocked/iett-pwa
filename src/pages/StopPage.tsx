@@ -9,6 +9,7 @@ import { api, type RouteAnnouncement, type StopDetail, type BusPosition, type Ar
 import { useFavorites } from '@/hooks/useFavorites'
 import { useBottomBar } from '@/hooks/useBottomBar'
 import { PINNED_STOPS_MAX, useUserPrefs } from '@/hooks/useUserPrefs'
+import { useTranslation } from 'react-i18next'
 import { etaChipClass } from '@/utils/etaColor'
 
 
@@ -105,12 +106,13 @@ function AutoFitBuses({
 
 /** Amenity icon row — rendered below the info strip when amenities data is present. */
 function AmenityIcons({ amenities }: { amenities: Amenities | null }) {
+  const { t } = useTranslation()
   if (!amenities) return null
   const items: { label: string; icon: string; value: boolean | null | undefined }[] = [
-    { label: 'USB', icon: '🔌', value: amenities.usb },
-    { label: 'Wi-Fi', icon: '📶', value: amenities.wifi },
-    { label: 'Klima', icon: '❄️', value: amenities.ac },
-    { label: 'Engelli', icon: '♿', value: amenities.accessible },
+    { label: t('amenities.usb'), icon: '🔌', value: amenities.usb },
+    { label: t('amenities.wifi'), icon: '📶', value: amenities.wifi },
+    { label: t('amenities.ac'), icon: '❄️', value: amenities.ac },
+    { label: t('amenities.accessible'), icon: '♿', value: amenities.accessible },
   ]
   const known = items.filter((i) => i.value != null)
   if (known.length === 0) return null
@@ -149,6 +151,7 @@ function BusDetailSheet({
   onClose: () => void
 }) {
   const navigate = useNavigate()
+  const { t } = useTranslation()
 
   const dialogRef = useRef<HTMLDivElement>(null)
   const previouslyFocused = useRef<Element | null>(null)
@@ -329,30 +332,30 @@ function BusDetailSheet({
           </div>
         ) : (
           <div className="h-12 flex items-center justify-center">
-            <p className="text-xs text-slate-500">Araç konumu henüz mevcut değil</p>
+            <p className="text-xs text-slate-500">{t('stops.noPosition')}</p>
           </div>
         )}
 
         {/* Info strip — 4 cols: ETA · Mesafe · Hız · Plaka */}
         <div className="px-4 py-3 grid grid-cols-4 gap-2 border-t border-surface-muted">
           <div className="flex flex-col items-center gap-0.5">
-            <p className="text-[10px] text-slate-500 uppercase tracking-wider">ETA</p>
+            <p className="text-[10px] text-slate-500 uppercase tracking-wider">{t('stops.eta')}</p>
             <p className="text-base font-bold text-slate-100">
               {arrival.eta_minutes !== null ? `${arrival.eta_minutes} dk` : arrival.eta_raw}
             </p>
           </div>
           <div className="flex flex-col items-center gap-0.5">
-            <p className="text-[10px] text-slate-500 uppercase tracking-wider">Mesafe</p>
+            <p className="text-[10px] text-slate-500 uppercase tracking-wider">{t('stops.distance')}</p>
             <p className="text-base font-bold text-slate-100">{distLabel ?? '—'}</p>
           </div>
           <div className="flex flex-col items-center gap-0.5">
-            <p className="text-[10px] text-slate-500 uppercase tracking-wider">Hız</p>
+            <p className="text-[10px] text-slate-500 uppercase tracking-wider">{t('stops.speed')}</p>
             <p className="text-base font-bold text-slate-100">
               {arrival.speed_kmh !== null ? `${arrival.speed_kmh} km/h` : '—'}
             </p>
           </div>
           <div className="flex flex-col items-center gap-0.5">
-            <p className="text-[10px] text-slate-500 uppercase tracking-wider">Plaka</p>
+            <p className="text-[10px] text-slate-500 uppercase tracking-wider">{t('stops.plate')}</p>
             <p className="text-sm font-bold text-slate-100 font-mono">{arrival.plate ?? '—'}</p>
           </div>
         </div>
@@ -368,7 +371,7 @@ function BusDetailSheet({
               onClick={onClose}
               className="block w-full text-center bg-brand-600 hover:bg-brand-500 text-white font-semibold py-3 rounded-xl text-sm transition-colors"
             >
-              Hattı Aç →
+              {t('stops.openRoute')}
             </Link>
 
             <button
@@ -382,13 +385,13 @@ function BusDetailSheet({
                          py-3 rounded-xl text-sm transition-colors disabled:text-slate-600
                          disabled:border-[#1a1a1a] disabled:cursor-not-allowed hover:border-[#00AFF0]/60"
             >
-              Daha Fazla Detay
+              {t('stops.moreDetail')}
             </button>
           </div>
 
           {!arrival.kapino && (
             <p className="text-[11px] text-slate-600 mt-2">
-              Bu kayitta kapi kodu yok, Arac detayi acilamiyor.
+              {t('stops.noKapinoWarning')}
             </p>
           )}
         </div>
@@ -417,6 +420,7 @@ function EtaChip({ minutes, raw }: { minutes: number | null; raw: string }) {
 const globalRouteIconCache = new Map<string, L.DivIcon>()
 
 export default function StopPage() {
+  const { t } = useTranslation()
   const { dcode } = useParams<{ dcode: string }>()
   const navigate = useNavigate()
   const [activeRoutes, setActiveRoutes] = useState<Set<string>>(new Set())
@@ -494,7 +498,7 @@ export default function StopPage() {
   // Memoised so useBottomBar’s effect only fires when tab active-state actually changes
   const bottomBarTabs = useMemo(() => [
     {
-      label: 'Geliş',
+      label: t('stops.arrivals'),
       icon: (
         <svg viewBox="0 0 24 24" fill={activeTab === 'gelis' ? 'currentColor' : 'none'}
              stroke="currentColor" strokeWidth={2} className="w-5 h-5">
@@ -506,7 +510,7 @@ export default function StopPage() {
       active: activeTab === 'gelis',
     },
     {
-      label: 'Hatlar',
+      label: t('stops.routes'),
       icon: (
         <svg viewBox="0 0 24 24" fill={activeTab === 'hatlar' ? 'currentColor' : 'none'}
              stroke="currentColor" strokeWidth={2} className="w-5 h-5">
@@ -518,7 +522,7 @@ export default function StopPage() {
       active: activeTab === 'hatlar',
     },
     {
-      label: 'Bilgi',
+      label: t('stops.info'),
       icon: (
         <svg viewBox="0 0 24 24" fill={activeTab === 'bilgi' ? 'currentColor' : 'none'}
              stroke="currentColor" strokeWidth={2} className="w-5 h-5">
@@ -529,7 +533,7 @@ export default function StopPage() {
       onPress: () => setActiveTab('bilgi'),
       active: activeTab === 'bilgi',
     },
-  ], [activeTab])
+  ], [activeTab, t])
 
   useBottomBar(bottomBarTabs)
 
@@ -632,7 +636,7 @@ export default function StopPage() {
 
   const { isFavorite, toggle } = useFavorites()
   const { prefs, isPinned, pinStop, unpinStop } = useUserPrefs()
-  const stopName = stopDetail?.name ?? `Durak ${dcode}`
+  const stopName = stopDetail?.name ?? `${t('stops.title')} ${dcode}`
   const favItem = { kind: 'stop' as const, dcode: dcode ?? '', name: stopName }
   const favorited = isFavorite(favItem)
   const pinned = isPinned(dcode ?? '')
@@ -697,9 +701,9 @@ export default function StopPage() {
               </span>
             </div>
             {stopDetail && stopDetail.direction && (
-              <p className="text-[11px] text-slate-400 truncate leading-tight uppercase tracking-wider">{stopDetail.direction} YÖNÜ</p>
+              <p className="text-[11px] text-slate-400 truncate leading-tight uppercase tracking-wider">{t('stops.directionLabel', { direction: stopDetail.direction })}</p>
             )}
-            {stale && <p className="text-[11px] text-amber-400">⚠ Son güncelleme başarısız</p>}
+            {stale && <p className="text-[11px] text-amber-400">{t('stops.staleWarning')}</p>}
           </div>
 
 
@@ -727,14 +731,14 @@ export default function StopPage() {
             disabled={!dcode || pinAtLimit}
             aria-label={
               pinAtLimit
-                ? `En fazla ${PINNED_STOPS_MAX} durak sabitlenebilir`
-                : pinned ? 'Sabitlemeyi kaldır' : 'Ana sayfaya sabitle'
+                ? t('stops.pinAtLimit', { max: PINNED_STOPS_MAX })
+                : pinned ? t('stops.unpinStop') : t('stops.pinStop')
             }
             aria-pressed={pinned}
             title={
               pinAtLimit
-                ? `En fazla ${PINNED_STOPS_MAX} durak ana sayfaya sabitlenebilir`
-                : pinned ? 'Sabitlemeyi kaldır' : 'Ana sayfaya sabitle'
+                ? t('stops.pinLimit', { max: PINNED_STOPS_MAX })
+                : pinned ? t('stops.unpinStop') : t('stops.pinStop')
             }
             className={`p-1.5 rounded-xl transition-colors shrink-0 disabled:opacity-40 ${
               pinned ? 'text-amber-400' : 'text-slate-500 hover:text-slate-300'
@@ -749,9 +753,9 @@ export default function StopPage() {
       {activeTab === 'hatlar' && (
         <div className="flex-1 overflow-y-auto px-4 py-3">
           {routes === null || routes === undefined ? (
-            <p className="text-center text-slate-500 mt-10 text-sm">Yükleniyor...</p>
+            <p className="text-center text-slate-500 mt-10 text-sm">{t('common.loading')}</p>
           ) : routes.length === 0 ? (
-            <p className="text-center text-slate-500 mt-10 text-sm">Bu durakta kayıtlı hat bulunamadı.</p>
+            <p className="text-center text-slate-500 mt-10 text-sm">{t('common.noData')}</p>
           ) : (
             <div className="rounded-2xl overflow-hidden border border-surface-border divide-y divide-surface-border bg-surface-card">
               {(routes ?? []).map((r) => (
@@ -767,7 +771,7 @@ export default function StopPage() {
                   >
                     {r}
                   </span>
-                  <span className="flex-1 text-sm text-slate-300">Hat detayı</span>
+                  <span className="flex-1 text-sm text-slate-300">{t('routes.info')}</span>
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}
                        className="w-4 h-4 text-slate-600 shrink-0">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
@@ -874,10 +878,10 @@ export default function StopPage() {
               {!stopDetail ? (
                 <>
                   <div className="w-6 h-6 border-2 border-brand-500 border-t-transparent rounded-full animate-spin mb-2" />
-                  <p className="text-xs">Konum yükleniyor...</p>
+                  <p className="text-xs">{t('common.loading')}</p>
                 </>
               ) : (
-                <p className="text-xs">Konum verisi yok</p>
+                <p className="text-xs">{t('common.noData')}</p>
               )}
             </div>
           )}
@@ -891,7 +895,7 @@ export default function StopPage() {
             aria-valuenow={mapHeightPctRef.current}
             aria-valuemin={15}
             aria-valuemax={65}
-            aria-label="Harita yüksekliğini ayarla"
+            aria-label={t('stops.heightAdjust', 'Harita yüksekliğini ayarla')}
             tabIndex={0}
             className="shrink-0 flex items-center justify-center h-5 cursor-row-resize select-none touch-none bg-surface-card border-b border-surface-muted active:bg-surface-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
             onPointerDown={onHandlePointerDown}
@@ -916,7 +920,7 @@ export default function StopPage() {
                 onClick={() => setShowAnnouncements(!showAnnouncements)}
                 className="w-full card flex items-center justify-between text-sm text-amber-400 font-semibold"
               >
-                <span>⚠️ Duyurular ({(stopAnnouncements ?? []).length})</span>
+                <span>⚠️ {t('stops.announcements', 'Duyurular')} ({(stopAnnouncements ?? []).length})</span>
                 <svg className={`w-4 h-4 transition-transform ${showAnnouncements ? 'rotate-180' : ''}`}
                      fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/>
@@ -960,9 +964,9 @@ export default function StopPage() {
                 <path strokeLinecap="round" strokeLinejoin="round"
                       d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12" />
               </svg>
-              <p className="text-sm font-medium">Şu an sefer bilgisi yok</p>
+              <p className="text-sm font-medium">{t('stops.noArrivals')}</p>
               {activeRoutes.size > 0 && (
-                <p className="text-xs mt-1">{Array.from(activeRoutes).join(', ')} hattı için veri bulunamadı</p>
+                <p className="text-xs mt-1">{Array.from(activeRoutes).join(', ')} hattı için {t('common.noData')}</p>
               )}
             </div>
           )}
@@ -1030,7 +1034,7 @@ export default function StopPage() {
             <span className="text-[11px] text-slate-600">
               {lastUpdated
                 ? `güncellendi: ${lastUpdated.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`
-                : 'yükleniyor...'}
+                : t('common.loading')}
             </span>
             <button
               onClick={() => refreshArrivals()}
@@ -1039,7 +1043,7 @@ export default function StopPage() {
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
               </svg>
-              Yenile
+              {t('common.refresh')}
             </button>
           </div>
 
@@ -1053,7 +1057,7 @@ export default function StopPage() {
                     : 'bg-surface-muted text-slate-300 hover:bg-slate-600'
                 }`}
               >
-                Tümü
+                {t('common.all', 'Tümü')}
               </button>
               {(routes ?? []).map((r) => {
                 const color = getRouteColor(r, orderedForColors)

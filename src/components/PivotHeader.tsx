@@ -1,7 +1,14 @@
 import { useLocation, useNavigate } from 'react-router-dom'
 import { MAIN_PATHS } from '@/routes'
+import { useTranslation } from 'react-i18next'
 
-const LABELS: Record<string, string> = {
+const LABEL_KEYS: Record<string, string> = {
+  '/search': 'nav.search',
+  '/':       'nav.home',
+  '/nearby': 'nav.nearby',
+}
+
+const LABEL_FALLBACKS: Record<string, string> = {
   '/search': 'ara',
   '/':       'ana',
   '/nearby': 'yakın',
@@ -15,6 +22,7 @@ const LABELS: Record<string, string> = {
  * Active tab is pure white; inactive tabs fade into the background (#404040).
  */
 export default function PivotHeader() {
+  const { t } = useTranslation()
   const location = useLocation()
   const navigate = useNavigate()
   const currentIdx = (MAIN_PATHS as readonly string[]).indexOf(location.pathname)
@@ -40,7 +48,7 @@ export default function PivotHeader() {
                   color: active ? '#ffffff' : '#404040',
                 }}
               >
-                {LABELS[path]}
+                {t(LABEL_KEYS[path], { defaultValue: LABEL_FALLBACKS[path] })}
               </span>
             </button>
           )

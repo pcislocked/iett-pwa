@@ -2,10 +2,12 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { type Settings, loadSettings, saveSettings } from '@/utils/settings'
 import { useUserPrefs } from '@/hooks/useUserPrefs'
+import { useTranslation } from 'react-i18next'
 
 const LOCATION_CONSENT_KEY = 'location-consent'
 
 export default function SettingsPage() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const [settings, setSettings] = useState<Settings>(loadSettings)
   const [saved, setSaved] = useState(false)
@@ -47,30 +49,30 @@ export default function SettingsPage() {
 
   return (
     <div className="max-w-lg mx-auto px-4 py-8 pb-6 flex flex-col gap-6">
-      <h1 className="text-xl font-bold">Ayarlar</h1>
+      <h1 className="text-xl font-bold">{t('nav.settings', { defaultValue: 'Ayarlar' })}</h1>
 
       <div className="card flex flex-col gap-4">
         <div>
           <label className="text-sm text-slate-400 block mb-1">
-            iett-middle Sunucu Adresi
+            {t('settings.apiBase', { defaultValue: 'iett-middle Sunucu Adresi' })}
           </label>
           <input
             type="url"
             value={settings.apiBase}
             onChange={(e) => setSettings((s) => ({ ...s, apiBase: e.target.value }))}
-            placeholder="https://iett-middle.yourdomain.com (boş = aynı origin)"
+            placeholder={t('settings.apiBasePlaceholder', { defaultValue: 'https://iett-middle.yourdomain.com (boş = aynı origin)' })}
             className="w-full bg-surface border border-surface-muted rounded-lg
                        px-3 py-2 text-sm text-slate-100 placeholder-slate-500
                        focus:outline-none focus:ring-1 focus:ring-brand-500"
           />
           <p className="text-xs text-slate-500 mt-1">
-            Boş bırakırsanız PWA ile aynı origin kullanılır
+            {t('settings.apiBaseHint', { defaultValue: 'Boş bırakırsanız PWA ile aynı origin kullanılır' })}
           </p>
         </div>
 
         <div>
           <label className="text-sm text-slate-400 block mb-1">
-            Yenileme Aralığı (saniye)
+            {t('settings.refreshInterval', { defaultValue: 'Yenileme Aralığı (saniye)' })}
           </label>
           <input
             type="number"
@@ -88,9 +90,9 @@ export default function SettingsPage() {
 
         <div className="flex items-center justify-between">
           <div>
-            <p id="autoLocate-label" className="text-sm text-slate-300 font-medium">Otomatik Konum</p>
+            <p id="autoLocate-label" className="text-sm text-slate-300 font-medium">{t('settings.autoLocate', { defaultValue: 'Otomatik Konum' })}</p>
             <p className="text-xs text-slate-500 mt-0.5">
-              Yakın Duraklar açılınca GPS'le otomatik konumla (yalnızca izin verilmişse)
+              {t('settings.autoLocateDesc', { defaultValue: 'Yakın Duraklar açılınca GPS\'le otomatik konumla (yalnızca izin verilmişse)' })}
             </p>
           </div>
           <button
@@ -112,21 +114,21 @@ export default function SettingsPage() {
       </div>
 
       {saved && (
-        <p className="text-sm text-eta-soon text-center">✓ Ayarlar kaydedildi</p>
+        <p className="text-sm text-eta-soon text-center">{t('settings.saved', { defaultValue: '✓ Ayarlar kaydedildi' })}</p>
       )}
 
       {/* Location consent */}
       <div className="card flex flex-col gap-3">
-        <p className="text-sm font-semibold text-slate-400">Konum İzni</p>
+        <p className="text-sm font-semibold text-slate-400">{t('nearby.locationPermission', { defaultValue: 'Konum İzni' })}</p>
         <div className="flex items-center justify-between">
           <div>
             <p className="text-sm text-slate-300 font-medium">
-              {locationConsent === 'granted' ? 'Konum etkin' : 'Konum devre dışı'}
+              {locationConsent === 'granted' ? t('settings.locationEnabled', { defaultValue: 'Konum etkin' }) : t('settings.locationDisabled', { defaultValue: 'Konum devre dışı' })}
             </p>
             <p className="text-xs text-slate-500 mt-0.5">
               {locationConsent === 'granted'
-                ? 'Yakın Duraklar konum kullanıyor'
-                : 'Yakın Duraklar ana sayfada gizlenir'}
+                ? t('settings.locationUsingGps', { defaultValue: 'Yakın Duraklar konum kullanıyor' })
+                : t('settings.locationHidden', { defaultValue: 'Yakın Duraklar ana sayfada gizlenir' })}
             </p>
           </div>
           {locationConsent === 'granted' ? (
@@ -137,7 +139,7 @@ export default function SettingsPage() {
               }}
               className="shrink-0 px-3 py-1.5 rounded-xl text-xs font-semibold bg-red-900/40 text-red-400 hover:bg-red-900/60 transition-colors"
             >
-              Konumu İptal Et
+              {t('settings.locationRevoke', { defaultValue: 'Konumu İptal Et' })}
             </button>
           ) : (
             <button
@@ -148,7 +150,7 @@ export default function SettingsPage() {
               }}
               className="shrink-0 px-3 py-1.5 rounded-xl text-xs font-semibold bg-brand-600/40 text-brand-400 hover:bg-brand-600/60 transition-colors"
             >
-              Konumu Etkinleştir
+              {t('settings.locationEnable', { defaultValue: 'Konumu Etkinleştir' })}
             </button>
           )}
         </div>
@@ -156,13 +158,13 @@ export default function SettingsPage() {
 
       {/* Data backup */}
       <div className="card flex flex-col gap-3">
-        <p className="text-sm font-semibold text-slate-400">Veri Yedekleme</p>
+        <p className="text-sm font-semibold text-slate-400">{t('settings.dataBackup', { defaultValue: 'Veri Yedekleme' })}</p>
         <button
           onClick={exportPrefs}
           className="flex items-center gap-3 py-2.5 px-3 bg-surface-muted hover:bg-slate-700
                      rounded-xl text-sm text-slate-200 transition-colors w-full text-left"
         >
-          <span className="text-base">&#x1F4E4;</span> Ayarları Dışa Aktar
+          <span className="text-base">&#x1F4E4;</span> {t('settings.exportData', { defaultValue: 'Ayarları Dışa Aktar' })}
         </button>
         <button
           onClick={() => fileRef.current?.click()}
@@ -173,27 +175,27 @@ export default function SettingsPage() {
           }`}
         >
           <span className="text-base">&#x1F4E5;</span>
-          {importStatus === 'ok' ? '✓ İçe aktarıldı' : importStatus === 'err' ? '✗ Geçersiz dosya' : 'Ayarları İçe Aktar'}
+          {importStatus === 'ok' ? t('settings.importOk', { defaultValue: '✓ İçe aktarıldı' }) : importStatus === 'err' ? t('settings.importErr', { defaultValue: '✗ Geçersiz dosya' }) : t('settings.importData', { defaultValue: 'Ayarları İçe Aktar' })}
         </button>
         <input ref={fileRef} type="file" accept="application/json" className="hidden" onChange={handleImport} />
       </div>
 
       <div className="card text-xs text-slate-500 flex flex-col gap-3">
         <div className="flex items-center justify-between">
-          <p className="font-semibold text-slate-400 text-sm">Hakkında</p>
+          <p className="font-semibold text-slate-400 text-sm">{t('settings.about', { defaultValue: 'Hakkında' })}</p>
           <span className="text-slate-600">v{__APP_VERSION__}</span>
         </div>
         <p className="text-slate-400 leading-relaxed">
-          İstanbul otobüs ve tramvay hatlarını gerçek zamanlı takip etmek için açık kaynaklı PWA.
+          {t('settings.aboutDesc', { defaultValue: 'İstanbul otobüs ve tramvay hatlarını gerçek zamanlı takip etmek için açık kaynaklı PWA.' })}
         </p>
         <div className="flex flex-col gap-2">
-          <p>Veri kaynağı: İETT / İBB açık API</p>
+          <p>{t('settings.dataSource', { defaultValue: 'Veri kaynağı: İETT / İBB açık API' })}</p>
           <p className="text-[10px] text-slate-500 border-l-2 border-brand-500/30 pl-2">
             <a href="https://data.ibb.gov.tr/license" target="_blank" rel="noopener noreferrer" className="hover:text-brand-400 underline decoration-slate-600 underline-offset-2">
-              Atıf 4.0 Uluslararası (CC BY 4.0) kapsamında lisanslanan kamu sektörü bilgilerini içerir.
+              {t('settings.licenseInfo', { defaultValue: 'Atıf 4.0 Uluslararası (CC BY 4.0) kapsamında lisanslanan kamu sektörü bilgilerini içerir.' })}
             </a>
           </p>
-          <p>Arka uç: iett-middle (FastAPI)</p>
+          <p>{t('settings.backendSource', { defaultValue: 'Arka uç: iett-middle (FastAPI)' })}</p>
         </div>
         <a
           href="https://github.com/pcislocked/iett-pwa"

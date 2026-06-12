@@ -1,4 +1,5 @@
 import type { RouteMetadata } from '@/api/client'
+import i18n from '@/i18n'
 
 /**
  * Extract direction labels (D/G) from route metadata.
@@ -39,5 +40,5 @@ export function getDirectionLabelMap(metadata: RouteMetadata[] | null): Record<s
  */
 export function getDirectionLabel(code: string, metadata: RouteMetadata[] | null, hasMetadata: boolean = !!metadata?.length): string {
   const map = getDirectionLabelMap(metadata)
-  return map[code] ?? (hasMetadata ? code : code === 'G' ? 'Gidiş' : code === 'D' ? 'Dönüş' : code)
+  return map[code] ?? (hasMetadata ? code : code === 'G' ? i18n.t('route.dirG', { defaultValue: 'Gidiş' }) : code === 'D' ? i18n.t('route.dirD', { defaultValue: 'Dönüş' }) : code)
 }

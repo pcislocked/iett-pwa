@@ -1,0 +1,98 @@
+{
+  "common": {
+    "loading": "Yükleniyor…",
+    "error": "Hata",
+    "retry": "Tekrar Dene",
+    "close": "Kapat",
+    "back": "Geri",
+    "refresh": "Yenile",
+    "unknown": "Bilinmiyor",
+    "noData": "Veri bulunamadı."
+  },
+  "nav": {
+    "map": "Harita",
+    "stops": "Duraklar",
+    "routes": "Hatlar",
+    "home": "Ana Sayfa"
+  },
+  "stops": {
+    "title": "Durak",
+    "arrivals": "Geliş",
+    "routes": "Hatlar",
+    "info": "Bilgi",
+    "eta": "ETA",
+    "distance": "Mesafe",
+    "speed": "Hız",
+    "plate": "Plaka",
+    "noArrivals": "Şu an bekleyen araç yok.",
+    "loadingArrivals": "Geliş bilgileri yükleniyor…",
+    "staleWarning": "⚠ Son güncelleme başarısız",
+    "pinStop": "Ana sayfaya sabitle",
+    "unpinStop": "Sabitlemeyi kaldır",
+    "pinLimit": "En fazla {{max}} durak ana sayfaya sabitlenebilir",
+    "directionLabel": "{{direction}} YÖNÜ",
+    "noPosition": "Araç konumu henüz mevcut değil",
+    "openRoute": "Hattı Aç →",
+    "moreDetail": "Daha Fazla Detay",
+    "noKapinoWarning": "Bu kayıtta kapı kodu yok, Araç detayı açılamıyor.",
+    "pinAtLimit": "En fazla {{max}} durak sabitlenebilir",
+    "removeRouteFilter": "{{route}} filtresini kaldır",
+    "removeEntityFilter": "{{entity}} filtresini kaldır"
+  },
+  "routes": {
+    "title": "Hat",
+    "timetable": "Tarife",
+    "stops": "Duraklar",
+    "buses": "Araçlar",
+    "info": "Bilgi",
+    "direction": "Yön",
+    "variant": "Varyant",
+    "departure": "Kalkış",
+    "noSchedule": "Tarife verisi bulunamadı.",
+    "iettNote": "API kaynaklı eksiklikler nedeniyle bazı seferler burada gösterilemiyor olabilir. Güncel ve eksiksiz saatler için",
+    "iettNoteLink": "iett.istanbul",
+    "iettNoteSuffix": "adresini kontrol ediniz."
+  },
+  "map": {
+    "searchPlaceholder": "Hat kodu ara (örn: 500T, 14M)…",
+    "entitySearchPlaceholder": "Kapı kodu / plaka ara (örn: C-1515)",
+    "loadingVehicles": "Araç konumları yükleniyor…",
+    "vehicleCount": "{{count}} araç",
+    "vehicleTotal": " / {{total}} toplam",
+    "lastUpdate": "son veri güncelleme: {{time}}",
+    "blockedTitle": "İBB Tarafından Engellendi 🛑",
+    "understood": "Anladım"
+  },
+  "fleet": {
+    "lastRoute": "Son: {{code}}",
+    "stopCount": "{{count}} durak",
+    "speed": "Hız",
+    "lastUpdate": "Son Update (SOAP)",
+    "loading": "yükleniyor…",
+    "removeFilter": "{{id}} filtresini kaldır",
+    "moreDetail": "Daha Fazla Detay",
+    "closeDetail": "Detayları kapat"
+  },
+  "amenities": {
+    "usb": "USB",
+    "wifi": "Wi-Fi",
+    "ac": "Klima",
+    "accessible": "Engelli"
+  },
+  "settings": {
+    "title": "Ayarlar",
+    "language": "Dil",
+    "theme": "Tema",
+    "themes": {
+      "dark": "Koyu",
+      "amoled": "AMOLED",
+      "light": "Açık"
+    },
+    "apiBase": "Sunucu Adresi"
+  },
+  "embed": {
+    "poweredBy": "iett-pwa",
+    "noArrivals": "Bekleyen araç yok.",
+    "connectionError": "Bağlantı hatası"
+  }
+}

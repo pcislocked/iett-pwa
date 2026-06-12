@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { api, type StopSearchResult, type RouteSearchResult } from '@/api/client'
 import { addRecent, getRecent, type RecentSearch } from '@/hooks/useRecentSearches'
 import { useFavorites } from '@/hooks/useFavorites'
+import { useTranslation } from 'react-i18next'
 
 type SearchResult =
   | ({ kind: 'stop' } & StopSearchResult)
@@ -10,6 +11,7 @@ type SearchResult =
   | { kind: 'stop-direct'; dcode: string }
 
 export default function SearchPage() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const inputRef = useRef<HTMLInputElement>(null)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -103,7 +105,7 @@ export default function SearchPage() {
             inputMode="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Hat kodu, durak adı veya numara..."
+            placeholder={t('search.placeholder', { defaultValue: 'Hat kodu, durak adı veya numara...' })}
             className="w-full bg-surface-card border border-surface-border rounded-2xl
                        pl-11 pr-10 py-3.5 text-slate-100 placeholder-slate-500 text-[15px]
                        focus:outline-none focus:ring-2 focus:ring-brand-500"
@@ -112,7 +114,7 @@ export default function SearchPage() {
             <button
               onClick={() => { setQuery(''); setResults([]); inputRef.current?.focus() }}
               className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
-              aria-label="Temizle"
+              aria-label={t('common.clear', { defaultValue: 'Temizle' })}
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-4 h-4">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -133,7 +135,7 @@ export default function SearchPage() {
               ))}
             </div>
           ) : results.length === 0 ? (
-            <p className="text-center text-slate-600 mt-10 text-sm">Sonuç bulunamadı</p>
+            <p className="text-center text-slate-600 mt-10 text-sm">{t('search.noResults', { defaultValue: 'Sonuç bulunamadı' })}</p>
           ) : (
             <div className="rounded-2xl overflow-hidden border border-surface-border divide-y divide-surface-border bg-surface-card mt-1">
               {results.map((r) => (
@@ -148,7 +150,7 @@ export default function SearchPage() {
                       <span className="text-[11px] font-bold px-1.5 py-0.5 rounded bg-emerald-900 text-emerald-100 font-mono shrink-0">
                         #{r.dcode}
                       </span>
-                      <span className="text-sm text-slate-200 flex-1">Durak sayfasına git</span>
+                      <span className="text-sm text-slate-200 flex-1">{t('search.goToStop', { defaultValue: 'Durak sayfasına git' })}</span>
                     </>
                   ) : r.kind === 'stop' ? (
                     <>
@@ -175,7 +177,7 @@ export default function SearchPage() {
             {recents.length > 0 && (
               <section>
                 <h2 className="text-[11px] font-semibold uppercase tracking-widest text-slate-500 mb-2">
-                  Son Aramalar
+                  {t('home.recentSearches', { defaultValue: 'Son Aramalar' })}
                 </h2>
                 <div className="rounded-2xl overflow-hidden border border-surface-border divide-y divide-surface-border bg-surface-card">
                   {recents.slice(0, 6).map((r) => (
@@ -200,7 +202,7 @@ export default function SearchPage() {
             {favStops.length > 0 && (
               <section>
                 <h2 className="text-[11px] font-semibold uppercase tracking-widest text-slate-500 mb-2">
-                  Favori Duraklar
+                  {t('search.favStops', { defaultValue: 'Favori Duraklar' })}
                 </h2>
                 <div className="rounded-2xl overflow-hidden border border-surface-border divide-y divide-surface-border bg-surface-card">
                   {favStops.map((stop) => (
@@ -226,7 +228,7 @@ export default function SearchPage() {
             {favRoutes.length > 0 && (
               <section>
                 <h2 className="text-[11px] font-semibold uppercase tracking-widest text-slate-500 mb-2">
-                  Favori Hatlar
+                  {t('search.favRoutes', { defaultValue: 'Favori Hatlar' })}
                 </h2>
                 <div className="rounded-2xl overflow-hidden border border-surface-border divide-y divide-surface-border bg-surface-card">
                   {favRoutes.map((fav) => (
@@ -251,7 +253,7 @@ export default function SearchPage() {
 
             {recents.length === 0 && favStops.length === 0 && favRoutes.length === 0 && (
               <p className="text-center text-slate-600 mt-16 text-sm">
-                Hat kodu, durak adı veya 4+ haneli durak numarası girin
+                {t('search.emptyState', { defaultValue: 'Hat kodu, durak adı veya 4+ haneli durak numarası girin' })}
               </p>
             )}
           </div>

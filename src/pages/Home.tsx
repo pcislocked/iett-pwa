@@ -11,6 +11,7 @@ import { useFavorites } from '@/hooks/useFavorites'
 import { getDirectionLabel } from '@/utils/routeDirectionLabels'
 import { useSharedRouteTickerNowMs } from '@/hooks/useSharedRouteTickerClock'
 import { useRouteTickerData } from '@/hooks/useRouteTickerData'
+import { useTranslation } from 'react-i18next'
 
 const LOCATION_CONSENT_KEY = 'location-consent'
 
@@ -78,6 +79,7 @@ function QuickRow({
 
 /** Animated "Konum alınıyor" dots: cycles ·  ··  ···  ····  every 400 ms */
 function GpsLocatingDots() {
+  const { t } = useTranslation()
   const [frame, setFrame] = useState(0)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   useEffect(() => {
@@ -95,7 +97,7 @@ function GpsLocatingDots() {
           d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
       </svg>
       <span className="text-[13px] text-slate-500">
-        Konum alınıyor<span className="font-mono">{dots}</span>
+        {t('common.locating', { defaultValue: 'Konum alınıyor' })}<span className="font-mono">{dots}</span>
       </span>
     </div>
   )
@@ -184,6 +186,7 @@ function RouteTickerRow({ code, name, icon }: { code: string; name: string; icon
 }
 
 export default function Home() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const clock = useClock()
   const { prefs } = useUserPrefs()
@@ -314,17 +317,17 @@ export default function Home() {
 
       {/* ── Title bar ────────────────────────────────────────────────────────── */}
       <div className="px-4 safe-area-pt mt-8 pt-4 pb-3 flex items-center justify-between border-b border-[#111]">
-        <span className="text-xl font-bold text-white tracking-tight">İETT Canlı</span>
+        <span className="text-xl font-bold text-white tracking-tight">{t('app.title', { defaultValue: 'İETT Canlı' })}</span>
         <span className="text-[#666] tabular-nums text-xs">{clock}</span>
       </div>
 
       {/* ── Pinned stops ─────────────────────────────────────────────────────── */}
       <section className="mb-4">
         <div className="flex items-center justify-between px-4 pt-4 pb-1">
-          <span className="metro-section p-0">Sabitlenmiş Duraklar</span>
+          <span className="metro-section p-0">{t('home.pinnedStops', { defaultValue: 'Sabitlenmiş Duraklar' })}</span>
           <div className="flex items-center gap-3">
             {pinnedStops.length > 0 && (
-              <Link to="/pinned" className="text-[11px] metro-tilt" style={{ color: '#888' }}>Yönet →</Link>
+              <Link to="/pinned" className="text-[11px] metro-tilt" style={{ color: '#888' }}>{t('home.manage', { defaultValue: 'Yönet →' })}</Link>
             )}
             {pinnedStops.length < PINNED_STOPS_MAX && (
               <button
@@ -332,7 +335,7 @@ export default function Home() {
                 className="text-[11px] metro-tilt"
                 style={{ color: 'var(--wp-accent)' }}
               >
-                + Ekle
+                {t('home.add', { defaultValue: '+ Ekle' })}
               </button>
             )}
           </div>
@@ -353,8 +356,8 @@ export default function Home() {
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-7 h-7">
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
             </svg>
-            <span className="text-sm">Durak sabitle</span>
-            <span className="text-xs" style={{ color: '#333' }}>Durak sayfasındaki 📌 butonuna dokun</span>
+            <span className="text-sm">{t('home.pinStopTitle', { defaultValue: 'Durak sabitle' })}</span>
+            <span className="text-xs" style={{ color: '#333' }}>{t('home.pinStopDesc', { defaultValue: 'Durak sayfasındaki 📌 butonuna dokun' })}</span>
           </button>
         )}
       </section>
@@ -362,13 +365,13 @@ export default function Home() {
       {/* ── Nearest stops ─ hidden when location permission revoked ────────── */}
       {gpsPhase !== 'denied' && <section className="mb-4">
         <div className="flex items-center justify-between px-4 pt-2 pb-1">
-          <span className="metro-section p-0">Yakın Duraklar</span>
+          <span className="metro-section p-0">{t('home.nearbyStops', { defaultValue: 'Yakın Duraklar' })}</span>
           <Link
             to="/nearby"
             className="text-[11px] metro-tilt"
             style={{ color: 'var(--wp-accent)' }}
           >
-            Tümünü Gör →
+            {t('home.seeAll', { defaultValue: 'Tümünü Gör →' })}
           </Link>
         </div>
 
@@ -400,8 +403,8 @@ export default function Home() {
               <path strokeLinecap="round" strokeLinejoin="round"
                 d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
             </svg>
-            <span className="text-sm">Konum alınamadı</span>
-            <span className="text-xs" style={{ color: '#333' }}>Tekrar dene →</span>
+            <span className="text-sm">{t('home.locationFailed', { defaultValue: 'Konum alınamadı' })}</span>
+            <span className="text-xs" style={{ color: '#333' }}>{t('home.retryArrow', { defaultValue: 'Tekrar dene →' })}</span>
           </button>
         )}
       </section>}
@@ -410,9 +413,9 @@ export default function Home() {
       {(favStops.length > 0 || favRoutes.length > 0) && (
         <section className="mb-4">
           <div className="flex items-center justify-between px-4 pt-2 pb-1">
-            <span className="metro-section p-0">Favoriler</span>
+            <span className="metro-section p-0">{t('home.favorites', { defaultValue: 'Favoriler' })}</span>
             <Link to="/favorites" className="text-[11px] metro-tilt" style={{ color: 'var(--wp-accent)' }}>
-              Tümünü Gör →
+              {t('home.seeAll', { defaultValue: 'Tümünü Gör →' })}
             </Link>
           </div>
 
@@ -441,13 +444,13 @@ export default function Home() {
       {recents.length > 0 && (
         <section className="mb-4">
           <div className="flex items-center justify-between px-4 pt-2 pb-1">
-            <span className="metro-section p-0">Son Aramalar</span>
+            <span className="metro-section p-0">{t('home.recentSearches', { defaultValue: 'Son Aramalar' })}</span>
             <button
               onClick={() => navigate('/search')}
               className="text-[11px] metro-tilt"
               style={{ color: 'var(--wp-accent)' }}
             >
-              Tümünü Ara →
+              {t('home.searchAll', { defaultValue: 'Tümünü Ara →' })}
             </button>
           </div>
           <div>
@@ -474,12 +477,12 @@ export default function Home() {
 
       {/* ── Hızlı Erişim ─────────────────────────────────────────────────────── */}
       <section>
-        <p className="metro-section">Hızlı Erişim</p>
+        <p className="metro-section">{t('home.quickAccess', { defaultValue: 'Hızlı Erişim' })}</p>
         <div>
           <QuickRow
             to="/nearby"
-            label="Yakın Duraklar"
-            sub="Konuma yakın durakları gör"
+            label={t('home.nearbyStops', { defaultValue: 'Yakın Duraklar' })}
+            sub={t('home.nearbyStopsDesc', { defaultValue: 'Konuma yakın durakları gör' })}
             icon={
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -490,8 +493,8 @@ export default function Home() {
           />
           <QuickRow
             to="/pinned"
-            label="Sabitlenmiş Durakları Yönet"
-            sub="Sabitleme ekle, kaldır veya düzenle"
+            label={t('home.managePinned', { defaultValue: 'Sabitlenmiş Durakları Yönet' })}
+            sub={t('home.managePinnedDesc', { defaultValue: 'Sabitleme ekle, kaldır veya düzenle' })}
             icon={
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5">
                 <path strokeLinecap="round" strokeLinejoin="round"
@@ -501,8 +504,8 @@ export default function Home() {
           />
           <QuickRow
             to="/favorites"
-            label="Favori Durakları Yönet"
-            sub="Favori durak ve hatlarını düzenle"
+            label={t('home.manageFavs', { defaultValue: 'Favori Durakları Yönet' })}
+            sub={t('home.manageFavsDesc', { defaultValue: 'Favori durak ve hatlarını düzenle' })}
             icon={
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5">
                 <path strokeLinecap="round" strokeLinejoin="round"
@@ -512,8 +515,8 @@ export default function Home() {
           />
           <QuickRow
             to="/search"
-            label="Arama"
-            sub="Hat veya durak ara"
+            label={t('nav.search', { defaultValue: 'Arama' })}
+            sub={t('home.searchDesc', { defaultValue: 'Hat veya durak ara' })}
             icon={
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5">
                 <path strokeLinecap="round" strokeLinejoin="round"
@@ -523,8 +526,8 @@ export default function Home() {
           />
           <QuickRow
             to="/map"
-            label="Filo Haritası"
-            sub="Tüm otobüsleri haritada gör"
+            label={t('nav.map', { defaultValue: 'Filo Haritası' })}
+            sub={t('home.mapDesc', { defaultValue: 'Tüm otobüsleri haritada gör' })}
             icon={
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5">
                 <path strokeLinecap="round" strokeLinejoin="round"
@@ -534,8 +537,8 @@ export default function Home() {
           />
           <QuickRow
             to="/settings"
-            label="Ayarlar"
-            sub="Uygulama ayarları ve veri yönetimi"
+            label={t('nav.settings', { defaultValue: 'Ayarlar' })}
+            sub={t('home.settingsDesc', { defaultValue: 'Uygulama ayarları ve veri yönetimi' })}
             icon={
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5">
                 <path strokeLinecap="round" strokeLinejoin="round"

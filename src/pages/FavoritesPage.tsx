@@ -1,7 +1,9 @@
 import { Link } from 'react-router-dom'
 import { useFavorites, type Favorite } from '@/hooks/useFavorites'
+import { useTranslation } from 'react-i18next'
 
 function FavItem({ fav, onRemove }: { fav: Favorite; onRemove: () => void }) {
+  const { t } = useTranslation()
   const isStop = fav.kind === 'stop'
   const to = isStop ? `/stops/${fav.dcode}` : `/routes/${fav.hat_kodu}`
   const code = isStop ? fav.dcode : fav.hat_kodu
@@ -23,13 +25,13 @@ function FavItem({ fav, onRemove }: { fav: Favorite; onRemove: () => void }) {
         className="text-brand-400 text-xs font-medium shrink-0 px-2 py-1 rounded-lg
                    bg-brand-600/10 hover:bg-brand-600/20 transition-colors"
       >
-        Aç
+        {t('favorites.open', { defaultValue: 'Aç' })}
       </Link>
 
       <button
         onClick={onRemove}
         className="text-slate-600 hover:text-rose-400 transition-colors p-1 shrink-0"
-        aria-label="Favoriden kaldır"
+        aria-label={t('favorites.remove', { defaultValue: 'Favoriden kaldır' })}
       >
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/>
@@ -40,6 +42,7 @@ function FavItem({ fav, onRemove }: { fav: Favorite; onRemove: () => void }) {
 }
 
 export default function FavoritesPage() {
+  const { t } = useTranslation()
   const { favorites, toggle } = useFavorites()
 
   const stops = favorites.filter((f) => f.kind === 'stop')
@@ -50,9 +53,9 @@ export default function FavoritesPage() {
       {/* Header */}
       <div className="bg-surface-card border-b border-surface-muted">
         <div className="max-w-2xl mx-auto px-4 py-4">
-          <h1 className="text-lg font-bold text-slate-100">Favorilerim</h1>
+          <h1 className="text-lg font-bold text-slate-100">{t('favorites.title', { defaultValue: 'Favorilerim' })}</h1>
           <p className="text-xs text-slate-500 mt-0.5">
-            {favorites.length} kayıtlı öğe
+            {t('favorites.savedItems', { defaultValue: '{{count}} kayıtlı öğe', count: favorites.length })}
           </p>
         </div>
       </div>
@@ -65,9 +68,9 @@ export default function FavoritesPage() {
               <path strokeLinecap="round" strokeLinejoin="round"
                     d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
             </svg>
-            <p className="text-sm font-medium">Henüz favori eklemediniz</p>
+            <p className="text-sm font-medium">{t('favorites.emptyTitle', { defaultValue: 'Henüz favori eklemediniz' })}</p>
             <p className="text-xs mt-1 text-center max-w-[200px]">
-              Durak veya hat sayfalarındaki ❤ ikonuna tıklayarak ekleyebilirsiniz
+              {t('favorites.emptyDesc', { defaultValue: 'Durak veya hat sayfalarındaki ❤ ikonuna tıklayarak ekleyebilirsiniz' })}
             </p>
           </div>
         )}
@@ -75,7 +78,7 @@ export default function FavoritesPage() {
         {stops.length > 0 && (
           <section>
             <h2 className="text-xs font-semibold uppercase tracking-widest text-slate-500 mb-3">
-              Duraklar ({stops.length})
+              {t('favorites.stops', { defaultValue: 'Duraklar ({{count}})', count: stops.length })}
             </h2>
             <div className="flex flex-col gap-2">
               {stops.map((f) => (
@@ -88,7 +91,7 @@ export default function FavoritesPage() {
         {routes.length > 0 && (
           <section>
             <h2 className="text-xs font-semibold uppercase tracking-widest text-slate-500 mb-3">
-              Hatlar ({routes.length})
+              {t('favorites.routes', { defaultValue: 'Hatlar ({{count}})', count: routes.length })}
             </h2>
             <div className="flex flex-col gap-2">
               {routes.map((f) => (

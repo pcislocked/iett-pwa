@@ -10,6 +10,8 @@ import {
   type AracSessionCredentials,
   type BusPosition,
 } from '@/api/client'
+import { useTranslation } from 'react-i18next'
+import { TFunction } from 'i18next'
 
 type ViewState =
   | 'booting'
@@ -111,20 +113,20 @@ function hasSessionError(error: unknown): boolean {
   return error instanceof ApiHttpError && (error.status === 401 || error.status === 403)
 }
 
-function errorText(error: unknown): string {
+function errorText(error: unknown, t: TFunction): string {
   if (error instanceof ApiHttpError) {
     return error.responseText || error.message
   }
   if (error instanceof Error) {
     return error.message
   }
-  return 'Bilinmeyen hata'
+  return t('arac.unknownError', { defaultValue: 'Bilinmeyen hata' })
 }
 
-function boolBadge(value: boolean | null | undefined): { text: string; className: string } {
-  if (value === true) return { text: 'Var', className: 'text-emerald-400 bg-emerald-900/30 border-emerald-700/50' }
-  if (value === false) return { text: 'Yok', className: 'text-slate-500 bg-[#080808] border-[#222]' }
-  return { text: 'Bilinmiyor', className: 'text-slate-500 bg-[#080808] border-[#222]' }
+function boolBadge(value: boolean | null | undefined, t: TFunction): { text: string; className: string } {
+  if (value === true) return { text: t('arac.amenityYes', { defaultValue: 'Var' }), className: 'text-emerald-400 bg-emerald-900/30 border-emerald-700/50' }
+  if (value === false) return { text: t('arac.amenityNo', { defaultValue: 'Yok' }), className: 'text-slate-500 bg-[#080808] border-[#222]' }
+  return { text: t('arac.amenityUnknown', { defaultValue: 'Bilinmiyor' }), className: 'text-slate-500 bg-[#080808] border-[#222]' }
 }
 
 function formatMissionDate(value: number | string): string | null {
@@ -152,8 +154,9 @@ function formatMissionDate(value: number | string): string | null {
 function formatMissionValue(
   key: keyof AracMissionItem,
   value: AracMissionItem[keyof AracMissionItem],
+  t: TFunction
 ): string {
-  if (typeof value === 'boolean') return value ? 'Evet' : 'Hayir'
+  if (typeof value === 'boolean') return value ? t('common.yes', { defaultValue: 'Evet' }) : t('common.no', { defaultValue: 'Hayir' })
   if (value === null || value === undefined || value === '') return '-'
 
   if (key.endsWith('_time') && typeof value === 'string') {
@@ -170,6 +173,7 @@ function formatMissionValue(
 }
 
 export default function AracBusOverlayPage() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const { kapino } = useParams<{ kapino: string }>()
   const aliveRef = useRef(true)
@@ -220,7 +224,7 @@ export default function AracBusOverlayPage() {
   const startFlow = useCallback(async (forceReconnect = false) => {
     if (!kapino) {
       setViewState('error')
-      setFatalError('Kapi kodu bulunamadi.')
+      setFatalError(t('arac.doorCodeMissing', { defaultValue: 'Kapi kodu bulunamadi.' }))
       return
     }
 
@@ -242,10 +246,10 @@ export default function AracBusOverlayPage() {
         if (!aliveRef.current) return
         if (hasSessionError(error)) {
           clearAracSession()
-          setInlineWarning('aracapi oturumu suresi doldu. Yeniden captcha akisi baslatiliyor.')
+          setInlineWarning(t('arac.sessionExpired', { defaultValue: 'aracapi oturumu suresi doldu. Yeniden captcha akisi baslatiliyor.' }))
         } else {
           setViewState('error')
-          setFatalError(errorText(error))
+          setFatalError(errorText(error, t))
           return
         }
       }
@@ -259,9 +263,9 @@ export default function AracBusOverlayPage() {
     } catch (error) {
       if (!aliveRef.current) return
       setViewState('error')
-      setFatalError(errorText(error))
+      setFatalError(errorText(error, t))
     }
-  }, [fetchBusData, fetchCaptcha, kapino])
+  }, [fetchBusData, fetchCaptcha, kapino, t])
 
   useEffect(() => {
     void startFlow()
@@ -270,11 +274,11 @@ export default function AracBusOverlayPage() {
   const submitManualCaptcha = useCallback(async () => {
     const answer = manualAnswer.trim()
     if (!answer) {
-      setInlineWarning('Lutfen captcha yanitini girin.')
+      setInlineWarning(t('arac.enterCaptcha', { defaultValue: 'Lutfen captcha yanitini girin.' }))
       return
     }
     if (!captchaId) {
-      setInlineWarning('Captcha gorseli guncel degil. Yeni captcha alin.')
+      setInlineWarning(t('arac.captchaStale', { defaultValue: 'Captcha gorseli guncel degil. Yeni captcha alin.' }))
       return
     }
 
@@ -297,15 +301,15 @@ export default function AracBusOverlayPage() {
     } catch (error) {
       if (!aliveRef.current) return
       setViewState('manual-required')
-      setInlineWarning(`Captcha dogrulanamadi: ${errorText(error)}`)
+      setInlineWarning(t('arac.captchaFailed', { defaultValue: 'Captcha dogrulanamadi: {{error}}', error: errorText(error, t) }))
       try {
         await fetchCaptcha()
       } catch (captchaErr) {
-        setInlineWarning(`Captcha dogrulanamadi: ${errorText(error)} | Ayrica yeni captcha alinamadi: ${errorText(captchaErr)}`)
+        setInlineWarning(t('arac.captchaFailedDouble', { defaultValue: 'Captcha dogrulanamadi: {{err1}} | Ayrica yeni captcha alinamadi: {{err2}}', err1: errorText(error, t), err2: errorText(captchaErr, t) }))
         setCaptchaImage('')
       }
     }
-  }, [captchaId, fetchBusData, fetchCaptcha, manualAnswer])
+  }, [captchaId, fetchBusData, fetchCaptcha, manualAnswer, t])
 
   const profileRows = useMemo(() => {
     if (!profile) return [] as Array<{ label: string; value: string }>
@@ -323,27 +327,27 @@ export default function AracBusOverlayPage() {
     if (!profile) return [] as Array<{ label: string; value: boolean | null | undefined }>
 
     return [
-      { label: 'Engelli', value: profile.accessible },
-      { label: 'USB', value: profile.has_usb },
-      { label: 'Wi-Fi', value: profile.has_wifi },
-      { label: 'Bisiklet', value: profile.has_bicycle_rack },
-      { label: 'Klima', value: profile.is_air_conditioned },
+      { label: t('arac.accessible', { defaultValue: 'Engelli' }), value: profile.accessible },
+      { label: t('arac.usb', { defaultValue: 'USB' }), value: profile.has_usb },
+      { label: t('arac.wifi', { defaultValue: 'Wi-Fi' }), value: profile.has_wifi },
+      { label: t('arac.bicycle', { defaultValue: 'Bisiklet' }), value: profile.has_bicycle_rack },
+      { label: t('arac.airConditioned', { defaultValue: 'Klima' }), value: profile.is_air_conditioned },
     ]
-  }, [profile])
+  }, [profile, t])
 
   return (
     <div className="fixed inset-0 z-[2200] bg-black flex flex-col">
       <div className="safe-area-pt border-b border-[#111] bg-black px-4 py-3 shrink-0">
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
-            <p className="text-[10px] tracking-[0.14em] text-[#666]">arac.iett.gov.tr Filo Detay</p>
-            <h1 className="text-base font-semibold text-white truncate">{kapino ? `Arac ${kapino}` : 'Arac Detay'}</h1>
+            <p className="text-[10px] tracking-[0.14em] text-[#666]">{t('arac.fleetDetail', { defaultValue: 'arac.iett.gov.tr Filo Detay' })}</p>
+            <h1 className="text-base font-semibold text-white truncate">{kapino ? t('arac.busTitle', { defaultValue: 'Arac {{kapino}}', kapino }) : t('arac.busTitleEmpty', { defaultValue: 'Arac Detay' })}</h1>
           </div>
           <button
             onClick={() => navigate(-1)}
             className="metro-tilt text-sm px-3 py-1.5 border border-[#222] text-slate-300"
           >
-            Kapat
+            {t('common.close', { defaultValue: 'Kapat' })}
           </button>
         </div>
       </div>
@@ -355,7 +359,7 @@ export default function AracBusOverlayPage() {
             onClick={() => { void startFlow(true) }}
             className="metro-tilt px-2.5 py-1 border border-amber-600/40 text-amber-200 shrink-0"
           >
-            Yeniden Baglan
+            {t('arac.reconnect', { defaultValue: 'Yeniden Baglan' })}
           </button>
         </div>
       )}
@@ -367,12 +371,12 @@ export default function AracBusOverlayPage() {
             <div>
               <p className="text-sm text-white font-medium">
                 {viewState === 'manual-submitting'
-                  ? 'Captcha dogrulaniyor...'
+                  ? t('arac.verifyingCaptcha', { defaultValue: 'Captcha dogrulaniyor...' })
                   : viewState === 'loading-data'
-                  ? 'aracapi veri paketi yukleniyor...'
-                  : 'ARAÇ oturumu hazırlanıyor...'}
+                  ? t('arac.loadingData', { defaultValue: 'aracapi veri paketi yukleniyor...' })
+                  : t('arac.preparingSession', { defaultValue: 'ARAÇ oturumu hazırlanıyor...' })}
               </p>
-              <p className="text-xs text-[#888] mt-1">Islem tamamlanana kadar bu sayfada kalabilirsiniz.</p>
+              <p className="text-xs text-[#888] mt-1">{t('arac.stayOnPage', { defaultValue: 'Islem tamamlanana kadar bu sayfada kalabilirsiniz.' })}</p>
             </div>
           </div>
         )}
@@ -380,8 +384,8 @@ export default function AracBusOverlayPage() {
         {viewState === 'manual-required' && (
           <div className="border border-[#111] bg-[#0d0d0d] p-4 space-y-4">
             <div>
-              <h2 className="text-sm font-semibold text-white">Captcha manuel dogrulama</h2>
-              <p className="text-xs text-[#888] mt-1">Once captcha kodunu yazarak devam edin.</p>
+              <h2 className="text-sm font-semibold text-white">{t('arac.captchaManual', { defaultValue: 'Captcha manuel dogrulama' })}</h2>
+              <p className="text-xs text-[#888] mt-1">{t('arac.captchaInstruction', { defaultValue: 'Once captcha kodunu yazarak devam edin.' })}</p>
             </div>
 
             {captchaImage && (
@@ -396,8 +400,8 @@ export default function AracBusOverlayPage() {
               type="text"
               value={manualAnswer}
               onChange={(event) => setManualAnswer(event.target.value.toUpperCase().slice(0, 6))}
-              placeholder="Captcha cevabi"
-              aria-label="Captcha cevabi"
+              placeholder={t('arac.captchaAnswer', { defaultValue: 'Captcha cevabi' })}
+              aria-label={t('arac.captchaAnswer', { defaultValue: 'Captcha cevabi' })}
               className="w-full border border-[#222] bg-black px-3 py-2 text-sm text-white placeholder:text-[#555] focus:outline-none focus:border-[#00AFF0]"
             />
 
@@ -406,13 +410,13 @@ export default function AracBusOverlayPage() {
                 onClick={() => { void submitManualCaptcha() }}
                 className="metro-tilt px-3 py-2 bg-[#00AFF0] text-black text-sm font-semibold"
               >
-                Oturumu Ac
+                {t('arac.login', { defaultValue: 'Oturumu Ac' })}
               </button>
               <button
                 onClick={() => { void fetchCaptcha() }}
                 className="metro-tilt px-3 py-2 border border-[#222] text-slate-200 text-sm"
               >
-                Yeni Captcha
+                {t('arac.newCaptcha', { defaultValue: 'Yeni Captcha' })}
               </button>
             </div>
           </div>
@@ -420,8 +424,8 @@ export default function AracBusOverlayPage() {
 
         {(viewState === 'error' || fatalError) && (
           <div className="border border-red-800/40 bg-red-950/20 p-4 text-red-200">
-            <p className="text-sm font-semibold">aracapi detayi acilamadi</p>
-            <p className="text-xs mt-1">{fatalError ?? 'Bilinmeyen hata'}</p>
+            <p className="text-sm font-semibold">{t('arac.failedToOpen', { defaultValue: 'aracapi detayi acilamadi' })}</p>
+            <p className="text-xs mt-1">{fatalError ?? t('arac.unknownError', { defaultValue: 'Bilinmeyen hata' })}</p>
           </div>
         )}
 
@@ -429,13 +433,13 @@ export default function AracBusOverlayPage() {
           <div className="space-y-4">
             <section className="border border-[#111] bg-[#0d0d0d]">
               <div className="px-4 py-3 border-b border-[#111] flex items-center justify-between gap-2">
-                <h2 className="text-sm font-semibold text-white">Arac Profili / Vehicle Profile</h2>
-                {session && <span className="text-[10px] text-emerald-400">Session hazir</span>}
+                <h2 className="text-sm font-semibold text-white">{t('arac.vehicleProfile', { defaultValue: 'Arac Profili / Vehicle Profile' })}</h2>
+                {session && <span className="text-[10px] text-emerald-400">{t('arac.sessionReady', { defaultValue: 'Session hazir' })}</span>}
               </div>
 
               <div className="px-4 py-3 border-b border-[#111] flex flex-wrap gap-2">
                 {amenities.map((item) => {
-                  const badge = boolBadge(item.value)
+                  const badge = boolBadge(item.value, t)
                   return (
                     <span
                       key={item.label}
@@ -456,21 +460,21 @@ export default function AracBusOverlayPage() {
                     </div>
                   ))
                 ) : (
-                  <p className="px-4 py-3 text-xs text-[#888]">Profil alanlari su an bos dondu.</p>
+                  <p className="px-4 py-3 text-xs text-[#888]">{t('arac.emptyProfile', { defaultValue: 'Profil alanlari su an bos dondu.' })}</p>
                 )}
               </div>
             </section>
 
             <section className="border border-[#111] bg-[#0d0d0d]">
               <div className="px-4 py-3 border-b border-[#111]">
-                <h2 className="text-sm font-semibold text-white">Missions / Gorevler</h2>
+                <h2 className="text-sm font-semibold text-white">{t('arac.missions', { defaultValue: 'Missions / Gorevler' })}</h2>
                 <p className="text-xs text-[#888] mt-1">
-                  Toplam {missions.summary.mission_count} gorev, aktif {missions.summary.active_count}
+                  {t('arac.missionsSummary', { defaultValue: 'Toplam {{total}} gorev, aktif {{active}}', total: missions.summary.mission_count, active: missions.summary.active_count })}
                 </p>
               </div>
 
               {missions.missions.length === 0 ? (
-                <p className="px-4 py-4 text-xs text-[#888]">Bu araca ait gorev bulunamadi.</p>
+                <p className="px-4 py-4 text-xs text-[#888]">{t('arac.noMissions', { defaultValue: 'Bu araca ait gorev bulunamadi.' })}</p>
               ) : (
                 <div>
                   {missions.missions.map((mission, index) => (
@@ -478,7 +482,7 @@ export default function AracBusOverlayPage() {
                       <div className="px-4 py-3 border-b border-[#111] bg-black/30">
                         <div className="flex items-center justify-between gap-3">
                           <p className="text-xs font-semibold text-white">
-                            {mission.line_code ?? mission.route_code ?? `Gorev ${index + 1}`}
+                            {mission.line_code ?? mission.route_code ?? t('arac.missionIndex', { defaultValue: 'Gorev {{index}}', index: index + 1 })}
                           </p>
                           <p className="text-[10px] text-[#888]">
                             {mission.task_status_code ?? (mission.is_active ? 'ACTIVE' : 'INACTIVE')}
@@ -496,7 +500,7 @@ export default function AracBusOverlayPage() {
                             <div key={key} className="px-4 py-2.5 border-b border-[#111] flex items-center justify-between gap-3">
                               <span className="text-xs text-[#777]">{missionLabel(key)}</span>
                               <span className="text-xs text-white text-right break-all">
-                                {formatMissionValue(key, mission[key])}
+                                {formatMissionValue(key, mission[key], t)}
                               </span>
                             </div>
                           ))}

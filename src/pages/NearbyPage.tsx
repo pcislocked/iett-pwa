@@ -12,6 +12,7 @@ import {
 import * as L from 'leaflet'
 import { api, type NearbyStop as ApiNearbyStop } from '@/api/client'
 import { distanceLabel } from '@/utils/distance'
+import { useTranslation } from 'react-i18next'
 
 interface NearbyStop extends ApiNearbyStop {
   routes: string[]
@@ -51,6 +52,7 @@ function NearbyMapView({
   selectedCode: string | null
   onSelect: (code: string) => void
 }) {
+  const { t } = useTranslation()
   const userIcon = L.divIcon({
     className: '',
     html: `<div style="
@@ -85,7 +87,7 @@ function NearbyMapView({
       <Marker position={[userLat, userLon]} icon={userIcon}>
         <Popup>
           <div className="popup-card" style={{ minWidth: 120 }}>
-            <p className="popup-name" style={{ fontWeight: 700 }}>Konumunuz</p>
+            <p className="popup-name" style={{ fontWeight: 700 }}>{t('nearby.yourLocation', { defaultValue: 'Konumunuz' })}</p>
           </div>
         </Popup>
       </Marker>
@@ -122,7 +124,7 @@ function NearbyMapView({
                   </div>
                 )}
                 <Link to={`/stops/${s.stop_code}`} className="popup-link-btn">
-                  Varış Saatleri
+                  {t('nearby.arrivals', { defaultValue: 'Varış Saatleri' })}
                 </Link>
               </div>
             </Popup>
@@ -135,6 +137,7 @@ function NearbyMapView({
 
 // ─── Main page ─────────────────────────────────────────────────────────────────
 export default function NearbyPage() {
+  const { t } = useTranslation()
   const [phase, setPhase] = useState<Phase>('consent')
   const [errorMsg, setErrorMsg] = useState('')
   const [userLat, setUserLat] = useState<number | null>(null)
@@ -225,7 +228,7 @@ export default function NearbyPage() {
         if (status.state === 'granted') void locate()
         else if (status.state === 'denied') {
           setPhase('error')
-          setErrorMsg('Konum izni reddedildi. Tarayıcı ayarlarından izin verin.')
+          setErrorMsg(t('nearby.locationDenied', { defaultValue: 'Konum izni reddedildi. Tarayıcı ayarlarından izin verin.' }))
         }
         // 'prompt' → stay in 'consent' (default)
       })
@@ -241,7 +244,7 @@ export default function NearbyPage() {
       const status = await perms.query({ name: 'geolocation' as PermissionName })
       if (status.state === 'denied') {
         setPhase('error')
-        setErrorMsg('Konum izni reddedildi. Tarayıcı ayarlarından izin verin.')
+        setErrorMsg(t('nearby.locationDenied', { defaultValue: 'Konum izni reddedildi. Tarayıcı ayarlarından izin verin.' }))
         return
       }
       if (status.state === 'granted') {
@@ -267,8 +270,8 @@ export default function NearbyPage() {
         setPhase('error')
         setErrorMsg(
           err.code === 1
-            ? 'Konum izni reddedildi. Tarayıcı ayarlarından izin verin.'
-            : 'Konum alınamadı. Lütfen tekrar deneyin.',
+            ? t('nearby.locationDenied', { defaultValue: 'Konum izni reddedildi. Tarayıcı ayarlarından izin verin.' })
+            : t('nearby.locationFailed', { defaultValue: 'Konum alınamadı. Lütfen tekrar deneyin.' }),
         )
       },
       { enableHighAccuracy: true, timeout: 10_000 },
@@ -312,7 +315,7 @@ export default function NearbyPage() {
       )
     } catch {
       setPhase('error')
-      setErrorMsg('Duraklar yüklenemedi. Lütfen tekrar deneyin.')
+      setErrorMsg(t('nearby.stopsFailed', { defaultValue: 'Duraklar yüklenemedi. Lütfen tekrar deneyin.' }))
     }
   }
 
@@ -329,7 +332,7 @@ export default function NearbyPage() {
     <div className="bg-surface-card border-b border-surface-muted shrink-0 sticky top-0 z-40">
       <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
         <div>
-          <h1 className="text-base font-bold text-slate-100">Yakın Duraklar</h1>
+          <h1 className="text-base font-bold text-slate-100">{t('home.nearbyStops', { defaultValue: 'Yakın Duraklar' })}</h1>
           {userLat !== null && (
             <p className="text-[11px] text-slate-500">
               {userLat.toFixed(4)}, {userLon?.toFixed(4)}
@@ -342,8 +345,8 @@ export default function NearbyPage() {
             onClick={() => { setPhase('idle'); setPickedLat(null); setPickedLon(null) }}
             disabled={phase === 'locating' || phase === 'loading'}
             className="p-1.5 text-slate-500 hover:text-slate-300 disabled:opacity-40 transition-colors"
-            aria-label="Konumu Değiştir"
-            title="Konum Seç"
+            aria-label={t('nearby.changeLocation', { defaultValue: 'Konumu Değiştir' })}
+            title={t('nearby.pickLocation', { defaultValue: 'Konum Seç' })}
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -354,7 +357,7 @@ export default function NearbyPage() {
             onClick={requestLocate}
             disabled={phase === 'locating' || phase === 'loading'}
             className="p-1.5 text-brand-400 hover:text-brand-300 disabled:opacity-40 transition-colors"
-            aria-label="Yenile"
+            aria-label={t('common.refresh', { defaultValue: 'Yenile' })}
           >
             <svg
               className={`w-5 h-5 ${phase === 'loading' ? 'animate-spin' : ''}`}
@@ -387,10 +390,9 @@ export default function NearbyPage() {
               </svg>
             </div>
             <div className="text-center">
-              <h2 className="text-lg font-bold text-slate-100 mb-1">Konum İzni</h2>
+              <h2 className="text-lg font-bold text-slate-100 mb-1">{t('nearby.locationPermission', { defaultValue: 'Konum İzni' })}</h2>
               <p className="text-sm text-slate-400 leading-relaxed max-w-xs">
-                Yakın durakları listelemek için konumunuza ihtiyaç var.
-                Konumunuz yalnızca bu cihazda işlenir; hiçbir sunucuya kaydedilmez.
+                {t('nearby.locationPermissionDesc', { defaultValue: 'Yakın durakları listelemek için konumunuza ihtiyaç var. Konumunuz yalnızca bu cihazda işlenir; hiçbir sunucuya kaydedilmez.' })}
               </p>
             </div>
           </div>
@@ -406,13 +408,13 @@ export default function NearbyPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
                 <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
               </svg>
-              GPS Konumumu Kullan
+              {t('nearby.useGps', { defaultValue: 'GPS Konumumu Kullan' })}
             </button>
             <button
               onClick={() => setPhase('idle')}
               className="w-full bg-surface-muted hover:bg-slate-600 text-slate-300 font-medium py-3.5 rounded-2xl text-sm transition-colors"
             >
-              Haritadan Seç
+              {t('nearby.pickFromMap', { defaultValue: 'Haritadan Seç' })}
             </button>
           </div>
         </div>
@@ -446,7 +448,7 @@ export default function NearbyPage() {
             onScroll={handleListScroll}
           >
             {allStops.length === 0 && (
-              <p className="text-center text-slate-500 py-12 text-sm">Yakında durak bulunamadı</p>
+              <p className="text-center text-slate-500 py-12 text-sm">{t('nearby.noStopsFound', { defaultValue: 'Yakında durak bulunamadı' })}</p>
             )}
 
             {allStops.map((stop) => {
@@ -540,7 +542,7 @@ export default function NearbyPage() {
         {phase === 'idle' && (
           <div className="flex flex-col gap-3">
             <p className="text-xs text-slate-500 text-center">
-              Haritaya uzun bas veya tıkla → pin bırak, sonra aramayı başlat
+              {t('nearby.mapInstruction', { defaultValue: 'Haritaya uzun bas veya tıkla → pin bırak, sonra aramayı başlat' })}
             </p>
             <div
               className="relative rounded-2xl overflow-hidden border border-surface-muted"
@@ -592,7 +594,7 @@ export default function NearbyPage() {
                 disabled={pickedLat === null}
                 className="flex-[3] bg-brand-600 hover:bg-brand-500 disabled:opacity-40 text-white font-semibold py-3 rounded-2xl transition-colors text-sm"
               >
-                {pickedLat !== null ? 'Bu Noktadaki Yakın Duraklar' : 'Haritadan Nokta Seç'}
+                {pickedLat !== null ? t('nearby.stopsAtThisPoint', { defaultValue: 'Bu Noktadaki Yakın Duraklar' }) : t('nearby.pickPoint', { defaultValue: 'Haritadan Nokta Seç' })}
               </button>
             </div>
           </div>
@@ -602,7 +604,7 @@ export default function NearbyPage() {
         {phase === 'locating' && (
           <div className="flex flex-col items-center justify-center py-24 text-slate-500">
             <div className="w-10 h-10 border-2 border-brand-500 border-t-transparent rounded-full animate-spin mb-4" />
-            <p className="text-sm">Konum alınıyor...</p>
+            <p className="text-sm">{t('common.locating', { defaultValue: 'Konum alınıyor...' })}</p>
           </div>
         )}
 
@@ -610,7 +612,7 @@ export default function NearbyPage() {
         {phase === 'loading' && (
           <div className="flex flex-col items-center justify-center py-24 text-slate-500">
             <div className="w-10 h-10 border-2 border-brand-500 border-t-transparent rounded-full animate-spin mb-4" />
-            <p className="text-sm">Yakın duraklar aranıyor…</p>
+            <p className="text-sm">{t('nearby.searching', { defaultValue: 'Yakın duraklar aranıyor…' })}</p>
           </div>
         )}
 
@@ -625,10 +627,10 @@ export default function NearbyPage() {
                 onClick={() => setPhase('idle')}
                 className="bg-surface-muted hover:bg-slate-600 text-slate-300 font-medium px-5 py-2.5 rounded-xl text-sm transition-colors"
               >
-                Haritadan Belirt
+                {t('nearby.specifyOnMap', { defaultValue: 'Haritadan Belirt' })}
               </button>
               <button onClick={requestLocate} className="btn-primary">
-                Tekrar Dene
+                {t('common.retry', { defaultValue: 'Tekrar Dene' })}
               </button>
             </div>
           </div>

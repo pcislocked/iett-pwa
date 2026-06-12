@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 
 interface Props {
   onConfirm: () => void
@@ -6,6 +7,7 @@ interface Props {
 }
 
 export default function LocationConsentModal({ onConfirm, onDismiss }: Props) {
+  const { t } = useTranslation()
   const confirmRef = useRef<HTMLButtonElement>(null)
   const dialogRef = useRef<HTMLDivElement>(null)
   const previouslyFocused = useRef<Element | null>(null)
@@ -73,10 +75,9 @@ export default function LocationConsentModal({ onConfirm, onDismiss }: Props) {
 
         {/* Text */}
         <div className="text-center">
-          <h2 id="consent-title" className="text-base font-bold text-slate-100 mb-1">Konum İzni</h2>
+          <h2 id="consent-title" className="text-base font-bold text-slate-100 mb-1">{t('nearby.locationPermission', { defaultValue: 'Konum İzni' })}</h2>
           <p id="consent-desc" className="text-xs text-slate-400 leading-relaxed">
-            Yakın durakları listelemek için konumunuza ihtiyaç var. Konumunuz yalnızca
-            bu cihazda işlenir; hiçbir sunucuya kaydedilmez.
+            {t('nearby.locationPermissionDesc', { defaultValue: 'Yakın durakları listelemek için konumunuza ihtiyaç var. Konumunuz yalnızca bu cihazda işlenir; hiçbir sunucuya kaydedilmez.' })}
           </p>
         </div>
 
@@ -87,13 +88,13 @@ export default function LocationConsentModal({ onConfirm, onDismiss }: Props) {
             onClick={onConfirm}
             className="w-full bg-brand-600 hover:bg-brand-500 text-white font-semibold py-3 rounded-xl text-sm transition-colors focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus:outline-none"
           >
-            Konumumu Kullan
+            {t('nearby.useGps', { defaultValue: 'Konumumu Kullan' })}
           </button>
           <button
             onClick={onDismiss}
             className="w-full bg-surface-muted hover:bg-slate-600 text-slate-300 font-medium py-3 rounded-xl text-sm transition-colors"
           >
-            Haritadan Belirt
+            {t('nearby.specifyOnMap', { defaultValue: 'Haritadan Belirt' })}
           </button>
         </div>
       </div>

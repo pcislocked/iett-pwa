@@ -4,6 +4,7 @@ import { PINNED_STOPS_MAX, useUserPrefs } from '@/hooks/useUserPrefs'
 import { useArrivals } from '@/hooks/useArrivals'
 import { api, type StopDetail } from '@/api/client'
 import { etaTextClass } from '@/utils/etaColor'
+import { useTranslation } from 'react-i18next'
 
 /* ── Jiggle keyframe injected once ─────────────────────────────────────── */
 const JIGGLE_STYLE = `
@@ -36,6 +37,7 @@ function PinnedRow({
   editing: boolean
   onUnpin: () => void
 }) {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const { data: arrivals, loading } = useArrivals(dcode)
   const [stopDetail, setStopDetail] = useState<StopDetail | null>(null)
@@ -58,7 +60,7 @@ function PinnedRow({
       {editing && (
         <button
           onClick={(e) => { e.stopPropagation(); onUnpin() }}
-          aria-label="Kaldır"
+          aria-label={t('pinned.remove', { defaultValue: 'Kaldır' })}
           className="absolute left-1 top-1/2 -translate-y-1/2 z-10
                      w-6 h-6 rounded-full flex items-center justify-center
                      border border-[#555] bg-[#1a1a1a] text-red-400
@@ -130,6 +132,7 @@ function PinnedRow({
 /* ── Page ───────────────────────────────────────────────────────────────── */
 export default function PinnedManagePage() {
   ensureStyle()
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const { prefs, unpinStop } = useUserPrefs()
   const { pinnedStops } = prefs
@@ -140,14 +143,14 @@ export default function PinnedManagePage() {
 
       {/* Header */}
       <div className="px-4 safe-area-pt pt-4 pb-3 flex items-center justify-between border-b border-[#111]">
-        <h1 className="text-base font-bold text-white">Sabitlenmiş Duraklar</h1>
+        <h1 className="text-base font-bold text-white">{t('home.pinnedStops', { defaultValue: 'Sabitlenmiş Duraklar' })}</h1>
         {pinnedStops.length > 0 && (
           <button
             onClick={() => setEditing((e) => !e)}
             className="text-[12px] font-semibold tracking-wide metro-tilt"
             style={{ color: editing ? '#fff' : 'var(--wp-accent)' }}
           >
-            {editing ? 'Bitti' : 'Düzenle'}
+            {editing ? t('common.done', { defaultValue: 'Bitti' }) : t('common.edit', { defaultValue: 'Düzenle' })}
           </button>
         )}
       </div>
@@ -172,9 +175,9 @@ export default function PinnedManagePage() {
             <path strokeLinecap="round" strokeLinejoin="round"
               d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
           </svg>
-          <p className="text-sm">Sabitlenmiş durak yok</p>
+          <p className="text-sm">{t('pinned.emptyTitle', { defaultValue: 'Sabitlenmiş durak yok' })}</p>
           <p className="text-xs text-center" style={{ color: '#333', maxWidth: 220 }}>
-            Durak sayfasındaki 📌 butonuna dokunarak sabitleyebilirsin
+            {t('pinned.emptyDesc', { defaultValue: 'Durak sayfasındaki 📌 butonuna dokunarak sabitleyebilirsin' })}
           </p>
         </div>
       )}
@@ -190,7 +193,7 @@ export default function PinnedManagePage() {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} className="w-5 h-5 shrink-0">
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
           </svg>
-          <span className="text-sm font-semibold">Durak Ekle</span>
+          <span className="text-sm font-semibold">{t('pinned.addStop', { defaultValue: 'Durak Ekle' })}</span>
           <span className="text-xs ml-auto" style={{ color: '#333' }}>{pinnedStops.length} / {PINNED_STOPS_MAX}</span>
         </button>
       )}
