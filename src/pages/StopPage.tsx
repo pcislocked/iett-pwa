@@ -106,13 +106,13 @@ function AutoFitBuses({
 /** Amenity icon row — rendered below the info strip when amenities data is present. */
 function AmenityIcons({ amenities }: { amenities: Amenities | null }) {
   if (!amenities) return null
-  const items: { label: string; icon: string; value: boolean | null }[] = [
+  const items: { label: string; icon: string; value: boolean | null | undefined }[] = [
     { label: 'USB', icon: '🔌', value: amenities.usb },
     { label: 'Wi-Fi', icon: '📶', value: amenities.wifi },
     { label: 'Klima', icon: '❄️', value: amenities.ac },
     { label: 'Engelli', icon: '♿', value: amenities.accessible },
   ]
-  const known = items.filter((i) => i.value !== null)
+  const known = items.filter((i) => i.value != null)
   if (known.length === 0) return null
   return (
     <div className="px-4 pb-2 flex gap-3 justify-center flex-wrap">
@@ -262,7 +262,7 @@ function BusDetailSheet({
       />
 
       <motion.div
-        ref={dialogRef as any}
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="bus-detail-title"

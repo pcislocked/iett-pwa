@@ -11,7 +11,7 @@ type CacheEntry = { schedule: ScheduledDeparture[]; metadata: RouteMetadata[] | 
 export function useRouteTickerData(code: string) {
   const query = useQuery({
     queryKey: ['route_ticker', code],
-    queryFn: ({ signal }) => Promise.all([api.routes.schedule(code, { signal }), api.routes.metadata(code, { signal })]).then(
+    queryFn: ({ signal }) => Promise.all([api.routes.scheduleLite(code, { signal }), api.routes.metadata(code, { signal })]).then(
       ([schedule, metadata]): CacheEntry => ({ schedule, metadata })
     ),
     refetchInterval: 300_000,

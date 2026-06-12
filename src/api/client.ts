@@ -167,7 +167,7 @@ export interface BusPosition {
   garage_code?: string | null
   garage_name?: string | null
   vehicle_software_version?: number | null
-  trail: TrailPoint[]
+  trail?: TrailPoint[]
 }
 
 export interface BusDetail extends BusPosition {
@@ -180,10 +180,10 @@ export interface BusDetail extends BusPosition {
 }
 
 export interface Amenities {
-  usb: boolean | null
-  wifi: boolean | null
-  ac: boolean | null
-  accessible: boolean | null
+  usb?: boolean | null
+  wifi?: boolean | null
+  ac?: boolean | null
+  accessible?: boolean | null
 }
 
 export interface Arrival {
@@ -261,6 +261,7 @@ export interface ScheduledDeparture {
   day_type: string
   service_type: string
   departure_time: string
+  official_note_id?: string | null
 }
 
 export interface Announcement {
@@ -423,6 +424,7 @@ export const api = {
     buses: (hatKodu: string, init?: RequestInit) => get<BusPosition[]>(`/v1/routes/${hatKodu}/buses`, init),
     stops: (hatKodu: string, init?: RequestInit) => get<RouteStop[]>(`/v1/routes/${hatKodu}/stops`, init),
     schedule: (hatKodu: string, init?: RequestInit) => get<ScheduledDeparture[]>(`/v1/routes/${hatKodu}/schedule`, init),
+    scheduleLite: (hatKodu: string, init?: RequestInit) => get<ScheduledDeparture[]>(`/v1/routes/${hatKodu}/schedule?lite=1`, init),
     announcements: (hatKodu: string, init?: RequestInit) => get<Announcement[]>(`/v1/routes/${hatKodu}/announcements`, init),
     batchAnnouncements: (routes: string[], init?: RequestInit) => get<RouteAnnouncement[]>(`/v1/routes/announcements/batch?routes=${encodeURIComponent(routes.join(','))}`, init),
   },

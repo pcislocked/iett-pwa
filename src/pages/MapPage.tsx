@@ -145,27 +145,28 @@ export default function MapPage() {
   useEffect(() => {
     let isMounted = true
     const controller = new AbortController()
+    const currentInFlight = inFlight.current
 
     const fetchBuses = () => {
       if (!isMounted) return
       for (const route of selectedRoutes) {
-        if (inFlight.current.has(route)) continue
+        if (currentInFlight.has(route)) continue
         
         fetchIdCounter.current += 1
         const currentFetchId = fetchIdCounter.current
         fetchIdMap.current.set(route, currentFetchId)
 
-        inFlight.current.add(route)
+        currentInFlight.add(route)
         api.routes.buses(route, { signal: controller.signal })
           .then((bs: BusPosition[]) => {
-            inFlight.current.delete(route)
+            currentInFlight.delete(route)
             if (!isMounted) return
             if (fetchIdMap.current.get(route) !== currentFetchId) return // Stale request
             if (!selectedRoutesRef.current.includes(route)) return
             setRouteBusMap((prev) => new Map(prev).set(route, bs))
           })
           .catch(() => {
-            inFlight.current.delete(route)
+            currentInFlight.delete(route)
             if (!isMounted) return
             if (fetchIdMap.current.get(route) !== currentFetchId) return // Stale request
             if (!selectedRoutesRef.current.includes(route)) return
@@ -183,7 +184,7 @@ export default function MapPage() {
       for (const key of next.keys()) {
         if (!selectedRoutes.includes(key)) {
           next.delete(key)
-          inFlight.current.delete(key)
+          currentInFlight.delete(key)
           fetchIdMap.current.delete(key)
         }
       }
@@ -194,7 +195,7 @@ export default function MapPage() {
       isMounted = false
       clearInterval(interval)
       controller.abort()
-      inFlight.current.clear()
+      currentInFlight.clear()
     }
   }, [selectedRoutes])
 

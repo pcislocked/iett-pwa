@@ -83,7 +83,21 @@ function TimetableView({ schedule, scheduleError, onRetry, metadata, stops, hatK
           } else if (lastStops.size === 1) {
             return `${Array.from(lastStops)[0]} YÖNÜ`
           } else if (firstStops.size > 1) {
-            return `ÇEŞİTLİ KALKIŞLAR (${code === 'G' ? 'Gidiş' : 'Dönüş'})`
+            // Both first and last stops differ — use canonical variant (D0/G0)
+            const canonicalCode = variantsInDir.find(v => v.endsWith('_D0') || v.endsWith('_G0'))
+            if (canonicalCode) {
+              const canonStops = dirStops.filter(s => s.route_code === canonicalCode)
+              if (canonStops.length > 0) {
+                return `${formatStopName(canonStops[0].stop_name)} KALKIŞ`
+              }
+            }
+            // Fallback: metadata direction_name first part
+            const meta = metadata?.find(m => (m.direction === 0 ? 'G' : 'D') === code)
+            if (meta?.direction_name) {
+              const firstPart = meta.direction_name.split(' - ')[0].trim()
+              if (firstPart) return `${firstPart} KALKIŞ`
+            }
+            return code === 'G' ? 'Gidiş' : 'Dönüş'
           }
         }
       }
@@ -118,8 +132,25 @@ function TimetableView({ schedule, scheduleError, onRetry, metadata, stops, hatK
     const filtered = schedule.filter(d => d.day_type === dayType && d.direction === effectiveDirection)
     const uniqueVariants = [...new Set(filtered.map(d => d.route_variant).filter(v => v && !v.endsWith('_D0') && !v.endsWith('_G0')))].sort()
     
+    // Check if we have official note IDs from the scraper
+    const hasOfficialNotes = filtered.some(d => d.official_note_id)
+
+    // If official notes exist, build variant→number mapping from them
+    // e.g. variant "15KÇ_G_D2063" always has official_note_id "-1", so its number is 1
+    const officialVariantNum = new Map<string, number>()
+    if (hasOfficialNotes) {
+      for (const d of filtered) {
+        if (d.official_note_id && d.route_variant && !officialVariantNum.has(d.route_variant)) {
+          const num = Math.abs(Number(d.official_note_id))
+          if (!isNaN(num) && num > 0) {
+            officialVariantNum.set(d.route_variant, num)
+          }
+        }
+      }
+    }
+
     uniqueVariants.forEach((v, idx) => {
-      const num = idx + 1
+      const num = officialVariantNum.get(v) ?? (idx + 1)
       fnMap.set(v, num)
       
       let label = v
@@ -139,6 +170,16 @@ function TimetableView({ schedule, scheduleError, onRetry, metadata, stops, hatK
         if (meta && meta.direction_name) {
           const parts = meta.direction_name.split(' - ')
           label = parts.length >= 2 ? `${parts[0].trim()} > ${parts[parts.length - 1].trim()}` : (meta.full_name || v)
+        } else if (meta && meta.full_name) {
+          label = meta.full_name
+        }
+      }
+
+      // If label is still the raw variant code, try harder with metadata
+      if (label === v) {
+        const meta = metadata?.find(m => m.variant_code === v)
+        if (meta) {
+          label = meta.full_name || meta.direction_name || v
         }
       }
       
@@ -178,7 +219,7 @@ function TimetableView({ schedule, scheduleError, onRetry, metadata, stops, hatK
 
   return (
     <div className="flex flex-col gap-4 relative">
-      <div className="sticky top-0 z-20 bg-black/95 backdrop-blur-sm pt-2 pb-2 -mx-4 px-4 border-b border-[#222] shadow-[0_8px_16px_-8px_rgba(0,0,0,0.8)]">
+      <div className="-mx-4 px-4">
         <div role="tablist" aria-label="Gün seçimi" className="flex border-b border-[#222]">
           {DAY_TYPES.map(({ key, label }) => (
             <button role="tab" aria-selected={dayType === key} key={key} onClick={() => { setDayType(key); setDirection('') }}
@@ -193,7 +234,7 @@ function TimetableView({ schedule, scheduleError, onRetry, metadata, stops, hatK
         </div>
 
         {availableDirections.length > 1 && (
-          <div role="tablist" aria-label="Yön seçimi" className="flex gap-0 pt-2">
+          <div role="tablist" aria-label="Yön seçimi" className="flex gap-0">
             {availableDirections.map((dir) => (
               <button role="tab" aria-selected={direction === dir} key={dir} onClick={() => setDirection(dir)}
                 className={`flex-1 text-xs py-2 px-2 font-medium transition-colors truncate border-b-2 -mb-px ${
@@ -260,18 +301,16 @@ function TimetableView({ schedule, scheduleError, onRetry, metadata, stops, hatK
           </ul>
         </div>
       )}
-      <div className="mt-8 mb-4 text-center px-4">
-        <p className="text-[10px] text-slate-500 mb-3 leading-relaxed text-center opacity-80">
-          Bu ekrandaki hareket saatleri ve yan sefer notları bilgilendirme amaçlıdır.
+      <div className="mt-4 text-center">
+        <p className="text-[10px] text-slate-600 leading-relaxed">
+          Resmi API'nin kısıtlamaları nedeniyle bazı sefer bilgileri eksik veya hatalı aktarılıyor olabilir.{' '}
+          Teyit etmek için <a 
+            href={`https://iett.istanbul/RouteDetail?hkod=${hatKodu}`} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="text-slate-500 hover:text-slate-400 underline"
+          >İETT üzerinden karşılaştırın ↗</a>
         </p>
-        <a 
-          href={`https://iett.istanbul/RouteDetail?hkod=${hatKodu}`} 
-          target="_blank" 
-          rel="noopener noreferrer"
-          className="inline-flex items-center justify-center gap-1.5 text-xs text-slate-400 hover:text-white transition-colors border border-surface-muted/50 rounded-lg px-3 py-1.5 bg-surface-card hover:bg-surface-muted"
-        >
-          iett.istanbul üzerinden doğrula ↗
-        </a>
       </div>
     </div>
   )
@@ -370,7 +409,7 @@ export default function RoutePage() {
   return (
     <div className="flex flex-col min-h-screen">
       {/* Header */}
-      <div className="bg-surface-card border-b border-surface-muted">
+      <div className="sticky top-0 z-30 bg-surface-card border-b border-surface-muted">
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
@@ -400,7 +439,7 @@ export default function RoutePage() {
         </div>
 
         {/* Tab bar — Metro flat style */}
-        <div role="tablist" aria-label="Sekmeler" className="max-w-2xl mx-auto px-4 pb-0 flex gap-0 overflow-x-auto no-scrollbar border-b border-[#111]">
+        <div role="tablist" aria-label="Sekmeler" className="max-w-2xl mx-auto px-4 pb-0 flex gap-0 overflow-x-auto no-scrollbar">
           {tabs.map(({ id, label, badge }) => (
             <button role="tab" aria-selected={tab === id} key={id} onClick={() => setTab(id)}
               className={`flex-1 shrink-0 text-sm py-2.5 px-2 font-medium border-b-2 -mb-px transition-colors
@@ -420,7 +459,7 @@ export default function RoutePage() {
       </div>
 
       {/* Body */}
-      <div className="flex-1 max-w-2xl w-full mx-auto px-4 pb-6 pt-4">
+      <div className="flex-1 max-w-2xl w-full mx-auto px-4 pb-6 pt-2">
 
         {/* Timetable tab */}
         {tab === 'schedule' && (
