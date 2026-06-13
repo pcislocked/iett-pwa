@@ -252,7 +252,7 @@ export default function Home() {
         })
       }
 
-      const stops = await api.stops.nearby(pos.coords.latitude, pos.coords.longitude, { signal: abortControllerRef.current.signal })
+      const stops = await api.stops.nearby(pos.coords.latitude, pos.coords.longitude, 500, { signal: abortControllerRef.current.signal })
       setNearbyStops(
         [...stops]
           .sort((a, b) => (Number(a.distance_m) || 0) - (Number(b.distance_m) || 0))
