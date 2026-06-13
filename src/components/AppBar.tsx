@@ -1,6 +1,7 @@
 import { useNavigate, useLocation } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { MAIN_PATHS } from '@/routes'
+import { useTranslation } from 'react-i18next'
 
 /* ── SVG icons ─────────────────────────────────────────────────────────────── */
 function IconBack() {
@@ -94,6 +95,7 @@ function AppBtn({ icon, label, active, dim, onPress }: AppBtnProps) {
  * Home navigates to / (back is dimmed there, effectively "skip back/back/back").
  */
 export default function AppBar() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const location = useLocation()
 
@@ -107,10 +109,10 @@ export default function AppBar() {
       style={{ background: '#000', borderTop: '1px solid #1a1a1a' }}
     >
       <div className="flex items-end justify-center gap-8 px-6 py-2.5">
-        <AppBtn icon={<IconBack />}     label="Geri"    dim={isHome}      onPress={() => navigate(-1)} />
-        <AppBtn icon={<IconHome />}     label="Ana"     active={isHome}   onPress={() => navigate('/')} />
-        <AppBtn icon={<IconSearch />}   label="Ara"     active={isSearch} onPress={() => navigate('/search')} />
-        <AppBtn icon={<IconSettings />} label="Ayarlar" active={isSettings} onPress={() => navigate('/settings')} />
+        <AppBtn icon={<IconBack />}     label={t('nav.back', { defaultValue: 'Geri' })}    dim={isHome}      onPress={() => navigate(-1)} />
+        <AppBtn icon={<IconHome />}     label={t('nav.home', { defaultValue: 'Ana' })}     active={isHome}   onPress={() => navigate('/')} />
+        <AppBtn icon={<IconSearch />}   label={t('nav.search', { defaultValue: 'Ara' })}     active={isSearch} onPress={() => navigate('/search')} />
+        <AppBtn icon={<IconSettings />} label={t('nav.settings', { defaultValue: 'Ayarlar' })} active={isSettings} onPress={() => navigate('/settings')} />
       </div>
     </div>
   )

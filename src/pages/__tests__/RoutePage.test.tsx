@@ -40,7 +40,7 @@ describe('RoutePage', () => {
     )
     
     await waitFor(() => {
-      expect(screen.getByText('Sefer Saatleri')).toBeInTheDocument()
+      expect(screen.getByText('Tarife')).toBeInTheDocument()
     })
   })
 })

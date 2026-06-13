@@ -788,24 +788,24 @@ export default function StopPage() {
         <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
           <div className="rounded-2xl border border-surface-border bg-surface-card divide-y divide-surface-border overflow-hidden">
             <div className="px-4 py-3 flex items-center justify-between">
-              <span className="text-xs text-slate-500">Durak Kodu</span>
+              <span className="text-xs text-slate-500">{t('stops.stopCode', { defaultValue: 'Durak Kodu' })}</span>
               <span className="font-mono text-sm text-slate-100">{dcode}</span>
             </div>
             {stopDetail?.name && (
               <div className="px-4 py-3 flex items-center justify-between">
-                <span className="text-xs text-slate-500">Ad</span>
+                <span className="text-xs text-slate-500">{t('stops.stopName', { defaultValue: 'Ad' })}</span>
                 <span className="text-sm text-slate-100 text-right max-w-[60%]">{stopDetail.name}</span>
               </div>
             )}
             {stopDetail?.direction && (
               <div className="px-4 py-3 flex items-center justify-between">
-                <span className="text-xs text-slate-500">Yön</span>
+                <span className="text-xs text-slate-500">{t('stops.stopDirection', { defaultValue: 'Yön' })}</span>
                 <span className="text-sm text-slate-100 text-right max-w-[60%]">{stopDetail.direction}</span>
               </div>
             )}
             {stopDetail?.latitude != null && stopDetail?.longitude != null && (
               <div className="px-4 py-3 flex items-center justify-between">
-                <span className="text-xs text-slate-500">Konum</span>
+                <span className="text-xs text-slate-500">{t('stops.stopLocation', { defaultValue: 'Konum' })}</span>
                 <span className="font-mono text-xs text-slate-400">
                   {stopDetail.latitude.toFixed(5)}, {stopDetail.longitude.toFixed(5)}
                 </span>
@@ -966,7 +966,7 @@ export default function StopPage() {
               </svg>
               <p className="text-sm font-medium">{t('stops.noArrivals')}</p>
               {activeRoutes.size > 0 && (
-                <p className="text-xs mt-1">{Array.from(activeRoutes).join(', ')} hattı için {t('common.noData')}</p>
+                <p className="text-xs mt-1">{t('stops.noDataForRoute', { defaultValue: '{{route}} hattı için veri yok', route: Array.from(activeRoutes).join(', ') })}</p>
               )}
             </div>
           )}

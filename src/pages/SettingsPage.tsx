@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next'
 const LOCATION_CONSENT_KEY = 'location-consent'
 
 export default function SettingsPage() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const navigate = useNavigate()
   const [settings, setSettings] = useState<Settings>(loadSettings)
   const [saved, setSaved] = useState(false)
@@ -52,6 +52,24 @@ export default function SettingsPage() {
       <h1 className="text-xl font-bold">{t('nav.settings', { defaultValue: 'Ayarlar' })}</h1>
 
       <div className="card flex flex-col gap-4">
+        <div>
+          <label className="text-sm text-slate-400 block mb-1">
+            {t('settings.language', { defaultValue: 'Dil / Language' })}
+          </label>
+          <select
+            value={i18n.language}
+            onChange={(e) => {
+              i18n.changeLanguage(e.target.value)
+              document.documentElement.lang = e.target.value
+            }}
+            className="w-full bg-surface border border-surface-muted rounded-lg
+                       px-3 py-2 text-sm text-slate-100
+                       focus:outline-none focus:ring-1 focus:ring-brand-500"
+          >
+            <option value="tr" className="bg-surface-card">Türkçe</option>
+            <option value="en" className="bg-surface-card">English</option>
+          </select>
+        </div>
         <div>
           <label className="text-sm text-slate-400 block mb-1">
             {t('settings.apiBase', { defaultValue: 'iett-middle Sunucu Adresi' })}

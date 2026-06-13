@@ -207,12 +207,13 @@ export default function MapPage() {
   useEffect(() => {
     if (searchQuery.trim().length < 1) { setSearchResults([]); return }
     let cancelled = false
+    const controller = new AbortController()
     const t = window.setTimeout(() => {
-      api.routes.search(searchQuery)
+      api.routes.search(searchQuery, { signal: controller.signal })
         .then((r) => { if (!cancelled) setSearchResults(r.slice(0, 8)) })
-        .catch(() => { if (!cancelled) setSearchResults([]) })
+        .catch((err) => { if (!cancelled && err.name !== 'AbortError') setSearchResults([]) })
     }, 300)
-    return () => { cancelled = true; window.clearTimeout(t) }
+    return () => { cancelled = true; window.clearTimeout(t); controller.abort() }
   }, [searchQuery])
 
   function addRoute(hatKodu: string) {

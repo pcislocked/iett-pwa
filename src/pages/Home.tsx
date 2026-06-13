@@ -17,16 +17,18 @@ const LOCATION_CONSENT_KEY = 'location-consent'
 
 /** Format current time HH:MM */
 function useClock() {
+  const { i18n } = useTranslation()
+  const lang = i18n.language === 'en' ? 'en-US' : 'tr-TR'
   const [time, setTime] = useState(() =>
-    new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }),
+    new Date().toLocaleTimeString(lang, { hour: '2-digit', minute: '2-digit' }),
   )
   useEffect(() => {
     const id = setInterval(
-      () => setTime(new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })),
+      () => setTime(new Date().toLocaleTimeString(lang, { hour: '2-digit', minute: '2-digit' })),
       10_000,
     )
     return () => clearInterval(id)
-  }, [])
+  }, [lang])
   return time
 }
 
@@ -88,7 +90,7 @@ function GpsLocatingDots() {
   }, [])
   const dots = ['·', '··', '···', '····'][frame]
   return (
-    <div className="flex items-center gap-2.5 px-4 py-3 min-h-[52px]">
+    <div aria-live="polite" className="flex items-center gap-2.5 px-4 py-3 min-h-[52px]">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}
            className="w-4 h-4 shrink-0 text-slate-500">
         <path strokeLinecap="round" strokeLinejoin="round"
@@ -204,6 +206,13 @@ export default function Home() {
   const [nearbyStops, setNearbyStops] = useState<NearbyStop[]>([])
   const [showConsentModal, setShowConsentModal] = useState(false)
   const isRequestingGpsRef = useRef(false)
+  const abortControllerRef = useRef<AbortController | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) abortControllerRef.current.abort()
+    }
+  }, [])
 
   const requestGps = useCallback(async () => {
     if (isRequestingGpsRef.current) return
@@ -216,7 +225,11 @@ export default function Home() {
     const watchdogId = window.setTimeout(() => {
       setGpsPhase((phase) => (phase === 'locating' ? 'unavailable' : phase))
       isRequestingGpsRef.current = false
+      if (abortControllerRef.current) abortControllerRef.current.abort()
     }, 20_000)
+
+    if (abortControllerRef.current) abortControllerRef.current.abort()
+    abortControllerRef.current = new AbortController()
 
     try {
       let pos: GeolocationPosition
@@ -239,14 +252,15 @@ export default function Home() {
         })
       }
 
-      const stops = await api.stops.nearby(pos.coords.latitude, pos.coords.longitude)
+      const stops = await api.stops.nearby(pos.coords.latitude, pos.coords.longitude, { signal: abortControllerRef.current.signal })
       setNearbyStops(
         [...stops]
           .sort((a, b) => (Number(a.distance_m) || 0) - (Number(b.distance_m) || 0))
           .slice(0, 5),
       )
       setGpsPhase('done')
-    } catch (err) {
+    } catch (err: unknown) {
+      if (err instanceof Error && err.name === 'AbortError') return
       setGpsPhase(getGeoErrorCode(err) === 1 ? 'denied' : 'unavailable')
     } finally {
       window.clearTimeout(watchdogId)

@@ -79,6 +79,6 @@ describe('useFleet', () => {
       expect(result.current.data).toEqual(mockData)
     })
     
-    expect(api.routes.buses).toHaveBeenCalledWith('11H')
+    expect(api.routes.buses).toHaveBeenCalledWith('11H', expect.any(Object))
   })
 })
