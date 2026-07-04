@@ -5,6 +5,10 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import App from './App'
 import './index.css'
 import { setupAppUpdateChecks } from '@/utils/appUpdate'
+import { applyTheme, getInitialTheme } from '@/hooks/useTheme'
+
+// Must run synchronously BEFORE React renders — prevents flash of wrong theme
+applyTheme(getInitialTheme())
 
 // When the service worker updates and takes control, reload so the new
 // assets are served instead of the old cached bundle.

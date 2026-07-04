@@ -92,13 +92,13 @@ function GpsLocatingDots() {
   return (
     <div aria-live="polite" className="flex items-center gap-2.5 px-4 py-3 min-h-[52px]">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}
-           className="w-4 h-4 shrink-0 text-slate-500">
+           className="w-4 h-4 shrink-0 text-text-muted">
         <path strokeLinecap="round" strokeLinejoin="round"
           d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
         <path strokeLinecap="round" strokeLinejoin="round"
           d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
       </svg>
-      <span className="text-[13px] text-slate-500">
+      <span className="text-[13px] text-text-muted">
         {t('common.locating', { defaultValue: 'Konum alınıyor' })}<span className="font-mono">{dots}</span>
       </span>
     </div>

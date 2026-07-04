@@ -114,7 +114,7 @@ function MenuRow({
     <button
       onClick={onPress}
       className="w-full flex items-center gap-3 py-3 text-left
-                 text-slate-200 hover:text-white active:opacity-70 transition-opacity"
+                 text-text-primary hover:text-white active:opacity-70 transition-opacity"
     >
       <span className="text-lg w-7 text-center">{icon}</span>
       <span className="text-sm font-medium">{label}</span>

@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="tr" class="dark">
+<html lang="tr">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
@@ -16,8 +16,22 @@
       crossorigin=""
     />
     <title>İETT Canlı</title>
+    <script>
+      (function() {
+        try {
+          var saved = localStorage.getItem('iett-theme');
+          if (saved === 'dark' || saved === 'amoled' || saved === 'light') {
+            document.documentElement.setAttribute('data-theme', saved);
+          } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
+            document.documentElement.setAttribute('data-theme', 'light');
+          } else {
+            document.documentElement.setAttribute('data-theme', 'dark');
+          }
+        } catch (e) {}
+      })();
+    </script>
   </head>
-  <body class="bg-surface text-slate-100 antialiased">
+  <body class="bg-[var(--color-bg)] text-[var(--color-text-1)] antialiased">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

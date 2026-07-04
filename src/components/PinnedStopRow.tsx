@@ -46,7 +46,7 @@ export default function PinnedStopRow({ dcode, nick, icon = '📌', distLabel, d
         <span className="text-base shrink-0 leading-none">{icon}</span>
         <span className="flex-1 text-[13px] font-bold text-white truncate leading-tight">{nick}</span>
         {distLabel && (
-          <span className="text-[10px] text-slate-600 bg-surface-muted px-1.5 py-0.5 rounded-full shrink-0">
+          <span className="text-[10px] text-text-muted bg-surface-muted px-1.5 py-0.5 rounded-full shrink-0">
             {distLabel}
           </span>
         )}
@@ -59,7 +59,7 @@ export default function PinnedStopRow({ dcode, nick, icon = '📌', distLabel, d
       {/* Line 2: direction */}
       {resolvedDirection ? (
         <div className="mt-0.5 pl-[26px]">
-          <span className="text-[10px] text-slate-500">→ {resolvedDirection}</span>
+          <span className="text-[10px] text-text-muted">→ {resolvedDirection}</span>
         </div>
       ) : !distLabel ? (
         <div className="mt-0.5 pl-[26px]">

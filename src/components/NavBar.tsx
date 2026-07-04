@@ -21,7 +21,7 @@ export default function NavBar() {
               className={({ isActive }) =>
                 isActive
                   ? 'text-brand-500 font-semibold'
-                  : 'text-slate-400 hover:text-slate-200 transition-colors'
+                  : 'text-text-secondary hover:text-text-primary transition-colors'
               }
             >
               {label}

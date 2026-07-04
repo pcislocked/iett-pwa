@@ -16,7 +16,7 @@ export default function InstallBanner({ onDismiss, onInstall }: InstallBannerPro
       <span className="text-2xl shrink-0">🚌</span>
       <div className="flex-1 min-w-0">
         <p className="text-sm font-semibold text-white leading-tight">{t('common.addToHome', { defaultValue: 'Ana Ekrana Ekle' })}</p>
-        <p className="text-xs text-slate-400 leading-tight mt-0.5">{t('common.installBannerDesc', { defaultValue: 'çevrimdışı çalışır, pil dostu' })}</p>
+        <p className="text-xs text-text-secondary leading-tight mt-0.5">{t('common.installBannerDesc', { defaultValue: 'çevrimdışı çalışır, pil dostu' })}</p>
       </div>
       <button
         onClick={onInstall}
@@ -26,7 +26,7 @@ export default function InstallBanner({ onDismiss, onInstall }: InstallBannerPro
       </button>
       <button
         onClick={onDismiss}
-        className="text-slate-500 hover:text-slate-300 shrink-0 p-1"
+        className="text-text-muted hover:text-text-secondary shrink-0 p-1"
         aria-label={t('common.close', { defaultValue: 'Kapat' })}
       >
         <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none"

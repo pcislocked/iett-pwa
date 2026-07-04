@@ -125,8 +125,8 @@ function errorText(error: unknown, t: TFunction): string {
 
 function boolBadge(value: boolean | null | undefined, t: TFunction): { text: string; className: string } {
   if (value === true) return { text: t('arac.amenityYes', { defaultValue: 'Var' }), className: 'text-emerald-400 bg-emerald-900/30 border-emerald-700/50' }
-  if (value === false) return { text: t('arac.amenityNo', { defaultValue: 'Yok' }), className: 'text-slate-500 bg-[#080808] border-[#222]' }
-  return { text: t('arac.amenityUnknown', { defaultValue: 'Bilinmiyor' }), className: 'text-slate-500 bg-[#080808] border-[#222]' }
+  if (value === false) return { text: t('arac.amenityNo', { defaultValue: 'Yok' }), className: 'text-text-muted bg-[#080808] border-[#222]' }
+  return { text: t('arac.amenityUnknown', { defaultValue: 'Bilinmiyor' }), className: 'text-text-muted bg-[#080808] border-[#222]' }
 }
 
 function formatMissionDate(value: number | string): string | null {
@@ -345,7 +345,7 @@ export default function AracBusOverlayPage() {
           </div>
           <button
             onClick={() => navigate(-1)}
-            className="metro-tilt text-sm px-3 py-1.5 border border-[#222] text-slate-300"
+            className="metro-tilt text-sm px-3 py-1.5 border border-[#222] text-text-secondary"
           >
             {t('common.close', { defaultValue: 'Kapat' })}
           </button>
@@ -414,7 +414,7 @@ export default function AracBusOverlayPage() {
               </button>
               <button
                 onClick={() => { void fetchCaptcha() }}
-                className="metro-tilt px-3 py-2 border border-[#222] text-slate-200 text-sm"
+                className="metro-tilt px-3 py-2 border border-[#222] text-text-primary text-sm"
               >
                 {t('arac.newCaptcha', { defaultValue: 'Yeni Captcha' })}
               </button>

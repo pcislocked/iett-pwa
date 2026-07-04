@@ -83,7 +83,7 @@ export default function SearchBar({ placeholder, autoFocus }: Props) {
   return (
     <div className="relative w-full">
       <div className="relative">
-        <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500"
+        <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-text-muted"
              fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round"
                 d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
@@ -96,7 +96,7 @@ export default function SearchBar({ placeholder, autoFocus }: Props) {
         onBlur={() => setTimeout(() => setOpen(false), 150)}
         placeholder={actualPlaceholder}
         className="w-full bg-surface-card border border-surface-muted rounded-2xl
-                   pl-10 pr-4 py-3.5 text-slate-100 placeholder-slate-500 text-sm
+                   pl-10 pr-4 py-3.5 text-text-primary placeholder-slate-500 text-sm
                    focus:outline-none focus:ring-2 focus:ring-brand-500"
       />
       {open && (
@@ -114,7 +114,7 @@ export default function SearchBar({ placeholder, autoFocus }: Props) {
                     <span className="text-xs font-bold px-1.5 py-0.5 rounded bg-emerald-900 text-emerald-100 font-mono">
                       #{r.dcode}
                     </span>
-                    <span className="truncate text-sm text-slate-200">
+                    <span className="truncate text-sm text-text-primary">
                       {t('search.goToStopPage', { defaultValue: 'Durak sayfasına git' })}
                     </span>
                   </>

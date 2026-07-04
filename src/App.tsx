@@ -26,7 +26,7 @@ function makeLoc(pathname: string) {
 
 function RouteFallback() {
   return (
-    <div className="flex-1 min-h-0 flex items-center justify-center bg-black text-slate-400 text-sm">
+    <div className="flex-1 min-h-0 flex items-center justify-center bg-[var(--color-bg)] text-text-secondary text-sm">
       Yukleniyor...
     </div>
   )
@@ -205,7 +205,7 @@ function AnimatedMain() {
           {(MAIN_PATHS as readonly string[]).map(path => (
             <div
               key={path}
-              className="h-full overflow-y-auto overscroll-none bg-black flex flex-col"
+              className="h-full overflow-y-auto overscroll-none bg-[var(--color-bg)] flex flex-col"
               style={{ width: `${100 / N}%` }}
             >
               <MainRoutes loc={makeLoc(path)} />
@@ -224,7 +224,7 @@ function AnimatedMain() {
     <div className="flex-1 min-h-0 relative overflow-hidden flex flex-col">
       {exitLoc && (
         <div
-          className={`absolute inset-0 bg-black overflow-y-auto overscroll-none flex flex-col transition-transform duration-[220ms] ease-out ${
+          className={`absolute inset-0 bg-[var(--color-bg)] overflow-y-auto overscroll-none flex flex-col transition-transform duration-[220ms] ease-out ${
             active ? exitFinal : 'translate-x-0'
           }`}
           style={{ willChange: 'transform' }}
@@ -233,7 +233,7 @@ function AnimatedMain() {
         </div>
       )}
       <div
-        className={`absolute inset-0 bg-black overflow-y-auto overscroll-none flex flex-col transition-transform duration-[220ms] ease-out ${
+        className={`absolute inset-0 bg-[var(--color-bg)] overflow-y-auto overscroll-none flex flex-col transition-transform duration-[220ms] ease-out ${
           (!exitLoc || active) ? 'translate-x-0' : enterInit
         }`}
         style={{ willChange: 'transform' }}
@@ -256,7 +256,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <BottomBarContext.Provider value={bottomBarState}>
-        <div className="flex flex-col h-svh bg-black overflow-hidden">
+        <div className="flex flex-col h-svh bg-[var(--color-bg)] overflow-hidden">
           <AnimatedMain />
           <InstallBannerWrapper />
           <AppBar />

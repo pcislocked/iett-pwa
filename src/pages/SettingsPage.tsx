@@ -3,6 +3,44 @@ import { useNavigate } from 'react-router-dom'
 import { type Settings, loadSettings, saveSettings } from '@/utils/settings'
 import { useUserPrefs } from '@/hooks/useUserPrefs'
 import { useTranslation } from 'react-i18next'
+import { useTheme, type Theme } from '@/hooks/useTheme'
+
+function ThemeSwitcher() {
+  const { theme, setTheme } = useTheme()
+  const { t } = useTranslation()
+  const options: { value: Theme; label: string }[] = [
+    { value: 'dark',   label: t('settings.themes.dark', { defaultValue: 'Koyu' }) },
+    { value: 'amoled', label: t('settings.themes.amoled', { defaultValue: 'AMOLED' }) },
+    { value: 'light',  label: t('settings.themes.light', { defaultValue: 'Açık' }) },
+  ]
+  return (
+    <fieldset style={{ border: 'none', padding: 0 }}>
+      <legend id="theme-group-label" style={{ fontSize: 14, color: 'var(--color-text-2)', marginBottom: 8, display: 'block' }}>
+        {t('settings.theme', { defaultValue: 'Tema' })}
+      </legend>
+      <div role="group" aria-labelledby="theme-group-label" style={{ display: 'flex', gap: 8 }}>
+        {options.map((opt) => (
+          <button
+            key={opt.value}
+            onClick={() => setTheme(opt.value)}
+            aria-pressed={theme === opt.value}
+            style={{
+              flex: 1, padding: '8px 14px', borderRadius: 8,
+              border: `1px solid ${theme === opt.value ? 'var(--color-brand)' : 'var(--color-border)'}`,
+              background: theme === opt.value ? 'var(--color-brand)' : 'transparent',
+              color: theme === opt.value ? '#000' : 'var(--color-text-2)',
+              fontWeight: theme === opt.value ? 700 : 500,
+              cursor: 'pointer', fontSize: 13,
+              transition: 'all 0.15s',
+            }}
+          >
+            {opt.label}
+          </button>
+        ))}
+      </div>
+    </fieldset>
+  )
+}
 
 const LOCATION_CONSENT_KEY = 'location-consent'
 
@@ -20,10 +58,16 @@ export default function SettingsPage() {
   const reloadTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const statusTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  const isMounted = useRef(true)
+
   // Clean up timers on unmount so stale updates don't fire after navigation
-  useEffect(() => () => {
-    if (reloadTimer.current) clearTimeout(reloadTimer.current)
-    if (statusTimer.current) clearTimeout(statusTimer.current)
+  useEffect(() => {
+    isMounted.current = true
+    return () => {
+      isMounted.current = false
+      if (reloadTimer.current) clearTimeout(reloadTimer.current)
+      if (statusTimer.current) clearTimeout(statusTimer.current)
+    }
   }, [])
 
   useEffect(() => {
@@ -39,9 +83,11 @@ export default function SettingsPage() {
     if (!file) return
     try {
       await importPrefs(file)
+      if (!isMounted.current) return
       setImportStatus('ok')
       reloadTimer.current = setTimeout(() => { window.location.reload() }, 800)
     } catch {
+      if (!isMounted.current) return
       setImportStatus('err')
       statusTimer.current = setTimeout(() => setImportStatus('idle'), 2500)
     }
@@ -53,7 +99,7 @@ export default function SettingsPage() {
 
       <div className="card flex flex-col gap-4">
         <div>
-          <label className="text-sm text-slate-400 block mb-1">
+          <label className="text-sm text-text-secondary block mb-1">
             {t('settings.language', { defaultValue: 'Dil / Language' })}
           </label>
           <select
@@ -63,15 +109,18 @@ export default function SettingsPage() {
               document.documentElement.lang = e.target.value
             }}
             className="w-full bg-surface border border-surface-muted rounded-lg
-                       px-3 py-2 text-sm text-slate-100
+                       px-3 py-2 text-sm text-text-primary
                        focus:outline-none focus:ring-1 focus:ring-brand-500"
           >
             <option value="tr" className="bg-surface-card">Türkçe</option>
             <option value="en" className="bg-surface-card">English</option>
           </select>
         </div>
+
+        <ThemeSwitcher />
+
         <div>
-          <label className="text-sm text-slate-400 block mb-1">
+          <label className="text-sm text-text-secondary block mb-1">
             {t('settings.apiBase', { defaultValue: 'iett-middle Sunucu Adresi' })}
           </label>
           <input
@@ -80,16 +129,16 @@ export default function SettingsPage() {
             onChange={(e) => setSettings((s) => ({ ...s, apiBase: e.target.value }))}
             placeholder={t('settings.apiBasePlaceholder', { defaultValue: 'https://iett-middle.yourdomain.com (boş = aynı origin)' })}
             className="w-full bg-surface border border-surface-muted rounded-lg
-                       px-3 py-2 text-sm text-slate-100 placeholder-slate-500
+                       px-3 py-2 text-sm text-text-primary placeholder-slate-500
                        focus:outline-none focus:ring-1 focus:ring-brand-500"
           />
-          <p className="text-xs text-slate-500 mt-1">
+          <p className="text-xs text-text-muted mt-1">
             {t('settings.apiBaseHint', { defaultValue: 'Boş bırakırsanız PWA ile aynı origin kullanılır' })}
           </p>
         </div>
 
         <div>
-          <label className="text-sm text-slate-400 block mb-1">
+          <label className="text-sm text-text-secondary block mb-1">
             {t('settings.refreshInterval', { defaultValue: 'Yenileme Aralığı (saniye)' })}
           </label>
           <input
@@ -101,15 +150,15 @@ export default function SettingsPage() {
               setSettings((s) => ({ ...s, refreshInterval: Number(e.target.value) }))
             }
             className="w-32 bg-surface border border-surface-muted rounded-lg
-                       px-3 py-2 text-sm text-slate-100
+                       px-3 py-2 text-sm text-text-primary
                        focus:outline-none focus:ring-1 focus:ring-brand-500"
           />
         </div>
 
         <div className="flex items-center justify-between">
           <div>
-            <p id="autoLocate-label" className="text-sm text-slate-300 font-medium">{t('settings.autoLocate', { defaultValue: 'Otomatik Konum' })}</p>
-            <p className="text-xs text-slate-500 mt-0.5">
+            <p id="autoLocate-label" className="text-sm text-text-secondary font-medium">{t('settings.autoLocate', { defaultValue: 'Otomatik Konum' })}</p>
+            <p className="text-xs text-text-muted mt-0.5">
               {t('settings.autoLocateDesc', { defaultValue: 'Yakın Duraklar açılınca GPS\'le otomatik konumla (yalnızca izin verilmişse)' })}
             </p>
           </div>
@@ -137,13 +186,13 @@ export default function SettingsPage() {
 
       {/* Location consent */}
       <div className="card flex flex-col gap-3">
-        <p className="text-sm font-semibold text-slate-400">{t('nearby.locationPermission', { defaultValue: 'Konum İzni' })}</p>
+        <p className="text-sm font-semibold text-text-secondary">{t('nearby.locationPermission', { defaultValue: 'Konum İzni' })}</p>
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-sm text-slate-300 font-medium">
+            <p className="text-sm text-text-secondary font-medium">
               {locationConsent === 'granted' ? t('settings.locationEnabled', { defaultValue: 'Konum etkin' }) : t('settings.locationDisabled', { defaultValue: 'Konum devre dışı' })}
             </p>
-            <p className="text-xs text-slate-500 mt-0.5">
+            <p className="text-xs text-text-muted mt-0.5">
               {locationConsent === 'granted'
                 ? t('settings.locationUsingGps', { defaultValue: 'Yakın Duraklar konum kullanıyor' })
                 : t('settings.locationHidden', { defaultValue: 'Yakın Duraklar ana sayfada gizlenir' })}
@@ -176,11 +225,11 @@ export default function SettingsPage() {
 
       {/* Data backup */}
       <div className="card flex flex-col gap-3">
-        <p className="text-sm font-semibold text-slate-400">{t('settings.dataBackup', { defaultValue: 'Veri Yedekleme' })}</p>
+        <p className="text-sm font-semibold text-text-secondary">{t('settings.dataBackup', { defaultValue: 'Veri Yedekleme' })}</p>
         <button
           onClick={exportPrefs}
           className="flex items-center gap-3 py-2.5 px-3 bg-surface-muted hover:bg-slate-700
-                     rounded-xl text-sm text-slate-200 transition-colors w-full text-left"
+                     rounded-xl text-sm text-text-primary transition-colors w-full text-left"
         >
           <span className="text-base">&#x1F4E4;</span> {t('settings.exportData', { defaultValue: 'Ayarları Dışa Aktar' })}
         </button>
@@ -189,7 +238,7 @@ export default function SettingsPage() {
           className={`flex items-center gap-3 py-2.5 px-3 rounded-xl text-sm transition-colors w-full text-left ${
             importStatus === 'ok'  ? 'bg-emerald-900/50 text-emerald-300' :
             importStatus === 'err' ? 'bg-red-900/50 text-red-300' :
-            'bg-surface-muted hover:bg-slate-700 text-slate-200'
+            'bg-surface-muted hover:bg-slate-700 text-text-primary'
           }`}
         >
           <span className="text-base">&#x1F4E5;</span>
@@ -198,17 +247,17 @@ export default function SettingsPage() {
         <input ref={fileRef} type="file" accept="application/json" className="hidden" onChange={handleImport} />
       </div>
 
-      <div className="card text-xs text-slate-500 flex flex-col gap-3">
+      <div className="card text-xs text-text-muted flex flex-col gap-3">
         <div className="flex items-center justify-between">
-          <p className="font-semibold text-slate-400 text-sm">{t('settings.about', { defaultValue: 'Hakkında' })}</p>
-          <span className="text-slate-600">v{__APP_VERSION__}</span>
+          <p className="font-semibold text-text-secondary text-sm">{t('settings.about', { defaultValue: 'Hakkında' })}</p>
+          <span className="text-text-muted">v{__APP_VERSION__}</span>
         </div>
-        <p className="text-slate-400 leading-relaxed">
+        <p className="text-text-secondary leading-relaxed">
           {t('settings.aboutDesc', { defaultValue: 'İstanbul otobüs ve tramvay hatlarını gerçek zamanlı takip etmek için açık kaynaklı PWA.' })}
         </p>
         <div className="flex flex-col gap-2">
           <p>{t('settings.dataSource', { defaultValue: 'Veri kaynağı: İETT / İBB açık API' })}</p>
-          <p className="text-[10px] text-slate-500 border-l-2 border-brand-500/30 pl-2">
+          <p className="text-[10px] text-text-muted border-l-2 border-brand-500/30 pl-2">
             <a href="https://data.ibb.gov.tr/license" target="_blank" rel="noopener noreferrer" className="hover:text-brand-400 underline decoration-slate-600 underline-offset-2">
               {t('settings.licenseInfo', { defaultValue: 'Atıf 4.0 Uluslararası (CC BY 4.0) kapsamında lisanslanan kamu sektörü bilgilerini içerir.' })}
             </a>

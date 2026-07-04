@@ -17,7 +17,7 @@ function FavItem({ fav, onRemove }: { fav: Favorite; onRemove: () => void }) {
       </div>
 
       <Link to={to} className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-slate-200 truncate">{fav.name}</p>
+        <p className="text-sm font-semibold text-text-primary truncate">{fav.name}</p>
       </Link>
 
       <Link
@@ -30,7 +30,7 @@ function FavItem({ fav, onRemove }: { fav: Favorite; onRemove: () => void }) {
 
       <button
         onClick={onRemove}
-        className="text-slate-600 hover:text-rose-400 transition-colors p-1 shrink-0"
+        className="text-text-muted hover:text-rose-400 transition-colors p-1 shrink-0"
         aria-label={t('favorites.remove', { defaultValue: 'Favoriden kaldır' })}
       >
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -53,8 +53,8 @@ export default function FavoritesPage() {
       {/* Header */}
       <div className="bg-surface-card border-b border-surface-muted">
         <div className="max-w-2xl mx-auto px-4 py-4">
-          <h1 className="text-lg font-bold text-slate-100">{t('favorites.title', { defaultValue: 'Favorilerim' })}</h1>
-          <p className="text-xs text-slate-500 mt-0.5">
+          <h1 className="text-lg font-bold text-text-primary">{t('favorites.title', { defaultValue: 'Favorilerim' })}</h1>
+          <p className="text-xs text-text-muted mt-0.5">
             {t('favorites.savedItems', { defaultValue: '{{count}} kayıtlı öğe', count: favorites.length })}
           </p>
         </div>
@@ -62,7 +62,7 @@ export default function FavoritesPage() {
 
       <div className="flex-1 max-w-2xl w-full mx-auto px-4 pt-4 pb-6 flex flex-col gap-6">
         {favorites.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-20 text-slate-500">
+          <div className="flex flex-col items-center justify-center py-20 text-text-muted">
             <svg className="w-14 h-14 mb-4 opacity-30" fill="none" viewBox="0 0 24 24"
                  stroke="currentColor" strokeWidth={1.5}>
               <path strokeLinecap="round" strokeLinejoin="round"
@@ -77,7 +77,7 @@ export default function FavoritesPage() {
 
         {stops.length > 0 && (
           <section>
-            <h2 className="text-xs font-semibold uppercase tracking-widest text-slate-500 mb-3">
+            <h2 className="text-xs font-semibold uppercase tracking-widest text-text-muted mb-3">
               {t('favorites.stops', { defaultValue: 'Duraklar ({{count}})', count: stops.length })}
             </h2>
             <div className="flex flex-col gap-2">
@@ -90,7 +90,7 @@ export default function FavoritesPage() {
 
         {routes.length > 0 && (
           <section>
-            <h2 className="text-xs font-semibold uppercase tracking-widest text-slate-500 mb-3">
+            <h2 className="text-xs font-semibold uppercase tracking-widest text-text-muted mb-3">
               {t('favorites.routes', { defaultValue: 'Hatlar ({{count}})', count: routes.length })}
             </h2>
             <div className="flex flex-col gap-2">

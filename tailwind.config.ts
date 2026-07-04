@@ -14,14 +14,15 @@ export default {
           900: '#1e3a5f',
         },
         surface: {
-          DEFAULT: '#000000',   // AMOLED true black
-          card:    '#0d0d0d',
-          muted:   '#1a1a1a',
-          border:  '#222222',
+          DEFAULT: 'var(--color-surface)',
+          card:    'var(--color-surface-card)',
+          muted:   'var(--color-surface-muted)',
+          border:  'var(--color-border)',
         },
         text: {
-          primary:   '#ffffff',
-          secondary: '#888888',
+          primary:   'var(--color-text-1)',
+          secondary: 'var(--color-text-2)',
+          muted:     'var(--color-text-3)',
         },
         eta: {
           soon:   '#ef4444',  // < 5 min   — red

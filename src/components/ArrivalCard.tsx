@@ -19,7 +19,7 @@ export default function ArrivalCard({ arrival, highlighted = false }: Props) {
 
       {/* Destination */}
       <div className="flex-1 min-w-0">
-        <p className="text-sm text-slate-300 truncate">{arrival.destination}</p>
+        <p className="text-sm text-text-secondary truncate">{arrival.destination}</p>
       </div>
 
       {/* ETA */}

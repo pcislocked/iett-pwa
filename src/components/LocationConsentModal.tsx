@@ -75,8 +75,8 @@ export default function LocationConsentModal({ onConfirm, onDismiss }: Props) {
 
         {/* Text */}
         <div className="text-center">
-          <h2 id="consent-title" className="text-base font-bold text-slate-100 mb-1">{t('nearby.locationPermission', { defaultValue: 'Konum İzni' })}</h2>
-          <p id="consent-desc" className="text-xs text-slate-400 leading-relaxed">
+          <h2 id="consent-title" className="text-base font-bold text-text-primary mb-1">{t('nearby.locationPermission', { defaultValue: 'Konum İzni' })}</h2>
+          <p id="consent-desc" className="text-xs text-text-secondary leading-relaxed">
             {t('nearby.locationPermissionDesc', { defaultValue: 'Yakın durakları listelemek için konumunuza ihtiyaç var. Konumunuz yalnızca bu cihazda işlenir; hiçbir sunucuya kaydedilmez.' })}
           </p>
         </div>
@@ -92,7 +92,7 @@ export default function LocationConsentModal({ onConfirm, onDismiss }: Props) {
           </button>
           <button
             onClick={onDismiss}
-            className="w-full bg-surface-muted hover:bg-slate-600 text-slate-300 font-medium py-3 rounded-xl text-sm transition-colors"
+            className="w-full bg-surface-muted hover:bg-slate-600 text-text-secondary font-medium py-3 rounded-xl text-sm transition-colors"
           >
             {t('nearby.specifyOnMap', { defaultValue: 'Haritadan Belirt' })}
           </button>

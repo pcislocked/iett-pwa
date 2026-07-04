@@ -15,7 +15,6 @@ export default function SearchPage() {
   const navigate = useNavigate()
   const inputRef = useRef<HTMLInputElement>(null)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const reqIdRef = useRef(0)
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<SearchResult[]>([])
   const [loading, setLoading] = useState(false)
@@ -31,46 +30,56 @@ export default function SearchPage() {
     return () => clearTimeout(id)
   }, [])
 
+  const abortControllerRef = useRef<AbortController | null>(null)
+
   useEffect(() => {
     const q = query.trim()
     if (q.length < 2) {
       if (timerRef.current) clearTimeout(timerRef.current)
-      reqIdRef.current++
+      if (abortControllerRef.current) abortControllerRef.current.abort()
       setResults([])
       setLoading(false)
       return
     }
-    // BUG-09 / numeric shortcut: pure digits ≥ 4 → directly suggest dcode navigate
+    // BUG-09 / numeric shortcut: pure digits >= 4 -> directly suggest dcode navigate
     if (/^\d{4,}$/.test(q)) {
       if (timerRef.current) clearTimeout(timerRef.current)
-      reqIdRef.current++
+      if (abortControllerRef.current) abortControllerRef.current.abort()
       setResults([{ kind: 'stop-direct', dcode: q }])
       setLoading(false)
       return
     }
     setLoading(true)
     if (timerRef.current) clearTimeout(timerRef.current)
-    const myId = ++reqIdRef.current
+    if (abortControllerRef.current) abortControllerRef.current.abort()
+
+    const controller = new AbortController()
+    abortControllerRef.current = controller
+
     timerRef.current = setTimeout(async () => {
       try {
         const [stops, routes] = await Promise.all([
-          api.stops.search(q),
-          api.routes.search(q),
+          api.stops.search(q, { signal: controller.signal }),
+          api.routes.search(q, { signal: controller.signal }),
         ])
-        if (myId !== reqIdRef.current) return   // stale — a newer query is in flight
+        if (controller.signal.aborted) return
         const combined: SearchResult[] = [
           ...stops.map((s) => ({ kind: 'stop' as const, ...s })),
           ...routes.map((r) => ({ kind: 'route' as const, ...r })),
         ]
         setResults(combined)
-      } catch {
-        if (myId !== reqIdRef.current) return
+      } catch (err: unknown) {
+        if (err instanceof Error && err.name === 'AbortError') return
         setResults([])
       } finally {
-        if (myId === reqIdRef.current) setLoading(false)
+        if (!controller.signal.aborted) setLoading(false)
       }
     }, 300)
-    return () => { if (timerRef.current) clearTimeout(timerRef.current) }
+    
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current)
+      controller.abort()
+    }
   }, [query])
 
   function handleSelect(r: SearchResult) {
@@ -94,7 +103,7 @@ export default function SearchPage() {
       {/* ── Search input ─────────────────────────────────────────────────── */}
       <div className="px-4 safe-area-pt pt-4 pb-3">
         <div className="relative">
-          <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 pointer-events-none"
+          <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-text-muted pointer-events-none"
                fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round"
                   d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
@@ -107,13 +116,13 @@ export default function SearchPage() {
             onChange={(e) => setQuery(e.target.value)}
             placeholder={t('search.placeholder', { defaultValue: 'Hat kodu, durak adı veya numara...' })}
             className="w-full bg-surface-card border border-surface-border rounded-2xl
-                       pl-11 pr-10 py-3.5 text-slate-100 placeholder-slate-500 text-[15px]
+                       pl-11 pr-10 py-3.5 text-text-primary placeholder-slate-500 text-[15px]
                        focus:outline-none focus:ring-2 focus:ring-brand-500"
           />
           {query.length > 0 && (
             <button
               onClick={() => { setQuery(''); setResults([]); inputRef.current?.focus() }}
-              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
+              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-secondary"
               aria-label={t('common.clear', { defaultValue: 'Temizle' })}
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-4 h-4">
@@ -135,7 +144,7 @@ export default function SearchPage() {
               ))}
             </div>
           ) : results.length === 0 ? (
-            <p className="text-center text-slate-600 mt-10 text-sm">{t('search.noResults', { defaultValue: 'Sonuç bulunamadı' })}</p>
+            <p className="text-center text-text-muted mt-10 text-sm">{t('search.noResults', { defaultValue: 'Sonuç bulunamadı' })}</p>
           ) : (
             <div className="rounded-2xl overflow-hidden border border-surface-border divide-y divide-surface-border bg-surface-card mt-1">
               {results.map((r) => (
@@ -150,21 +159,21 @@ export default function SearchPage() {
                       <span className="text-[11px] font-bold px-1.5 py-0.5 rounded bg-emerald-900 text-emerald-100 font-mono shrink-0">
                         #{r.dcode}
                       </span>
-                      <span className="text-sm text-slate-200 flex-1">{t('search.goToStop', { defaultValue: 'Durak sayfasına git' })}</span>
+                      <span className="text-sm text-text-primary flex-1">{t('search.goToStop', { defaultValue: 'Durak sayfasına git' })}</span>
                     </>
                   ) : r.kind === 'stop' ? (
                     <>
                       <span className="text-[11px] font-bold px-1.5 py-0.5 rounded bg-brand-900 text-brand-100 font-mono shrink-0">
                         {r.dcode}
                       </span>
-                      <span className="text-sm text-slate-200 flex-1 truncate">{r.name}</span>
+                      <span className="text-sm text-text-primary flex-1 truncate">{r.name}</span>
                     </>
                   ) : (
                     <>
                       <span className="text-[11px] font-bold px-1.5 py-0.5 rounded bg-amber-900/60 text-amber-200 font-mono shrink-0">
                         {r.hat_kodu}
                       </span>
-                      <span className="text-sm text-slate-200 flex-1 truncate">{r.name}</span>
+                      <span className="text-sm text-text-primary flex-1 truncate">{r.name}</span>
                     </>
                   )}
                 </button>
@@ -176,7 +185,7 @@ export default function SearchPage() {
           <div className="space-y-5 mt-1">
             {recents.length > 0 && (
               <section>
-                <h2 className="text-[11px] font-semibold uppercase tracking-widest text-slate-500 mb-2">
+                <h2 className="text-[11px] font-semibold uppercase tracking-widest text-text-muted mb-2">
                   {t('home.recentSearches', { defaultValue: 'Son Aramalar' })}
                 </h2>
                 <div className="rounded-2xl overflow-hidden border border-surface-border divide-y divide-surface-border bg-surface-card">
@@ -192,7 +201,7 @@ export default function SearchPage() {
                       }`}>
                         {r.code}
                       </span>
-                      <span className="flex-1 text-sm text-slate-200 truncate">{r.name}</span>
+                      <span className="flex-1 text-sm text-text-primary truncate">{r.name}</span>
                     </button>
                   ))}
                 </div>
@@ -201,7 +210,7 @@ export default function SearchPage() {
 
             {favStops.length > 0 && (
               <section>
-                <h2 className="text-[11px] font-semibold uppercase tracking-widest text-slate-500 mb-2">
+                <h2 className="text-[11px] font-semibold uppercase tracking-widest text-text-muted mb-2">
                   {t('search.favStops', { defaultValue: 'Favori Duraklar' })}
                 </h2>
                 <div className="rounded-2xl overflow-hidden border border-surface-border divide-y divide-surface-border bg-surface-card">
@@ -215,7 +224,7 @@ export default function SearchPage() {
                       <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-brand-900 text-brand-100 font-mono">
                         {stop.dcode}
                       </span>
-                      <span className="flex-1 text-sm text-slate-200 truncate">{stop.name}</span>
+                      <span className="flex-1 text-sm text-text-primary truncate">{stop.name}</span>
                       <svg viewBox="0 0 24 24" fill="currentColor" stroke="none" className="w-4 h-4 text-rose-500 shrink-0">
                         <path d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
                       </svg>
@@ -227,7 +236,7 @@ export default function SearchPage() {
 
             {favRoutes.length > 0 && (
               <section>
-                <h2 className="text-[11px] font-semibold uppercase tracking-widest text-slate-500 mb-2">
+                <h2 className="text-[11px] font-semibold uppercase tracking-widest text-text-muted mb-2">
                   {t('search.favRoutes', { defaultValue: 'Favori Hatlar' })}
                 </h2>
                 <div className="rounded-2xl overflow-hidden border border-surface-border divide-y divide-surface-border bg-surface-card">
@@ -241,7 +250,7 @@ export default function SearchPage() {
                       <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-900/60 text-amber-200 font-mono">
                         {fav.hat_kodu}
                       </span>
-                      <span className="flex-1 text-sm text-slate-200 truncate">{fav.name}</span>
+                      <span className="flex-1 text-sm text-text-primary truncate">{fav.name}</span>
                       <svg viewBox="0 0 24 24" fill="currentColor" stroke="none" className="w-4 h-4 text-rose-500 shrink-0">
                         <path d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
                       </svg>
@@ -252,7 +261,7 @@ export default function SearchPage() {
             )}
 
             {recents.length === 0 && favStops.length === 0 && favRoutes.length === 0 && (
-              <p className="text-center text-slate-600 mt-16 text-sm">
+              <p className="text-center text-text-muted mt-16 text-sm">
                 {t('search.emptyState', { defaultValue: 'Hat kodu, durak adı veya 4+ haneli durak numarası girin' })}
               </p>
             )}

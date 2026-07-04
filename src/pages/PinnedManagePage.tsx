@@ -63,7 +63,7 @@ function PinnedRow({
           aria-label={t('pinned.remove', { defaultValue: 'Kaldır' })}
           className="absolute left-1 top-1/2 -translate-y-1/2 z-10
                      w-6 h-6 rounded-full flex items-center justify-center
-                     border border-[#555] bg-[#1a1a1a] text-red-400
+                     border border-surface-border bg-surface-muted text-red-400
                      active:bg-red-600 active:text-white transition-colors"
         >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-3.5 h-3.5">
@@ -85,7 +85,7 @@ function PinnedRow({
         {/* Name + direction */}
         <div className="flex-1 min-w-0">
           <span className="text-[13px] font-bold text-white truncate block leading-tight">{nick}</span>
-          <span className="text-[10px] text-slate-500 truncate block">
+          <span className="text-[10px] text-text-muted truncate block">
             {stopDetail?.direction
               ? `→ ${stopDetail.direction}`
               : <span className="font-mono text-slate-700">{dcode}</span>}
@@ -112,7 +112,7 @@ function PinnedRow({
                 )
               })
             ) : (
-              <span className="text-[11px] text-slate-600">—</span>
+              <span className="text-[11px] text-text-muted">—</span>
             )}
           </div>
         )}
@@ -142,7 +142,7 @@ export default function PinnedManagePage() {
     <div className="flex-1 overflow-y-auto">
 
       {/* Header */}
-      <div className="px-4 safe-area-pt pt-4 pb-3 flex items-center justify-between border-b border-[#111]">
+      <div className="px-4 safe-area-pt pt-4 pb-3 flex items-center justify-between border-b border-surface-border">
         <h1 className="text-base font-bold text-white">{t('home.pinnedStops', { defaultValue: 'Sabitlenmiş Duraklar' })}</h1>
         {pinnedStops.length > 0 && (
           <button
@@ -170,13 +170,13 @@ export default function PinnedManagePage() {
         </div>
       ) : (
         /* Empty state */
-        <div className="flex flex-col items-center justify-center py-20 gap-3 text-slate-500">
+        <div className="flex flex-col items-center justify-center py-20 gap-3 text-text-muted">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-10 h-10 opacity-40">
             <path strokeLinecap="round" strokeLinejoin="round"
               d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
           </svg>
           <p className="text-sm">{t('pinned.emptyTitle', { defaultValue: 'Sabitlenmiş durak yok' })}</p>
-          <p className="text-xs text-center" style={{ color: '#333', maxWidth: 220 }}>
+          <p className="text-xs text-center" style={{ color: 'var(--color-text-3)', maxWidth: 220 }}>
             {t('pinned.emptyDesc', { defaultValue: 'Durak sayfasındaki 📌 butonuna dokunarak sabitleyebilirsin' })}
           </p>
         </div>
@@ -186,7 +186,7 @@ export default function PinnedManagePage() {
       {pinnedStops.length < PINNED_STOPS_MAX && (
         <button
           onClick={() => navigate('/search')}
-          className="w-full flex items-center gap-3 px-4 py-4 border-t border-[#111]
+          className="w-full flex items-center gap-3 px-4 py-4 border-t border-surface-border
                      active:bg-surface-muted transition-colors text-left"
           style={{ color: 'var(--wp-accent)' }}
         >
@@ -194,7 +194,7 @@ export default function PinnedManagePage() {
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
           </svg>
           <span className="text-sm font-semibold">{t('pinned.addStop', { defaultValue: 'Durak Ekle' })}</span>
-          <span className="text-xs ml-auto" style={{ color: '#333' }}>{pinnedStops.length} / {PINNED_STOPS_MAX}</span>
+          <span className="text-xs ml-auto" style={{ color: 'var(--color-text-3)' }}>{pinnedStops.length} / {PINNED_STOPS_MAX}</span>
         </button>
       )}
 

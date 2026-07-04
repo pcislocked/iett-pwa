@@ -332,9 +332,9 @@ export default function NearbyPage() {
     <div className="bg-surface-card border-b border-surface-muted shrink-0 sticky top-0 z-40">
       <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
         <div>
-          <h1 className="text-base font-bold text-slate-100">{t('home.nearbyStops', { defaultValue: 'Yakın Duraklar' })}</h1>
+          <h1 className="text-base font-bold text-text-primary">{t('home.nearbyStops', { defaultValue: 'Yakın Duraklar' })}</h1>
           {userLat !== null && (
-            <p className="text-[11px] text-slate-500">
+            <p className="text-[11px] text-text-muted">
               {userLat.toFixed(4)}, {userLon?.toFixed(4)}
             </p>
           )}
@@ -344,7 +344,7 @@ export default function NearbyPage() {
           <button
             onClick={() => { setPhase('idle'); setPickedLat(null); setPickedLon(null) }}
             disabled={phase === 'locating' || phase === 'loading'}
-            className="p-1.5 text-slate-500 hover:text-slate-300 disabled:opacity-40 transition-colors"
+            className="p-1.5 text-text-muted hover:text-text-secondary disabled:opacity-40 transition-colors"
             aria-label={t('nearby.changeLocation', { defaultValue: 'Konumu Değiştir' })}
             title={t('nearby.pickLocation', { defaultValue: 'Konum Seç' })}
           >
@@ -390,8 +390,8 @@ export default function NearbyPage() {
               </svg>
             </div>
             <div className="text-center">
-              <h2 className="text-lg font-bold text-slate-100 mb-1">{t('nearby.locationPermission', { defaultValue: 'Konum İzni' })}</h2>
-              <p className="text-sm text-slate-400 leading-relaxed max-w-xs">
+              <h2 className="text-lg font-bold text-text-primary mb-1">{t('nearby.locationPermission', { defaultValue: 'Konum İzni' })}</h2>
+              <p className="text-sm text-text-secondary leading-relaxed max-w-xs">
                 {t('nearby.locationPermissionDesc', { defaultValue: 'Yakın durakları listelemek için konumunuza ihtiyaç var. Konumunuz yalnızca bu cihazda işlenir; hiçbir sunucuya kaydedilmez.' })}
               </p>
             </div>
@@ -412,7 +412,7 @@ export default function NearbyPage() {
             </button>
             <button
               onClick={() => setPhase('idle')}
-              className="w-full bg-surface-muted hover:bg-slate-600 text-slate-300 font-medium py-3.5 rounded-2xl text-sm transition-colors"
+              className="w-full bg-surface-muted hover:bg-slate-600 text-text-secondary font-medium py-3.5 rounded-2xl text-sm transition-colors"
             >
               {t('nearby.pickFromMap', { defaultValue: 'Haritadan Seç' })}
             </button>
@@ -448,7 +448,7 @@ export default function NearbyPage() {
             onScroll={handleListScroll}
           >
             {allStops.length === 0 && (
-              <p className="text-center text-slate-500 py-12 text-sm">{t('nearby.noStopsFound', { defaultValue: 'Yakında durak bulunamadı' })}</p>
+              <p className="text-center text-text-muted py-12 text-sm">{t('nearby.noStopsFound', { defaultValue: 'Yakında durak bulunamadı' })}</p>
             )}
 
             {allStops.map((stop) => {
@@ -480,20 +480,20 @@ export default function NearbyPage() {
                         ? 'bg-emerald-500/20 text-emerald-400'
                         : stop.distance_m < 500
                         ? 'bg-amber-500/20 text-amber-400'
-                        : 'bg-surface-muted text-slate-400'
+                        : 'bg-surface-muted text-text-secondary'
                     }`}>
                       {distanceLabel(stop.distance_m)}
                     </div>
 
                     {/* Stop info */}
                     <div className="flex-1 min-w-0">
-                      <p className={`text-sm font-semibold truncate ${isSel ? 'text-orange-300' : 'text-slate-200'}`}>
+                      <p className={`text-sm font-semibold truncate ${isSel ? 'text-orange-300' : 'text-text-primary'}`}>
                         {stop.stop_name}
                       </p>
                       <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                        <span className="text-[10px] text-slate-600 font-mono">#{stop.stop_code}</span>
+                        <span className="text-[10px] text-text-muted font-mono">#{stop.stop_code}</span>
                         {stop.direction && (
-                          <span className="text-[10px] text-slate-500">&#8594;&nbsp;{stop.direction}</span>
+                          <span className="text-[10px] text-text-muted">&#8594;&nbsp;{stop.direction}</span>
                         )}
                         {stop.routes.slice(0, 5).map((r) => (
                           <span
@@ -504,13 +504,13 @@ export default function NearbyPage() {
                           </span>
                         ))}
                         {stop.routes.length > 5 && (
-                          <span className="text-[10px] text-slate-600">+{stop.routes.length - 5}</span>
+                          <span className="text-[10px] text-text-muted">+{stop.routes.length - 5}</span>
                         )}
                       </div>
                     </div>
 
                     <svg
-                      className={`w-4 h-4 shrink-0 ${isSel ? 'text-orange-400' : 'text-slate-600'}`}
+                      className={`w-4 h-4 shrink-0 ${isSel ? 'text-orange-400' : 'text-text-muted'}`}
                       fill="none"
                       viewBox="0 0 24 24"
                       stroke="currentColor"
@@ -541,7 +541,7 @@ export default function NearbyPage() {
         {/* Idle — map location picker */}
         {phase === 'idle' && (
           <div className="flex flex-col gap-3">
-            <p className="text-xs text-slate-500 text-center">
+            <p className="text-xs text-text-muted text-center">
               {t('nearby.mapInstruction', { defaultValue: 'Haritaya uzun bas veya tıkla → pin bırak, sonra aramayı başlat' })}
             </p>
             <div
@@ -581,7 +581,7 @@ export default function NearbyPage() {
             <div className="flex gap-2">
               <button
                 onClick={requestLocate}
-                className="flex items-center justify-center gap-2 flex-1 bg-surface-muted hover:bg-slate-600 text-slate-200 font-semibold py-3 rounded-2xl transition-colors text-sm"
+                className="flex items-center justify-center gap-2 flex-1 bg-surface-muted hover:bg-slate-600 text-text-primary font-semibold py-3 rounded-2xl transition-colors text-sm"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -602,7 +602,7 @@ export default function NearbyPage() {
 
         {/* Locating */}
         {phase === 'locating' && (
-          <div className="flex flex-col items-center justify-center py-24 text-slate-500">
+          <div className="flex flex-col items-center justify-center py-24 text-text-muted">
             <div className="w-10 h-10 border-2 border-brand-500 border-t-transparent rounded-full animate-spin mb-4" />
             <p className="text-sm">{t('common.locating', { defaultValue: 'Konum alınıyor...' })}</p>
           </div>
@@ -610,7 +610,7 @@ export default function NearbyPage() {
 
         {/* Loading */}
         {phase === 'loading' && (
-          <div className="flex flex-col items-center justify-center py-24 text-slate-500">
+          <div className="flex flex-col items-center justify-center py-24 text-text-muted">
             <div className="w-10 h-10 border-2 border-brand-500 border-t-transparent rounded-full animate-spin mb-4" />
             <p className="text-sm">{t('nearby.searching', { defaultValue: 'Yakın duraklar aranıyor…' })}</p>
           </div>
@@ -625,7 +625,7 @@ export default function NearbyPage() {
             <div className="flex gap-2">
               <button
                 onClick={() => setPhase('idle')}
-                className="bg-surface-muted hover:bg-slate-600 text-slate-300 font-medium px-5 py-2.5 rounded-xl text-sm transition-colors"
+                className="bg-surface-muted hover:bg-slate-600 text-text-secondary font-medium px-5 py-2.5 rounded-xl text-sm transition-colors"
               >
                 {t('nearby.specifyOnMap', { defaultValue: 'Haritadan Belirt' })}
               </button>

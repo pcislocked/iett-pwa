@@ -38,10 +38,10 @@ const DAY_TYPES = [
 function ErrorRetry({ message, onRetry }: { message: string; onRetry: () => void }) {
   const { t } = useTranslation()
   return (
-    <div className="flex flex-col items-center py-16 gap-4 text-slate-500">
+    <div className="flex flex-col items-center py-16 gap-4 text-text-muted">
       <p className="text-sm text-red-400">{message}</p>
       <button type="button" onClick={onRetry}
-              className="px-4 py-2 bg-surface-muted rounded-xl text-sm text-slate-300 hover:bg-slate-600 transition-colors">
+              className="px-4 py-2 bg-surface-muted rounded-xl text-sm text-text-secondary hover:bg-slate-600 transition-colors">
         {t('common.retry')}
       </button>
     </div>
@@ -223,12 +223,12 @@ function TimetableView({ schedule, scheduleError, onRetry, metadata, stops, hatK
   return (
     <div className="flex flex-col gap-4 relative">
       <div className="-mx-4 px-4">
-        <div role="tablist" aria-label={t('routes.daySelect', 'Gün seçimi')} className="flex border-b border-[#222]">
+        <div role="tablist" aria-label={t('routes.daySelect', 'Gün seçimi')} className="flex border-b border-surface-border">
           {DAY_TYPES.map(({ key, label }) => (
             <button role="tab" aria-selected={dayType === key} key={key} onClick={() => { setDayType(key); setDirection('') }}
               disabled={!availableDays.has(key)}
               className={`flex-1 text-sm py-2.5 font-medium transition-colors disabled:opacity-25 border-b-2 -mb-px ${
-                dayType === key ? 'border-white text-white' : 'border-transparent text-[#404040] hover:text-[#888]'
+                dayType === key ? 'border-text-primary text-text-primary' : 'border-transparent text-text-muted hover:text-text-secondary'
               }`}
             >
               {t(`routes.dayType.${key}`, label)}
@@ -241,7 +241,7 @@ function TimetableView({ schedule, scheduleError, onRetry, metadata, stops, hatK
             {availableDirections.map((dir) => (
               <button role="tab" aria-selected={direction === dir} key={dir} onClick={() => setDirection(dir)}
                 className={`flex-1 text-xs py-2 px-2 font-medium transition-colors truncate border-b-2 -mb-px ${
-                  effectiveDirection === dir ? 'border-[#00AFF0] text-[#00AFF0]' : 'border-transparent text-[#404040] hover:text-[#888]'
+                  effectiveDirection === dir ? 'border-brand-primary text-brand-primary' : 'border-transparent text-text-muted hover:text-text-secondary'
                 }`}
               >
                 {dirLabel(dir)}
@@ -260,7 +260,7 @@ function TimetableView({ schedule, scheduleError, onRetry, metadata, stops, hatK
       {!schedule && scheduleError && <ErrorRetry message="Sefer saatleri yüklenemedi" onRetry={onRetry} />}
 
       {schedule && hours.length === 0 && (
-        <div className="text-center text-slate-500 py-12 text-sm">{t('routes.noSchedule')}</div>
+        <div className="text-center text-text-muted py-12 text-sm">{t('routes.noSchedule')}</div>
       )}
 
       {hours.map((h) => (
@@ -272,10 +272,10 @@ function TimetableView({ schedule, scheduleError, onRetry, metadata, stops, hatK
             {hourMap.get(h)!.map(({ m, fn }, idx) => {
               const variantCode = fn ? footnoteToVariant.get(fn) : undefined
               return (
-                <span key={`${m}-${idx}`} className="text-xs font-mono text-slate-300 bg-surface-card border border-surface-muted rounded-md px-1.5 py-0.5 min-w-[30px] text-center">
+                <span key={`${m}-${idx}`} className="text-xs font-mono text-text-secondary bg-surface-card border border-surface-muted rounded-md px-1.5 py-0.5 min-w-[30px] text-center">
                   {String(m).padStart(2, '0')}
                   {fn && (
-                    <button onClick={() => variantCode && onSelectVariant?.(variantCode, effectiveDirection)} className="ml-0.5 text-[#00AFF0] font-bold hover:underline">
+                    <button onClick={() => variantCode && onSelectVariant?.(variantCode, effectiveDirection)} className="ml-0.5 text-brand-primary font-bold hover:underline">
                       {fn}
                     </button>
                   )}
@@ -288,14 +288,14 @@ function TimetableView({ schedule, scheduleError, onRetry, metadata, stops, hatK
 
       {footnoteToName.size > 0 && (
         <div className="mt-4 p-3 bg-surface-card border border-surface-muted rounded-xl">
-          <h4 className="text-xs font-bold text-slate-400 mb-2 uppercase tracking-wider">{t('routes.footnotes', 'Notlar (Yan Seferler)')}</h4>
+          <h4 className="text-xs font-bold text-text-secondary mb-2 uppercase tracking-wider">{t('routes.footnotes', 'Notlar (Yan Seferler)')}</h4>
           <ul className="flex flex-col gap-1.5">
             {Array.from(footnoteToName.entries()).map(([num, name]) => {
               const variantCode = footnoteToVariant.get(num)
               return (
                 <li key={num}>
-                  <button onClick={() => variantCode && onSelectVariant?.(variantCode, effectiveDirection)} className="text-xs text-slate-300 flex items-start gap-2 text-left hover:text-brand-300 transition-colors w-full group">
-                    <span className="text-[#00AFF0] font-bold shrink-0 group-hover:underline">{num}:</span>
+                  <button onClick={() => variantCode && onSelectVariant?.(variantCode, effectiveDirection)} className="text-xs text-text-secondary flex items-start gap-2 text-left hover:text-brand-300 transition-colors w-full group">
+                    <span className="text-brand-primary font-bold shrink-0 group-hover:underline">{num}:</span>
                     <span className="group-hover:underline">{name}</span>
                   </button>
                 </li>
@@ -305,13 +305,13 @@ function TimetableView({ schedule, scheduleError, onRetry, metadata, stops, hatK
         </div>
       )}
       <div className="mt-4 text-center">
-        <p className="text-[10px] text-slate-600 leading-relaxed">
+        <p className="text-[10px] text-text-muted leading-relaxed">
           {t('routes.iettNote')}{' '}
           <a 
             href={`https://iett.istanbul/RouteDetail?hkod=${hatKodu}`} 
             target="_blank" 
             rel="noopener noreferrer"
-            className="text-slate-500 hover:text-slate-400 underline"
+            className="text-text-muted hover:text-text-secondary underline"
           >{t('routes.iettNoteLink')} ↗</a>
           {' '}{t('routes.iettNoteSuffix')}
         </p>
@@ -420,11 +420,11 @@ export default function RoutePage() {
             <div className="flex items-center gap-2">
               <span className="text-lg font-bold text-brand-500 shrink-0">{hatKodu}</span>
               {routeName && routeName !== hatKodu && (
-                <span className="text-xs text-slate-400 truncate">{routeName}</span>
+                <span className="text-xs text-text-secondary truncate">{routeName}</span>
               )}
               {stale && <span className="text-xs text-amber-400 shrink-0">⚠️</span>}
             </div>
-            <p className="text-[11px] text-slate-500">
+            <p className="text-[11px] text-text-muted">
               {t('routes.activeBuses', { defaultValue: '{{count}} aktif araç', count: buses?.length ?? 0 })}
             </p>
           </div>
@@ -432,7 +432,7 @@ export default function RoutePage() {
           <button
             onClick={() => toggle(favItem)}
             className={`p-1.5 rounded-xl transition-colors ${
-              favorited ? 'text-rose-400' : 'text-slate-500 hover:text-slate-300'
+              favorited ? 'text-rose-400' : 'text-text-muted hover:text-text-secondary'
             }`}
           >
             <svg className="w-5 h-5" fill={favorited ? 'currentColor' : 'none'} viewBox="0 0 24 24"
@@ -450,13 +450,13 @@ export default function RoutePage() {
               className={`flex-1 shrink-0 text-sm py-2.5 px-2 font-medium border-b-2 -mb-px transition-colors
                           flex items-center justify-center gap-1 ${
                 tab === id
-                  ? 'border-white text-white'
-                  : 'border-transparent text-[#404040] hover:text-[#888]'
+                  ? 'border-text-primary text-text-primary'
+                  : 'border-transparent text-text-muted hover:text-text-secondary'
               }`}
             >
               {label}
               {badge !== undefined && badge > 0 && (
-                <span className="text-[10px] bg-[#111] text-[#a6a6a6] px-1 rounded">{badge}</span>
+                <span className="text-[10px] bg-surface-muted text-text-secondary px-1 rounded">{badge}</span>
               )}
             </button>
           ))}
@@ -476,13 +476,13 @@ export default function RoutePage() {
           <div className="flex flex-col gap-2">
             {/* Direction pills — map tab, Metro flat */}
             {stopsDirections.length > 1 && (
-              <div role="tablist" aria-label="Gün seçimi" className="flex border-b border-[#222]">
+              <div role="tablist" aria-label="Yön seçimi" className="flex border-b border-surface-border">
                 {stopsDirections.map((dir) => (
                   <button role="tab" aria-selected={effectiveDir === dir} key={dir} onClick={() => setActiveDir(dir)}
                     className={`flex-1 text-xs py-2 px-2 font-medium transition-colors truncate border-b-2 -mb-px ${
                       effectiveDir === dir
-                        ? 'border-[#00AFF0] text-[#00AFF0]'
-                        : 'border-transparent text-[#404040] hover:text-[#888]'
+                        ? 'border-brand-primary text-brand-primary'
+                        : 'border-transparent text-text-muted hover:text-text-secondary'
                     }`}
                   >
                     {dirLabel(dir)}
@@ -507,7 +507,7 @@ export default function RoutePage() {
                 {[...new Map(buses.filter((b) => b.direction_letter).map((b) => [b.direction_letter, b])).values()].map((b) => (
                   <div key={b.direction_letter} className="flex items-center gap-1.5">
                     <div className="w-3 h-3 rounded-full border border-white/40 shrink-0" style={{ background: b.direction_letter === 'G' ? '#2563eb' : '#f59e0b' }} />
-                    <span className="text-[10px] text-[#888] truncate">{b.direction ?? b.direction_letter}</span>
+                    <span className="text-[10px] text-text-secondary truncate">{b.direction ?? b.direction_letter}</span>
                   </div>
                 ))}
               </div>
@@ -556,13 +556,13 @@ export default function RoutePage() {
           <div className="flex flex-col gap-1">
             {/* Direction filter pills — stops tab, Metro flat */}
             {stopsDirections.length > 1 && (
-              <div className="flex border-b border-[#222] mb-1">
+              <div className="flex border-b border-surface-border mb-1">
                 {stopsDirections.map((dir) => (
                   <button role="tab" aria-selected={effectiveDir === dir} key={dir} onClick={() => setActiveDir(dir)}
                     className={`flex-1 text-xs py-2 px-2 font-medium transition-colors truncate border-b-2 -mb-px ${
                       effectiveDir === dir
                         ? 'border-[#00AFF0] text-[#00AFF0]'
-                        : 'border-transparent text-[#404040] hover:text-[#888]'
+                        : 'border-transparent text-text-muted hover:text-text-secondary'
                     }`}
                   >
                     {dirLabel(dir)}
@@ -592,7 +592,7 @@ export default function RoutePage() {
               <ErrorRetry message={t('common.error', 'Durak listesi yüklenemedi')} onRetry={refreshStops} />
             )}
             {stops?.length === 0 && (
-              <div className="flex flex-col items-center justify-center py-16 text-slate-500">
+              <div className="flex flex-col items-center justify-center py-16 text-text-muted">
                 <svg className="w-10 h-10 mb-2 opacity-40" fill="none" viewBox="0 0 24 24"
                      stroke="currentColor" strokeWidth={1.5}>
                   <path strokeLinecap="round" strokeLinejoin="round"
@@ -612,13 +612,13 @@ export default function RoutePage() {
                 <span className="font-mono text-brand-500 text-xs w-7 text-right shrink-0 tabular-nums">
                   {s.sequence}
                 </span>
-                <span className="flex-1 text-sm text-slate-200 truncate">{s.stop_name}</span>
+                <span className="flex-1 text-sm text-text-primary truncate">{s.stop_name}</span>
                 {busAtSequence.has(s.sequence) && (
                   <span title={t('routes.busHere', 'Otobüs burada')} className="w-2.5 h-2.5 rounded-full shrink-0 animate-pulse"
                         style={{ background: effectiveDir === 'D' ? '#f59e0b' : '#2563eb' }} />
                 )}
-                <span className="text-xs text-slate-600 shrink-0">{s.stop_code}</span>
-                <svg className="w-4 h-4 text-slate-600 shrink-0" fill="none" viewBox="0 0 24 24"
+                <span className="text-xs text-text-muted shrink-0">{s.stop_code}</span>
+                <svg className="w-4 h-4 text-text-muted shrink-0" fill="none" viewBox="0 0 24 24"
                      stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
                 </svg>
@@ -630,12 +630,12 @@ export default function RoutePage() {
         {/* Alerts tab */}
         {tab === 'alerts' && (
           <div className="flex flex-col gap-3">
-            {!announcements && !announcementsError && <p className="text-slate-400 text-sm">{t('common.loading')}</p>}
+            {!announcements && !announcementsError && <p className="text-text-secondary text-sm">{t('common.loading')}</p>}
             {!announcements && announcementsError && (
               <ErrorRetry message={t('common.error', 'Duyurular yüklenemedi')} onRetry={refreshAnnouncements} />
             )}
             {announcements?.length === 0 && (
-              <div className="flex flex-col items-center py-16 text-slate-500">
+              <div className="flex flex-col items-center py-16 text-text-muted">
                 <svg className="w-10 h-10 mb-2 opacity-40" fill="none" viewBox="0 0 24 24"
                      stroke="currentColor" strokeWidth={1.5}>
                   <path strokeLinecap="round" strokeLinejoin="round"
@@ -647,7 +647,7 @@ export default function RoutePage() {
             {announcements?.map((a, i) => (
               <div key={i} className="card border-l-4 border-amber-500">
                 <p className="text-xs text-amber-400 mb-1">{a.type} Â· {a.updated_at}</p>
-                <p className="text-sm text-slate-200">{a.message}</p>
+                <p className="text-sm text-text-primary">{a.message}</p>
               </div>
             ))}
           </div>

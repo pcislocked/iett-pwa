@@ -62,7 +62,7 @@ export default function BottomTabBar() {
               key={i}
               onClick={tab.onPress}
               className={`flex-1 flex flex-col items-center justify-center py-2 gap-0.5 relative
-                          transition-colors ${tab.active ? 'text-white' : 'text-slate-600'}`}
+                          transition-colors ${tab.active ? 'text-white' : 'text-text-muted'}`}
             >
               {tab.active && (
                 <span className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 rounded-full bg-brand-500" />
@@ -90,7 +90,7 @@ export default function BottomTabBar() {
               end={to === '/'}
               className={({ isActive }) =>
                 `flex-1 flex flex-col items-center justify-center py-2 gap-0.5 relative
-                 transition-colors ${isActive && isMain ? 'text-white' : 'text-slate-600 hover:text-slate-400'}`
+                 transition-colors ${isActive && isMain ? 'text-brand-primary' : 'text-text-muted hover:text-text-secondary'}`
               }
             >
               {({ isActive }) => (
@@ -109,7 +109,7 @@ export default function BottomTabBar() {
           <button
             onClick={() => setMenuOpen(true)}
             className="flex-1 flex flex-col items-center justify-center py-2 gap-0.5
-                       text-slate-600 hover:text-slate-400 transition-colors"
+                       text-text-muted hover:text-text-secondary transition-colors"
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
                  strokeWidth={2} className="w-5 h-5">

@@ -13,8 +13,8 @@ import { useTranslation } from 'react-i18next'
 import { etaChipClass } from '@/utils/etaColor'
 
 
-/** Fixed palette for the first 3 routes at this stop — orange, violet, cyan */
-const ROUTE_PALETTE = ['#f97316', '#a855f7', '#22d3ee'] as const
+/** Fixed palette for the first 3 routes at this stop */
+const ROUTE_PALETTE = ['var(--color-warning)', 'var(--color-success)', 'var(--color-brand)'] as const
 
 function getRouteColor(routeCode: string, orderedRoutes: string[]): string {
   const idx = orderedRoutes.indexOf(routeCode)
@@ -27,8 +27,8 @@ function makeBusIcon(color: string): L.DivIcon {
     html: `<div style="
       background:${color};border-radius:50%;
       width:14px;height:14px;
-      border:2px solid #fff;
-      box-shadow:0 0 0 3px ${color}55;
+      border:2px solid var(--color-bg);
+      box-shadow:0 1px 4px rgba(0,0,0,0.6);
       cursor:pointer">
     </div>`,
     iconSize: [14, 14],
@@ -124,7 +124,7 @@ function AmenityIcons({ amenities }: { amenities: Amenities | null }) {
           className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full ${
             item.value
               ? 'bg-emerald-900/50 text-emerald-400'
-              : 'bg-surface-muted text-slate-600 line-through'
+              : 'bg-surface-muted text-text-muted line-through'
           }`}
         >
           {item.icon} {item.label}
@@ -237,13 +237,13 @@ function BusDetailSheet({
 
   const busIcon = L.divIcon({
     className: '',
-    html: `<div style="background:#f97316;border-radius:50%;width:14px;height:14px;border:2px solid #fff;box-shadow:0 0 0 3px rgba(249,115,22,0.35)"></div>`,
+    html: `<div style="background:var(--color-warning);border-radius:50%;width:14px;height:14px;border:2px solid var(--color-bg);box-shadow:0 1px 4px rgba(0,0,0,0.6)"></div>`,
     iconSize: [14, 14],
     iconAnchor: [7, 7],
   })
   const stopIcon = L.divIcon({
     className: '',
-    html: `<div style="background:#2563eb;border-radius:50%;width:14px;height:14px;border:2px solid #fff;box-shadow:0 0 0 3px rgba(37,99,235,0.35)"></div>`,
+    html: `<div style="background:var(--color-brand);border-radius:50%;width:14px;height:14px;border:2px solid var(--color-bg);box-shadow:0 1px 4px rgba(0,0,0,0.6)"></div>`,
     iconSize: [14, 14],
     iconAnchor: [7, 7],
   })
@@ -294,19 +294,19 @@ function BusDetailSheet({
         <div className="flex items-center gap-3 px-4 py-2">
           <div
             className="text-white font-mono font-bold text-sm rounded-xl px-3 py-1.5 shrink-0"
-            style={{ backgroundColor: arrival.route_code ? '#f97316' : '#6b7280' }}
+            style={{ backgroundColor: arrival.route_code ? 'var(--color-warning)' : 'var(--color-text-3)' }}
           >
             {arrival.route_code}
           </div>
           <div className="flex-1 min-w-0">
-            <p id="bus-detail-title" className="text-sm font-semibold text-slate-100 truncate">{arrival.destination}</p>
+            <p id="bus-detail-title" className="text-sm font-semibold text-text-primary truncate">{arrival.destination}</p>
             {(arrival.plate || arrival.kapino) && (
-              <p className="text-xs text-slate-400 font-mono">
+              <p className="text-xs text-text-secondary font-mono">
                 {[arrival.plate, arrival.kapino].filter(Boolean).join('  ·  ')}
               </p>
             )}
           </div>
-          <button onClick={onClose} className="p-1.5 text-slate-500 hover:text-slate-300 shrink-0">
+          <button onClick={onClose} className="p-1.5 text-text-muted hover:text-text-secondary shrink-0">
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -324,7 +324,7 @@ function BusDetailSheet({
               {bounds && <FitBoundsEffect bounds={bounds} />}
               <Polyline
                 positions={[[effectiveLat!, effectiveLon!], [stopLat, stopLon]]}
-                pathOptions={{ color: '#f97316', weight: 2, dashArray: '6 4', opacity: 0.7 }}
+                pathOptions={{ color: 'var(--color-warning)', weight: 2, dashArray: '6 4', opacity: 0.7 }}
               />
               <Marker position={[effectiveLat!, effectiveLon!]} icon={busIcon} />
               <Marker position={[stopLat, stopLon]} icon={stopIcon} />
@@ -332,31 +332,31 @@ function BusDetailSheet({
           </div>
         ) : (
           <div className="h-12 flex items-center justify-center">
-            <p className="text-xs text-slate-500">{t('stops.noPosition')}</p>
+            <p className="text-xs text-text-muted">{t('stops.noPosition')}</p>
           </div>
         )}
 
         {/* Info strip — 4 cols: ETA · Mesafe · Hız · Plaka */}
         <div className="px-4 py-3 grid grid-cols-4 gap-2 border-t border-surface-muted">
           <div className="flex flex-col items-center gap-0.5">
-            <p className="text-[10px] text-slate-500 uppercase tracking-wider">{t('stops.eta')}</p>
-            <p className="text-base font-bold text-slate-100">
+            <p className="text-[10px] text-text-muted uppercase tracking-wider">{t('stops.eta')}</p>
+            <p className="text-base font-bold text-text-primary">
               {arrival.eta_minutes !== null ? `${arrival.eta_minutes} dk` : arrival.eta_raw}
             </p>
           </div>
           <div className="flex flex-col items-center gap-0.5">
-            <p className="text-[10px] text-slate-500 uppercase tracking-wider">{t('stops.distance')}</p>
-            <p className="text-base font-bold text-slate-100">{distLabel ?? '—'}</p>
+            <p className="text-[10px] text-text-muted uppercase tracking-wider">{t('stops.distance')}</p>
+            <p className="text-base font-bold text-text-primary">{distLabel ?? '—'}</p>
           </div>
           <div className="flex flex-col items-center gap-0.5">
-            <p className="text-[10px] text-slate-500 uppercase tracking-wider">{t('stops.speed')}</p>
-            <p className="text-base font-bold text-slate-100">
+            <p className="text-[10px] text-text-muted uppercase tracking-wider">{t('stops.speed')}</p>
+            <p className="text-base font-bold text-text-primary">
               {arrival.speed_kmh !== null ? `${arrival.speed_kmh} km/h` : '—'}
             </p>
           </div>
           <div className="flex flex-col items-center gap-0.5">
-            <p className="text-[10px] text-slate-500 uppercase tracking-wider">{t('stops.plate')}</p>
-            <p className="text-sm font-bold text-slate-100 font-mono">{arrival.plate ?? '—'}</p>
+            <p className="text-[10px] text-text-muted uppercase tracking-wider">{t('stops.plate')}</p>
+            <p className="text-sm font-bold text-text-primary font-mono">{arrival.plate ?? '—'}</p>
           </div>
         </div>
 
@@ -381,16 +381,16 @@ function BusDetailSheet({
                 navigate(`/arac/bus/${encodeURIComponent(arrival.kapino)}`)
               }}
               disabled={!arrival.kapino}
-              className="w-full text-center border border-[#2a2a2a] text-[#00AFF0] font-semibold
-                         py-3 rounded-xl text-sm transition-colors disabled:text-slate-600
-                         disabled:border-[#1a1a1a] disabled:cursor-not-allowed hover:border-[#00AFF0]/60"
+              className="w-full text-center border border-surface-border text-brand-primary font-semibold
+                         py-3 rounded-xl text-sm transition-colors disabled:text-text-muted
+                         disabled:border-surface-muted disabled:cursor-not-allowed hover:border-brand-primary/60"
             >
               {t('stops.moreDetail')}
             </button>
           </div>
 
           {!arrival.kapino && (
-            <p className="text-[11px] text-slate-600 mt-2">
+            <p className="text-[11px] text-text-muted mt-2">
               {t('stops.noKapinoWarning')}
             </p>
           )}
@@ -404,7 +404,7 @@ function EtaChip({ minutes, raw }: { minutes: number | null; raw: string }) {
   const chipCls = etaChipClass(minutes)
   if (minutes === null)
     return (
-      <span className="inline-flex items-center justify-center bg-surface-muted text-slate-400 text-xs font-semibold
+      <span className="inline-flex items-center justify-center bg-surface-muted text-text-secondary text-xs font-semibold
                         px-2.5 py-1 rounded-full min-w-[52px]">
         {raw}
       </span>
@@ -686,7 +686,7 @@ export default function StopPage() {
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
           <button
             onClick={() => navigate(-1)}
-            className="text-slate-400 hover:text-slate-200 p-1 -ml-1 rounded-lg transition-colors"
+            className="text-text-secondary hover:text-text-primary p-1 -ml-1 rounded-lg transition-colors"
           >
             <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
@@ -695,13 +695,13 @@ export default function StopPage() {
 
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
-              <h1 className="text-base font-bold text-slate-100 truncate">{stopName}</h1>
-              <span className="text-[10px] bg-surface-muted text-slate-400 px-1.5 py-0.5 rounded font-mono shrink-0">
+              <h1 className="text-base font-bold text-text-primary truncate">{stopName}</h1>
+              <span className="text-[10px] bg-surface-muted text-text-secondary px-1.5 py-0.5 rounded font-mono shrink-0">
                 #{dcode}
               </span>
             </div>
             {stopDetail && stopDetail.direction && (
-              <p className="text-[11px] text-slate-400 truncate leading-tight uppercase tracking-wider">{t('stops.directionLabel', { direction: stopDetail.direction })}</p>
+              <p className="text-[11px] text-text-secondary truncate leading-tight uppercase tracking-wider">{t('stops.directionLabel', { direction: stopDetail.direction })}</p>
             )}
             {stale && <p className="text-[11px] text-amber-400">{t('stops.staleWarning')}</p>}
           </div>
@@ -711,7 +711,7 @@ export default function StopPage() {
           <button
             onClick={() => toggle(favItem)}
             className={`p-1.5 rounded-xl transition-colors shrink-0 ${
-              favorited ? 'text-rose-400' : 'text-slate-500 hover:text-slate-300'
+              favorited ? 'text-rose-400' : 'text-text-muted hover:text-text-secondary'
             }`}
           >
             <svg className="w-5 h-5" fill={favorited ? 'currentColor' : 'none'} viewBox="0 0 24 24"
@@ -741,7 +741,7 @@ export default function StopPage() {
                 : pinned ? t('stops.unpinStop') : t('stops.pinStop')
             }
             className={`p-1.5 rounded-xl transition-colors shrink-0 disabled:opacity-40 ${
-              pinned ? 'text-amber-400' : 'text-slate-500 hover:text-slate-300'
+              pinned ? 'text-amber-400' : 'text-text-muted hover:text-text-secondary'
             }`}
           >
             <span className="text-base leading-none">{pinned ? '📌' : '📍'}</span>
@@ -753,9 +753,9 @@ export default function StopPage() {
       {activeTab === 'hatlar' && (
         <div className="flex-1 overflow-y-auto px-4 py-3">
           {routes === null || routes === undefined ? (
-            <p className="text-center text-slate-500 mt-10 text-sm">{t('common.loading')}</p>
+            <p className="text-center text-text-muted mt-10 text-sm">{t('common.loading')}</p>
           ) : routes.length === 0 ? (
-            <p className="text-center text-slate-500 mt-10 text-sm">{t('common.noData')}</p>
+            <p className="text-center text-text-muted mt-10 text-sm">{t('common.noData')}</p>
           ) : (
             <div className="rounded-2xl overflow-hidden border border-surface-border divide-y divide-surface-border bg-surface-card">
               {(routes ?? []).map((r) => (
@@ -771,9 +771,9 @@ export default function StopPage() {
                   >
                     {r}
                   </span>
-                  <span className="flex-1 text-sm text-slate-300">{t('routes.info')}</span>
+                  <span className="flex-1 text-sm text-text-secondary">{t('routes.info')}</span>
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}
-                       className="w-4 h-4 text-slate-600 shrink-0">
+                       className="w-4 h-4 text-text-muted shrink-0">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
                   </svg>
                 </button>
@@ -788,25 +788,25 @@ export default function StopPage() {
         <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
           <div className="rounded-2xl border border-surface-border bg-surface-card divide-y divide-surface-border overflow-hidden">
             <div className="px-4 py-3 flex items-center justify-between">
-              <span className="text-xs text-slate-500">{t('stops.stopCode', { defaultValue: 'Durak Kodu' })}</span>
-              <span className="font-mono text-sm text-slate-100">{dcode}</span>
+              <span className="text-xs text-text-muted">{t('stops.stopCode', { defaultValue: 'Durak Kodu' })}</span>
+              <span className="font-mono text-sm text-text-primary">{dcode}</span>
             </div>
             {stopDetail?.name && (
               <div className="px-4 py-3 flex items-center justify-between">
-                <span className="text-xs text-slate-500">{t('stops.stopName', { defaultValue: 'Ad' })}</span>
-                <span className="text-sm text-slate-100 text-right max-w-[60%]">{stopDetail.name}</span>
+                <span className="text-xs text-text-muted">{t('stops.stopName', { defaultValue: 'Ad' })}</span>
+                <span className="text-sm text-text-primary text-right max-w-[60%]">{stopDetail.name}</span>
               </div>
             )}
             {stopDetail?.direction && (
               <div className="px-4 py-3 flex items-center justify-between">
-                <span className="text-xs text-slate-500">{t('stops.stopDirection', { defaultValue: 'Yön' })}</span>
-                <span className="text-sm text-slate-100 text-right max-w-[60%]">{stopDetail.direction}</span>
+                <span className="text-xs text-text-muted">{t('stops.stopDirection', { defaultValue: 'Yön' })}</span>
+                <span className="text-sm text-text-primary text-right max-w-[60%]">{stopDetail.direction}</span>
               </div>
             )}
             {stopDetail?.latitude != null && stopDetail?.longitude != null && (
               <div className="px-4 py-3 flex items-center justify-between">
-                <span className="text-xs text-slate-500">{t('stops.stopLocation', { defaultValue: 'Konum' })}</span>
-                <span className="font-mono text-xs text-slate-400">
+                <span className="text-xs text-text-muted">{t('stops.stopLocation', { defaultValue: 'Konum' })}</span>
+                <span className="font-mono text-xs text-text-secondary">
                   {stopDetail.latitude.toFixed(5)}, {stopDetail.longitude.toFixed(5)}
                 </span>
               </div>
@@ -843,7 +843,7 @@ export default function StopPage() {
               <CircleMarker
                 center={[stopDetail.latitude, stopDetail.longitude]}
                 radius={14}
-                pathOptions={{ color: '#2563eb', weight: 3, fillColor: '#2563eb', fillOpacity: 1 }}
+                pathOptions={{ color: 'var(--color-brand)', weight: 3, fillColor: 'var(--color-brand)', fillOpacity: 1 }}
               >
                 <Popup minWidth={160}>
                   <div className="popup-card">
@@ -874,7 +874,7 @@ export default function StopPage() {
               })}
             </MapContainer>
           ) : (
-            <div className="h-full flex flex-col items-center justify-center text-slate-500">
+            <div className="h-full flex flex-col items-center justify-center text-text-muted">
               {!stopDetail ? (
                 <>
                   <div className="w-6 h-6 border-2 border-brand-500 border-t-transparent rounded-full animate-spin mb-2" />
@@ -934,8 +934,8 @@ export default function StopPage() {
                         {ann.route_code && <span className="text-amber-200 mr-1">[{ann.route_code}]</span>}
                         {ann.type}
                       </p>
-                      <p className="text-sm text-slate-300">{ann.message}</p>
-                      <p className="text-[10px] text-slate-600 mt-1">{ann.updated_at}</p>
+                      <p className="text-sm text-text-secondary">{ann.message}</p>
+                      <p className="text-[10px] text-text-muted mt-1">{ann.updated_at}</p>
                     </div>
                   ))}
                 </div>
@@ -958,7 +958,7 @@ export default function StopPage() {
           )}
 
           {arrivals && filteredArrivals.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-10 text-slate-500">
+            <div className="flex flex-col items-center justify-center py-10 text-text-muted">
               <svg className="w-10 h-10 mb-2 opacity-40" fill="none" viewBox="0 0 24 24"
                    stroke="currentColor" strokeWidth={1.5}>
                 <path strokeLinecap="round" strokeLinejoin="round"
@@ -997,9 +997,9 @@ export default function StopPage() {
                       {a.route_code}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs text-slate-200 truncate leading-snug">{a.destination}</p>
+                      <p className="text-xs text-text-primary truncate leading-snug">{a.destination}</p>
                       {hasVehicle && (
-                        <p className="text-xs text-slate-400 mt-0.5 font-mono tracking-wide">
+                        <p className="text-xs text-text-secondary mt-0.5 font-mono tracking-wide">
                           {[a.plate, a.kapino].filter(Boolean).join('  ·  ')}
                         </p>
                       )}
@@ -1015,7 +1015,7 @@ export default function StopPage() {
                     className="shrink-0 flex flex-col items-center justify-center gap-1 px-3 py-2 hover:bg-surface-muted/50 transition-colors"
                   >
                     <EtaChip minutes={a.eta_minutes} raw={a.eta_raw} />
-                    <svg className="w-3 h-3 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <svg className="w-3 h-3 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M9 6.75V15m6-6v8.25m.503 3.498l4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 00-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0z" />
                     </svg>
                   </button>
@@ -1031,14 +1031,14 @@ export default function StopPage() {
         <div className="shrink-0 border-t border-surface-muted bg-surface-card pb-2">
           {/* Last updated row */}
           <div className="px-4 pt-2 pb-1 flex items-center justify-between">
-            <span className="text-[11px] text-slate-600">
+            <span className="text-[11px] text-text-muted">
               {lastUpdated
                 ? `güncellendi: ${lastUpdated.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`
                 : t('common.loading')}
             </span>
             <button
               onClick={() => refreshArrivals()}
-              className="flex items-center gap-1 text-[11px] text-slate-400 hover:text-white transition-colors active:scale-95"
+              className="flex items-center gap-1 text-[11px] text-text-secondary hover:text-white transition-colors active:scale-95"
             >
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
@@ -1054,7 +1054,7 @@ export default function StopPage() {
                 className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-bold transition-colors ${
                   activeRoutes.size === 0
                     ? 'bg-brand-600 text-white'
-                    : 'bg-surface-muted text-slate-300 hover:bg-slate-600'
+                    : 'bg-surface-muted text-text-secondary hover:bg-slate-600'
                 }`}
               >
                 {t('common.all', 'Tümü')}
@@ -1081,7 +1081,7 @@ export default function StopPage() {
                         ? 'text-white border-transparent'
                         : isTop3
                         ? 'border'
-                        : 'bg-surface-muted text-slate-300 border-transparent hover:bg-slate-600'
+                        : 'bg-surface-muted text-text-secondary border-transparent hover:bg-slate-600'
                     }`}
                   >
                     {r}
