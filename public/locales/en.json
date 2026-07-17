@@ -280,7 +280,8 @@
     "remove": "Remove from favorites",
     "title": "My Favorites",
     "emptyTitle": "No favorites added yet",
-    "emptyDesc": "You can add stops or routes by tapping the ❤ icon on their pages"
+    "emptyDesc": "You can add stops or routes by tapping the ❤ icon on their pages",
+    "savedItems": "{{count}} saved item{{count, plural, one {} other {s}}}"
   },
   "app": {
     "title": "IETT Live"
