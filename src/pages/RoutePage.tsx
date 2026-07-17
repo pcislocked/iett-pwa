@@ -658,7 +658,7 @@ export default function RoutePage() {
             )}
             {announcements?.map((a, i) => (
               <div key={i} className="card border-l-4 border-amber-500">
-                <p className="text-xs text-amber-400 mb-1">{a.type} &middot; {a.updated_at}</p>
+                <p className="text-xs text-amber-400 mb-1">{a.type}</p>
                 <p className="text-sm text-text-primary">{a.message}</p>
               </div>
             ))}

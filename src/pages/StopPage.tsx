@@ -1075,7 +1075,7 @@ export default function StopPage() {
                         {ann.type}
                       </p>
                       <p className="text-sm text-text-secondary">{ann.message}</p>
-                      <p className="text-[10px] text-text-muted mt-1">{ann.updated_at}</p>
+
                     </div>
                   ))}
                 </div>
