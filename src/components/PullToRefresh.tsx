@@ -73,7 +73,7 @@ export default function PullToRefresh({ onRefresh, children, onScroll, innerRef 
 
   return (
     <div 
-      ref={containerRef as any} 
+      ref={containerRef as React.RefObject<HTMLDivElement>} 
       onScroll={onScroll}
       className="flex-1 overflow-y-auto overscroll-none relative"
       style={{ WebkitOverflowScrolling: 'touch' }}

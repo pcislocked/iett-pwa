@@ -92,7 +92,7 @@ export default function MapSearchPanel({
     if (query.trim().length < 2) return []
     const q = query.toUpperCase().trim()
     
-    let results: any[] = []
+    let results: Partial<BusPosition>[] = []
     
     // 1. Filo yüklüyse client-side filtrele
     if (fleet) {
@@ -192,7 +192,7 @@ export default function MapSearchPanel({
                 {busResults.map(b => (
                   <button
                     key={b.kapino}
-                    onClick={() => { onBusSearch(b.kapino); setQuery(''); setShowDropdown(false); }}
+                    onClick={() => { onBusSearch(b.kapino ?? ''); setQuery(''); setShowDropdown(false); }}
                     className="w-full text-left px-4 py-2 text-sm flex items-center gap-2 hover:bg-surface-muted transition-colors border-b border-surface-muted/50 last:border-0"
                   >
                     <span className="text-xs shrink-0">🚌</span>

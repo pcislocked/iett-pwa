@@ -30,7 +30,8 @@ describe('useArrivals', () => {
 
   it('fetches arrivals when stopCode is provided', async () => {
     const mockData = [{ route_code: '15TY', eta_minutes: 5 }]
-    vi.mocked(api.stops.arrivals).mockResolvedValue(mockData as any)
+    const mockHeaders = new Headers()
+    vi.mocked(api.stops.arrivals).mockResolvedValue({ data: mockData, headers: mockHeaders } as any)
 
     const { result } = renderHook(() => useArrivals('1234'), { wrapper })
 
