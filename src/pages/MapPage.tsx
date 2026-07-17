@@ -111,13 +111,22 @@ export default function MapPage() {
     if (selectedRoutes.length === 0) return
     let isMounted = true
     const controller = new AbortController()
+    let requestSeq = 0
+    const lastAppliedSeq = new Map<string, number>()
     
     const fetchBuses = () => {
       if (!isMounted) return
+      const currentSeq = ++requestSeq
+
       for (const route of selectedRoutes) {
         api.routes.buses(route, { signal: controller.signal })
           .then(bs => {
-            if (isMounted) setRouteBusMap(prev => new Map(prev).set(route, bs))
+            if (!isMounted) return
+            const applied = lastAppliedSeq.get(route) || 0
+            if (currentSeq > applied) {
+              lastAppliedSeq.set(route, currentSeq)
+              setRouteBusMap(prev => new Map(prev).set(route, bs))
+            }
           })
           .catch(() => {})
       }
