@@ -279,7 +279,7 @@ export default function Home() {
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
             </svg>
             <span className="text-sm">{t('home.pinStopTitle', { defaultValue: 'Durak sabitle' })}</span>
-            <span className="text-xs text-text-muted">{t('home.noPinnedDesc', { defaultValue: 'Sık kullandığınız durakları buraya ekleyebilirsiniz.' })}</span>
+            <span className="text-xs text-text-muted">{t('home.pinStopDesc', { defaultValue: 'Durak sayfasındaki 📌 butonuna dokun' })}</span>
           </button>
         )}
       </section>
