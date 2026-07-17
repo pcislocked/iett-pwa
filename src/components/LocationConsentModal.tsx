@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
 
 interface Props {
@@ -55,7 +56,7 @@ export default function LocationConsentModal({ onConfirm, onDismiss }: Props) {
     return () => document.removeEventListener('keydown', handleKey)
   }, [onDismiss])
 
-  return (
+  const modalContent = (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm px-4 pb-6 sm:pb-0">
       <div
         ref={dialogRef}
@@ -144,4 +145,6 @@ export default function LocationConsentModal({ onConfirm, onDismiss }: Props) {
       </div>
     </div>
   )
+
+  return typeof document !== 'undefined' ? createPortal(modalContent, document.body) : modalContent
 }
