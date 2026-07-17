@@ -8,7 +8,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [0.4.0] - 2026-07-17
 
 ### Added
-- **Multi-Theming Support:** Added AMOLED Black, Dark, Light, and 4 HSL color-palette themes (Blue, Forest, Sunset, Lavender) configured via CSS variables. Added theme selection to SettingsPage.
+- **Multi-Theming Support:** Added AMOLED Black, Dark, and Light themes configured via CSS variables. Added theme selection to SettingsPage.
 - **Variant Routing & Selection:** Introduced `<VariantSelect>` dropdown to filter live bus lists, stops, and polyline coordinates on RoutePage and live MapPage.
 - **Advanced Timetable & Footnotes:** Added sticky headers for day and direction selectors on the route timetable tab. Integrated route variant footnotes matching official IETT `depar_no` sequences.
 - **Full i18n Translation Coverage:** Replaced all hardcoded Turkish UI strings across all components (including GPS consents, warnings, timestamps, and announcements) with dynamically fetched react-i18next keys (`tr.json`/`en.json`).
