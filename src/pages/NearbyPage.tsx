@@ -6,7 +6,6 @@ import {
   CircleMarker,
   Popup,
   Marker,
-  useMapEvents,
   useMap,
 } from 'react-leaflet'
 import * as L from 'leaflet'
@@ -148,7 +147,9 @@ export default function NearbyPage() {
   // Track latest selectedCode in a ref so the RAF scroll callback doesn't
   // capture stale closure values (stable callback with no deps).
   const selectedCodeRef = useRef<string | null>(null)
-  selectedCodeRef.current = selectedCode
+  useEffect(() => {
+    selectedCodeRef.current = selectedCode
+  }, [selectedCode])
 
   // Flag that prevents handleListScroll from overriding a programmatic
   // selection triggered by a map-marker click (set before scrollIntoView,
@@ -207,14 +208,7 @@ export default function NearbyPage() {
     setSelectedCode(code)
   }, [])
 
-  // ── React to LocationManager ─────────────────────────────────────────────
-  useEffect(() => {
-    if (location) {
-      fetchNearby(location[0], location[1])
-    }
-  }, [location])
-
-  async function fetchNearby(lat: number, lon: number) {
+  const fetchNearby = useCallback(async (lat: number, lon: number) => {
     setPhase('loading')
     setSelectedCode(null)
     try {
@@ -238,7 +232,7 @@ export default function NearbyPage() {
       const routeMap = new Map(
         nearby.map((s, i) => [
           s.stop_code,
-          enriched[i].status === 'fulfilled' ? enriched[i].value : [],
+          enriched[i].status === 'fulfilled' ? (enriched[i] as PromiseFulfilledResult<string[]>).value : [],
         ]),
       )
       setAllStops(
@@ -253,7 +247,14 @@ export default function NearbyPage() {
       setPhase('error')
       setErrorMsg(t('nearby.stopsFailed', { defaultValue: 'Duraklar yüklenemedi. Lütfen tekrar deneyin.' }))
     }
-  }
+  }, [prefs.nearbyMax, prefs.nearbyRadius, t])
+
+  // ── React to LocationManager ─────────────────────────────────────────────
+  useEffect(() => {
+    if (location) {
+      fetchNearby(location[0], location[1])
+    }
+  }, [location, fetchNearby])
 
 
   // ── Shared header ────────────────────────────────────────────────────────────

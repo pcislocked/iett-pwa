@@ -56,7 +56,7 @@ export function useLocationManager() {
         isRequesting.current = false
         if (prefs.gpsConsent !== 'granted') setGpsConsent('granted')
       },
-      (err) => {
+      (_err) => {
         if (watchdogRef.current !== null) window.clearTimeout(watchdogRef.current)
         fallbackToMock()
       },

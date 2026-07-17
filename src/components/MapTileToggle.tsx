@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import { useTranslation } from 'react-i18next'
 
 export const TILES = [
@@ -18,7 +19,7 @@ export default function MapTileToggle({ tileIdx, onCycle }: Props) {
   return (
     <button
       onClick={onCycle}
-      title={t(currentTile.label as any, { defaultValue: 'Harita görünümünü değiştir' })}
+      title={t(currentTile.label as string, { defaultValue: 'Harita görünümünü değiştir' })}
       className="w-10 h-10 bg-surface-card/90 backdrop-blur 
                  rounded-xl shadow-lg border border-surface-muted flex items-center justify-center
                  text-xl hover:scale-105 active:scale-95 transition-all"

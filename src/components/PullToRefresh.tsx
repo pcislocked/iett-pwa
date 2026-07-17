@@ -69,7 +69,7 @@ export default function PullToRefresh({ onRefresh, children, onScroll, innerRef 
       el.removeEventListener('touchmove', onTouchMove)
       el.removeEventListener('touchend', onTouchEnd)
     }
-  }, [pullDistance, refreshing, onRefresh])
+  }, [pullDistance, refreshing, onRefresh, containerRef])
 
   return (
     <div 

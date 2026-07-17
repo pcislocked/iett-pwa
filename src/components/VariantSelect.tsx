@@ -71,10 +71,9 @@ export function VariantSelect({ metadata, stopsDirections, selectedVariant, sele
     return [gGroup, dGroup].filter(Boolean) as { directionCode: string, label: string, options: VariantOption[] }[]
   }, [metadata, stopsDirections, t])
   
-  if (groups.length === 0) return null
-  if (groups.length === 1 && groups[0].options.length <= 1) return null // Hide if only one variant overall
-
+  // eslint-disable-next-line react-hooks/preserve-manual-memoization
   const currentOption = useMemo(() => {
+    if (groups.length === 0) return null
     for (const g of groups) {
       if (g.directionCode === selectedDirection) {
         const opt = g.options.find(o => o.code === selectedVariant)
@@ -85,6 +84,9 @@ export function VariantSelect({ metadata, stopsDirections, selectedVariant, sele
     const fallbackGroup = groups.find(g => g.directionCode === selectedDirection) || groups[0]
     return { ...(fallbackGroup.options[0] || { name: t('common.selectOption', 'Seçiniz'), code: '' }), directionCode: fallbackGroup.directionCode }
   }, [groups, selectedDirection, selectedVariant, t])
+
+  if (groups.length === 0) return null
+  if (groups.length === 1 && groups[0].options.length <= 1) return null // Hide if only one variant overall
 
   return (
     <div className="flex flex-col gap-1.5 mb-3" ref={containerRef}>

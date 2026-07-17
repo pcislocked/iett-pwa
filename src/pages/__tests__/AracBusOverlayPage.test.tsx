@@ -76,8 +76,8 @@ describe('AracBusOverlayPage', () => {
 
     renderPage()
 
-    await screen.findByRole('heading', { name: /captcha manuel dogrulama/i })
-    expect(screen.getByRole('textbox', { name: /captcha cevabi/i })).toBeInTheDocument()
+    await screen.findByRole('heading', { name: /captcha manuel doğrulama/i })
+    expect(screen.getByRole('textbox', { name: /captcha cevabı/i })).toBeInTheDocument()
     expect(mocks.captcha).toHaveBeenCalledTimes(1)
   })
 
@@ -119,9 +119,8 @@ describe('AracBusOverlayPage', () => {
 
     renderPage()
 
-    await screen.findByRole('heading', { name: /arac profili \/ vehicle profile/i })
-    expect(screen.getByRole('heading', { name: /missions \/ gorevler/i })).toBeInTheDocument()
-    expect(screen.getByText(/session hazir/i)).toBeInTheDocument()
+    await screen.findByText(/34 HO 1753/i)
+    expect(screen.getByRole('heading', { name: /missions \/ görevler/i })).toBeInTheDocument()
     expect(mocks.bus).toHaveBeenCalledTimes(1)
     expect(mocks.missions).toHaveBeenCalledTimes(1)
     expect(mocks.captcha).not.toHaveBeenCalled()
@@ -136,10 +135,10 @@ describe('AracBusOverlayPage', () => {
 
     renderPage()
 
-    await screen.findByRole('heading', { name: /captcha manuel dogrulama/i })
-    fireEvent.click(screen.getByRole('button', { name: /oturumu ac/i }))
+    await screen.findByRole('heading', { name: /captcha manuel doğrulama/i })
+    fireEvent.click(screen.getByRole('button', { name: /oturumu aç/i }))
 
-    expect(screen.getByText(/lutfen captcha yanitini girin\./i)).toBeInTheDocument()
+    expect(screen.getByText(/Lütfen captcha yanıtını girin\./i)).toBeInTheDocument()
     expect(mocks.createSession).not.toHaveBeenCalled()
   })
 
@@ -152,13 +151,13 @@ describe('AracBusOverlayPage', () => {
 
     renderPage()
 
-    await screen.findByRole('heading', { name: /captcha manuel dogrulama/i })
-    fireEvent.change(screen.getByRole('textbox', { name: /captcha cevabi/i }), {
+    await screen.findByRole('heading', { name: /captcha manuel doğrulama/i })
+    fireEvent.change(screen.getByRole('textbox', { name: /captcha cevabı/i }), {
       target: { value: 'abcd' },
     })
-    fireEvent.click(screen.getByRole('button', { name: /oturumu ac/i }))
+    fireEvent.click(screen.getByRole('button', { name: /oturumu aç/i }))
 
-    expect(screen.getByText(/captcha gorseli guncel degil\. yeni captcha alin\./i)).toBeInTheDocument()
+    expect(screen.getByText(/Captcha görseli güncel değil\. Yeni captcha alın\./i)).toBeInTheDocument()
     expect(mocks.createSession).not.toHaveBeenCalled()
   })
 
@@ -203,13 +202,13 @@ describe('AracBusOverlayPage', () => {
 
     renderPage()
 
-    await screen.findByRole('heading', { name: /captcha manuel dogrulama/i })
-    fireEvent.change(screen.getByRole('textbox', { name: /captcha cevabi/i }), {
+    await screen.findByRole('heading', { name: /captcha manuel doğrulama/i })
+    fireEvent.change(screen.getByRole('textbox', { name: /captcha cevabı/i }), {
       target: { value: 'abcd' },
     })
-    fireEvent.click(screen.getByRole('button', { name: /oturumu ac/i }))
+    fireEvent.click(screen.getByRole('button', { name: /oturumu aç/i }))
 
-    await screen.findByRole('heading', { name: /arac profili \/ vehicle profile/i })
+    await screen.findByText(/34 HO 1753/i)
     expect(mocks.createSession).toHaveBeenCalledWith({
       captchaId: 'cid-1',
       captchaAnswer: 'ABCD',
@@ -229,13 +228,13 @@ describe('AracBusOverlayPage', () => {
 
     renderPage()
 
-    await screen.findByRole('heading', { name: /captcha manuel dogrulama/i })
-    fireEvent.change(screen.getByRole('textbox', { name: /captcha cevabi/i }), {
+    await screen.findByRole('heading', { name: /captcha manuel doğrulama/i })
+    fireEvent.change(screen.getByRole('textbox', { name: /captcha cevabı/i }), {
       target: { value: 'abcd' },
     })
-    fireEvent.click(screen.getByRole('button', { name: /oturumu ac/i }))
+    fireEvent.click(screen.getByRole('button', { name: /oturumu aç/i }))
 
-    await screen.findByText(/captcha dogrulanamadi: wrong captcha/i)
+    await screen.findByText(/Captcha doğrulanamadı: wrong captcha/i)
     expect(mocks.createSession).toHaveBeenCalledOnce()
     expect(mocks.captcha).toHaveBeenCalledTimes(2)
   })
@@ -249,8 +248,8 @@ describe('AracBusOverlayPage', () => {
 
     renderPage()
 
-    await screen.findByRole('heading', { name: /captcha manuel dogrulama/i })
-    fireEvent.click(screen.getByRole('button', { name: /yeni captcha/i }))
+    await screen.findByRole('heading', { name: /captcha manuel doğrulama/i })
+    fireEvent.click(screen.getByRole('button', { name: /Yeni Captcha/i }))
 
     expect(mocks.captcha).toHaveBeenCalledTimes(2)
   })
@@ -279,10 +278,10 @@ describe('AracBusOverlayPage', () => {
 
     renderPage()
 
-    await screen.findByText(/oturumu suresi doldu/i)
-    await screen.findByRole('heading', { name: /captcha manuel dogrulama/i })
+    await screen.findByText(/oturumu süresi doldu/i)
+    await screen.findByRole('heading', { name: /captcha manuel doğrulama/i })
 
-    fireEvent.click(screen.getByRole('button', { name: /yeniden baglan/i }))
+    fireEvent.click(screen.getByRole('button', { name: /Yeniden Bağlan/i }))
     expect(mocks.clearAracSession).toHaveBeenCalled()
     await waitFor(() => {
       expect(mocks.captcha.mock.calls.length).toBeGreaterThanOrEqual(2)
@@ -327,13 +326,13 @@ describe('AracBusOverlayPage', () => {
 
     renderPage()
 
-    await screen.findByRole('heading', { name: /missions \/ gorevler/i })
+    await screen.findByRole('heading', { name: /missions \/ görevler/i })
     expect(screen.getByText(/gorev baslangic/i)).toBeInTheDocument()
     expect(screen.queryByText('1776649842000')).not.toBeInTheDocument()
   })
 
   it('shows fatal error when kapino param is missing', async () => {
     renderPage('/arac/bus', '/arac/bus')
-    await screen.findByText(/kapi kodu bulunamadi\./i)
+    await screen.findByText(/Kapı kodu bulunamadı/i)
   })
 })

@@ -388,7 +388,6 @@ export default function RoutePage() {
     () => [...new Set((stops ?? []).map((s) => s.direction))].sort(),
     [stops],
   )
-  const dirLabel = (d: string) => d === 'G' ? t('routes.directionG', 'Gidiş') : d === 'D' ? t('routes.directionD', 'Dönüş') : d
 
   const effectiveDir = stopsDirections.includes(activeDir)
     ? activeDir

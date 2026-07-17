@@ -147,7 +147,7 @@ function relativeTime(isoString: string, t: TFunction): string {
     : t('arac.relativeIn', { value: formatted, defaultValue: '{{value}} sonra' })
 }
 
-function formatMissionValue(key: keyof AracMissionItem, value: any, t: TFunction): React.ReactNode {
+function formatMissionValue(key: keyof AracMissionItem, value: unknown, t: TFunction): React.ReactNode {
   if (typeof value === 'boolean') {
     return value ? t('common.yes', { defaultValue: 'Evet' }) : t('common.no', { defaultValue: 'Hayir' })
   }
@@ -183,6 +183,7 @@ function makeBusIcon(): L.DivIcon {
 function MissionCard({ mission, index, t }: { mission: AracMissionItem; index: number; t: TFunction }) {
   const [isExpanded, setIsExpanded] = useState(mission.is_active === true)
 
+  // eslint-disable-next-line react-hooks/purity
   const isPast = !mission.is_active && (mission.task_end_time_ms ? mission.task_end_time_ms < Date.now() : index < 0)
   
   const startTime = mission.task_start_time
@@ -343,13 +344,21 @@ export default function AracBusOverlayPage() {
   }, [startFlow])
 
   const submitManualCaptcha = useCallback(async () => {
-    if (!captchaId || !manualAnswer) return
+    const answer = manualAnswer.trim()
+    if (!answer) {
+      setInlineWarning(t('arac.enterCaptcha', { defaultValue: 'Lütfen captcha yanıtını girin.' }))
+      return
+    }
+    if (!captchaId) {
+      setInlineWarning(t('arac.captchaStale', { defaultValue: 'Captcha görseli güncel değil. Yeni captcha alın.' }))
+      return
+    }
     setViewState('manual-submitting')
     setInlineWarning(null)
     try {
       const created = await api.arac.createSession({
         captchaId,
-        captchaAnswer: manualAnswer,
+        captchaAnswer: answer,
       })
       const credentials = saveAracSession({
         sessionId: created.sessionId,
@@ -384,7 +393,30 @@ export default function AracBusOverlayPage() {
 
   const sortedMissions = useMemo(() => {
     if (!missionsData) return []
-    const missions = [...missionsData.missions]
+    const missions = missionsData.missions.map(m => {
+      const copy = { ...m }
+      if (!copy.task_start_time && copy.task_start_time_ms) {
+        const d = new Date(copy.task_start_time_ms)
+        const yr = d.getFullYear()
+        const mo = String(d.getMonth() + 1).padStart(2, '0')
+        const da = String(d.getDate()).padStart(2, '0')
+        const ho = String(d.getHours()).padStart(2, '0')
+        const mi = String(d.getMinutes()).padStart(2, '0')
+        const se = String(d.getSeconds()).padStart(2, '0')
+        copy.task_start_time = `${yr}-${mo}-${da} ${ho}:${mi}:${se}`
+      }
+      if (!copy.task_end_time && copy.task_end_time_ms) {
+        const d = new Date(copy.task_end_time_ms)
+        const yr = d.getFullYear()
+        const mo = String(d.getMonth() + 1).padStart(2, '0')
+        const da = String(d.getDate()).padStart(2, '0')
+        const ho = String(d.getHours()).padStart(2, '0')
+        const mi = String(d.getMinutes()).padStart(2, '0')
+        const se = String(d.getSeconds()).padStart(2, '0')
+        copy.task_end_time = `${yr}-${mo}-${da} ${ho}:${mi}:${se}`
+      }
+      return copy
+    })
     missions.sort((a, b) => (a.task_start_time_ms ?? 0) - (b.task_start_time_ms ?? 0))
     return missions
   }, [missionsData])
@@ -464,7 +496,8 @@ export default function AracBusOverlayPage() {
               type="text"
               value={manualAnswer}
               onChange={(event) => setManualAnswer(event.target.value.toUpperCase().slice(0, 6))}
-              placeholder={t('arac.captchaAnswer', { defaultValue: 'Cevap' })}
+              placeholder={t('arac.captchaAnswer', { defaultValue: 'Captcha cevabı' })}
+              aria-label={t('arac.captchaAnswer', { defaultValue: 'Captcha cevabı' })}
               className="w-full border border-surface-border bg-surface-card px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-[#00AFF0]"
             />
             <div className="flex flex-wrap gap-2">

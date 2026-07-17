@@ -83,7 +83,7 @@ describe('api.stops.nearby', () => {
   it('includes lat/lon/radius in url', async () => {
     const fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 200, json: () => Promise.resolve([]) })
     vi.stubGlobal('fetch', fetchMock)
-    await api.stops.nearby(41.08, 29.01, 300)
+    await api.stops.nearby(41.08, 29.01, 15, 300)
     const url = fetchMock.mock.calls[0][0] as string
     expect(url).toContain('lat=41.08')
     expect(url).toContain('lon=29.01')

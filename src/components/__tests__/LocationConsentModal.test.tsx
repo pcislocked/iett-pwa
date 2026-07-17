@@ -2,7 +2,24 @@ import { describe, it, expect, vi } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import LocationConsentModal from '@/components/LocationConsentModal'
 
+import { beforeEach } from 'vitest'
+
 describe('LocationConsentModal', () => {
+  beforeEach(() => {
+    const mockGeolocation = {
+      getCurrentPosition: vi.fn().mockImplementation((success) => success({
+        coords: {
+          latitude: 41.0082,
+          longitude: 28.9784,
+        }
+      })),
+      watchPosition: vi.fn(),
+    }
+    vi.stubGlobal('navigator', {
+      geolocation: mockGeolocation,
+    })
+  })
+
   it('renders consent heading', () => {
     render(<LocationConsentModal onConfirm={vi.fn()} onDismiss={vi.fn()} />)
     expect(screen.getByRole('heading')).toBeInTheDocument()
@@ -16,14 +33,15 @@ describe('LocationConsentModal', () => {
   it('calls onConfirm when primary button is clicked', () => {
     const onConfirm = vi.fn()
     render(<LocationConsentModal onConfirm={onConfirm} onDismiss={vi.fn()} />)
-    fireEvent.click(screen.getByRole('button', { name: /konumumu kullan/i }))
+    fireEvent.click(screen.getByRole('button', { name: 'GPS Konumumu Kullan' }))
     expect(onConfirm).toHaveBeenCalledOnce()
   })
 
-  it('calls onDismiss when secondary button is clicked', () => {
+  it('calls onDismiss when secondary button is clicked and confirmed', () => {
     const onDismiss = vi.fn()
     render(<LocationConsentModal onConfirm={vi.fn()} onDismiss={onDismiss} />)
-    fireEvent.click(screen.getByRole('button', { name: /haritadan belirt/i }))
+    fireEvent.click(screen.getByRole('button', { name: 'İzin Verme' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Anladım' }))
     expect(onDismiss).toHaveBeenCalledOnce()
   })
 

@@ -49,7 +49,6 @@ export default function CanvasFleetLayer({ buses, selectedRoutes, selectedKapino
     const zoom = map.getZoom()
     // Zoom-based sizing
     const radius = zoom < 12 ? 2 : zoom < 14 ? 4 : 6
-    const showTrails = zoom > 14
 
     for (const bus of buses) {
       if (!Number.isFinite(bus.latitude) || !Number.isFinite(bus.longitude)) continue

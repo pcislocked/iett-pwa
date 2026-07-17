@@ -747,24 +747,26 @@ export default function StopPage() {
   
   const { data: globalNotices } = useGlobalNotices()
 
-  const rawStopAnnouncements = isAnnsError ? [{
-    type: t('common.warning', 'Uyarı'),
-    updated_at: new Date().toLocaleTimeString('tr-TR'),
-    message: t('stops.announcementsFailed', 'Duyurular yüklenirken geçici bir hata oluştu.'),
-    route_code: '',
-    route_name: '',
-  } as RouteAnnouncement] : (polledAnnouncements ?? [])
+  const stopAnnouncements: RouteAnnouncement[] = useMemo(() => {
+    const raw = isAnnsError ? [{
+      type: t('common.warning', 'Uyarı'),
+      updated_at: new Date().toLocaleTimeString('tr-TR'),
+      message: t('stops.announcementsFailed', 'Duyurular yüklenirken geçici bir hata oluştu.'),
+      route_code: '',
+      route_name: '',
+    } as RouteAnnouncement] : (polledAnnouncements ?? [])
 
-  const stopAnnouncements: RouteAnnouncement[] = useMemo(() => [
-    ...(globalNotices ?? []).map(gn => ({
-      type: 'Sistem Genel Duyuru',
-      updated_at: new Date(gn.notice_starttime).toLocaleDateString('tr-TR'),
-      message: `${gn.notice_title}\n\n${gn.notice_body}`,
-      route_code: 'GENEL',
-      route_name: t('stops.systemAnnouncements', 'Sistem Uyarıları')
-    })),
-    ...rawStopAnnouncements
-  ], [globalNotices, rawStopAnnouncements, t])
+    return [
+      ...(globalNotices ?? []).map(gn => ({
+        type: 'Sistem Genel Duyuru',
+        updated_at: new Date(gn.notice_starttime).toLocaleDateString('tr-TR'),
+        message: `${gn.notice_title}\n\n${gn.notice_body}`,
+        route_code: 'GENEL',
+        route_name: t('stops.systemAnnouncements', 'Sistem Uyarıları')
+      })),
+      ...raw
+    ]
+  }, [globalNotices, isAnnsError, polledAnnouncements, t])
 
   const { isFavorite, toggle } = useFavorites()
   const { prefs, isPinned, pinStop, unpinStop } = useUserPrefs()

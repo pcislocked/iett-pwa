@@ -15,7 +15,6 @@ import { useSharedRouteTickerNowMs } from '@/hooks/useSharedRouteTickerClock'
 import { useRouteTickerData } from '@/hooks/useRouteTickerData'
 import PullToRefresh from '@/components/PullToRefresh'
 import { useTranslation } from 'react-i18next'
-import { Dialog } from '@headlessui/react'
 import pkg from '../../package.json'
 
 
@@ -176,7 +175,7 @@ export default function Home() {
   useEffect(() => { setRecents(getRecent()) }, [])
 
   // ── Nearest stops (via LocationManager) ───────────────────────────────────
-  const { location, loading: gpsLoading, error: gpsError } = useLocationManager()
+  const { location, loading: gpsLoading } = useLocationManager()
   const [nearbyStops, setNearbyStops] = useState<NearbyStop[]>([])
   const [apiLoading, setApiLoading] = useState(false)
   const [apiError, setApiError] = useState<string | null>(null)

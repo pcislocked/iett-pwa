@@ -5,7 +5,13 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import Home from '@/pages/Home'
 
 vi.mock('@/hooks/useUserPrefs', () => ({
-  useUserPrefs: () => ({ prefs: { pinnedStops: [{ dcode: '1234', title: 'Test Stop', hat_dcode: '15TY' }] } }),
+  useUserPrefs: () => ({
+    prefs: {
+      pinnedStops: [{ dcode: '1234', title: 'Test Stop', hat_dcode: '15TY' }],
+      gpsConsent: 'pending',
+    },
+    setGpsConsent: vi.fn(),
+  }),
   PINNED_STOPS_MAX: 5
 }))
 vi.mock('@/hooks/useFavorites', () => ({

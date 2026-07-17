@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { type Settings, loadSettings, saveSettings } from '@/utils/settings'
 import { useUserPrefs } from '@/hooks/useUserPrefs'
 import { useTranslation } from 'react-i18next'
@@ -75,7 +74,6 @@ function MockLocationPicker({ initialLat, initialLon, onPick }: { initialLat: nu
 
 export default function SettingsPage() {
   const { t, i18n } = useTranslation()
-  const navigate = useNavigate()
   const [settings, setSettings] = useState<Settings>(loadSettings)
   const [saved, setSaved] = useState(false)
   const { prefs, setNearbySettings, exportPrefs, importPrefs, setMockLocation, resetConsent } = useUserPrefs()

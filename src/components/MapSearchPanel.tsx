@@ -4,7 +4,6 @@ import { api, type RouteSearchResult, type StopSearchResult, type BusPosition } 
 
 // Palette from CanvasFleetLayer to color the chips identically
 const PALETTE = ['#f97316','#22c55e','#3b82f6','#a855f7','#ef4444']
-const DEFAULT_COLOR = '#3b82f6'
 
 interface Props {
   selectedRoutes: string[]
@@ -73,8 +72,8 @@ export default function MapSearchPanel({
           setRouteResults(rRes.slice(0, 5))
           setStopResults(sRes.slice(0, 5))
         }
-      } catch (err: any) {
-        if (!cancelled && err.name !== 'AbortError') {
+      } catch (err) {
+        if (!cancelled && (err as { name?: string }).name !== 'AbortError') {
           setRouteResults([])
           setStopResults([])
         }
@@ -93,7 +92,7 @@ export default function MapSearchPanel({
     if (query.trim().length < 2) return []
     const q = query.toUpperCase().trim()
     
-    let results: any[] = []
+    let results: BusPosition[] = []
     
     // 1. Filo yüklüyse client-side filtrele
     if (fleet) {

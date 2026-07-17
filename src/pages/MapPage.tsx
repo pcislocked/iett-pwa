@@ -3,7 +3,7 @@ import { MapContainer, TileLayer, CircleMarker, Popup, useMap } from 'react-leaf
 import * as L from 'leaflet'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { useQuery } from '@tanstack/react-query'
+import { type TFunction } from 'i18next'
 
 import { api, type BusDetail, type BusPosition, type NearbyStop } from '@/api/client'
 import { useFleet } from '@/hooks/useFleet'
@@ -27,7 +27,7 @@ function parseIsoDate(value: string | null | undefined): Date | null {
   return Number.isNaN(parsed.getTime()) ? null : parsed
 }
 
-function formatAgo(from: Date | null, nowMs: number, t: any): string {
+function formatAgo(from: Date | null, nowMs: number, t: TFunction): string {
   if (!from) return '—'
   const diffSeconds = Math.max(0, Math.floor((nowMs - from.getTime()) / 1000))
   if (diffSeconds < 60) return t('map.secondsAgo', { defaultValue: '{{seconds}} sn önce', seconds: diffSeconds })
