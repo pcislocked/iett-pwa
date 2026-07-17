@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, useNavigate, useLocation, useNavigationType } from 'react-router-dom'
 import { Suspense, lazy, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
 import AppBar from '@/components/AppBar'
 import InstallBanner, { useInstallBanner } from '@/components/InstallBanner'
 import Home from '@/pages/Home'
@@ -252,6 +253,11 @@ function InstallBannerWrapper() {
 
 export default function App() {
   const bottomBarState = useBottomBarState()
+  const { i18n } = useTranslation()
+
+  useEffect(() => {
+    document.documentElement.lang = i18n.language
+  }, [i18n.language])
 
   return (
     <BrowserRouter>
