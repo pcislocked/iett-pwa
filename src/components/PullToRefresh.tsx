@@ -45,7 +45,7 @@ export default function PullToRefresh({ onRefresh, children, onScroll, innerRef 
     const onTouchEnd = async () => {
       if (!isPulling.current) return
       isPulling.current = false
-      
+
       if (pullDistance > threshold && !refreshing) {
         setRefreshing(true)
         setPullDistance(50) // hold at 50px
@@ -72,16 +72,16 @@ export default function PullToRefresh({ onRefresh, children, onScroll, innerRef 
   }, [pullDistance, refreshing, onRefresh, containerRef])
 
   return (
-    <div 
-      ref={containerRef as React.RefObject<HTMLDivElement>} 
+    <div
+      ref={containerRef as React.RefObject<HTMLDivElement>}
       onScroll={onScroll}
       className="flex-1 overflow-y-auto overscroll-none relative"
       style={{ WebkitOverflowScrolling: 'touch' }}
     >
-      <div 
+      <div
         className="absolute top-0 left-0 w-full flex justify-center items-center pointer-events-none transition-transform duration-200 z-50"
-        style={{ 
-          height: '60px', 
+        style={{
+          height: '60px',
           transform: `translateY(${pullDistance > 0 ? pullDistance - 60 : -60}px)`,
           opacity: pullDistance / threshold
         }}
@@ -94,12 +94,12 @@ export default function PullToRefresh({ onRefresh, children, onScroll, innerRef 
             </svg>
           </div>
         ) : (
-          <div 
+          <div
             className="bg-surface-card shadow-lg rounded-full p-2 flex items-center justify-center transition-transform"
             style={{ transform: `rotate(${pullDistance * 3}deg)` }}
           >
-            <svg 
-              className="w-5 h-5 text-text-muted" 
+            <svg
+              className="w-5 h-5 text-text-muted"
               fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"
             >
               <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -107,9 +107,9 @@ export default function PullToRefresh({ onRefresh, children, onScroll, innerRef 
           </div>
         )}
       </div>
-      
-      <div 
-        style={{ 
+
+      <div
+        style={{
           transform: `translateY(${pullDistance}px)`,
           transition: isPulling.current ? 'none' : 'transform 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94)'
         }}

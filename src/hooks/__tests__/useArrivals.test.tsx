@@ -36,7 +36,7 @@ describe('useArrivals', () => {
     const { result } = renderHook(() => useArrivals('1234'), { wrapper })
 
     expect(result.current.loading).toBe(true)
-    
+
     await waitFor(() => {
       expect(result.current.loading).toBe(false)
     })
@@ -50,7 +50,7 @@ describe('useArrivals', () => {
     vi.mocked(api.stops.arrivals).mockRejectedValue(new Error('API Error'))
 
     const { result } = renderHook(() => useArrivals('1234'), { wrapper })
-    
+
     await waitFor(() => {
       expect(result.current.error).toContain('API Error')
     })

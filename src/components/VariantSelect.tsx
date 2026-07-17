@@ -20,7 +20,7 @@ export function VariantSelect({ metadata, stopsDirections, selectedVariant, sele
   const { t } = useTranslation()
   const [isOpen, setIsOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
-  
+
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
@@ -37,7 +37,7 @@ export function VariantSelect({ metadata, stopsDirections, selectedVariant, sele
     const buildGroup = (dirLetter: string, dirNum: number, label: string) => {
       const groupVariants = metadata ? metadata.filter(m => m.direction === dirNum) : []
       if (groupVariants.length === 0 && !stopsDirections.includes(dirLetter)) return null
-      
+
       const options: VariantOption[] = groupVariants.map(m => {
         return {
           code: m.variant_code,
@@ -45,19 +45,19 @@ export function VariantSelect({ metadata, stopsDirections, selectedVariant, sele
           isCanonical: m.variant_code.endsWith('_G0') || m.variant_code.endsWith('_D0')
         }
       })
-      
+
       if (options.length === 0 && stopsDirections.includes(dirLetter)) {
         // Fallback option when metadata is missing but we have stops for this direction
         options.push({ code: `UNKNOWN_${dirLetter}`, name: label, isCanonical: true })
       }
-      
+
       // Sort: Canonical first, then alphabetical
       options.sort((a, b) => {
         if (a.isCanonical && !b.isCanonical) return -1
         if (!a.isCanonical && b.isCanonical) return 1
         return a.name.localeCompare(b.name)
       })
-      
+
       return {
         directionCode: dirLetter,
         label,
@@ -67,10 +67,10 @@ export function VariantSelect({ metadata, stopsDirections, selectedVariant, sele
 
     const gGroup = buildGroup('G', 0, t('routes.directionG', 'Gidiş'))
     const dGroup = buildGroup('D', 1, t('routes.directionD', 'Dönüş'))
-    
+
     return [gGroup, dGroup].filter(Boolean) as { directionCode: string, label: string, options: VariantOption[] }[]
   }, [metadata, stopsDirections, t])
-  
+
   // eslint-disable-next-line react-hooks/preserve-manual-memoization
   const currentOption = useMemo(() => {
     if (groups.length === 0) return null
@@ -106,7 +106,7 @@ export function VariantSelect({ metadata, stopsDirections, selectedVariant, sele
             <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
           </svg>
         </button>
-        
+
         {isOpen && (
           <div className="absolute z-50 top-full left-0 right-0 mt-2 bg-surface-card border border-surface-border rounded-xl shadow-xl overflow-hidden max-h-[60vh] overflow-y-auto">
             {groups.map((g, gIdx) => (
@@ -126,8 +126,8 @@ export function VariantSelect({ metadata, stopsDirections, selectedVariant, sele
                           setIsOpen(false)
                         }}
                         className={`flex items-center w-full px-3 py-2 text-left transition-colors ${
-                          isSelected 
-                            ? 'bg-brand-500/10 text-brand-400' 
+                          isSelected
+                            ? 'bg-brand-500/10 text-brand-400'
                             : 'hover:bg-surface-muted/50 text-text-primary'
                         } ${!opt.isCanonical ? 'pl-6' : ''}`}
                       >

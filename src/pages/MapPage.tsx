@@ -45,7 +45,7 @@ function GpsButton({ onClick, loading }: { onClick: () => void; loading: boolean
       onClick={onClick}
       disabled={loading}
       title={t('map.findMe', { defaultValue: 'Konumumu Bul' })}
-      className="w-10 h-10 bg-surface-card/90 backdrop-blur 
+      className="w-10 h-10 bg-surface-card/90 backdrop-blur
                  rounded-xl shadow-lg border border-surface-muted flex items-center justify-center
                  text-brand-500 hover:text-brand-400 active:scale-95 disabled:opacity-50 transition-all"
     >
@@ -91,11 +91,11 @@ export default function MapPage() {
     const saved = localStorage.getItem('map-tile')
     return saved ? Number(saved) : 0
   })
-  
+
   const [fleetVisible, setFleetVisible] = useState(false)
   const [selectedRoutes, setSelectedRoutes] = useState<string[]>([])
   const [selectedStops, setSelectedStops] = useState<{ dcode: string; name: string }[]>([])
-  
+
   const [selectedKapino, setSelectedKapino] = useState<string | null>(null)
   const [pickerBuses, setPickerBuses] = useState<BusPosition[] | null>(null)
   const [nearbyStops, setNearbyStops] = useState<NearbyStop[]>([])
@@ -106,14 +106,14 @@ export default function MapPage() {
 
   // Fetch Route Buses (manual refetch loop for selected routes)
   const [routeBusMap, setRouteBusMap] = useState<Map<string, BusPosition[]>>(new Map())
-  
+
   useEffect(() => {
     if (selectedRoutes.length === 0) return
     let isMounted = true
     const controller = new AbortController()
     let requestSeq = 0
     const lastAppliedSeq = new Map<string, number>()
-    
+
     const fetchBuses = () => {
       if (!isMounted) return
       const currentSeq = ++requestSeq
@@ -131,10 +131,10 @@ export default function MapPage() {
           .catch(() => {})
       }
     }
-    
+
     fetchBuses()
     const interval = setInterval(fetchBuses, 15_000)
-    
+
     return () => {
       isMounted = false
       clearInterval(interval)
@@ -247,7 +247,7 @@ export default function MapPage() {
 
   return (
     <div className="relative flex flex-col overflow-hidden h-full bg-[#1e1e1e]">
-      
+
       {/* ── IBB Error Modal ── */}
       {fleetError && fleetVisible && (
         <div className="absolute inset-0 z-[2000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
@@ -321,7 +321,7 @@ export default function MapPage() {
       {selectedKapino && (
         <div className="absolute bottom-0 left-0 right-0 z-[1001] pointer-events-none flex justify-center">
           <div className="pointer-events-auto w-full max-w-2xl bg-surface-card border-t border-surface-border rounded-t-2xl shadow-2xl overflow-hidden pb-4">
-            
+
             {/* Drag Handle (Visual) */}
             <div className="flex justify-center pt-3 pb-1">
               <div className="w-10 h-1.5 rounded-full bg-slate-600/80" />
@@ -402,10 +402,10 @@ export default function MapPage() {
 
       {/* ── Multi-Bus Picker ── */}
       {pickerBuses && (
-        <MapBusPicker 
-          buses={pickerBuses} 
-          onSelect={setSelectedKapino} 
-          onClose={() => setPickerBuses(null)} 
+        <MapBusPicker
+          buses={pickerBuses}
+          onSelect={setSelectedKapino}
+          onClose={() => setPickerBuses(null)}
         />
       )}
 
@@ -417,13 +417,13 @@ export default function MapPage() {
             <GpsButton onClick={handleGpsClick} loading={gpsLoading} />
           </div>
           <div className="pointer-events-auto">
-            <MapTileToggle 
-              tileIdx={tileIdx} 
+            <MapTileToggle
+              tileIdx={tileIdx}
               onCycle={() => {
                 const next = (tileIdx + 1) % TILES.length
                 setTileIdx(next)
                 localStorage.setItem('map-tile', String(next))
-              }} 
+              }}
             />
           </div>
         </div>

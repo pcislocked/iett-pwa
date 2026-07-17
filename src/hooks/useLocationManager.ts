@@ -42,7 +42,7 @@ export function useLocationManager() {
     }
 
     if (watchdogRef.current !== null) window.clearTimeout(watchdogRef.current)
-    
+
     // PWA bug workaround: Native callbacks might never fire on some devices.
     watchdogRef.current = window.setTimeout(() => {
       fallbackToMock()

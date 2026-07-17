@@ -81,7 +81,7 @@ async function requestFull<T>(path: string, init?: RequestInit): Promise<{ data:
       if (init?.signal && timeoutSignal && typeof AbortSignal !== 'undefined' && 'any' in AbortSignal) {
         finalSignal = AbortSignal.any([init.signal, timeoutSignal])
       }
-      
+
       const requestInit = finalSignal ? { ...init, signal: finalSignal } : init
       const res = await fetch(url, requestInit)
       if (!res.ok) {
@@ -426,7 +426,7 @@ export const api = {
   },
   stops: {
     search: async (q: string, init?: RequestInit) => get<StopSearchResult[]>(`/v1/stops/search?q=${encodeURIComponent(q)}`, init),
-    nearby: async (lat: number, lon: number, limit: number = 15, radius: number = 500, init?: RequestInit) => 
+    nearby: async (lat: number, lon: number, limit: number = 15, radius: number = 500, init?: RequestInit) =>
       get<NearbyStop[]>(`/v1/stops/nearby?lat=${lat}&lon=${lon}&radius=${radius}&limit=${limit}`, init),
     detail: async (dcode: string, init?: RequestInit) => get<StopDetail>(`/v1/stops/${encodeURIComponent(dcode)}`, init),
     arrivals: async (dcode: string, via?: string, init?: RequestInit) => {

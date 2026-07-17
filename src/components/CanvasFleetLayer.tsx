@@ -90,7 +90,7 @@ export default function CanvasFleetLayer({ buses, selectedRoutes, selectedKapino
         const pts: [number, number][] = bus.trail
           .filter(t => Number.isFinite(t.lat) && Number.isFinite(t.lon))
           .map(t => [t.lat, t.lon])
-        
+
         if (pts.length > 0) {
           pts.push([bus.latitude, bus.longitude])
           const trail = L.polyline(pts, {
@@ -113,22 +113,22 @@ export default function CanvasFleetLayer({ buses, selectedRoutes, selectedKapino
       if (timerRef.current !== null) {
         window.clearTimeout(timerRef.current)
       }
-      
+
       timerRef.current = window.setTimeout(() => {
         const zoom = map.getZoom()
         const radius = zoom < 12 ? 2 : zoom < 14 ? 4 : 6
         markersRef.current.forEach(m => m.setRadius(radius))
-        
-        // Note: Full re-render for trails isn't strictly necessary for radius changes, 
-        // but if we wanted to toggle trails on/off dynamically based on zoom, 
+
+        // Note: Full re-render for trails isn't strictly necessary for radius changes,
+        // but if we wanted to toggle trails on/off dynamically based on zoom,
         // we would trigger a state change here to re-run the marker rendering effect.
         // For performance, we'll just keep the trails that were drawn when `buses` last updated.
       }, 100)
     }
-    
+
     map.on('zoomend', onZoom)
-    return () => { 
-      map.off('zoomend', onZoom) 
+    return () => {
+      map.off('zoomend', onZoom)
       if (timerRef.current !== null) window.clearTimeout(timerRef.current)
     }
   }, [map])

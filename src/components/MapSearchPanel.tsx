@@ -91,13 +91,13 @@ export default function MapSearchPanel({
   const busResults = useMemo(() => {
     if (query.trim().length < 2) return []
     const q = query.toUpperCase().trim()
-    
+
     let results: Partial<BusPosition>[] = []
-    
+
     // 1. Filo yüklüyse client-side filtrele
     if (fleet) {
-      results = fleet.filter(b => 
-        b.kapino.toUpperCase().includes(q) || 
+      results = fleet.filter(b =>
+        b.kapino.toUpperCase().includes(q) ||
         (b.plate && b.plate.toUpperCase().includes(q))
       ).slice(0, 5)
     }
@@ -107,7 +107,7 @@ export default function MapSearchPanel({
       const isKapinoLike = /^[A-ZÜĞŞÇÖİ]-?\d{3,4}$/.test(q) || /^M\d{4}$/.test(q)
       const isPlateLike = /^34\s?[A-Z]{1,3}\s?\d{2,4}$/.test(q.replace(/\s+/g, ''))
       const isPartialKapino = /^[A-ZÜĞŞÇÖİ]-?\d{1,4}$/.test(q) // Partial like "C-1"
-      
+
       if (isKapinoLike || isPlateLike || isPartialKapino) {
         results = [{ kapino: q.replace(/\s+/g, ''), plate: t('map.directSearch', 'Doğrudan Ara'), route_code: null }]
       }
@@ -121,35 +121,35 @@ export default function MapSearchPanel({
 
   return (
     <div className="flex flex-col gap-2 pointer-events-none w-full">
-      
+
       {/* ── Status Bar + Fleet Toggle ── */}
       <div className="flex items-center justify-between pointer-events-auto">
         <button
           onClick={onToggleFleet}
           className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-colors shadow-lg backdrop-blur
-            ${fleetVisible 
-              ? 'bg-brand-600 text-white border-brand-500 hover:bg-brand-500' 
+            ${fleetVisible
+              ? 'bg-brand-600 text-white border-brand-500 hover:bg-brand-500'
               : 'bg-surface-card/90 text-text-secondary border-surface-muted hover:text-text-primary hover:bg-surface-muted'}`}
         >
           {fleetVisible ? t('map.hideFleet', { defaultValue: 'Filoyu Gizle' }) : t('map.showFleet', { defaultValue: '🚌 Filoyu Göster' })}
         </button>
-        
+
         <div className="bg-surface-card/90 backdrop-blur px-3 py-1.5 rounded-xl text-xs text-text-secondary border border-surface-muted shadow-lg">
-          {busCount > 0 
+          {busCount > 0
             ? t('map.vehicleCount', { defaultValue: '{{count}} araç', count: busCount.toLocaleString() })
             : t('map.noVehicles', { defaultValue: 'Araç yok' })}
         </div>
       </div>
 
       {/* ── Main Panel (Chips + Search) ── */}
-      <div 
+      <div
         ref={dropdownRef}
         className="bg-surface-card border border-surface-border rounded-xl shadow-2xl pointer-events-auto flex flex-col relative"
       >
         {/* Dropdown Results (Opens UPWARDS, so it's above the panel) */}
         {showResults && (
           <div className="absolute bottom-full left-0 right-0 mb-2 bg-surface-card border border-surface-border rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[300px] overflow-y-auto overscroll-contain z-10">
-            
+
             {/* Routes */}
             {routeResults.length > 0 && (
               <div className="py-1">
@@ -230,7 +230,7 @@ export default function MapSearchPanel({
                 </span>
               )
             })}
-            
+
             {selectedStops.map((stop) => (
               <span
                 key={`s-${stop.dcode}`}

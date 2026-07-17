@@ -74,7 +74,7 @@ describe('StopPage Announcements', () => {
       dcode: '1234',
       name: 'Test Stop',
       direction: 'North',
-      
+
       latitude: 41,
       longitude: 29
     })

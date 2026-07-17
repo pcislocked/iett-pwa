@@ -20,7 +20,7 @@ export default function MapTileToggle({ tileIdx, onCycle }: Props) {
     <button
       onClick={onCycle}
       title={t(currentTile.label as string, { defaultValue: 'Harita görünümünü değiştir' })}
-      className="w-10 h-10 bg-surface-card/90 backdrop-blur 
+      className="w-10 h-10 bg-surface-card/90 backdrop-blur
                  rounded-xl shadow-lg border border-surface-muted flex items-center justify-center
                  text-xl hover:scale-105 active:scale-95 transition-all"
     >

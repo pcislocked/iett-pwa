@@ -85,7 +85,7 @@ function InfoModal({ onClose }: { onClose: () => void }) {
         if (focusable.length === 0) return
         const first = focusable[0]
         const last = focusable[focusable.length - 1]
-        
+
         if (e.shiftKey) {
           if (document.activeElement === first) {
             e.preventDefault()
@@ -108,10 +108,10 @@ function InfoModal({ onClose }: { onClose: () => void }) {
   return createPortal(
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div 
+      <div
         ref={modalRef}
-        role="dialog" 
-        aria-modal="true" 
+        role="dialog"
+        aria-modal="true"
         aria-labelledby="info-title"
         className="relative w-full max-w-sm bg-surface-card border border-surface-border rounded-xl shadow-2xl p-6"
       >
@@ -121,7 +121,7 @@ function InfoModal({ onClose }: { onClose: () => void }) {
             <strong>{t('common.update', 'Güncelleme')}:</strong> {t('stops.timestampDescUpdate', 'Uygulamanın sunucularımızdan en son veriyi çektiği anı gösterir.')}
           </p>
           <p>
-            <strong>{t('common.iett', 'İETT')}:</strong> {t('stops.timestampDescIett', 'Sunucularımızın İETT altyapısından veriyi gerçekten kopyaladığı anı gösterir.')} 
+            <strong>{t('common.iett', 'İETT')}:</strong> {t('stops.timestampDescIett', 'Sunucularımızın İETT altyapısından veriyi gerçekten kopyaladığı anı gösterir.')}
           </p>
           <p>
             {t('stops.timestampLagWarning', 'İki saat arasındaki fark büyüyorsa, İETT sistemlerinde genel bir gecikme yaşanıyor demektir.')}
@@ -163,10 +163,10 @@ function AutoFitBuses({
 
   useEffect(() => {
     const withPos = buses.filter((b) => b.latitude != null && b.longitude != null).slice(0, 3)
-    
+
     const isFilterChange = lastFilterKey.current !== filterKey
     const isInitialData = !hasFitOnce.current && withPos.length > 0
-    
+
     if (withPos.length > 0) hasFitOnce.current = true
 
     if (!isFilterChange && !isInitialData) return
@@ -245,7 +245,7 @@ function BusDetailSheet({
 
   useEffect(() => {
     previouslyFocused.current = document.activeElement
-    
+
     const timer = setTimeout(() => {
       if (dialogRef.current) {
         dialogRef.current.focus()
@@ -341,7 +341,7 @@ function BusDetailSheet({
   return (
     <div className="fixed inset-0 z-[2000] flex items-end pointer-events-none">
       {/* Backdrop */}
-      <motion.div 
+      <motion.div
         className="absolute inset-0 bg-black/60 pointer-events-auto"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -554,9 +554,9 @@ export default function StopPage() {
     const dy = e.clientY - dragState.current.startY
     const deltaPct = (dy / containerH) * 100
     const newPct = Math.min(65, Math.max(15, dragState.current.startPct + deltaPct))
-    
+
     if (dragRafId.current) cancelAnimationFrame(dragRafId.current)
-    
+
     dragRafId.current = requestAnimationFrame(() => {
       if (!mapContainerRef.current) return
       mapHeightPctRef.current = newPct
@@ -568,8 +568,8 @@ export default function StopPage() {
     })
   }, [])
 
-  const onHandlePointerUp = useCallback(() => { 
-    dragState.current = null 
+  const onHandlePointerUp = useCallback(() => {
+    dragState.current = null
     if (dragRafId.current) {
       cancelAnimationFrame(dragRafId.current)
       dragRafId.current = null
@@ -649,7 +649,7 @@ export default function StopPage() {
       return new Date(iettUpdatedAt).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
     }
     if (!arrivals || arrivals.length === 0) return '--:--:--'
-    
+
     let maxTs = ""
     for (const a of arrivals) {
       if (a.last_seen_ts && a.last_seen_ts > maxTs) {
@@ -746,7 +746,7 @@ export default function StopPage() {
     enabled: !!dcode,
     placeholderData: (prev) => prev,
   })
-  
+
   const { data: globalNotices } = useGlobalNotices()
 
   const stopAnnouncements: RouteAnnouncement[] = useMemo(() => {
@@ -1178,7 +1178,7 @@ export default function StopPage() {
                 ? `${t('stops.lastUpdated', { time: lastUpdated.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }), defaultValue: 'güncelleme: {{time}}' })}, iett: ${iettTimeDisplay}`
                 : t('common.loading')}
               {(iettUpdatedAt || (arrivals && arrivals.length > 0)) && (
-                <button 
+                <button
                   onClick={() => setShowInfo(true)}
                   aria-label={t('stops.lagExplanationAria', 'Neden iki farklı saat var?')}
                   className="flex items-center justify-center w-4 h-4 rounded-full bg-surface-muted text-[10px] font-bold text-text-secondary hover:text-text-primary transition-colors"

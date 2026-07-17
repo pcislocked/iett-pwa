@@ -185,7 +185,7 @@ function MissionCard({ mission, index, t }: { mission: AracMissionItem; index: n
 
   // eslint-disable-next-line react-hooks/purity
   const isPast = !mission.is_active && (mission.task_end_time_ms ? mission.task_end_time_ms < Date.now() : index < 0)
-  
+
   const startTime = mission.task_start_time
     ? parseIettDate(mission.task_start_time).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })
     : null
@@ -527,10 +527,10 @@ export default function AracBusOverlayPage() {
         {viewState === 'ready' && profile && (
           <>
             <div style={{ height: '33vh', minHeight: '200px' }} className="relative bg-surface-muted/20 shrink-0 border-b border-[#111]">
-              <MapContainer 
-                center={[profile.latitude ?? 41.0082, profile.longitude ?? 28.9784]} 
-                zoom={16} 
-                style={{ height: '100%', width: '100%' }} 
+              <MapContainer
+                center={[profile.latitude ?? 41.0082, profile.longitude ?? 28.9784]}
+                zoom={16}
+                style={{ height: '100%', width: '100%' }}
                 zoomControl={false}
               >
                 <TileLayer

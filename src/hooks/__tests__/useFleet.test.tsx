@@ -36,7 +36,7 @@ describe('useFleet', () => {
     const { result } = renderHook(() => useFleet(), { wrapper })
 
     expect(result.current.loading).toBe(true)
-    
+
     await waitFor(() => {
       expect(result.current.loading).toBe(false)
     })
@@ -50,7 +50,7 @@ describe('useFleet', () => {
     vi.mocked(api.fleet.all).mockRejectedValue(new Error('Network error'))
 
     const { result } = renderHook(() => useFleet(), { wrapper })
-    
+
     await waitFor(() => {
       expect(result.current.loading).toBe(false)
     })
@@ -63,9 +63,9 @@ describe('useFleet', () => {
     const mockData = [{ route_code: '11H', kapino: 'K456' }]
     vi.mocked(api.routes.buses).mockResolvedValue(mockData as any)
 
-    const { result, rerender } = renderHook(({ hk }) => useRouteBuses(hk), { 
+    const { result, rerender } = renderHook(({ hk }) => useRouteBuses(hk), {
       initialProps: { hk: '' },
-      wrapper 
+      wrapper
     })
 
     // Should not fetch if hk is empty
@@ -74,11 +74,11 @@ describe('useFleet', () => {
 
     // Rerender with hatKodu
     rerender({ hk: '11H' })
-    
+
     await waitFor(() => {
       expect(result.current.data).toEqual(mockData)
     })
-    
+
     expect(api.routes.buses).toHaveBeenCalledWith('11H', expect.any(Object))
   })
 })

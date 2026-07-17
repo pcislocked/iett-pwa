@@ -6,11 +6,11 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import RoutePage from '@/pages/RoutePage'
 
 vi.mock('@/api/client', () => ({
-  api: { 
-    routes: { 
-      metadata: vi.fn().mockResolvedValue([{ route_code: '15TY', full_name: 'Test' }]), 
-      schedule: vi.fn().mockResolvedValue([]), 
-      stops: vi.fn().mockResolvedValue([]) 
+  api: {
+    routes: {
+      metadata: vi.fn().mockResolvedValue([{ route_code: '15TY', full_name: 'Test' }]),
+      schedule: vi.fn().mockResolvedValue([]),
+      stops: vi.fn().mockResolvedValue([])
     },
     stops: { announcements: vi.fn().mockResolvedValue([]) }
   }
@@ -38,7 +38,7 @@ describe('RoutePage', () => {
         </MemoryRouter>
       </QueryClientProvider>
     )
-    
+
     await waitFor(() => {
       expect(screen.getByText('Tarife')).toBeInTheDocument()
     })

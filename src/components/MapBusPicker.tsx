@@ -17,15 +17,15 @@ export default function MapBusPicker({ buses, onSelect, onClose }: Props) {
           <span className="text-xs font-semibold text-text-muted uppercase tracking-wider">
             {t('map.busesAtPoint', { count: buses.length, defaultValue: 'Bu noktada {{count}} araç var' })}
           </span>
-          <button 
-            onClick={onClose} 
+          <button
+            onClick={onClose}
             className="text-text-muted hover:text-text-primary text-xl leading-none -mt-1"
             aria-label={t('common.close', 'Kapat')}
           >
             &times;
           </button>
         </div>
-        
+
         {/* Liste — max 240px scroll */}
         <div className="max-h-[240px] overflow-y-auto overscroll-contain">
           {buses.map(b => (
@@ -46,7 +46,7 @@ export default function MapBusPicker({ buses, onSelect, onClose }: Props) {
                   {b.route_code}
                 </span>
               )}
-              
+
               <div className="flex-1 min-w-0 flex flex-col">
                 <div className="flex items-center gap-2">
                   <span className="font-mono text-sm font-bold text-text-primary">{b.kapino}</span>
@@ -60,14 +60,14 @@ export default function MapBusPicker({ buses, onSelect, onClose }: Props) {
                   </span>
                 )}
               </div>
-              
+
               <div className="flex items-center gap-3 shrink-0">
                 {b.speed !== null && (
                   <span className="text-[10px] text-brand-300 font-mono">
                     {b.speed} km/h
                   </span>
                 )}
-                <svg className="w-4 h-4 text-text-muted" fill="none" 
+                <svg className="w-4 h-4 text-text-muted" fill="none"
                      viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
                 </svg>

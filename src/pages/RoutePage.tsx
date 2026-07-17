@@ -81,7 +81,7 @@ function TimetableView({ schedule, scheduleError, onRetry, metadata, stops, hatK
           const variantsInDir = Array.from(new Set(dirStops.map(s => s.route_code)))
           const firstStops = new Set<string>()
           const lastStops = new Set<string>()
-          
+
           for (const v of variantsInDir) {
             const vStops = dirStops.filter(s => s.route_code === v)
             if (vStops.length > 0) {
@@ -89,7 +89,7 @@ function TimetableView({ schedule, scheduleError, onRetry, metadata, stops, hatK
               lastStops.add(formatStopName(vStops[vStops.length - 1].stop_name))
             }
           }
-          
+
           if (firstStops.size === 1) {
             return t('routes.departureSuffix', { stopName: Array.from(firstStops)[0], defaultValue: '{{stopName}} KALKIŞ' })
           } else if (lastStops.size === 1) {
@@ -143,7 +143,7 @@ function TimetableView({ schedule, scheduleError, onRetry, metadata, stops, hatK
 
     const filtered = schedule.filter(d => d.day_type === dayType && d.direction === effectiveDirection)
     const uniqueVariants = [...new Set(filtered.map(d => d.route_variant).filter(v => v && !v.endsWith('_D0') && !v.endsWith('_G0')))].sort()
-    
+
     // Check if we have official note IDs from the scraper
     const hasOfficialNotes = filtered.some(d => d.official_note_id)
 
@@ -164,7 +164,7 @@ function TimetableView({ schedule, scheduleError, onRetry, metadata, stops, hatK
     uniqueVariants.forEach((v, idx) => {
       const num = officialVariantNum.get(v) ?? (idx + 1)
       fnMap.set(v, num)
-      
+
       let label = v
 
       let stopsLabel = ''
@@ -194,7 +194,7 @@ function TimetableView({ schedule, scheduleError, onRetry, metadata, stops, hatK
           label = meta.full_name || meta.direction_name || v
         }
       }
-      
+
       const isCanonical = v.endsWith('_D0') || v.endsWith('_G0')
       if (!isCanonical && label !== v) {
         const suffix = v.split('_').pop()
@@ -202,7 +202,7 @@ function TimetableView({ schedule, scheduleError, onRetry, metadata, stops, hatK
           label += ` (${suffix})`
         }
       }
-      
+
       fnNameMap.set(num, label)
       fnVariantMap.set(num, v)
     })
@@ -262,7 +262,7 @@ function TimetableView({ schedule, scheduleError, onRetry, metadata, stops, hatK
 
       {hasNightServices && (
         <div className="p-3 bg-amber-950/20 border border-amber-800/40 rounded-xl text-xs text-amber-300">
-          <button 
+          <button
             type="button"
             onClick={() => setShowNightNotice(!showNightNotice)}
             className="flex items-center justify-between w-full font-semibold text-left focus:outline-none"
@@ -336,9 +336,9 @@ function TimetableView({ schedule, scheduleError, onRetry, metadata, stops, hatK
       <div className="mt-4 text-center">
         <p className="text-[10px] text-text-muted leading-relaxed">
           {t('routes.iettNote')}{' '}
-          <a 
-            href={`https://iett.istanbul/RouteDetail?hkod=${hatKodu}`} 
-            target="_blank" 
+          <a
+            href={`https://iett.istanbul/RouteDetail?hkod=${hatKodu}`}
+            target="_blank"
             rel="noopener noreferrer"
             className="text-text-muted hover:text-text-secondary underline"
           >{t('routes.iettNoteLink')} ↗</a>
@@ -407,7 +407,7 @@ export default function RoutePage() {
   // Deduplicate by stop_code within the selected direction AND variant
   const stopsForDir = useMemo(() => {
     let dirStops = (stops ?? []).filter((s) => !effectiveDir || s.direction === effectiveDir)
-    
+
     if (effectiveVariant) {
       const variantStops = dirStops.filter((s) => s.route_code === effectiveVariant)
       if (variantStops.length > 0) {
@@ -421,7 +421,7 @@ export default function RoutePage() {
         }
       }
     }
-    
+
     const seen = new Set<string>()
     return dirStops.filter((s) => { if (seen.has(s.stop_code)) return false; seen.add(s.stop_code); return true })
   }, [stops, effectiveDir, effectiveVariant, hatKodu])

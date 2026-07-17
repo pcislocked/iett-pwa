@@ -39,7 +39,7 @@ function PinnedRow({
           aria-label={t('pinned.remove', { defaultValue: 'Kaldır' })}
           className="absolute left-1 top-1/2 -translate-y-1/2 z-10
                      w-6 h-6 rounded-full flex items-center justify-center
-                     text-[11px] font-bold text-red-500 hover:bg-red-500/10 
+                     text-[11px] font-bold text-red-500 hover:bg-red-500/10
                      active:bg-red-600 active:text-white transition-colors"
         >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-3.5 h-3.5">

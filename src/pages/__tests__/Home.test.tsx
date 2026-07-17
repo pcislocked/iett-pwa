@@ -21,7 +21,7 @@ vi.mock('@/hooks/useRecentSearches', () => ({
   getRecent: () => [{ type: 'route', id: '15TY', label: '15TY', timestamp: 1234 }]
 }))
 vi.mock('@/api/client', () => ({
-  api: { 
+  api: {
     stops: { nearby: vi.fn().mockResolvedValue([]), detail: vi.fn().mockResolvedValue({ dcode: '1234' }) }
   }
 }))

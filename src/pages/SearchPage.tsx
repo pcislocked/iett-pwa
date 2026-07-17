@@ -75,7 +75,7 @@ export default function SearchPage() {
         if (!controller.signal.aborted) setLoading(false)
       }
     }, 300)
-    
+
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current)
       controller.abort()

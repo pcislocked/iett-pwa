@@ -48,10 +48,10 @@ export default function SearchBar({ placeholder, autoFocus }: Props) {
           api.stops.search(q),
           api.routes.search(q),
         ])
-        
+
         const stops = stopsResult.status === 'fulfilled' ? stopsResult.value : []
         const routes = routesResult.status === 'fulfilled' ? routesResult.value : []
-        
+
         const combined: SearchResult[] = [
           ...stops.map((s) => ({ kind: 'stop' as const, ...s })),
           ...routes.map((r) => ({ kind: 'route' as const, ...r })),
