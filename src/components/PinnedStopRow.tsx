@@ -44,13 +44,13 @@ export default function PinnedStopRow({ dcode, nick, icon = '📌', distLabel, d
       {/* Line 1: icon + name + distance + chevron */}
       <div className="flex items-center gap-2.5">
         <span className="text-base shrink-0 leading-none">{icon}</span>
-        <span className="flex-1 text-[13px] font-bold text-white truncate leading-tight">{nick}</span>
+        <span className="flex-1 text-[13px] font-bold text-text-primary truncate leading-tight">{nick}</span>
         {distLabel && (
           <span className="text-[10px] text-text-muted bg-surface-muted px-1.5 py-0.5 rounded-full shrink-0">
             {distLabel}
           </span>
         )}
-        <svg className="w-3.5 h-3.5 text-slate-700 shrink-0" fill="none"
+        <svg className="w-3.5 h-3.5 text-text-muted shrink-0" fill="none"
              viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
         </svg>
@@ -63,7 +63,7 @@ export default function PinnedStopRow({ dcode, nick, icon = '📌', distLabel, d
         </div>
       ) : !distLabel ? (
         <div className="mt-0.5 pl-[26px]">
-          <span className="text-[10px] font-mono text-slate-700">{dcode}</span>
+          <span className="text-[10px] font-mono text-text-muted">{dcode}</span>
         </div>
       ) : null}
 
@@ -88,7 +88,7 @@ export default function PinnedStopRow({ dcode, nick, icon = '📌', distLabel, d
             )
           })
         ) : (
-          <span className="text-[11px] text-slate-700">—</span>
+          <span className="text-[11px] text-text-muted">—</span>
         )}
       </div>
     </button>

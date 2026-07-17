@@ -132,7 +132,7 @@ function RouteTickerRow({ code, name, icon }: { code: string; name: string; icon
       </div>
 
       <div className="mt-0.5 pl-[26px]">
-        <span className="text-[10px] font-mono text-slate-700">{code}</span>
+        <span className="text-[10px] font-mono text-text-muted">{code}</span>
       </div>
 
       <div className="mt-1 pl-[26px] flex items-center gap-x-2.5 min-h-[18px] overflow-hidden whitespace-nowrap">
@@ -143,7 +143,7 @@ function RouteTickerRow({ code, name, icon }: { code: string; name: string; icon
           </>
         ) : ticker.length > 0 ? (
           ticker.map((t) => {
-            const color = t.etaMinutes === null ? 'text-slate-700' : etaTextClass(Math.min(t.etaMinutes, 30))
+            const color = t.etaMinutes === null ? 'text-text-muted' : etaTextClass(Math.min(t.etaMinutes, 30))
             return (
               <span key={`${code}-${t.dir}`} className={`text-[11px] font-bold font-mono ${color} max-w-[48%] truncate`}>
                 {t.label}:{t.eta}
@@ -151,7 +151,7 @@ function RouteTickerRow({ code, name, icon }: { code: string; name: string; icon
             )
           })
         ) : (
-          <span className="text-[11px] text-slate-700">—</span>
+          <span className="text-[11px] text-text-muted">—</span>
         )}
       </div>
     </button>
@@ -279,7 +279,7 @@ export default function Home() {
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
             </svg>
             <span className="text-sm">{t('home.pinStopTitle', { defaultValue: 'Durak sabitle' })}</span>
-            <span className="text-xs" style={{ color: '#333' }}>{t('home.noNearbyDesc', { defaultValue: 'Bulunduğunuz konuma yakın İETT durağı yok.' })}</span>
+            <span className="text-xs text-text-muted">{t('home.noNearbyDesc', { defaultValue: 'Bulunduğunuz konuma yakın İETT durağı yok.' })}</span>
           </button>
         )}
       </section>
@@ -326,7 +326,7 @@ export default function Home() {
         ) : (
           <div className="mx-4 py-5 flex flex-col items-center gap-1.5" style={{ border: '1px solid #222' }}>
             <span className="text-sm text-text-muted">{t('home.noNearby', { defaultValue: 'Durak Bulunamadı' })}</span>
-            <span className="text-xs" style={{ color: '#333' }}>{t('home.noNearbyDesc', { defaultValue: 'Bulunduğunuz konuma yakın İETT durağı yok.' })}</span>
+            <span className="text-xs text-text-muted">{t('home.noNearbyDesc', { defaultValue: 'Bulunduğunuz konuma yakın İETT durağı yok.' })}</span>
           </div>
         )}
       </section>
