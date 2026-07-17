@@ -6,6 +6,7 @@ import { useTheme, type Theme } from '@/hooks/useTheme'
 import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet'
 import * as L from 'leaflet'
 import { DEFAULT_MOCK_LOCATION } from '@/hooks/useLocationManager'
+import LocationConsentModal from '@/components/LocationConsentModal'
 
 function ThemeSwitcher() {
   const { theme, setTheme } = useTheme()
@@ -76,9 +77,10 @@ export default function SettingsPage() {
   const { t, i18n } = useTranslation()
   const [settings, setSettings] = useState<Settings>(loadSettings)
   const [saved, setSaved] = useState(false)
-  const { prefs, setNearbySettings, exportPrefs, importPrefs, setMockLocation, resetConsent } = useUserPrefs()
+  const { prefs, setNearbySettings, exportPrefs, importPrefs, setMockLocation, setGpsConsent } = useUserPrefs()
   const fileRef = useRef<HTMLInputElement>(null)
   const [importStatus, setImportStatus] = useState<'idle' | 'ok' | 'err'>('idle')
+  const [showConsentModal, setShowConsentModal] = useState(false)
   const reloadTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const statusTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -264,16 +266,39 @@ export default function SettingsPage() {
           </div>
         )}
 
-        <button
-          onClick={() => {
-            resetConsent()
+        {prefs.gpsConsent !== 'granted' ? (
+          <button
+            onClick={() => setShowConsentModal(true)}
+            className="mt-2 shrink-0 py-2.5 rounded-xl text-xs font-semibold bg-brand-600 hover:bg-brand-500 text-white transition-colors w-full"
+          >
+            {t('settings.requestGpsModal', 'Konum İznini İste')}
+          </button>
+        ) : (
+          <button
+            onClick={() => {
+              setGpsConsent('denied')
+              setTimeout(() => window.location.reload(), 100)
+            }}
+            className="mt-2 shrink-0 py-2.5 rounded-xl text-xs font-semibold bg-red-900/40 text-red-400 hover:bg-red-900/60 transition-colors w-full"
+          >
+            {t('settings.revokeGpsModal', 'İzni İptal Et (Sahte Konuma Dön)')}
+          </button>
+        )}
+      </div>
+
+      {showConsentModal && (
+        <LocationConsentModal
+          onConfirm={() => {
+            setGpsConsent('granted')
+            setShowConsentModal(false)
             setTimeout(() => window.location.reload(), 100)
           }}
-          className="mt-2 shrink-0 py-2.5 rounded-xl text-xs font-semibold bg-surface-muted text-text-primary hover:bg-slate-700 transition-colors w-full"
-        >
-          {t('settings.resetGpsModal', 'Konum İznini Sıfırla (Modalı Tekrar Göster)')}
-        </button>
-      </div>
+          onDismiss={() => {
+            setGpsConsent('denied')
+            setShowConsentModal(false)
+          }}
+        />
+      )}
 
       {/* Data backup */}
       <div className="card flex flex-col gap-3">
