@@ -330,7 +330,7 @@ export default function SettingsPage() {
           <span className="text-text-muted">v{__APP_VERSION__}</span>
         </div>
         <p className="text-text-secondary leading-relaxed">
-          {t('settings.aboutDesc', { defaultValue: 'İstanbul otobüs ve tramvay hatlarını gerçek zamanlı takip etmek için açık kaynaklı PWA.' })}
+          {t('settings.aboutDesc', { defaultValue: 'İstanbul otobüs hatlarını gerçek zamanlı takip etmek için açık kaynaklı PWA.' })}
         </p>
         <div className="flex flex-col gap-2">
           <p>{t('settings.dataSource', { defaultValue: 'Veri kaynağı: İETT / İBB açık API' })}</p>
