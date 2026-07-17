@@ -4,6 +4,9 @@ import { type Settings, loadSettings, saveSettings } from '@/utils/settings'
 import { useUserPrefs } from '@/hooks/useUserPrefs'
 import { useTranslation } from 'react-i18next'
 import { useTheme, type Theme } from '@/hooks/useTheme'
+import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet'
+import * as L from 'leaflet'
+import { DEFAULT_MOCK_LOCATION } from '@/hooks/useLocationManager'
 
 function ThemeSwitcher() {
   const { theme, setTheme } = useTheme()
@@ -42,17 +45,40 @@ function ThemeSwitcher() {
   )
 }
 
-const LOCATION_CONSENT_KEY = 'location-consent'
+function MockLocationPicker({ initialLat, initialLon, onPick }: { initialLat: number, initialLon: number, onPick: (lat: number, lon: number) => void }) {
+  const customIcon = L.divIcon({
+    className: '',
+    html: `<div style="background:#f97316;border-radius:50%;width:18px;height:18px;border:3px solid #fff;box-shadow:0 0 0 4px rgba(249,115,22,0.35)"></div>`,
+    iconSize: [18, 18],
+    iconAnchor: [9, 9],
+  })
+
+  function PickerEvents() {
+    useMapEvents({
+      click(e) {
+        onPick(e.latlng.lat, e.latlng.lng)
+      }
+    })
+    return null
+  }
+
+  return (
+    <div style={{ height: 200, width: '100%', borderRadius: 12, overflow: 'hidden', border: '1px solid var(--color-border)', zIndex: 0 }}>
+      <MapContainer center={[initialLat, initialLon]} zoom={13} style={{ height: '100%', width: '100%' }}>
+        <TileLayer url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png" />
+        <Marker position={[initialLat, initialLon]} icon={customIcon} />
+        <PickerEvents />
+      </MapContainer>
+    </div>
+  )
+}
 
 export default function SettingsPage() {
   const { t, i18n } = useTranslation()
   const navigate = useNavigate()
   const [settings, setSettings] = useState<Settings>(loadSettings)
   const [saved, setSaved] = useState(false)
-  const { exportPrefs, importPrefs } = useUserPrefs()
-  const [locationConsent, setLocationConsent] = useState<string | null>(() => {
-    try { return localStorage.getItem(LOCATION_CONSENT_KEY) } catch { return null }
-  })
+  const { prefs, setNearbySettings, exportPrefs, importPrefs, setMockLocation, resetConsent } = useUserPrefs()
   const fileRef = useRef<HTMLInputElement>(null)
   const [importStatus, setImportStatus] = useState<'idle' | 'ok' | 'err'>('idle')
   const reloadTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -178,49 +204,73 @@ export default function SettingsPage() {
             />
           </button>
         </div>
+
+        {/* Nearby Settings */}
+        <div className="pt-2 border-t border-surface-muted flex flex-col gap-4">
+          <div>
+            <label className="text-sm text-text-secondary block mb-1">
+              {t('settings.nearbyRadius', 'Yakın Duraklar: Arama Yarıçapı (metre)')}
+            </label>
+            <input
+              type="number"
+              min={100}
+              max={3000}
+              step={100}
+              value={prefs.nearbyRadius}
+              onChange={(e) => setNearbySettings(Number(e.target.value), prefs.nearbyMax)}
+              className="w-32 bg-surface border border-surface-muted rounded-lg px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-brand-500"
+            />
+          </div>
+          <div>
+            <label className="text-sm text-text-secondary block mb-1">
+              {t('settings.nearbyMaxStops', 'Yakın Duraklar: Maksimum Durak Sayısı')}
+            </label>
+            <input
+              type="number"
+              min={5}
+              max={50}
+              step={1}
+              value={prefs.nearbyMax}
+              onChange={(e) => setNearbySettings(prefs.nearbyRadius, Number(e.target.value))}
+              className="w-32 bg-surface border border-surface-muted rounded-lg px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-brand-500"
+            />
+          </div>
+        </div>
       </div>
 
       {saved && (
         <p className="text-sm text-eta-soon text-center">{t('settings.saved', { defaultValue: '✓ Ayarlar kaydedildi' })}</p>
       )}
 
-      {/* Location consent */}
+      {/* Location consent & Mock location */}
       <div className="card flex flex-col gap-3">
-        <p className="text-sm font-semibold text-text-secondary">{t('nearby.locationPermission', { defaultValue: 'Konum İzni' })}</p>
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm text-text-secondary font-medium">
-              {locationConsent === 'granted' ? t('settings.locationEnabled', { defaultValue: 'Konum etkin' }) : t('settings.locationDisabled', { defaultValue: 'Konum devre dışı' })}
-            </p>
-            <p className="text-xs text-text-muted mt-0.5">
-              {locationConsent === 'granted'
-                ? t('settings.locationUsingGps', { defaultValue: 'Yakın Duraklar konum kullanıyor' })
-                : t('settings.locationHidden', { defaultValue: 'Yakın Duraklar ana sayfada gizlenir' })}
-            </p>
-          </div>
-          {locationConsent === 'granted' ? (
-            <button
-              onClick={() => {
-                try { localStorage.setItem(LOCATION_CONSENT_KEY, 'dismissed') } catch { /* storage unavailable */ }
-                setLocationConsent('dismissed')
-              }}
-              className="shrink-0 px-3 py-1.5 rounded-xl text-xs font-semibold bg-red-900/40 text-red-400 hover:bg-red-900/60 transition-colors"
-            >
-              {t('settings.locationRevoke', { defaultValue: 'Konumu İptal Et' })}
-            </button>
-          ) : (
-            <button
-              onClick={() => {
-                try { localStorage.removeItem(LOCATION_CONSENT_KEY) } catch { /* storage unavailable */ }
-                setLocationConsent(null)
-                navigate('/')
-              }}
-              className="shrink-0 px-3 py-1.5 rounded-xl text-xs font-semibold bg-brand-600/40 text-brand-400 hover:bg-brand-600/60 transition-colors"
-            >
-              {t('settings.locationEnable', { defaultValue: 'Konumu Etkinleştir' })}
-            </button>
-          )}
+        <p className="text-sm font-semibold text-text-secondary">{t('settings.gpsAndMock', 'GPS ve Sahte Konum')}</p>
+        <div className="flex flex-col gap-1">
+          <p className="text-sm text-text-secondary font-medium">
+            {prefs.gpsConsent === 'granted' ? t('settings.gpsConsentGranted', 'Konum İzni: Verildi') : prefs.gpsConsent === 'denied' ? t('settings.gpsConsentDenied', 'Konum İzni: Reddedildi') : t('settings.gpsConsentWaiting', 'Konum İzni: Bekliyor')}
+          </p>
+          <p className="text-xs text-text-muted mt-0.5 leading-relaxed">
+            {t('settings.gpsMockWarning', 'Eğer gerçek konumunuzu paylaşmak istemiyorsanız, uygulama aşağıdaki sahte konumu kullanır. Haritaya dokunarak konumunuzu değiştirebilirsiniz.')}
+          </p>
         </div>
+
+        <div className="mt-2 relative z-0">
+          <MockLocationPicker
+            initialLat={prefs.mockLocation?.[0] ?? DEFAULT_MOCK_LOCATION[0]}
+            initialLon={prefs.mockLocation?.[1] ?? DEFAULT_MOCK_LOCATION[1]}
+            onPick={(lat, lon) => setMockLocation(lat, lon)}
+          />
+        </div>
+
+        <button
+          onClick={() => {
+            resetConsent()
+            setTimeout(() => window.location.reload(), 100)
+          }}
+          className="mt-2 shrink-0 py-2.5 rounded-xl text-xs font-semibold bg-surface-muted text-text-primary hover:bg-slate-700 transition-colors w-full"
+        >
+          {t('settings.resetGpsModal', 'Konum İznini Sıfırla (Modalı Tekrar Göster)')}
+        </button>
       </div>
 
       {/* Data backup */}

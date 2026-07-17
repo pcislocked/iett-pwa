@@ -6,24 +6,7 @@ import { api, type StopDetail } from '@/api/client'
 import { etaTextClass } from '@/utils/etaColor'
 import { useTranslation } from 'react-i18next'
 
-/* ── Jiggle keyframe injected once ─────────────────────────────────────── */
-const JIGGLE_STYLE = `
-@keyframes pinned-jiggle {
-  0%,100% { transform: rotate(0deg) }
-  20%      { transform: rotate(-1.8deg) }
-  40%      { transform: rotate( 1.8deg) }
-  60%      { transform: rotate(-1.4deg) }
-  80%      { transform: rotate( 1.4deg) }
-}
-`
-let styleInjected = false
-function ensureStyle() {
-  if (styleInjected) return
-  styleInjected = true
-  const el = document.createElement('style')
-  el.textContent = JIGGLE_STYLE
-  document.head.appendChild(el)
-}
+// Jiggle removed as requested
 
 /* ── Single row ─────────────────────────────────────────────────────────── */
 function PinnedRow({
@@ -48,14 +31,7 @@ function PinnedRow({
   }, [dcode])
 
   return (
-    <div
-      style={
-        editing
-          ? { animation: 'pinned-jiggle 0.22s linear infinite', position: 'relative' }
-          : { position: 'relative' }
-      }
-      className="relative"
-    >
+    <div className="relative">
       {/* ── Unpin button (edit mode) ── */}
       {editing && (
         <button
@@ -63,7 +39,7 @@ function PinnedRow({
           aria-label={t('pinned.remove', { defaultValue: 'Kaldır' })}
           className="absolute left-1 top-1/2 -translate-y-1/2 z-10
                      w-6 h-6 rounded-full flex items-center justify-center
-                     border border-surface-border bg-surface-muted text-red-400
+                     text-[11px] font-bold text-red-500 hover:bg-red-500/10 
                      active:bg-red-600 active:text-white transition-colors"
         >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-3.5 h-3.5">
@@ -83,8 +59,8 @@ function PinnedRow({
         <span className="text-base shrink-0">📌</span>
 
         {/* Name + direction */}
-        <div className="flex-1 min-w-0">
-          <span className="text-[13px] font-bold text-white truncate block leading-tight">{nick}</span>
+        <div className="flex-1 min-w-0 pr-4">
+          <span className="text-[13px] font-bold text-text-primary truncate block leading-tight">{nick}</span>
           <span className="text-[10px] text-text-muted truncate block">
             {stopDetail?.direction
               ? `→ ${stopDetail.direction}`
@@ -131,7 +107,6 @@ function PinnedRow({
 
 /* ── Page ───────────────────────────────────────────────────────────────── */
 export default function PinnedManagePage() {
-  ensureStyle()
   const { t } = useTranslation()
   const navigate = useNavigate()
   const { prefs, unpinStop } = useUserPrefs()
@@ -142,8 +117,8 @@ export default function PinnedManagePage() {
     <div className="flex-1 overflow-y-auto">
 
       {/* Header */}
-      <div className="px-4 safe-area-pt pt-4 pb-3 flex items-center justify-between border-b border-surface-border">
-        <h1 className="text-base font-bold text-white">{t('home.pinnedStops', { defaultValue: 'Sabitlenmiş Duraklar' })}</h1>
+      <div className="px-4 safe-area-pt mt-6 pt-4 pb-2 border-b border-surface-border flex items-center justify-between">
+        <h1 className="text-base font-bold text-text-primary">{t('home.pinnedStops', { defaultValue: 'Sabitlenmiş Duraklar' })}</h1>
         {pinnedStops.length > 0 && (
           <button
             onClick={() => setEditing((e) => !e)}

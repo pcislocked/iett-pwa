@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 interface Props {
@@ -11,8 +11,9 @@ export default function LocationConsentModal({ onConfirm, onDismiss }: Props) {
   const confirmRef = useRef<HTMLButtonElement>(null)
   const dialogRef = useRef<HTMLDivElement>(null)
   const previouslyFocused = useRef<Element | null>(null)
+  const [deniedState, setDeniedState] = useState(false)
+  const [isLocating, setIsLocating] = useState(false)
 
-  // Save the focused element, auto-focus primary action, and restore on unmount
   useEffect(() => {
     previouslyFocused.current = document.activeElement
     confirmRef.current?.focus()
@@ -23,7 +24,6 @@ export default function LocationConsentModal({ onConfirm, onDismiss }: Props) {
     }
   }, [])
 
-  // Close on Escape and trap focus within dialog
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {
       if (e.key === 'Escape') {
@@ -62,41 +62,85 @@ export default function LocationConsentModal({ onConfirm, onDismiss }: Props) {
         role="dialog"
         aria-modal="true"
         aria-labelledby="consent-title"
-        aria-describedby="consent-desc"
         className="bg-surface-card border border-surface-muted rounded-2xl w-full max-w-sm p-5 flex flex-col gap-4 shadow-xl"
       >
-        {/* Icon */}
-        <div className="flex items-center justify-center w-12 h-12 bg-brand-600/20 rounded-2xl mx-auto">
-          <svg className="w-6 h-6 text-brand-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
-            <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
-          </svg>
-        </div>
-
-        {/* Text */}
-        <div className="text-center">
-          <h2 id="consent-title" className="text-base font-bold text-text-primary mb-1">{t('nearby.locationPermission', { defaultValue: 'Konum İzni' })}</h2>
-          <p id="consent-desc" className="text-xs text-text-secondary leading-relaxed">
-            {t('nearby.locationPermissionDesc', { defaultValue: 'Yakın durakları listelemek için konumunuza ihtiyaç var. Konumunuz yalnızca bu cihazda işlenir; hiçbir sunucuya kaydedilmez.' })}
-          </p>
-        </div>
-
-        {/* Actions */}
-        <div className="flex flex-col gap-2">
-          <button
-            ref={confirmRef}
-            onClick={onConfirm}
-            className="w-full bg-brand-600 hover:bg-brand-500 text-white font-semibold py-3 rounded-xl text-sm transition-colors focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus:outline-none"
-          >
-            {t('nearby.useGps', { defaultValue: 'Konumumu Kullan' })}
-          </button>
-          <button
-            onClick={onDismiss}
-            className="w-full bg-surface-muted hover:bg-slate-600 text-text-secondary font-medium py-3 rounded-xl text-sm transition-colors"
-          >
-            {t('nearby.specifyOnMap', { defaultValue: 'Haritadan Belirt' })}
-          </button>
-        </div>
+        {!deniedState ? (
+          <>
+            <div className="flex items-center justify-center w-12 h-12 bg-brand-600/20 rounded-2xl mx-auto">
+              <svg className="w-6 h-6 text-brand-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+              </svg>
+            </div>
+            <div className="text-center">
+              <h2 id="consent-title" className="text-base font-bold text-text-primary mb-1">{t('nearby.locationPermission', { defaultValue: 'Konum İzni' })}</h2>
+              <p className="text-xs text-text-secondary leading-relaxed">
+                {t('nearby.locationPermissionDesc', { defaultValue: 'Yakın durakları listelemek için konumunuza ihtiyaç var. Konumunuz yalnızca bu cihazda işlenir; hiçbir sunucuya kaydedilmez.' })}
+              </p>
+            </div>
+            <div className="flex flex-col gap-2">
+              <button
+                ref={confirmRef}
+                disabled={isLocating}
+                onClick={() => {
+                  if (!navigator.geolocation) {
+                    setDeniedState(true)
+                    return
+                  }
+                  setIsLocating(true)
+                  navigator.geolocation.getCurrentPosition(
+                    () => {
+                      setIsLocating(false)
+                      onConfirm()
+                    },
+                    () => {
+                      setIsLocating(false)
+                      setDeniedState(true)
+                    },
+                    { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 }
+                  )
+                }}
+                className="w-full bg-brand-600 hover:bg-brand-500 disabled:opacity-70 text-white font-semibold py-3 rounded-xl text-sm transition-colors focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus:outline-none flex items-center justify-center gap-2"
+              >
+                {isLocating && (
+                  <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                )}
+                {isLocating ? t('nearby.waitingPermission', 'İzin Bekleniyor...') : t('nearby.useGps', 'Konumumu Kullan')}
+              </button>
+              <button
+                onClick={() => setDeniedState(true)}
+                disabled={isLocating}
+                className="w-full bg-surface-muted hover:bg-slate-600 disabled:opacity-50 text-text-secondary font-medium py-3 rounded-xl text-sm transition-colors"
+              >
+                {t('nearby.denyPermission', 'İzin Verme')}
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="flex items-center justify-center w-12 h-12 bg-amber-600/20 rounded-2xl mx-auto">
+              <svg className="w-6 h-6 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+            <div className="text-center">
+              <h2 id="consent-title" className="text-base font-bold text-text-primary mb-1">{t('nearby.mockLocationTitle', 'Sahte Konum Kullanılacak')}</h2>
+              <p className="text-xs text-text-secondary leading-relaxed">
+                {t('nearby.mockLocationDesc', 'GPS izni vermediğiniz için uygulama varsayılan sahte bir konumla çalışacak. Bu sahte konumu daha sonra Ayarlar menüsünden harita üzerinden değiştirebilirsiniz.')}
+              </p>
+            </div>
+            <div className="flex flex-col gap-2">
+              <button
+                onClick={onDismiss}
+                className="w-full bg-amber-600 hover:bg-amber-500 text-white font-semibold py-3 rounded-xl text-sm transition-colors focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus:outline-none"
+              >
+                {t('common.gotIt', 'Anladım')}
+              </button>
+            </div>
+          </>
+        )}
       </div>
     </div>
   )

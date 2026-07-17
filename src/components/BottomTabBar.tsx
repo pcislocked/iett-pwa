@@ -62,7 +62,7 @@ export default function BottomTabBar() {
               key={i}
               onClick={tab.onPress}
               className={`flex-1 flex flex-col items-center justify-center py-2 gap-0.5 relative
-                          transition-colors ${tab.active ? 'text-white' : 'text-text-muted'}`}
+                          transition-colors ${tab.active ? 'text-brand-500' : 'text-text-muted hover:text-text-secondary'}`}
             >
               {tab.active && (
                 <span className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 rounded-full bg-brand-500" />
@@ -90,7 +90,7 @@ export default function BottomTabBar() {
               end={to === '/'}
               className={({ isActive }) =>
                 `flex-1 flex flex-col items-center justify-center py-2 gap-0.5 relative
-                 transition-colors ${isActive && isMain ? 'text-brand-primary' : 'text-text-muted hover:text-text-secondary'}`
+                 transition-colors ${isActive && isMain ? 'text-brand-500' : 'text-text-muted hover:text-text-secondary'}`
               }
             >
               {({ isActive }) => (

@@ -19,7 +19,11 @@
     "ok": "Anladım",
     "done": "Bitti",
     "edit": "Düzenle",
-    "clear": "Temizle"
+    "clear": "Temizle",
+    "gotIt": "Anladım",
+    "selectOption": "Seçiniz",
+    "iett": "İETT",
+    "update": "Güncelleme"
   },
   "nav": {
     "map": "Harita",
@@ -54,7 +58,16 @@
     "noKapinoWarning": "Bu kayıtta kapı kodu yok, Araç detayı açılamıyor.",
     "pinAtLimit": "En fazla {{max}} durak sabitlenebilir",
     "removeRouteFilter": "{{route}} filtresini kaldır",
-    "removeEntityFilter": "{{entity}} filtresini kaldır"
+    "removeEntityFilter": "{{entity}} filtresini kaldır",
+    "timestamps": "Zaman Damgaları",
+    "timestampDescUpdate": "Uygulamanın sunucularımızdan en son veriyi çektiği anı gösterir.",
+    "timestampDescIett": "Sunucularımızın İETT altyapısından veriyi gerçekten kopyaladığı anı gösterir.",
+    "timestampLagWarning": "İki saat arasındaki fark büyüyorsa, İETT sistemlerinde genel bir gecikme yaşanıyor demektir.",
+    "announcementsFailed": "Duyurular yüklenirken geçici bir hata oluştu.",
+    "systemAnnouncements": "Sistem Uyarıları",
+    "stopListFailed": "Durak listesi yüklenemedi",
+    "lastUpdated": "güncelleme: {{time}}",
+    "lagExplanationAria": "Neden iki farklı saat var?"
   },
   "routes": {
     "title": "Hat",
@@ -68,7 +81,20 @@
     "noSchedule": "Tarife verisi bulunamadı.",
     "iettNote": "API kaynaklı eksiklikler nedeniyle bazı seferler burada gösterilemiyor olabilir. Güncel ve eksiksiz saatler için",
     "iettNoteLink": "iett.istanbul",
-    "iettNoteSuffix": "adresini kontrol ediniz."
+    "iettNoteSuffix": "adresini kontrol ediniz.",
+    "nightNoticeTitle": "Gece Seferleri Hk.",
+    "nightServiceWarning": "Gece seferleri (00:00 - 05:00 arası) bir önceki günün tarifesinde listelenir. Örn: Cumartesi gecesini Pazara bağlayan gece seferleri için Cumartesi tabini kontrol etmelisiniz.",
+    "dayType": {
+      "H": "Hafta İçi",
+      "C": "Cumartesi",
+      "P": "Pazar"
+    },
+    "departureSuffix": "{{stopName}} KALKIŞ",
+    "directionSuffix": "{{stopName}} YÖNÜ",
+    "failedToLoadSchedule": "Sefer saatleri yüklenemedi",
+    "activeBuses": "{{count}} aktif araç",
+    "directionG": "Gidiş",
+    "directionD": "Dönüş"
   },
   "map": {
     "searchPlaceholder": "Hat kodu ara (örn: 500T, 14M)…",
@@ -89,7 +115,15 @@
     "errorNotePrefix": "Not:",
     "errorNoteText": "Arama çubuğundan belirli bir hat numarası (örn: 14M) aratarak otobüsleri haritada görmeye sorunsuzca devam edebilirsiniz. Yalnızca tüm filonun aynı anda haritada görünmesi sabote edilmiştir.",
     "lastUpdateSoap": "Son Update (SOAP)",
-    "closeDetails": "Detayları kapat"
+    "closeDetails": "Detayları kapat",
+    "busesAtPoint": "Bu noktada {{count}} araç var",
+    "directSearch": "Doğrudan Ara",
+    "vehicles": "Araçlar",
+    "arrivalTimes": "Varış Saatleri",
+    "noDirectionInfo": "Yön Bilgisi Yok",
+    "speed": "Hız",
+    "openRoute": "Hattı Aç",
+    "ibbNotice": "İBB Yönetimi, halkın vergileriyle çalışan otobüslerin global konum verilerini halka kapattığı için tüm filoyu şu an çekemiyoruz. Arama çubuğundan belirli bir hat aratarak (ör: 500T) o hattın araçlarını sorunsuzca görmeye devam edebilirsiniz."
   },
   "fleet": {
     "lastRoute": "Son: {{code}}",
@@ -137,7 +171,15 @@
     "aboutDesc": "İstanbul otobüs ve tramvay hatlarını gerçek zamanlı takip etmek için açık kaynaklı PWA.",
     "dataSource": "Veri kaynağı: İETT / İBB açık API",
     "licenseInfo": "Atıf 4.0 Uluslararası (CC BY 4.0) kapsamında lisanslanan kamu sektörü bilgilerini içerir.",
-    "backendSource": "Arka uç: iett-middle (FastAPI)"
+    "backendSource": "Arka uç: iett-middle (FastAPI)",
+    "nearbyRadius": "Yakın Duraklar: Arama Yarıçapı (metre)",
+    "nearbyMaxStops": "Yakın Duraklar: Maksimum Durak Sayısı",
+    "gpsConsentGranted": "Konum İzni: Verildi",
+    "gpsConsentDenied": "Konum İzni: Reddedildi",
+    "gpsConsentWaiting": "Konum İzni: Bekliyor",
+    "gpsMockWarning": "Eğer gerçek konumunuzu paylaşmak istemiyorsanız, uygulama aşağıdaki sahte konumu kullanır. Haritaya dokunarak konumunuzu değiştirebilirsiniz.",
+    "resetGpsModal": "Konum İznini Sıfırla (Modalı Tekrar Göster)",
+    "gpsAndMock": "GPS ve Sahte Konum"
   },
   "embed": {
     "poweredBy": "iett-pwa",
@@ -161,7 +203,11 @@
     "mapInstruction": "Haritaya uzun bas veya tıkla → pin bırak, sonra aramayı başlat",
     "stopsAtThisPoint": "Bu Noktadaki Yakın Duraklar",
     "pickPoint": "Haritadan Nokta Seç",
-    "searching": "Yakın duraklar aranıyor…"
+    "searching": "Yakın duraklar aranıyor…",
+    "waitingPermission": "İzin Bekleniyor...",
+    "denyPermission": "İzin Verme",
+    "mockLocationTitle": "Sahte Konum Kullanılacak",
+    "mockLocationDesc": "GPS izni vermediğiniz için uygulama varsayılan sahte bir konumla çalışacak. Bu sahte konumu daha sonra Ayarlar menüsünden harita üzerinden değiştirebilirsiniz."
   },
   "search": {
     "placeholder": "Hat kodu, durak adı veya numara...",
@@ -175,40 +221,53 @@
   "route": {
     "variant": "Güzergah Varyantı",
     "dirG": "Gidiş",
-    "dirD": "Dönüş"
+    "dirD": "Dönüş",
+    "directionName": "{{name}} Yönü"
   },
   "arac": {
     "unknownError": "Bilinmeyen hata",
     "amenityYes": "Var",
     "amenityNo": "Yok",
     "amenityUnknown": "Bilinmiyor",
-    "doorCodeMissing": "Kapi kodu bulunamadi.",
-    "sessionExpired": "aracapi oturumu suresi doldu. Yeniden captcha akisi baslatiliyor.",
-    "enterCaptcha": "Lutfen captcha yanitini girin.",
-    "captchaStale": "Captcha gorseli guncel degil. Yeni captcha alin.",
+    "doorCodeMissing": "Kapı kodu bulunamadı.",
+    "sessionExpired": "aracapi oturumu süresi doldu. Yeniden captcha akışı başlatılıyor.",
+    "enterCaptcha": "Lütfen captcha yanıtını girin.",
+    "captchaStale": "Captcha görseli güncel değil. Yeni captcha alın.",
     "accessible": "Engelli",
     "usb": "USB",
     "wifi": "Wi-Fi",
     "bicycle": "Bisiklet",
     "airConditioned": "Klima",
     "fleetDetail": "arac.iett.gov.tr Filo Detay",
-    "busTitleEmpty": "Arac Detay",
-    "reconnect": "Yeniden Baglan",
-    "verifyingCaptcha": "Captcha dogrulaniyor...",
-    "loadingData": "aracapi veri paketi yukleniyor...",
+    "busTitleEmpty": "Araç Detay",
+    "reconnect": "Yeniden Bağlan",
+    "verifyingCaptcha": "Captcha doğrulanıyor...",
+    "loadingData": "aracapi veri paketi yükleniyor...",
     "preparingSession": "ARAÇ oturumu hazırlanıyor...",
-    "stayOnPage": "Islem tamamlanana kadar bu sayfada kalabilirsiniz.",
-    "captchaManual": "Captcha manuel dogrulama",
-    "captchaInstruction": "Once captcha kodunu yazarak devam edin.",
-    "captchaAnswer": "Captcha cevabi",
-    "login": "Oturumu Ac",
+    "stayOnPage": "İşlem tamamlanana kadar bu sayfada kalabilirsiniz.",
+    "captchaManual": "Captcha manuel doğrulama",
+    "captchaInstruction": "Önce captcha kodunu yazarak devam edin.",
+    "captchaAnswer": "Captcha cevabı",
+    "login": "Oturumu Aç",
     "newCaptcha": "Yeni Captcha",
-    "failedToOpen": "aracapi detayi acilamadi",
-    "vehicleProfile": "Arac Profili / Vehicle Profile",
-    "sessionReady": "Session hazir",
-    "emptyProfile": "Profil alanlari su an bos dondu.",
-    "missions": "Missions / Gorevler",
-    "noMissions": "Bu araca ait gorev bulunamadi."
+    "failedToOpen": "aracapi detayı açılamadı",
+    "vehicleProfile": "Araç Profili / Vehicle Profile",
+    "sessionReady": "Session hazır",
+    "emptyProfile": "Profil alanları şu an boş döndü.",
+    "missions": "Missions / Görevler",
+    "noMissions": "Bu araca ait görev bulunamadı.",
+    "staleDataWarning": "Bu veri eski (5 dakikadan uzun süredir güncellenmedi).",
+    "lastSeen": "Son Görülme",
+    "capacity": "Kapasite: {{seating}} oturma / {{total}} toplam",
+    "missionsSummary": "{{count}} görev, {{active}} aktif",
+    "multipleActiveWarning": "Sistemde bu araç için birden fazla aktif görev görünüyor. Lütfen tüm listeyi inceleyin.",
+    "technicalDetails": "Teknik Detaylar (Sistem ID'leri)",
+    "operatorId": "Operatör ID",
+    "garageCode": "Garaj Kodu",
+    "softwareVersion": "Yazılım Sürümü",
+    "relativeAgo": "{{value}} önce",
+    "relativeIn": "{{value}} sonra",
+    "hour": "sa"
   },
   "favorites": {
     "open": "Aç",

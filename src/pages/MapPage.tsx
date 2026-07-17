@@ -1,15 +1,20 @@
-import { useState, useRef, useEffect, useMemo, memo } from 'react'
-import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet'
+import { useState, useRef, useEffect, useMemo } from 'react'
+import { MapContainer, TileLayer, CircleMarker, Popup, useMap } from 'react-leaflet'
 import * as L from 'leaflet'
-import CanvasMarkers from '@/components/CanvasMarkers'
 import { useNavigate } from 'react-router-dom'
-import { useFleet } from '@/hooks/useFleet'
-import { useQuery } from '@tanstack/react-query'
-import { api, type BusDetail, type Garage, type RouteSearchResult, type BusPosition } from '@/api/client'
 import { useTranslation } from 'react-i18next'
-import { TFunction } from 'i18next'
-import { useTheme } from '@/hooks/useTheme'
+import { useQuery } from '@tanstack/react-query'
 
+import { api, type BusDetail, type BusPosition, type NearbyStop } from '@/api/client'
+import { useFleet } from '@/hooks/useFleet'
+import { useLocationManager } from '@/hooks/useLocationManager'
+
+import CanvasFleetLayer from '@/components/CanvasFleetLayer'
+import MapSearchPanel from '@/components/MapSearchPanel'
+import MapTileToggle, { TILES } from '@/components/MapTileToggle'
+import MapBusPicker from '@/components/MapBusPicker'
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
 function parseIsoDate(value: string | null | undefined): Date | null {
   if (!value) return null
   const trimmed = value.trim()
@@ -22,7 +27,7 @@ function parseIsoDate(value: string | null | undefined): Date | null {
   return Number.isNaN(parsed.getTime()) ? null : parsed
 }
 
-function formatAgo(from: Date | null, nowMs: number, t: TFunction): string {
+function formatAgo(from: Date | null, nowMs: number, t: any): string {
   if (!from) return '—'
   const diffSeconds = Math.max(0, Math.floor((nowMs - from.getTime()) / 1000))
   if (diffSeconds < 60) return t('map.secondsAgo', { defaultValue: '{{seconds}} sn önce', seconds: diffSeconds })
@@ -32,634 +37,417 @@ function formatAgo(from: Date | null, nowMs: number, t: TFunction): string {
   return t('map.hoursAgo', { defaultValue: '{{hours}} sa önce', hours: diffHours })
 }
 
-const FleetMetaBadge = memo(function FleetMetaBadge({
-  updatedAt,
-}: {
-  updatedAt: string | null | undefined
-}) {
+// ── GPS Button ────────────────────────────────────────────────────────────────
+function GpsButton({ onClick, loading }: { onClick: () => void; loading: boolean }) {
   const { t } = useTranslation()
-  const [nowMs, setNowMs] = useState(() => Date.now())
-
-  useEffect(() => {
-    const id = window.setInterval(() => setNowMs(Date.now()), 5_000)
-    return () => window.clearInterval(id)
-  }, [])
-
-  const updatedAtDate = useMemo(() => parseIsoDate(updatedAt), [updatedAt])
-
   return (
-    <div className="bg-surface-card/90 backdrop-blur px-3 py-1.5 rounded-xl
-                    text-xs text-text-secondary border border-surface-muted">
-      {t('map.lastUpdate', { defaultValue: 'son veri güncelleme:' })} {formatAgo(updatedAtDate, nowMs, t)}
-    </div>
+    <button
+      onClick={onClick}
+      disabled={loading}
+      title={t('map.findMe', { defaultValue: 'Konumumu Bul' })}
+      className="w-10 h-10 bg-surface-card/90 backdrop-blur 
+                 rounded-xl shadow-lg border border-surface-muted flex items-center justify-center
+                 text-brand-500 hover:text-brand-400 active:scale-95 disabled:opacity-50 transition-all"
+    >
+      <svg className={`w-6 h-6 ${loading ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        {loading ? (
+          <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+        ) : (
+          <path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v10.652a1 1 0 01-1.447.894L15 18M9 10l-4.553 2.276A1 1 0 003 13.171v10.652a1 1 0 001.447.894L9 22m6-12v12m-6-12v12" />
+        )}
+      </svg>
+    </button>
   )
-})
+}
 
-const garageIcon = L.divIcon({
-  className: '',
-  html: `<div style="
-    width:28px;height:28px;
-    display:flex;align-items:center;justify-content:center;
-    cursor:pointer">
-    <div style="
-      background:#92400e;border-radius:3px;width:13px;height:13px;
-      border:2px solid #fbbf24;
-      box-shadow:0 2px 6px rgba(0,0,0,0.6)">
-    </div>
-  </div>`,
-  iconSize: [28, 28],
-  iconAnchor: [14, 14],
-})
+function GpsMarker({ location }: { location: [number, number] | null }) {
+  const map = useMap()
+  useEffect(() => {
+    if (location) map.flyTo(location, 15, { duration: 1.5 })
+  }, [location, map])
 
-const busIcon = L.divIcon({
-  className: '',
-  html: `<div style="
-    width:28px;height:28px;
-    display:flex;align-items:center;justify-content:center;
-    cursor:pointer">
-    <div style="
-      background:#2563eb;border-radius:50%;width:12px;height:12px;
-      border:2px solid rgba(255,255,255,0.85);
-      box-shadow:0 0 0 3px rgba(37,99,235,0.35),0 2px 4px rgba(0,0,0,0.4)">
-    </div>
-  </div>`,
-  iconSize: [28, 28],
-  iconAnchor: [14, 14],
-})
+  if (!location) return null
+  return (
+    <CircleMarker
+      center={location}
+      radius={8}
+      pathOptions={{ color: '#3b82f6', fillColor: '#3b82f6', fillOpacity: 0.5, weight: 2 }}
+    >
+      <Popup>
+        <div className="text-sm font-bold">Konumunuz</div>
+      </Popup>
+    </CircleMarker>
+  )
+}
 
-
-
+// ── Main Page ────────────────────────────────────────────────────────────────
 export default function MapPage() {
-  const { theme } = useTheme()
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const { data: buses, loading, error, refresh } = useFleet()
+  const mapRef = useRef<L.Map | null>(null)
 
-  const { data: fleetMeta, refetch: refreshFleetMeta } = useQuery<{ bus_count: number; updated_at: string | null }>({
-    queryKey: ['fleetMeta'],
-    queryFn: () => api.fleet.meta(),
-    refetchInterval: 15_000,
+  // State
+  const [tileIdx, setTileIdx] = useState(() => {
+    const saved = localStorage.getItem('map-tile')
+    return saved ? Number(saved) : 0
   })
-
-  const { data: garages } = useQuery<Garage[]>({
-    queryKey: ['garages'],
-    queryFn: () => api.garages.list(),
-    refetchInterval: 86_400_000, // 24 h â€” garages rarely change
-  })
-
-  const [showErrorModal, setShowErrorModal] = useState(false)
-  const previousFocusRef = useRef<HTMLElement | null>(null)
-
-  useEffect(() => {
-    if (error) {
-      previousFocusRef.current = document.activeElement as HTMLElement
-      setShowErrorModal(true)
-    }
-  }, [error])
-
-  // â”€â”€ Route filter: autocomplete search + chips â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  useEffect(() => {
-    if (!showErrorModal) {
-      if (previousFocusRef.current) {
-        previousFocusRef.current.focus()
-        previousFocusRef.current = null
-      }
-      return
-    }
-    const handleKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setShowErrorModal(false)
-    }
-    document.addEventListener('keydown', handleKey)
-    return () => document.removeEventListener('keydown', handleKey)
-  }, [showErrorModal])
-
+  
+  const [fleetVisible, setFleetVisible] = useState(false)
   const [selectedRoutes, setSelectedRoutes] = useState<string[]>([])
-  const selectedRoutesRef = useRef(selectedRoutes)
-  useEffect(() => { selectedRoutesRef.current = selectedRoutes }, [selectedRoutes])
+  const [selectedStops, setSelectedStops] = useState<{ dcode: string; name: string }[]>([])
+  
+  const [selectedKapino, setSelectedKapino] = useState<string | null>(null)
+  const [pickerBuses, setPickerBuses] = useState<BusPosition[] | null>(null)
+  const [nearbyStops, setNearbyStops] = useState<NearbyStop[]>([])
+  const [stopPins, setStopPins] = useState<Record<string, { lat: number; lon: number }>>({})
 
-  const [searchQuery, setSearchQuery] = useState('')
-  const [searchResults, setSearchResults] = useState<RouteSearchResult[]>([])
-  const [showDropdown, setShowDropdown] = useState(false)
-  const dropdownRef = useRef<HTMLDivElement>(null)
+  // Fetch Fleet (Lazy)
+  const { data: fleet, error: fleetError } = useFleet({ enabled: fleetVisible })
 
-  // Per-route bus fetch: hat_kodu â†’ BusPosition[]
+  // Fetch Route Buses (manual refetch loop for selected routes)
   const [routeBusMap, setRouteBusMap] = useState<Map<string, BusPosition[]>>(new Map())
-  const inFlight = useRef<Set<string>>(new Set())
-  const fetchIdMap = useRef<Map<string, number>>(new Map())
-  const fetchIdCounter = useRef(0)
-
+  
   useEffect(() => {
+    if (selectedRoutes.length === 0) return
     let isMounted = true
     const controller = new AbortController()
-    const currentInFlight = inFlight.current
-
+    
     const fetchBuses = () => {
       if (!isMounted) return
       for (const route of selectedRoutes) {
-        if (currentInFlight.has(route)) continue
-        
-        fetchIdCounter.current += 1
-        const currentFetchId = fetchIdCounter.current
-        fetchIdMap.current.set(route, currentFetchId)
-
-        currentInFlight.add(route)
         api.routes.buses(route, { signal: controller.signal })
-          .then((bs: BusPosition[]) => {
-            currentInFlight.delete(route)
-            if (!isMounted) return
-            if (fetchIdMap.current.get(route) !== currentFetchId) return // Stale request
-            if (!selectedRoutesRef.current.includes(route)) return
-            setRouteBusMap((prev) => new Map(prev).set(route, bs))
+          .then(bs => {
+            if (isMounted) setRouteBusMap(prev => new Map(prev).set(route, bs))
           })
-          .catch(() => {
-            currentInFlight.delete(route)
-            if (!isMounted) return
-            if (fetchIdMap.current.get(route) !== currentFetchId) return // Stale request
-            if (!selectedRoutesRef.current.includes(route)) return
-            setRouteBusMap((prev) => new Map(prev).set(route, []))
-          })
+          .catch(() => {})
       }
     }
-
+    
     fetchBuses()
     const interval = setInterval(fetchBuses, 15_000)
-
-    // prune deselected routes
-    setRouteBusMap((prev) => {
-      const next = new Map(prev)
-      for (const key of next.keys()) {
-        if (!selectedRoutes.includes(key)) {
-          next.delete(key)
-          currentInFlight.delete(key)
-          fetchIdMap.current.delete(key)
-        }
-      }
-      return next
-    })
-
+    
     return () => {
       isMounted = false
       clearInterval(interval)
       controller.abort()
-      currentInFlight.clear()
     }
   }, [selectedRoutes])
 
-  // Fetch autocomplete suggestions when query changes (debounced 300 ms)
+  // Clear unselected routes from map
   useEffect(() => {
-    if (searchQuery.trim().length < 1) { setSearchResults([]); return }
-    let cancelled = false
-    const controller = new AbortController()
-    const t = window.setTimeout(() => {
-      api.routes.search(searchQuery, { signal: controller.signal })
-        .then((r) => { if (!cancelled) setSearchResults(r.slice(0, 8)) })
-        .catch((err) => { if (!cancelled && err.name !== 'AbortError') setSearchResults([]) })
-    }, 300)
-    return () => { cancelled = true; window.clearTimeout(t); controller.abort() }
-  }, [searchQuery])
-
-  function addRoute(hatKodu: string) {
-    if (!selectedRoutes.includes(hatKodu)) {
-      setSelectedRoutes((prev) => [...prev, hatKodu])
-    }
-    setSearchQuery('')
-    setSearchResults([])
-    setShowDropdown(false)
-  }
-
-  function removeRoute(hatKodu: string) {
-    setSelectedRoutes((prev) => prev.filter((r) => r !== hatKodu))
-    setRouteBusMap((prev) => { const n = new Map(prev); n.delete(hatKodu); return n })
-  }
-
-  // â”€â”€ Kapino / plate chip filter â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  const [selectedEntities, setSelectedEntities] = useState<string[]>([])
-  const [entityQuery, setEntityQuery] = useState('')
-  const [showEntityDropdown, setShowEntityDropdown] = useState(false)
-  const entityDropdownRef = useRef<HTMLDivElement>(null)
-
-  const entityResults = useMemo(() => {
-    if (entityQuery.length < 2) return []
-    const q = entityQuery.toUpperCase()
-    return (buses || []).filter((b) => b.kapino.toUpperCase().includes(q) || (b.plate?.toUpperCase().includes(q) ?? false)).slice(0, 10)
-  }, [buses, entityQuery])
-
-  useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setShowDropdown(false)
+    setRouteBusMap(prev => {
+      const next = new Map(prev)
+      for (const key of next.keys()) {
+        if (!selectedRoutes.includes(key)) next.delete(key)
       }
-      if (entityDropdownRef.current && !entityDropdownRef.current.contains(e.target as Node)) {
-        setShowEntityDropdown(false)
+      return next
+    })
+  }, [selectedRoutes])
+
+  // Stop pin fetching
+  useEffect(() => {
+    selectedStops.forEach(s => {
+      if (!stopPins[s.dcode]) {
+        api.stops.detail(s.dcode).then(res => {
+          if (res.latitude && res.longitude) {
+            setStopPins(prev => ({ ...prev, [s.dcode]: { lat: res.latitude!, lon: res.longitude! } }))
+          }
+        }).catch(() => {})
+      }
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedStops])
+
+  // Location Manager for GPS Button
+  const { location, loading: gpsLoading, requestLocation } = useLocationManager()
+
+  // Compute Display Buses
+  const displayBuses = useMemo(() => {
+    const map = new Map<string, BusPosition>()
+    if (fleetVisible && fleet) {
+      for (const b of fleet) map.set(b.kapino, b)
+    }
+    for (const buses of routeBusMap.values()) {
+      for (const b of buses) {
+        const existing = map.get(b.kapino)
+        if (!existing || (parseIsoDate(b.last_seen)?.getTime() ?? 0) > (parseIsoDate(existing.last_seen)?.getTime() ?? 0)) {
+          map.set(b.kapino, b)
+        }
       }
     }
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
+    return Array.from(map.values())
+  }, [fleet, fleetVisible, routeBusMap])
 
-  function addEntity(kapino: string) {
-    if (!selectedEntities.includes(kapino)) setSelectedEntities((prev) => [...prev, kapino])
-    setEntityQuery('')
-    setShowEntityDropdown(false)
-  }
-  function removeEntity(kapino: string) {
-    setSelectedEntities((prev) => prev.filter((e) => e !== kapino))
-  }
-
-  const hasFilter = selectedRoutes.length > 0 || selectedEntities.length > 0
-
-  // â”€â”€ Selected bus detail (fetched on marker click) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  const [selectedKapino, setSelectedKapino] = useState<string | null>(null)
+  // Selected Bus Detail Fetch
   const [selectedDetail, setSelectedDetail] = useState<BusDetail | null>(null)
   const [detailLoading, setDetailLoading] = useState(false)
+  const [nowMs, setNowMs] = useState(Date.now())
 
   useEffect(() => {
-    if (!selectedKapino) { setSelectedDetail(null); return }
+    const id = window.setInterval(() => setNowMs(Date.now()), 5000)
+    return () => window.clearInterval(id)
+  }, [])
+
+  // Fetch Bus detail when kapino selected
+  useEffect(() => {
+    if (!selectedKapino) {
+      setSelectedDetail(null)
+      return
+    }
     let alive = true
-    const controller = new AbortController()
     setDetailLoading(true)
-    setSelectedDetail(null)
-    api.fleet.detail(selectedKapino, { signal: controller.signal })
-      .then((d) => { if (alive) { setSelectedDetail(d); setDetailLoading(false) } })
-      .catch(() => { if (alive) { setDetailLoading(false) } })
-    return () => { alive = false; controller.abort() }
-  }, [selectedKapino])
-
-  const selectedBusSnapshot = useMemo(() => {
-    if (!selectedKapino || !buses) return null
-    return buses.find((b) => b.kapino === selectedKapino) ?? null
-  }, [buses, selectedKapino])
-
-  const selectedSpeed = selectedDetail?.speed ?? selectedBusSnapshot?.speed ?? null
-  const selectedLastSeen = selectedDetail?.last_seen ?? selectedBusSnapshot?.last_seen ?? null
-
-  const filtered = useMemo(() => {
-    const combinedMap = new Map<string, BusPosition>()
-    if (buses) {
-      for (const b of buses) combinedMap.set(b.kapino, b)
-    }
-    for (const routeBuses of routeBusMap.values()) {
-      for (const b of routeBuses) {
-        const existing = combinedMap.get(b.kapino)
-        if (!existing || (parseIsoDate(b.last_seen)?.getTime() ?? 0) > (parseIsoDate(existing.last_seen)?.getTime() ?? 0)) {
-          combinedMap.set(b.kapino, b)
-        }
-      }
-    }
-    
-    const all = Array.from(combinedMap.values())
-    if (!hasFilter) return all
-
-    const routeKapinos = new Set<string>()
-    for (const routeBuses of routeBusMap.values()) {
-      for (const b of routeBuses) routeKapinos.add(b.kapino.toUpperCase())
-    }
-
-    return all.filter((b) => {
-      const kUp = b.kapino.toUpperCase()
-      // Route match: kapino lookup first, then fuzzy route_code fallback
-      if (selectedRoutes.length > 0) {
-        if (routeKapinos.size > 0 && routeKapinos.has(kUp)) return true
-        // fallback: route_code field on bus
-        if (b.route_code) {
-          const rc = b.route_code.toUpperCase()
-          for (const sel of selectedRoutes) {
-            const hk = sel.toUpperCase()
-            if (rc === hk || rc.startsWith(hk + '_') || rc.startsWith(hk + ' ')) return true
+    api.fleet.detail(selectedKapino)
+      .then(res => {
+        if (alive) {
+          setSelectedDetail(res)
+          setDetailLoading(false)
+          if (res.latitude && res.longitude) {
+            mapRef.current?.flyTo([res.latitude, res.longitude], 15, { duration: 0.5 })
           }
         }
-      }
-      // Kapino / plate match
-      if (selectedEntities.length > 0) {
-        if (selectedEntities.some((e) => e.toUpperCase() === kUp)) return true
-        if (b.plate && selectedEntities.some((e) => e.toUpperCase() === b.plate!.toUpperCase())) return true
-      }
-      return false
-    })
-  }, [buses, routeBusMap, selectedRoutes, selectedEntities, hasFilter])
+      })
+      .catch(() => {
+        if (alive) setDetailLoading(false)
+      })
+    return () => { alive = false }
+  }, [selectedKapino])
 
-  const busMarkers = useMemo(() => {
-    return filtered.map((b) => ({
-      position: [b.latitude, b.longitude] as [number, number],
-      icon: busIcon,
-      onClick: () => setSelectedKapino(b.kapino)
-    }))
-  }, [filtered])
+  const handleGpsClick = () => {
+    requestLocation?.()
+    if (location) {
+      api.stops.nearby(location[0], location[1], 15, 500)
+        .then(setNearbyStops)
+        .catch(() => {})
+    }
+  }
+
+  // Effect to handle GPS nearby fetch once location is acquired
+  useEffect(() => {
+    if (location && nearbyStops.length === 0) {
+      api.stops.nearby(location[0], location[1], 15, 500)
+        .then(setNearbyStops)
+        .catch(() => {})
+    }
+  }, [location, nearbyStops.length])
+
+  const mergedDetail = useMemo(() => {
+    const position = displayBuses.find(b => b.kapino === selectedKapino)
+    if (!selectedDetail) return position ? { ...position, plate: undefined, resolved_route_code: position.route_code } : null
+    return { ...position, ...selectedDetail }
+  }, [selectedDetail, selectedKapino, displayBuses])
 
   return (
-    <div className="relative flex flex-col overflow-hidden h-full">
-      {/* Filter panel */}
-      <div className="absolute top-16 left-1/2 -translate-x-1/2 z-[1000] w-full max-w-sm px-4 flex flex-col gap-2">
-        {/* Route autocomplete search bar */}
-        <div
-          className="relative"
-          ref={dropdownRef}
-          onBlur={(e) => {
-            if (e.relatedTarget && !e.currentTarget.contains(e.relatedTarget)) setShowDropdown(false)
-          }}
-        >
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => { setSearchQuery(e.target.value); setShowDropdown(true) }}
-            onFocus={() => { if (searchQuery.length > 0) setShowDropdown(true) }}
-            placeholder={t('map.searchRoutePlaceholder', { defaultValue: 'Hat kodu ara (ör: 500T, 14M)…' })}
-            className="w-full border border-surface-border px-4 py-2 text-sm text-text-primary placeholder-slate-500
-                       focus:outline-none focus:border-[#00AFF0] shadow-xl"
-            style={{ background: 'var(--color-surface-card)' }}
-          />
-          {showDropdown && searchResults.length > 0 && (
-            <div className="absolute top-full left-0 right-0 mt-1 border border-surface-border
-                            shadow-2xl overflow-hidden z-10 max-h-48 overflow-y-auto"
-                 style={{ background: 'var(--color-surface-card)' }}>
-              {searchResults.map((r) => (
-                <button
-                  key={r.hat_kodu}
-                  onClick={() => { addRoute(r.hat_kodu); setShowDropdown(false); }}
-                  className="w-full text-left px-4 py-2.5 text-sm
-                             flex items-center gap-2 transition-colors"
-                  style={{ borderBottom: '1px solid var(--color-border)' }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--color-surface-muted)')}
-                  onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-                >
-                  <span className="font-mono font-bold text-brand-400 text-xs shrink-0">{r.hat_kodu}</span>
-                  <span className="text-text-secondary truncate">{r.name}</span>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Selected route chips */}
-        {selectedRoutes.length > 0 && (
-          <div className="flex flex-wrap gap-1.5">
-            {selectedRoutes.map((route) => (
-              <span
-                key={route}
-                className="inline-flex items-center gap-1 bg-brand-900/90 backdrop-blur
-                           border border-brand-600/40 text-brand-300 text-xs font-mono
-                           font-bold px-2.5 py-1 rounded-full shadow-lg"
-              >
-                {route}
-                <button
-                  onClick={() => removeRoute(route)}
-                  className="ml-0.5 text-brand-400 hover:text-brand-100 transition-colors
-                             leading-none text-sm font-normal"
-                  aria-label={t('map.removeRouteFilter', { defaultValue: '{{route}} filtresini kaldır', route })}
-                >
-                  ×
-                </button>
-              </span>
-            ))}
-          </div>
-        )}
-
-        {/* Kapino / plate chip filter */}
-        <div
-          className="relative"
-          ref={entityDropdownRef}
-          onBlur={(e) => {
-            if (e.relatedTarget && !e.currentTarget.contains(e.relatedTarget)) setShowEntityDropdown(false)
-          }}
-        >
-          <input
-            type="text"
-            value={entityQuery}
-            onChange={(e) => { setEntityQuery(e.target.value); setShowEntityDropdown(true) }}
-            onFocus={() => { if (entityQuery.length > 0) setShowEntityDropdown(true) }}
-            placeholder={t('map.searchEntityPlaceholder', { defaultValue: 'Kapı kodu / plaka ara (ör: C-1515)' })}
-            className="w-full border border-surface-border px-4 py-2 text-sm text-text-primary placeholder-slate-500
-                       focus:outline-none focus:border-[#00AFF0] shadow-xl"
-            style={{ background: 'var(--color-surface-card)' }}
-          />
-          {showEntityDropdown && entityResults.length > 0 && (
-            <div className="absolute top-full left-0 right-0 mt-1 border border-surface-border
-                            shadow-2xl overflow-hidden z-10 max-h-48 overflow-y-auto"
-                 style={{ background: 'var(--color-surface-card)' }}>
-              {entityResults.map((b) => (
-                <button
-                  key={b.kapino}
-                  onClick={() => { addEntity(b.kapino); setShowEntityDropdown(false); }}
-                  className="w-full text-left px-4 py-2.5 text-sm
-                             flex items-center gap-2 transition-colors"
-                  style={{ borderBottom: '1px solid var(--color-border)' }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--color-surface-muted)')}
-                  onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-                >
-                  <span className="font-mono font-bold text-brand-400 text-xs shrink-0">{b.kapino}</span>
-                  {b.plate && <span className="text-text-muted text-xs shrink-0">{b.plate}</span>}
-                  {b.route_code && <span className="text-text-secondary truncate text-xs">â†’ {b.route_code}</span>}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-        {selectedEntities.length > 0 && (
-          <div className="flex flex-wrap gap-1.5">
-            {selectedEntities.map((kapino) => (
-              <span
-                key={kapino}
-                className="inline-flex items-center gap-1 bg-brand-900/90 backdrop-blur
-                           border border-brand-600/40 text-brand-300 text-xs font-mono
-                           font-bold px-2.5 py-1 rounded-full shadow-lg"
-              >
-                {kapino}
-                <button
-                  onClick={() => removeEntity(kapino)}
-                  className="ml-0.5 text-brand-400 hover:text-brand-100 transition-colors
-                             leading-none text-sm font-normal"
-                  aria-label={t('map.removeEntityFilter', { defaultValue: '{{kapino}} filtresini kaldır', kapino })}
-                >
-                  ×
-                </button>
-              </span>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {loading && !buses && (
-        <div className="absolute inset-0 flex items-center justify-center z-[999]">
-          <div className="bg-surface-card px-6 py-4 rounded-2xl shadow-xl text-text-secondary">
-            {t('map.loadingPositions', { defaultValue: 'Araç konumları yükleniyor…' })}
-          </div>
-        </div>
-      )}
+    <div className="relative flex flex-col overflow-hidden h-full bg-[#1e1e1e]">
       
-      {showErrorModal && (
-        <div 
-          className="absolute inset-0 z-[2000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
-          onClick={() => setShowErrorModal(false)}
-          onKeyDown={(e) => {
-            if (e.key === 'Tab') {
-              e.preventDefault();
-              document.getElementById('ibb-modal-close')?.focus();
-            }
-          }}
-        >
-          <div 
-            className="bg-surface-card border border-red-900/50 rounded-2xl max-w-md w-full p-6 shadow-2xl relative"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="ibb-error-title"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h2 id="ibb-error-title" className="text-xl font-bold text-red-400 mb-3">{t('map.errorTitle', { defaultValue: 'İBB Tarafından Engellendi 🛑' })}</h2>
-            <p className="text-text-secondary text-sm mb-4 space-y-3 leading-relaxed">
-              <span>{t('map.errorText1', { defaultValue: 'İBB Yönetimi, halkın vergileriyle çalışan kamu otobüslerinin global konum verilerini (Tüm Filo) halka kapatma kararı aldığından ötürü bu veri şu an' })} <strong className="text-white">{t('map.errorText1Bold', { defaultValue: 'tam anlamıyla sağlanamamaktadır.' })}</strong></span>
-              <br/><br/>
-              <span>{t('map.errorText2', { defaultValue: 'iettnext projesinin de isyan ettiği gibi: Kamuya ait bir verinin halktan gizlenmesi, kısıtlı "resmi" kanallara hapsedilmesi; rezalet Google Maps entegrasyonlarına, Moovit\'e el altından yedirilen paralara ve yarrak gibi çalışan kendi "Otobüsüm Nerede" applerine insanları mahkum etmeye çalışmaları kabul edilemez.' })}</span>
-              <br/><br/>
-              <span>{t('map.errorText3', { defaultValue: 'Biz, mümkün olan legal veya illegal her türlü yoldan, koparabildiğimiz kadar veriyi çekmeye ve bu sansürü delmeye sonuna kadar devam edeceğiz.' })}</span>
-              <br/><br/>
-              <span className="text-brand-300 bg-brand-900/30 p-2 rounded block border border-brand-800/50">
-                <strong>{t('map.errorNotePrefix', { defaultValue: 'Not:' })}</strong> {t('map.errorNoteText', { defaultValue: 'Arama çubuğundan belirli bir hat numarası (örn: 14M) aratarak otobüsleri haritada görmeye sorunsuzca devam edebilirsiniz. Yalnızca tüm filonun aynı anda haritada görünmesi sabote edilmiştir.' })}
-              </span>
+      {/* ── IBB Error Modal ── */}
+      {fleetError && fleetVisible && (
+        <div className="absolute inset-0 z-[2000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-surface-card border border-red-900/50 rounded-2xl max-w-md w-full p-6 shadow-2xl text-center">
+            <h2 className="text-xl font-bold text-red-400 mb-3">{t('map.errorTitle', { defaultValue: 'İBB Tarafından Engellendi 🛑' })}</h2>
+            <p className="text-text-secondary text-sm mb-4 leading-relaxed text-left">
+              {t('map.ibbNotice', 'İBB Yönetimi, halkın vergileriyle çalışan otobüslerin global konum verilerini halka kapattığı için tüm filoyu şu an çekemiyoruz. Arama çubuğundan belirli bir hat aratarak (ör: 500T) o hattın araçlarını sorunsuzca görmeye devam edebilirsiniz.')}
             </p>
-            <div className="flex justify-end">
-              <button
-                id="ibb-modal-close"
-                autoFocus
-                onClick={() => setShowErrorModal(false)}
-                className="bg-red-500/20 hover:bg-red-500/30 text-red-300 px-5 py-2 rounded-lg font-medium transition-colors"
-              >
-                {t('common.ok', { defaultValue: 'Anladım' })}
-              </button>
-            </div>
+            <button
+              onClick={() => setFleetVisible(false)}
+              className="bg-red-500/20 hover:bg-red-500/30 text-red-300 px-5 py-2 rounded-lg font-medium transition-colors"
+            >
+              {t('common.gotIt', 'Anladım')}
+            </button>
           </div>
         </div>
       )}
 
+      {/* ── Map ── */}
       <MapContainer
+        ref={mapRef}
         center={[41.015, 28.98]}
         zoom={11}
         style={{ flex: 1, width: '100%', touchAction: 'none' }}
+        zoomControl={false}
       >
-        <TileLayer
-          attribution='&copy; <a href="https://carto.com/">CartoDB</a>'
-          url={`https://{s}.basemaps.cartocdn.com/${theme === 'light' ? 'light_all' : 'dark_all'}/{z}/{x}/{y}{r}.png`}
-        />
+        <TileLayer key={TILES[tileIdx].key} url={TILES[tileIdx].url} />
 
-        {/* Garage markers */}
-        {(garages ?? []).map((g) => (
-            <Marker
-            key={g.code ?? g.name}
-            position={[g.latitude, g.longitude]}
-            icon={garageIcon}
-          >
-            <Popup minWidth={160}>
-              <div className="popup-card">
-                <p className="popup-stop-name">{g.name}</p>
-                {g.code && <p className="popup-label">#{g.code}</p>}
-              </div>
+        {/* User GPS Location */}
+        <GpsMarker location={location} />
+
+        {/* Selected Stops */}
+        {selectedStops.map(s => {
+          const pin = stopPins[s.dcode]
+          if (!pin) return null
+          return (
+            <CircleMarker key={`sel-${s.dcode}`} center={[pin.lat, pin.lon]} radius={10} pathOptions={{ color: '#ef4444', fillColor: '#ef4444', fillOpacity: 0.9, weight: 2 }}>
+              <Popup>
+                <div className="text-sm font-bold mb-1">{s.name}</div>
+                <div className="text-[10px] text-text-muted">#{s.dcode}</div>
+                <button onClick={() => navigate(`/stops/${s.dcode}`)} className="text-brand-400 text-xs mt-2 font-bold">{t('map.arrivalTimes', 'Varış Saatleri')} &rarr;</button>
+              </Popup>
+            </CircleMarker>
+          )
+        })}
+
+        {/* Nearby Stops */}
+        {nearbyStops.map(s => (
+          <CircleMarker key={`near-${s.stop_code}`} center={[s.latitude, s.longitude]} radius={6} pathOptions={{ color: '#22c55e', fillColor: '#22c55e', fillOpacity: 0.7, weight: 1.5 }}>
+            <Popup>
+              <div className="text-sm font-bold mb-1">{s.stop_name}</div>
+              <div className="text-[10px] text-text-muted">#{s.stop_code} · {s.distance_m}m</div>
+              <button onClick={() => navigate(`/stops/${s.stop_code}`)} className="text-brand-400 text-xs mt-2 font-bold">{t('map.arrivalTimes', 'Varış Saatleri')} &rarr;</button>
             </Popup>
-          </Marker>
+          </CircleMarker>
         ))}
 
-        {/* Selected bus route polyline */}
-        {selectedDetail && selectedDetail.route_stops.length > 1 && selectedDetail.route_is_live && (() => {
-          const dir = selectedDetail.direction_letter ?? 'G'
-          const pts = [...selectedDetail.route_stops]
-            .filter((s) => s.direction === dir)
-            .sort((a, b) => a.sequence - b.sequence)
-            .filter((s) => Number.isFinite(s.latitude) && Number.isFinite(s.longitude))
-            .map((s): [number, number] => [s.latitude, s.longitude])
-          return pts.length > 1 ? (
-            <Polyline
-              positions={pts}
-              pathOptions={{ color: '#f97316', weight: 3.5, opacity: 0.85 }}
-            />
-          ) : null
-        })()}
+        {/* Buses */}
+        {displayBuses.length > 0 && (
+          <CanvasFleetLayer
+            buses={displayBuses}
+            selectedRoutes={selectedRoutes}
+            selectedKapino={selectedKapino}
+            onBusClick={setSelectedKapino}
+            onMultiBusClick={setPickerBuses}
+          />
+        )}
+      </MapContainer>
 
-          <CanvasMarkers markers={busMarkers} />
-        </MapContainer>
-
-      {/* Selected bus detail card */}
+      {/* ── Bottom Controls Overlay ── */}
       {selectedKapino && (
-        <div className="absolute bottom-16 left-4 right-4 z-[1001] pointer-events-none">
-          <div
-            className="pointer-events-auto rounded-xl border border-surface-border px-4 py-3 shadow-2xl"
-            style={{ background: 'var(--color-surface-card)' }}
-          >
-            <div className="flex items-start justify-between gap-2">
+        <div className="absolute bottom-0 left-0 right-0 z-[1001] pointer-events-none flex justify-center">
+          <div className="pointer-events-auto w-full max-w-2xl bg-surface-card border-t border-surface-border rounded-t-2xl shadow-2xl overflow-hidden pb-4">
+            
+            {/* Drag Handle (Visual) */}
+            <div className="flex justify-center pt-3 pb-1">
+              <div className="w-10 h-1.5 rounded-full bg-slate-600/80" />
+            </div>
+
+            {/* Header */}
+            <div className="flex items-center gap-3 px-4 py-2">
+              <div
+                className="text-white font-mono font-bold text-sm rounded-xl px-3 py-1.5 shrink-0"
+                style={{ backgroundColor: mergedDetail?.route_is_live ? 'var(--color-warning)' : 'var(--color-text-3)' }}
+              >
+                {mergedDetail?.resolved_route_code || '...'}
+              </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-0.5">
-                  <span className="font-mono font-bold text-brand-400 text-sm">{selectedKapino}</span>
-                  {selectedDetail?.resolved_route_code && (
-                    selectedDetail.route_is_live ? (
-                      <span
-                        className="px-2 py-0.5 rounded-full text-xs font-bold font-mono"
-                        style={{ background: '#f97316', color: '#000' }}
-                      >
-                        {selectedDetail.resolved_route_code}
-                      </span>
-                    ) : (
-                      <span className="text-[11px] text-text-muted font-mono">
-                        Son: {selectedDetail.resolved_route_code}
-                      </span>
-                    )
-                  )}
-                  {detailLoading && (
-                    <span className="text-[10px] text-text-muted">{t('common.loading')}</span>
-                  )}
-                </div>
-                {selectedDetail?.direction && (
-                  <p className="text-xs text-text-secondary truncate">â†’ {selectedDetail.direction}</p>
-                )}
-                {selectedDetail?.route_stops && selectedDetail.route_stops.length > 0 && (
-                  <p className="text-[10px] text-text-muted mt-0.5">
-                    {t('map.stopCount', { defaultValue: '{{count}} durak', count: selectedDetail.route_stops.filter(s => s.direction === (selectedDetail.direction_letter ?? 'G')).length })}
+                  <p className="text-sm font-semibold text-text-primary truncate">
+                    {mergedDetail?.direction ? `\u2192 ${mergedDetail.direction}` : t('map.noDirectionInfo', 'Yön Bilgisi Yok')}
                   </p>
-                )}
-                <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1">
-                  <p className="text-[10px] text-text-muted uppercase tracking-wide">{t('stops.speed')}</p>
-                  <p className="text-[10px] text-text-muted uppercase tracking-wide">{t('map.lastUpdateSoap', { defaultValue: 'Son Update (SOAP)' })}</p>
-                  <p className="text-xs text-text-primary">{selectedSpeed !== null ? `${selectedSpeed} km/h` : '—'}</p>
-                  <p className="text-xs text-text-primary truncate" title={selectedLastSeen ?? undefined}>{selectedLastSeen ?? 'â€”'}</p>
+                  {detailLoading && <span className="text-[10px] text-brand-500 animate-pulse">{t('common.loading', 'yükleniyor...')}</span>}
                 </div>
+                <p className="text-xs text-text-secondary font-mono">
+                  {selectedKapino} {mergedDetail?.plate ? ` \u00b7 ${mergedDetail.plate}` : ''}
+                </p>
               </div>
-              <button
-                onClick={() => { setSelectedKapino(null); setSelectedDetail(null) }}
-                className="text-text-muted hover:text-text-secondary text-lg leading-none shrink-0"
-                aria-label={t('map.closeDetails', { defaultValue: 'Detayları kapat' })}
-                title={t('map.closeDetails', { defaultValue: 'Detayları kapat' })}
-              >
-                ×
+              <button onClick={() => setSelectedKapino(null)} className="p-1.5 text-text-muted hover:text-text-secondary shrink-0">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
               </button>
             </div>
 
-            <div className="mt-3 pt-2 border-t border-surface-border flex items-center justify-end">
-              <button
-                onClick={() => navigate(`/arac/bus/${encodeURIComponent(selectedKapino)}`)}
-                className="metro-tilt px-3 py-1.5 text-xs font-semibold border border-surface-border
-                           text-brand-accent hover:border-brand-accent/60"
-              >
-                {t('stops.moreDetail')}
-              </button>
+            {/* Info Strip */}
+            <div className="px-4 py-3 grid grid-cols-3 gap-2 border-t border-surface-muted mt-2">
+              <div className="flex flex-col items-center gap-0.5">
+                <p className="text-[10px] text-text-muted uppercase tracking-wider">{t('map.speed', 'Hız')}</p>
+                <p className="text-base font-bold text-text-primary">
+                  {mergedDetail?.speed ?? '—'} <span className="text-xs font-normal">km/h</span>
+                </p>
+              </div>
+              <div className="flex flex-col items-center gap-0.5">
+                <p className="text-[10px] text-text-muted uppercase tracking-wider">Plaka</p>
+                <p className="text-sm font-bold text-text-primary font-mono mt-0.5">{mergedDetail?.plate ?? '—'}</p>
+              </div>
+              <div className="flex flex-col items-center gap-0.5">
+                <p className="text-[10px] text-text-muted uppercase tracking-wider">{t('arac.lastSeen', 'Son Görülme')}</p>
+                <p className="text-sm font-bold text-text-primary mt-0.5">
+                  {mergedDetail?.last_seen ? formatAgo(parseIsoDate(mergedDetail.last_seen), nowMs, t) : '—'}
+                </p>
+              </div>
             </div>
+
+            {/* CTA Buttons */}
+            <div className="px-4 pt-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <button
+                  onClick={() => {
+                    if (mergedDetail?.resolved_route_code) {
+                      navigate(`/routes/${mergedDetail.resolved_route_code}`)
+                    }
+                  }}
+                  disabled={!mergedDetail?.resolved_route_code}
+                  className="w-full bg-brand-600 hover:bg-brand-500 text-white font-semibold py-3 rounded-xl text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {t('map.openRoute', 'Hattı Aç')} &rarr;
+                </button>
+                <button
+                  onClick={() => navigate(`/arac/bus/${encodeURIComponent(selectedKapino)}`)}
+                  className="w-full border border-surface-border text-brand-primary font-semibold py-3 rounded-xl text-sm transition-colors hover:border-brand-primary/60"
+                >
+                  {t('stops.moreDetail', 'Daha Fazla Detay')}
+                </button>
+              </div>
+            </div>
+
           </div>
         </div>
       )}
 
-      {/* Bottom status bar */}
-      <div className="absolute bottom-4 right-4 z-[1000] flex items-center gap-2">
-        <FleetMetaBadge updatedAt={fleetMeta?.updated_at} />
-        <button
-          onClick={() => { refresh(); refreshFleetMeta() }}
-          title={t('common.refresh')}
-          className="bg-surface-card/90 backdrop-blur px-2.5 py-1.5 rounded-xl
-                     text-xs text-text-secondary border border-surface-muted hover:text-text-primary transition-colors"
-        >
-          â†»
-        </button>
-        <div className="bg-surface-card/90 backdrop-blur px-3 py-1.5 rounded-xl
-                        text-xs text-text-secondary border border-surface-muted">
-          {t('map.vehicleCount', { defaultValue: '{{count}} araç', count: filtered.length.toLocaleString() })}
-          {hasFilter && t('map.totalCount', { defaultValue: ' / {{count}} toplam', count: (buses ?? []).length.toLocaleString() })}
+      {/* ── Multi-Bus Picker ── */}
+      {pickerBuses && (
+        <MapBusPicker 
+          buses={pickerBuses} 
+          onSelect={setSelectedKapino} 
+          onClose={() => setPickerBuses(null)} 
+        />
+      )}
+
+      {/* ── Bottom Controls Overlay ── */}
+      <div className="absolute bottom-4 left-4 right-4 z-[1000] flex flex-col gap-2 pointer-events-none">
+        {/* Floating Controls Row (GPS & Tile Toggle) */}
+        <div className="flex justify-between items-end w-full">
+          <div className="pointer-events-auto">
+            <GpsButton onClick={handleGpsClick} loading={gpsLoading} />
+          </div>
+          <div className="pointer-events-auto">
+            <MapTileToggle 
+              tileIdx={tileIdx} 
+              onCycle={() => {
+                const next = (tileIdx + 1) % TILES.length
+                setTileIdx(next)
+                localStorage.setItem('map-tile', String(next))
+              }} 
+            />
+          </div>
         </div>
+
+        {/* ── Search Panel (Bottom) ── */}
+        <MapSearchPanel
+          selectedRoutes={selectedRoutes}
+          selectedStops={selectedStops}
+          fleetVisible={fleetVisible}
+          busCount={displayBuses.length}
+          fleet={fleet}
+          onAddRoute={(r) => !selectedRoutes.includes(r) && selectedRoutes.length < 5 && setSelectedRoutes([...selectedRoutes, r])}
+          onRemoveRoute={(r) => setSelectedRoutes(selectedRoutes.filter(x => x !== r))}
+          onAddStop={(d, n) => {
+            if (!selectedStops.find(x => x.dcode === d)) {
+              setSelectedStops([...selectedStops, { dcode: d, name: n }])
+              api.stops.detail(d).then(res => {
+                if (res.latitude && res.longitude) {
+                  setStopPins(prev => ({ ...prev, [d]: { lat: res.latitude!, lon: res.longitude! } }))
+                  mapRef.current?.flyTo([res.latitude, res.longitude], 15, { duration: 0.5 })
+                }
+              }).catch(() => {})
+            } else {
+              const pin = stopPins[d]
+              if (pin) mapRef.current?.flyTo([pin.lat, pin.lon], 15, { duration: 0.5 })
+            }
+          }}
+          onRemoveStop={(d) => setSelectedStops(selectedStops.filter(x => x.dcode !== d))}
+          onToggleFleet={() => setFleetVisible(!fleetVisible)}
+          onBusSearch={(k) => setSelectedKapino(k)}
+        />
       </div>
+
     </div>
   )
 }
-

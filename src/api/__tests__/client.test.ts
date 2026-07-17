@@ -11,6 +11,7 @@ function mockFetch(body: unknown, status = 200) {
     vi.fn().mockResolvedValue({
       ok: status < 400,
       status,
+      headers: new Headers(),
       json: () => Promise.resolve(body),
       text: () => Promise.resolve(String(body)),
     }),
@@ -102,11 +103,11 @@ describe('api.stops.arrivals', () => {
     const payload = [{ route_code: '500T', destination: 'LEVENT', eta_minutes: 4, eta_raw: '4 dk', plate: null, kapino: null }]
     mockFetch(payload)
     const result = await api.stops.arrivals('220602')
-    expect(result[0].route_code).toBe('500T')
+    expect(result.data[0].route_code).toBe('500T')
   })
 
   it('appends via param when provided', async () => {
-    const fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 200, json: () => Promise.resolve([]) })
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 200, headers: new Headers(), json: () => Promise.resolve([]) })
     vi.stubGlobal('fetch', fetchMock)
     await api.stops.arrivals('220602', '301341')
     const url = fetchMock.mock.calls[0][0] as string

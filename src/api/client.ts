@@ -7,7 +7,7 @@
 import { loadSettings } from '@/utils/settings'
 
 const STATIC_BASE = normalizeBase(import.meta.env.VITE_API_BASE_URL ?? '')
-const REQUEST_TIMEOUT_MS = 15_000
+const REQUEST_TIMEOUT_MS = 30_000
 const NETWORK_ERROR_TEXT = 'Sunucuya baglanilamadi. Ayarlar > iett-middle Sunucu Adresi bolumunu kontrol edin.'
 
 function normalizeBase(base: string | null | undefined): string {
@@ -71,10 +71,10 @@ function createTimeoutSignal(timeoutMs: number): TimeoutSignal {
   }
 }
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
+async function requestFull<T>(path: string, init?: RequestInit): Promise<{ data: T; headers: Headers }> {
   const configuredBase = getConfiguredBase()
 
-  const execute = async (url: string): Promise<T> => {
+  const execute = async (url: string): Promise<{ data: T; headers: Headers }> => {
     const { signal: timeoutSignal, clear } = createTimeoutSignal(REQUEST_TIMEOUT_MS)
     try {
       let finalSignal = init?.signal || timeoutSignal
@@ -88,7 +88,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
         const text = await res.text().catch(() => '')
         throw new ApiHttpError(path, res.status, text)
       }
-      return await res.json() as T
+      return { data: await res.json() as T, headers: res.headers }
     } finally {
       clear()
     }
@@ -98,7 +98,6 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     try {
       return await execute(`${configuredBase}${path}`)
     } catch (error) {
-      // If an explicit base is unreachable, retry same-origin once.
       if (configuredBase && isNetworkError(error)) {
         return await execute(path)
       }
@@ -110,6 +109,11 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     }
     throw error
   }
+}
+
+async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const { data } = await requestFull<T>(path, init)
+  return data
 }
 
 async function get<T>(path: string, init?: RequestInit): Promise<T> {
@@ -130,7 +134,19 @@ async function post<T>(path: string, body?: unknown, init?: RequestInit): Promis
   })
 }
 
-// ─── Model types ──────────────────────────────────────────────────────────────
+
+export interface GlobalNotice {
+  notice_body: string
+  notice_endtime: number
+  notice_imageid: string | null
+  notice_noticeid: string
+  notice_starttime: number
+  notice_title: string
+  page_name: string
+  page_pageid: string
+}
+
+// ─── API Response Wrappers ──────────────────────────────────────────────────────────────
 
 export interface TrailPoint {
   lat: number
@@ -409,13 +425,17 @@ export const api = {
     refresh: (init?: RequestInit) => post<FleetRefreshResponse>('/v1/fleet/refresh', undefined, init),
   },
   stops: {
-    search: (q: string, init?: RequestInit) => get<StopSearchResult[]>(`/v1/stops/search?q=${encodeURIComponent(q)}`, init),
-    nearby: (lat: number, lon: number, radius = 500, init?: RequestInit) =>
-      get<NearbyStop[]>(`/v1/stops/nearby?lat=${lat}&lon=${lon}&radius=${radius}`, init),
-    detail: (dcode: string, init?: RequestInit) => get<StopDetail>(`/v1/stops/${encodeURIComponent(dcode)}`, init),
-    arrivals: (dcode: string, via?: string, init?: RequestInit) =>
-      get<Arrival[]>(`/v1/stops/${dcode}/arrivals${via ? `?via=${via}` : ''}`, init),
-    routes: (dcode: string, init?: RequestInit) => get<string[]>(`/v1/stops/${dcode}/routes`, init),
+    search: async (q: string, init?: RequestInit) => get<StopSearchResult[]>(`/v1/stops/search?q=${encodeURIComponent(q)}`, init),
+    nearby: async (lat: number, lon: number, limit: number = 15, radius: number = 500, init?: RequestInit) => 
+      get<NearbyStop[]>(`/v1/stops/nearby?lat=${lat}&lon=${lon}&radius=${radius}&limit=${limit}`, init),
+    detail: async (dcode: string, init?: RequestInit) => get<StopDetail>(`/v1/stops/${encodeURIComponent(dcode)}`, init),
+    arrivals: async (dcode: string, via?: string, init?: RequestInit) => {
+      const q = new URLSearchParams()
+      if (via) q.set('via', via)
+      const qs = q.toString()
+      return requestFull<Arrival[]>(`/v1/stops/${encodeURIComponent(dcode)}/arrivals${qs ? `?${qs}` : ''}`, init)
+    },
+    routes: async (dcode: string, init?: RequestInit) => get<string[]>(`/v1/stops/${encodeURIComponent(dcode)}/routes`, init),
     announcements: (dcode: string, init?: RequestInit) => get<RouteAnnouncement[]>(`/v1/stops/${dcode}/announcements`, init),
   },
   routes: {
@@ -450,4 +470,7 @@ export const api = {
         ...init, headers: { ...init?.headers, ...aracAuthHeaders(session) },
       }),
   },
+  notices: {
+    global: (init?: RequestInit) => get<GlobalNotice[]>('/v1/announcements/global', init),
+  }
 }

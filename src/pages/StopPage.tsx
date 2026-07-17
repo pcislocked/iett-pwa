@@ -10,7 +10,10 @@ import { useFavorites } from '@/hooks/useFavorites'
 import { useBottomBar } from '@/hooks/useBottomBar'
 import { PINNED_STOPS_MAX, useUserPrefs } from '@/hooks/useUserPrefs'
 import { useTranslation } from 'react-i18next'
+import { useGlobalNotices } from '@/hooks/useGlobalNotices'
 import { etaChipClass } from '@/utils/etaColor'
+import { useTheme } from '@/hooks/useTheme'
+import PullToRefresh from '@/components/PullToRefresh'
 
 
 /** Fixed palette for the first 3 routes at this stop */
@@ -53,6 +56,86 @@ function FitBoundsEffect({ bounds }: { bounds: [[number, number], [number, numbe
   const map = useMap()
   useEffect(() => { map.fitBounds(bounds, { padding: [32, 32] }) }, [map, bounds])
   return null
+}
+
+function InfoModal({ onClose }: { onClose: () => void }) {
+  const { t } = useTranslation()
+  const modalRef = useRef<HTMLDivElement>(null)
+  const btnRef = useRef<HTMLButtonElement>(null)
+
+  useEffect(() => {
+    const previouslyFocused = document.activeElement
+    btnRef.current?.focus()
+    return () => {
+      if (previouslyFocused instanceof HTMLElement) {
+        previouslyFocused.focus()
+      }
+    }
+  }, [])
+
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+      if (e.key === 'Tab') {
+        if (!modalRef.current) return
+        const focusable = modalRef.current.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        )
+        if (focusable.length === 0) return
+        const first = focusable[0]
+        const last = focusable[focusable.length - 1]
+        
+        if (e.shiftKey) {
+          if (document.activeElement === first) {
+            e.preventDefault()
+            last.focus()
+          }
+        } else {
+          if (document.activeElement === last) {
+            e.preventDefault()
+            first.focus()
+          }
+        }
+      }
+    }
+    document.addEventListener('keydown', handleKey)
+    return () => {
+      document.removeEventListener('keydown', handleKey)
+    }
+  }, [onClose])
+
+  return (
+    <div className="fixed inset-0 z-[600] flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div 
+        ref={modalRef}
+        role="dialog" 
+        aria-modal="true" 
+        aria-labelledby="info-title"
+        className="relative w-full max-w-sm bg-surface-card border border-surface-border rounded-xl shadow-2xl p-6"
+      >
+        <h2 id="info-title" className="text-lg font-bold text-text-primary mb-2">{t('stops.timestamps', 'Zaman Damgaları')}</h2>
+        <div tabIndex={0} className="text-sm text-text-secondary mb-6 space-y-2 overflow-y-auto max-h-[50vh]">
+          <p>
+            <strong>{t('common.update', 'Güncelleme')}:</strong> {t('stops.timestampDescUpdate', 'Uygulamanın sunucularımızdan en son veriyi çektiği anı gösterir.')}
+          </p>
+          <p>
+            <strong>{t('common.iett', 'İETT')}:</strong> {t('stops.timestampDescIett', 'Sunucularımızın İETT altyapısından veriyi gerçekten kopyaladığı anı gösterir.')} 
+          </p>
+          <p>
+            {t('stops.timestampLagWarning', 'İki saat arasındaki fark büyüyorsa, İETT sistemlerinde genel bir gecikme yaşanıyor demektir.')}
+          </p>
+        </div>
+        <button
+          ref={btnRef}
+          onClick={onClose}
+          className="w-full py-2.5 bg-brand-600 hover:bg-brand-500 text-white font-semibold rounded-lg transition-colors"
+        >
+          {t('common.gotIt', 'Anladım')}
+        </button>
+      </div>
+    </div>
+  )
 }
 
 /**
@@ -117,7 +200,7 @@ function AmenityIcons({ amenities }: { amenities: Amenities | null }) {
   const known = items.filter((i) => i.value != null)
   if (known.length === 0) return null
   return (
-    <div className="px-4 pb-2 flex gap-3 justify-center flex-wrap">
+    <div className="px-4 py-3 flex gap-3 justify-center flex-wrap">
       {known.map((item) => (
         <span
           key={item.label}
@@ -152,6 +235,8 @@ function BusDetailSheet({
 }) {
   const navigate = useNavigate()
   const { t } = useTranslation()
+  const [mapReady, setMapReady] = useState(false)
+  const { theme } = useTheme()
 
   const dialogRef = useRef<HTMLDivElement>(null)
   const previouslyFocused = useRef<Element | null>(null)
@@ -249,13 +334,13 @@ function BusDetailSheet({
   })
 
   const y = useMotionValue(0)
-  const backdropOpacity = useTransform(y, [0, window.innerHeight / 2], [1, 0])
+  const backdropOpacity = useTransform(y, [0, 800], [1, 0])
 
   return (
-    <div className="fixed inset-0 z-[500] flex items-end pointer-events-none">
+    <div className="fixed inset-0 z-[2000] flex items-end pointer-events-none">
       {/* Backdrop */}
       <motion.div 
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm pointer-events-auto"
+        className="absolute inset-0 bg-black/60 pointer-events-auto"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
@@ -278,11 +363,12 @@ function BusDetailSheet({
           }
         }}
         style={{ y }}
-        initial={{ y: "100%" }}
+        initial={{ y: 800 }}
         animate={{ y: 0 }}
-        exit={{ y: "100%" }}
+        exit={{ y: 800 }}
         transition={{ type: "spring", bounce: 0, duration: 0.4 }}
-        className="relative w-full max-w-2xl mx-auto bg-surface-card border-t border-surface-muted rounded-t-2xl overflow-hidden shadow-2xl pointer-events-auto"
+        onAnimationComplete={() => setMapReady(true)}
+        className="relative w-full max-w-2xl mx-auto bg-surface-card border-t border-surface-border rounded-t-2xl overflow-hidden shadow-2xl pointer-events-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Drag handle */}
@@ -315,20 +401,27 @@ function BusDetailSheet({
 
         {/* Map — bus ↔ stop */}
         {hasPosition ? (
-          <div style={{ height: 200 }}>
-            <MapContainer center={mapCenter} zoom={15} style={{ height: '100%', width: '100%' }} zoomControl={false}>
-              <TileLayer
-                attribution='&copy; CartoDB'
-                url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-              />
-              {bounds && <FitBoundsEffect bounds={bounds} />}
-              <Polyline
-                positions={[[effectiveLat!, effectiveLon!], [stopLat, stopLon]]}
-                pathOptions={{ color: 'var(--color-warning)', weight: 2, dashArray: '6 4', opacity: 0.7 }}
-              />
-              <Marker position={[effectiveLat!, effectiveLon!]} icon={busIcon} />
-              <Marker position={[stopLat, stopLon]} icon={stopIcon} />
-            </MapContainer>
+          <div style={{ height: 200 }} className="relative bg-surface-muted/20">
+            {!mapReady && (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="w-6 h-6 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
+              </div>
+            )}
+            {mapReady && (
+              <MapContainer center={mapCenter} zoom={15} style={{ height: '100%', width: '100%' }} zoomControl={false}>
+                <TileLayer
+                  attribution='&copy; CartoDB'
+                  url={`https://{s}.basemaps.cartocdn.com/${theme === 'light' ? 'light_all' : 'dark_all'}/{z}/{x}/{y}{r}.png`}
+                />
+                {bounds && <FitBoundsEffect bounds={bounds} />}
+                <Polyline
+                  positions={[[effectiveLat!, effectiveLon!], [stopLat, stopLon]]}
+                  pathOptions={{ color: 'var(--color-warning)', weight: 2, dashArray: '6 4', opacity: 0.7 }}
+                />
+                <Marker position={[effectiveLat!, effectiveLon!]} icon={busIcon} />
+                <Marker position={[stopLat, stopLon]} icon={stopIcon} />
+              </MapContainer>
+            )}
           </div>
         ) : (
           <div className="h-12 flex items-center justify-center">
@@ -359,6 +452,15 @@ function BusDetailSheet({
             <p className="text-sm font-bold text-text-primary font-mono">{arrival.plate ?? '—'}</p>
           </div>
         </div>
+
+        {/* Double update time (GPS Last Seen) */}
+        {arrival.last_seen_ts && (
+          <div className="flex justify-center pb-2 pt-1 border-b border-surface-border">
+            <p className="text-[10px] text-text-muted font-mono tracking-wide">
+              GPS Update: {arrival.last_seen_ts}
+            </p>
+          </div>
+        )}
 
         {/* Amenity icons */}
         <AmenityIcons amenities={arrival.amenities} />
@@ -427,6 +529,7 @@ export default function StopPage() {
   const [showAnnouncements, setShowAnnouncements] = useState(false)
   const [selectedArrival, setSelectedArrival] = useState<Arrival | null>(null)
   const [activeTab, setActiveTab] = useState<'gelis' | 'hatlar' | 'bilgi'>('gelis')
+  const [showInfo, setShowInfo] = useState(false)
 
   const handleCloseBusSheet = useCallback(() => setSelectedArrival(null), [])
 
@@ -537,7 +640,22 @@ export default function StopPage() {
 
   useBottomBar(bottomBarTabs)
 
-  const { data: arrivals, loading, error, stale, refresh: refreshArrivals, lastUpdated } = useArrivals(dcode ?? '')
+  const { data: arrivals, loading, error, stale, refresh: refreshArrivals, lastUpdated, iettUpdatedAt } = useArrivals(dcode ?? '')
+
+  const iettTimeDisplay = useMemo(() => {
+    if (iettUpdatedAt) {
+      return new Date(iettUpdatedAt).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+    }
+    if (!arrivals || arrivals.length === 0) return '--:--:--'
+    
+    let maxTs = ""
+    for (const a of arrivals) {
+      if (a.last_seen_ts && a.last_seen_ts > maxTs) {
+        maxTs = a.last_seen_ts
+      }
+    }
+    return maxTs || '--:--:--'
+  }, [iettUpdatedAt, arrivals])
 
   const { data: routes } = useQuery<string[]>({
     queryKey: ['routesAtStop', dcode],
@@ -626,13 +744,27 @@ export default function StopPage() {
     enabled: !!dcode,
     placeholderData: (prev) => prev,
   })
-  const stopAnnouncements = isAnnsError ? [{
-    type: 'Uyarı',
+  
+  const { data: globalNotices } = useGlobalNotices()
+
+  const rawStopAnnouncements = isAnnsError ? [{
+    type: t('common.warning', 'Uyarı'),
     updated_at: new Date().toLocaleTimeString('tr-TR'),
-    message: 'Duyurular yüklenirken geçici bir hata oluştu.',
+    message: t('stops.announcementsFailed', 'Duyurular yüklenirken geçici bir hata oluştu.'),
     route_code: '',
     route_name: '',
   } as RouteAnnouncement] : (polledAnnouncements ?? [])
+
+  const stopAnnouncements: RouteAnnouncement[] = useMemo(() => [
+    ...(globalNotices ?? []).map(gn => ({
+      type: 'Sistem Genel Duyuru',
+      updated_at: new Date(gn.notice_starttime).toLocaleDateString('tr-TR'),
+      message: `${gn.notice_title}\n\n${gn.notice_body}`,
+      route_code: 'GENEL',
+      route_name: t('stops.systemAnnouncements', 'Sistem Uyarıları')
+    })),
+    ...rawStopAnnouncements
+  ], [globalNotices, rawStopAnnouncements, t])
 
   const { isFavorite, toggle } = useFavorites()
   const { prefs, isPinned, pinStop, unpinStop } = useUserPrefs()
@@ -908,7 +1040,13 @@ export default function StopPage() {
         </div>
 
         {/* Arrivals — scrollable, items must not shrink */}
-        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 pt-2 pb-4">
+        <PullToRefresh
+          onRefresh={async () => {
+            refreshArrivals()
+            await new Promise(r => setTimeout(r, 600))
+          }}
+        >
+          <div className="px-4 pt-2 pb-4">
           {/* Announcements Accordion */}
           {(stopAnnouncements ?? []).length > 0 && (
             <div className="mb-2">
@@ -1024,21 +1162,30 @@ export default function StopPage() {
             })}
           </AnimatePresence>
 
-
-        </div>
+          </div>
+        </PullToRefresh>
 
         {/* ── Bottom strip: last updated + refresh + route filter chips ────── */}
         <div className="shrink-0 border-t border-surface-muted bg-surface-card pb-2">
           {/* Last updated row */}
           <div className="px-4 pt-2 pb-1 flex items-center justify-between">
-            <span className="text-[11px] text-text-muted">
+            <span className="text-[11px] text-text-muted flex items-center gap-1">
               {lastUpdated
-                ? `güncellendi: ${lastUpdated.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`
+                ? `${t('stops.lastUpdated', { time: lastUpdated.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }), defaultValue: 'güncelleme: {{time}}' })}, iett: ${iettTimeDisplay}`
                 : t('common.loading')}
+              {(iettUpdatedAt || (arrivals && arrivals.length > 0)) && (
+                <button 
+                  onClick={() => setShowInfo(true)}
+                  aria-label={t('stops.lagExplanationAria', 'Neden iki farklı saat var?')}
+                  className="flex items-center justify-center w-4 h-4 rounded-full bg-surface-muted text-[10px] font-bold text-text-secondary hover:text-text-primary transition-colors"
+                >
+                  i
+                </button>
+              )}
             </span>
             <button
               onClick={() => refreshArrivals()}
-              className="flex items-center gap-1 text-[11px] text-text-secondary hover:text-white transition-colors active:scale-95"
+              className="flex items-center gap-1 text-[11px] text-text-secondary hover:text-text-primary transition-colors active:scale-95"
             >
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
@@ -1108,6 +1255,9 @@ export default function StopPage() {
           />
         )}
       </AnimatePresence>
+
+      {/* Info Modal */}
+      {showInfo && <InfoModal onClose={() => setShowInfo(false)} />}
     </div>
   )
 }

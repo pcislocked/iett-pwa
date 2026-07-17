@@ -45,8 +45,8 @@ export default defineConfig({
       injectRegister: false,
       registerType: 'autoUpdate',
       manifest: {
-        name: 'İETT Canlı',
-        short_name: 'İETT',
+        name: 'iett-pwa',
+        short_name: 'iett-pwa',
         description: 'İstanbul otobüslerini gerçek zamanlı takip et',
         theme_color: '#000000',
         background_color: '#000000',
@@ -120,6 +120,7 @@ export default defineConfig({
   server: {
     host: '0.0.0.0',
     port: 5173,
+    allowedHosts: true,
     proxy: {
       '/v1': {
         target: process.env.VITE_API_BASE_URL ?? 'http://localhost:8000',

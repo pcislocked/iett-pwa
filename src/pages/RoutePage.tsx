@@ -61,6 +61,15 @@ function TimetableView({ schedule, scheduleError, onRetry, metadata, stops, hatK
   const { t } = useTranslation()
   const [dayType, setDayType] = useState('H')
   const [direction, setDirection] = useState('')
+  const [showNightNotice, setShowNightNotice] = useState(false)
+
+  const hasNightServices = useMemo(() => {
+    if (!schedule) return false
+    return schedule.some((d) => {
+      const [h] = d.departure_time.split(':').map(Number)
+      return h >= 0 && h < 5
+    })
+  }, [schedule])
 
   // Map direction code ('D'/'G') -> departure label (KALKIŞ / YÖNÜ)
   const dirLabel = useMemo(() => {
@@ -82,23 +91,23 @@ function TimetableView({ schedule, scheduleError, onRetry, metadata, stops, hatK
           }
           
           if (firstStops.size === 1) {
-            return `${Array.from(firstStops)[0]} KALKIŞ`
+            return t('routes.departureSuffix', { stopName: Array.from(firstStops)[0], defaultValue: '{{stopName}} KALKIŞ' })
           } else if (lastStops.size === 1) {
-            return `${Array.from(lastStops)[0]} YÖNÜ`
+            return t('routes.directionSuffix', { stopName: Array.from(lastStops)[0], defaultValue: '{{stopName}} YÖNÜ' })
           } else if (firstStops.size > 1) {
             // Both first and last stops differ — use canonical variant (D0/G0)
             const canonicalCode = variantsInDir.find(v => v.endsWith('_D0') || v.endsWith('_G0'))
             if (canonicalCode) {
               const canonStops = dirStops.filter(s => s.route_code === canonicalCode)
               if (canonStops.length > 0) {
-                return `${formatStopName(canonStops[0].stop_name)} KALKIŞ`
+                return t('routes.departureSuffix', { stopName: formatStopName(canonStops[0].stop_name), defaultValue: '{{stopName}} KALKIŞ' })
               }
             }
             // Fallback: metadata direction_name first part
             const meta = metadata?.find(m => (m.direction === 0 ? 'G' : 'D') === code)
             if (meta?.direction_name) {
               const firstPart = meta.direction_name.split(' - ')[0].trim()
-              if (firstPart) return `${firstPart} KALKIŞ`
+              if (firstPart) return t('routes.departureSuffix', { stopName: firstPart, defaultValue: '{{stopName}} KALKIŞ' })
             }
             return code === 'G' ? t('routes.directionG', 'Gidiş') : t('routes.directionD', 'Dönüş')
           }
@@ -107,7 +116,7 @@ function TimetableView({ schedule, scheduleError, onRetry, metadata, stops, hatK
 
       const baseLabel = getDirectionLabel(code, metadata, hasMetadata)
       return baseLabel !== code && baseLabel !== 'Gidiş' && baseLabel !== 'Dönüş'
-        ? `${baseLabel} KALKIŞ`
+        ? t('routes.departureSuffix', { stopName: baseLabel, defaultValue: '{{stopName}} KALKIŞ' })
         : baseLabel === 'Gidiş' ? t('routes.directionG', 'Gidiş') : baseLabel === 'Dönüş' ? t('routes.directionD', 'Dönüş') : code
     }
   }, [metadata, stops, t])
@@ -251,13 +260,33 @@ function TimetableView({ schedule, scheduleError, onRetry, metadata, stops, hatK
         )}
       </div>
 
+      {hasNightServices && (
+        <div className="p-3 bg-amber-950/20 border border-amber-800/40 rounded-xl text-xs text-amber-300">
+          <button 
+            type="button"
+            onClick={() => setShowNightNotice(!showNightNotice)}
+            className="flex items-center justify-between w-full font-semibold text-left focus:outline-none"
+          >
+            <span className="flex items-center gap-1.5">🌙 {t('routes.nightNoticeTitle', { defaultValue: 'Gece Seferleri Hk.' })}</span>
+            <span className="text-[10px]">{showNightNotice ? '▲' : '▼'}</span>
+          </button>
+          {showNightNotice && (
+            <p className="mt-2 text-[11px] leading-relaxed border-t border-amber-800/20 pt-2 text-amber-200/90">
+              {t('routes.nightServiceWarning', {
+                defaultValue: 'Gece seferleri (00:00 - 05:00 arası) bir önceki günün tarifesinde listelenir. Örn: Cumartesi gecesini Pazara bağlayan gece seferleri için Cumartesi tabini kontrol etmelisiniz.'
+              })}
+            </p>
+          )}
+        </div>
+      )}
+
       {!schedule && !scheduleError && (
         <div className="flex flex-col gap-2">
           {[...Array(5)].map((_, i) => <div key={i} className="h-12 bg-surface-muted rounded-xl animate-pulse" />)}
         </div>
       )}
 
-      {!schedule && scheduleError && <ErrorRetry message="Sefer saatleri yüklenemedi" onRetry={onRetry} />}
+      {!schedule && scheduleError && <ErrorRetry message={t('routes.failedToLoadSchedule', 'Sefer saatleri yüklenemedi')} onRetry={onRetry} />}
 
       {schedule && hours.length === 0 && (
         <div className="text-center text-text-muted py-12 text-sm">{t('routes.noSchedule')}</div>
@@ -334,7 +363,12 @@ export default function RoutePage() {
     setActiveDir(directionCode)
     setActiveVariant(variantCode)
     setTab('stops')
-    window.scrollTo({ top: 0, behavior: 'smooth' })
+    window.scrollTo({ top: 0, behavior: 'instant' })
+  }, [])
+
+  const handleChangeVariant = useCallback((variantCode: string, directionCode: string) => {
+    setActiveDir(directionCode)
+    setActiveVariant(variantCode)
   }, [])
 
   const { data: buses, stale } = useRouteBuses(hatKodu ?? '')
@@ -354,7 +388,7 @@ export default function RoutePage() {
     () => [...new Set((stops ?? []).map((s) => s.direction))].sort(),
     [stops],
   )
-  const dirLabel = (d: string) => d === 'G' ? 'Gidiş' : d === 'D' ? 'Dönüş' : d
+  const dirLabel = (d: string) => d === 'G' ? t('routes.directionG', 'Gidiş') : d === 'D' ? t('routes.directionD', 'Dönüş') : d
 
   const effectiveDir = stopsDirections.includes(activeDir)
     ? activeDir
@@ -373,14 +407,25 @@ export default function RoutePage() {
 
   // Deduplicate by stop_code within the selected direction AND variant
   const stopsForDir = useMemo(() => {
-    const dirStops = (stops ?? []).filter((s) => {
-      if (effectiveDir && s.direction !== effectiveDir) return false
-      if (effectiveVariant && s.route_code !== effectiveVariant) return false
-      return true
-    })
+    let dirStops = (stops ?? []).filter((s) => !effectiveDir || s.direction === effectiveDir)
+    
+    if (effectiveVariant) {
+      const variantStops = dirStops.filter((s) => s.route_code === effectiveVariant)
+      if (variantStops.length > 0) {
+        dirStops = variantStops
+      } else {
+        // Fallback to canonical variant (e.g. 15KÇ_G0) if the exact sub-variant isn't in the stops list
+        const canonicalCode = `${hatKodu}_${effectiveDir}0`
+        const canonicalStops = dirStops.filter((s) => s.route_code === canonicalCode)
+        if (canonicalStops.length > 0) {
+          dirStops = canonicalStops
+        }
+      }
+    }
+    
     const seen = new Set<string>()
     return dirStops.filter((s) => { if (seen.has(s.stop_code)) return false; seen.add(s.stop_code); return true })
-  }, [stops, effectiveDir, effectiveVariant])
+  }, [stops, effectiveDir, effectiveVariant, hatKodu])
 
   const busAtSequence = useMemo(() => {
     const seqs = new Set<number>()
@@ -414,7 +459,7 @@ export default function RoutePage() {
   return (
     <div className="flex flex-col min-h-screen">
       {/* Header */}
-      <div className="sticky top-0 z-30 bg-surface-card border-b border-surface-muted">
+      <div className="sticky top-0 z-[10000] bg-surface-card border-b border-surface-muted">
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
@@ -475,32 +520,16 @@ export default function RoutePage() {
         {tab === 'map' && (
           <div className="flex flex-col gap-2">
             {/* Direction pills — map tab, Metro flat */}
-            {stopsDirections.length > 1 && (
-              <div role="tablist" aria-label="Yön seçimi" className="flex border-b border-surface-border">
-                {stopsDirections.map((dir) => (
-                  <button role="tab" aria-selected={effectiveDir === dir} key={dir} onClick={() => setActiveDir(dir)}
-                    className={`flex-1 text-xs py-2 px-2 font-medium transition-colors truncate border-b-2 -mb-px ${
-                      effectiveDir === dir
-                        ? 'border-brand-primary text-brand-primary'
-                        : 'border-transparent text-text-muted hover:text-text-secondary'
-                    }`}
-                  >
-                    {dirLabel(dir)}
-                  </button>
-                ))}
-              </div>
-            )}
             {/* Variant Select */}
-            {effectiveDir && (
-              <div className="px-1 mt-2">
-                <VariantSelect
-                  metadata={metadata ?? null}
-                  direction={effectiveDir}
-                  selectedVariant={effectiveVariant}
-                  onChange={setActiveVariant}
-                />
-              </div>
-            )}
+            <div className="px-1 mt-2 relative z-[9999]">
+              <VariantSelect
+                metadata={metadata ?? null}
+                stopsDirections={stopsDirections}
+                selectedDirection={effectiveDir}
+                selectedVariant={effectiveVariant}
+                onChange={handleChangeVariant}
+              />
+            </div>
             {/* Bus direction legend */}
             {buses && buses.length > 0 && (
               <div className="flex items-center gap-4 px-1">
@@ -555,32 +584,16 @@ export default function RoutePage() {
         {tab === 'stops' && (
           <div className="flex flex-col gap-1">
             {/* Direction filter pills — stops tab, Metro flat */}
-            {stopsDirections.length > 1 && (
-              <div className="flex border-b border-surface-border mb-1">
-                {stopsDirections.map((dir) => (
-                  <button role="tab" aria-selected={effectiveDir === dir} key={dir} onClick={() => setActiveDir(dir)}
-                    className={`flex-1 text-xs py-2 px-2 font-medium transition-colors truncate border-b-2 -mb-px ${
-                      effectiveDir === dir
-                        ? 'border-[#00AFF0] text-[#00AFF0]'
-                        : 'border-transparent text-text-muted hover:text-text-secondary'
-                    }`}
-                  >
-                    {dirLabel(dir)}
-                  </button>
-                ))}
-              </div>
-            )}
             {/* Variant Select */}
-            {effectiveDir && (
-              <div className="px-1 mt-1">
-                <VariantSelect
-                  metadata={metadata ?? null}
-                  direction={effectiveDir}
-                  selectedVariant={effectiveVariant}
-                  onChange={setActiveVariant}
-                />
-              </div>
-            )}
+            <div className="px-1 mt-1 relative z-[9999]">
+              <VariantSelect
+                metadata={metadata ?? null}
+                stopsDirections={stopsDirections}
+                selectedDirection={effectiveDir}
+                selectedVariant={effectiveVariant}
+                onChange={handleChangeVariant}
+              />
+            </div>
             {!stops && !stopsError && (
               <div className="flex flex-col gap-2">
                 {[...Array(6)].map((_, i) => (
@@ -646,7 +659,7 @@ export default function RoutePage() {
             )}
             {announcements?.map((a, i) => (
               <div key={i} className="card border-l-4 border-amber-500">
-                <p className="text-xs text-amber-400 mb-1">{a.type} Â· {a.updated_at}</p>
+                <p className="text-xs text-amber-400 mb-1">{a.type} &middot; {a.updated_at}</p>
                 <p className="text-sm text-text-primary">{a.message}</p>
               </div>
             ))}

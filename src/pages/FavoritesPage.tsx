@@ -49,9 +49,9 @@ export default function FavoritesPage() {
   const routes = favorites.filter((f) => f.kind === 'route')
 
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex flex-col h-full relative">
       {/* Header */}
-      <div className="bg-surface-card border-b border-surface-muted">
+      <div className="sticky top-0 z-10 bg-surface-card border-b border-surface-muted">
         <div className="max-w-2xl mx-auto px-4 py-4">
           <h1 className="text-lg font-bold text-text-primary">{t('favorites.title', { defaultValue: 'Favorilerim' })}</h1>
           <p className="text-xs text-text-muted mt-0.5">

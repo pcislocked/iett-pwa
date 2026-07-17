@@ -47,12 +47,12 @@ interface AppBtnProps {
 }
 function AppBtn({ icon, label, active, dim, onPress }: AppBtnProps) {
   const borderColor = active
-    ? '#ffffff'
+    ? 'var(--color-text-1)'
     : dim
-    ? 'rgba(255,255,255,0.12)'
-    : 'rgba(255,255,255,0.3)'
-  const iconColor = active ? '#ffffff' : dim ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.55)'
-  const labelColor = active ? '#ffffff' : dim ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.4)'
+    ? 'var(--color-border)'
+    : 'var(--color-text-3)'
+  const iconColor = active ? 'var(--color-bg)' : dim ? 'var(--color-text-3)' : 'var(--color-text-2)'
+  const labelColor = active ? 'var(--color-text-1)' : dim ? 'var(--color-text-3)' : 'var(--color-text-2)'
 
   return (
     <div className="flex flex-col items-center gap-1">
@@ -68,7 +68,7 @@ function AppBtn({ icon, label, active, dim, onPress }: AppBtnProps) {
           height: 46,
           borderRadius: '50%',
           border: `2px solid ${borderColor}`,
-          background: active ? 'rgba(255,255,255,0.1)' : 'transparent',
+          background: active ? 'var(--color-text-1)' : 'transparent',
           color: iconColor,
           flexShrink: 0,
         }}
@@ -105,8 +105,7 @@ export default function AppBar() {
 
   return (
     <div
-      className="flex-none safe-area-pb"
-      style={{ background: '#000', borderTop: '1px solid #1a1a1a' }}
+      className="flex-none safe-area-pb bg-surface-card border-t border-surface-border"
     >
       <div className="flex items-end justify-center gap-8 px-6 py-2.5">
         <AppBtn icon={<IconBack />}     label={t('nav.back', { defaultValue: 'Geri' })}    dim={isHome}      onPress={() => navigate(-1)} />

@@ -13,12 +13,15 @@ import * as L from 'leaflet'
 import { api, type NearbyStop as ApiNearbyStop } from '@/api/client'
 import { distanceLabel } from '@/utils/distance'
 import { useTranslation } from 'react-i18next'
+import { useUserPrefs } from '@/hooks/useUserPrefs'
+import { useLocationManager } from '@/hooks/useLocationManager'
+import PullToRefresh from '@/components/PullToRefresh'
 
 interface NearbyStop extends ApiNearbyStop {
   routes: string[]
 }
 
-type Phase = 'idle' | 'consent' | 'locating' | 'loading' | 'done' | 'error'
+type Phase = 'idle' | 'loading' | 'done' | 'error'
 
 // ─── Map panner — pans to a coordinate when it changes ────────────────────────
 function MapPanner({ lat, lon }: { lat: number; lon: number }) {
@@ -27,14 +30,6 @@ function MapPanner({ lat, lon }: { lat: number; lon: number }) {
     map.panTo([lat, lon], { animate: !window.matchMedia?.('(prefers-reduced-motion: reduce)').matches, duration: 0.2 })
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lat, lon])
-  return null
-}
-
-// ─── Location picker (idle phase) ─────────────────────────────────────────────
-function LocationPickerEvents({ onPick }: { onPick: (lat: number, lon: number) => void }) {
-  useMapEvents({
-    click(e) { onPick(e.latlng.lat, e.latlng.lng) },
-  })
   return null
 }
 
@@ -138,13 +133,12 @@ function NearbyMapView({
 // ─── Main page ─────────────────────────────────────────────────────────────────
 export default function NearbyPage() {
   const { t } = useTranslation()
-  const [phase, setPhase] = useState<Phase>('consent')
+  const { prefs } = useUserPrefs()
+  const { location, loading: gpsLoading, requestLocation } = useLocationManager()
+
+  const [phase, setPhase] = useState<Phase>('idle')
   const [errorMsg, setErrorMsg] = useState('')
-  const [userLat, setUserLat] = useState<number | null>(null)
-  const [userLon, setUserLon] = useState<number | null>(null)
   const [allStops, setAllStops] = useState<NearbyStop[]>([])
-  const [pickedLat, setPickedLat] = useState<number | null>(null)
-  const [pickedLon, setPickedLon] = useState<number | null>(null)
 
   // ── Selection state ─────────────────────────────────────────────────────────
   const [selectedCode, setSelectedCode] = useState<string | null>(null)
@@ -213,76 +207,18 @@ export default function NearbyPage() {
     setSelectedCode(code)
   }, [])
 
-  // ── Check geolocation permission on mount ─────────────────────────────────
-  // If already granted → skip consent/map-picker and locate immediately.
-  // If denied         → show error.
-  // If prompt / no API → show consent screen (default phase).
+  // ── React to LocationManager ─────────────────────────────────────────────
   useEffect(() => {
-    const perms = (navigator as Navigator & { permissions?: Permissions }).permissions
-    if (!perms || typeof perms.query !== 'function') return
-    let cancelled = false
-    perms
-      .query({ name: 'geolocation' as PermissionName })
-      .then((status) => {
-        if (cancelled) return
-        if (status.state === 'granted') void locate()
-        else if (status.state === 'denied') {
-          setPhase('error')
-          setErrorMsg(t('nearby.locationDenied', { defaultValue: 'Konum izni reddedildi. Tarayıcı ayarlarından izin verin.' }))
-        }
-        // 'prompt' → stay in 'consent' (default)
-      })
-      .catch(() => { /* permissions API unavailable — stay in consent */ })
-    return () => { cancelled = true }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
-  async function requestLocate() {
-    const perms = (navigator as Navigator & { permissions?: Permissions }).permissions
-    if (!perms || typeof perms.query !== 'function') { setPhase('consent'); return }
-    try {
-      const status = await perms.query({ name: 'geolocation' as PermissionName })
-      if (status.state === 'denied') {
-        setPhase('error')
-        setErrorMsg(t('nearby.locationDenied', { defaultValue: 'Konum izni reddedildi. Tarayıcı ayarlarından izin verin.' }))
-        return
-      }
-      if (status.state === 'granted') {
-        void locate()
-      } else {
-        setPhase('consent')
-      }
-    } catch { setPhase('consent') }
-  }
-
-  async function locate() {
-    setPhase('locating')
-    setErrorMsg('')
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        const lat = pos.coords.latitude
-        const lon = pos.coords.longitude
-        setUserLat(lat)
-        setUserLon(lon)
-        await fetchNearby(lat, lon)
-      },
-      (err) => {
-        setPhase('error')
-        setErrorMsg(
-          err.code === 1
-            ? t('nearby.locationDenied', { defaultValue: 'Konum izni reddedildi. Tarayıcı ayarlarından izin verin.' })
-            : t('nearby.locationFailed', { defaultValue: 'Konum alınamadı. Lütfen tekrar deneyin.' }),
-        )
-      },
-      { enableHighAccuracy: true, timeout: 10_000 },
-    )
-  }
+    if (location) {
+      fetchNearby(location[0], location[1])
+    }
+  }, [location])
 
   async function fetchNearby(lat: number, lon: number) {
     setPhase('loading')
     setSelectedCode(null)
     try {
-      const nearby = await api.stops.nearby(lat, lon)
+      const nearby = await api.stops.nearby(lat, lon, prefs.nearbyMax, prefs.nearbyRadius)
       const base: NearbyStop[] = [...nearby]
         .sort((a, b) => (Number(a.distance_m) || 0) - (Number(b.distance_m) || 0))
         .map((s) => ({ ...s, routes: [] }))
@@ -319,13 +255,6 @@ export default function NearbyPage() {
     }
   }
 
-  function handleManual() {
-    if (pickedLat !== null && pickedLon !== null) {
-      setUserLat(pickedLat)
-      setUserLon(pickedLon)
-      fetchNearby(pickedLat, pickedLon)
-    }
-  }
 
   // ── Shared header ────────────────────────────────────────────────────────────
   const headerBar = (
@@ -333,97 +262,35 @@ export default function NearbyPage() {
       <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
         <div>
           <h1 className="text-base font-bold text-text-primary">{t('home.nearbyStops', { defaultValue: 'Yakın Duraklar' })}</h1>
-          {userLat !== null && (
+          {location && (
             <p className="text-[11px] text-text-muted">
-              {userLat.toFixed(4)}, {userLon?.toFixed(4)}
+              {location[0].toFixed(4)}, {location[1].toFixed(4)}
             </p>
           )}
-        </div>
-
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => { setPhase('idle'); setPickedLat(null); setPickedLon(null) }}
-            disabled={phase === 'locating' || phase === 'loading'}
-            className="p-1.5 text-text-muted hover:text-text-secondary disabled:opacity-40 transition-colors"
-            aria-label={t('nearby.changeLocation', { defaultValue: 'Konumu Değiştir' })}
-            title={t('nearby.pickLocation', { defaultValue: 'Konum Seç' })}
-          >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
-              <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
-            </svg>
-          </button>
-          <button
-            onClick={requestLocate}
-            disabled={phase === 'locating' || phase === 'loading'}
-            className="p-1.5 text-brand-400 hover:text-brand-300 disabled:opacity-40 transition-colors"
-            aria-label={t('common.refresh', { defaultValue: 'Yenile' })}
-          >
-            <svg
-              className={`w-5 h-5 ${phase === 'loading' ? 'animate-spin' : ''}`}
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path strokeLinecap="round" strokeLinejoin="round"
-                    d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
-            </svg>
-          </button>
         </div>
       </div>
     </div>
   )
 
-  // ── Consent phase — inline (header + tab bar stay visible) ──────────────────
-  if (phase === 'consent') {
+  // ── Loading phase ────────────────────────────────────────────────────────
+  if (gpsLoading || phase === 'loading' || !location) {
     return (
       <div className="flex flex-col flex-1 min-h-0">
         {headerBar}
-        <div className="flex-1 flex flex-col items-center justify-center gap-8 px-6 pb-8">
-          {/* Icon */}
-          <div className="flex flex-col items-center gap-4">
-            <div className="w-20 h-20 rounded-3xl bg-brand-600/20 border border-brand-600/30 flex items-center justify-center">
-              <svg className="w-10 h-10 text-brand-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
-                <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
-              </svg>
-            </div>
-            <div className="text-center">
-              <h2 className="text-lg font-bold text-text-primary mb-1">{t('nearby.locationPermission', { defaultValue: 'Konum İzni' })}</h2>
-              <p className="text-sm text-text-secondary leading-relaxed max-w-xs">
-                {t('nearby.locationPermissionDesc', { defaultValue: 'Yakın durakları listelemek için konumunuza ihtiyaç var. Konumunuz yalnızca bu cihazda işlenir; hiçbir sunucuya kaydedilmez.' })}
-              </p>
-            </div>
-          </div>
-
-          {/* Actions */}
-          <div className="w-full max-w-xs flex flex-col gap-3">
-            <button
-              autoFocus
-              onClick={() => { void locate() }}
-              className="w-full flex items-center justify-center gap-2 bg-brand-600 hover:bg-brand-500 text-white font-semibold py-3.5 rounded-2xl text-sm transition-colors"
-            >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
-                <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
-              </svg>
-              {t('nearby.useGps', { defaultValue: 'GPS Konumumu Kullan' })}
-            </button>
-            <button
-              onClick={() => setPhase('idle')}
-              className="w-full bg-surface-muted hover:bg-slate-600 text-text-secondary font-medium py-3.5 rounded-2xl text-sm transition-colors"
-            >
-              {t('nearby.pickFromMap', { defaultValue: 'Haritadan Seç' })}
-            </button>
-          </div>
+        <div className="flex-1 flex flex-col items-center justify-center gap-4 px-6">
+          <svg className="w-8 h-8 text-brand-500 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+          <p className="text-text-secondary text-sm font-medium">
+            {gpsLoading ? t('common.locating', { defaultValue: 'Konum alınıyor...' }) : t('common.loading', { defaultValue: 'Yükleniyor...' })}
+          </p>
         </div>
       </div>
     )
   }
 
   // ── Done phase — split layout (map on top, list below) ──────────────────────
-  if (phase === 'done' && userLat !== null && userLon !== null) {
+  if (phase === 'done' && location !== null) {
     return (
       <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
         {headerBar}
@@ -434,19 +301,28 @@ export default function NearbyPage() {
           <div className="shrink-0 border-b border-surface-muted" style={{ height: '45%' }}>
             <NearbyMapView
               stops={allStops}
-              userLat={userLat}
-              userLon={userLon}
+              userLat={location[0]}
+              userLon={location[1]}
               selectedCode={selectedCode}
               onSelect={handleMapSelect}
             />
           </div>
 
           {/* List — remaining 55%, scrollable */}
-          <div
-            ref={listRef}
-            className="flex-1 overflow-y-auto"
+          <PullToRefresh
+            innerRef={listRef}
             onScroll={handleListScroll}
+            onRefresh={async () => {
+              requestLocation?.()
+              await new Promise(r => setTimeout(r, 600))
+            }}
           >
+            {prefs.gpsConsent === 'denied' && (
+              <div className="bg-amber-900/40 border-b border-amber-800/50 py-1.5 px-4 text-center">
+                <span className="text-[10px] text-amber-500/90 font-bold tracking-wider uppercase">Konum izni reddedildi · Mock konum</span>
+              </div>
+            )}
+
             {allStops.length === 0 && (
               <p className="text-center text-text-muted py-12 text-sm">{t('nearby.noStopsFound', { defaultValue: 'Yakında durak bulunamadı' })}</p>
             )}
@@ -525,111 +401,25 @@ export default function NearbyPage() {
 
             {/* Spacer for bottom tab bar */}
             <div className="h-14" aria-hidden="true" />
-          </div>
+          </PullToRefresh>
         </div>
       </div>
     )
   }
 
-  // ── Non-done phases — standard scrollable layout ────────────────────────────
+  // ── Error phase ────────────────────────────────────────────────────────────
   return (
     <div className="flex flex-col flex-1 min-h-0">
       {headerBar}
 
       <div className="flex-1 max-w-2xl w-full mx-auto px-4 pb-6 pt-4">
-
-        {/* Idle — map location picker */}
-        {phase === 'idle' && (
-          <div className="flex flex-col gap-3">
-            <p className="text-xs text-text-muted text-center">
-              {t('nearby.mapInstruction', { defaultValue: 'Haritaya uzun bas veya tıkla → pin bırak, sonra aramayı başlat' })}
-            </p>
-            <div
-              className="relative rounded-2xl overflow-hidden border border-surface-muted"
-              style={{ height: 420 }}
-            >
-              <MapContainer
-                center={[41.015, 28.98]}
-                zoom={11}
-                style={{ height: '100%', width: '100%' }}
-              >
-                <TileLayer
-                  attribution='&copy; CartoDB'
-                  url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-                />
-                <LocationPickerEvents
-                  onPick={(lat, lon) => { setPickedLat(lat); setPickedLon(lon) }}
-                />
-                {pickedLat !== null && pickedLon !== null && (
-                  <Marker
-                    position={[pickedLat, pickedLon]}
-                    icon={L.divIcon({
-                      className: '',
-                      html: `<div style="
-                        background:#2563eb;border-radius:50%;
-                        width:18px;height:18px;
-                        border:3px solid #fff;
-                        box-shadow:0 0 0 3px rgba(37,99,235,0.4)">
-                      </div>`,
-                      iconSize: [18, 18],
-                      iconAnchor: [9, 9],
-                    })}
-                  />
-                )}
-              </MapContainer>
-            </div>
-            <div className="flex gap-2">
-              <button
-                onClick={requestLocate}
-                className="flex items-center justify-center gap-2 flex-1 bg-surface-muted hover:bg-slate-600 text-text-primary font-semibold py-3 rounded-2xl transition-colors text-sm"
-              >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
-                </svg>
-                GPS
-              </button>
-              <button
-                onClick={handleManual}
-                disabled={pickedLat === null}
-                className="flex-[3] bg-brand-600 hover:bg-brand-500 disabled:opacity-40 text-white font-semibold py-3 rounded-2xl transition-colors text-sm"
-              >
-                {pickedLat !== null ? t('nearby.stopsAtThisPoint', { defaultValue: 'Bu Noktadaki Yakın Duraklar' }) : t('nearby.pickPoint', { defaultValue: 'Haritadan Nokta Seç' })}
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Locating */}
-        {phase === 'locating' && (
-          <div className="flex flex-col items-center justify-center py-24 text-text-muted">
-            <div className="w-10 h-10 border-2 border-brand-500 border-t-transparent rounded-full animate-spin mb-4" />
-            <p className="text-sm">{t('common.locating', { defaultValue: 'Konum alınıyor...' })}</p>
-          </div>
-        )}
-
-        {/* Loading */}
-        {phase === 'loading' && (
-          <div className="flex flex-col items-center justify-center py-24 text-text-muted">
-            <div className="w-10 h-10 border-2 border-brand-500 border-t-transparent rounded-full animate-spin mb-4" />
-            <p className="text-sm">{t('nearby.searching', { defaultValue: 'Yakın duraklar aranıyor…' })}</p>
-          </div>
-        )}
-
-        {/* Error */}
         {phase === 'error' && (
           <div className="flex flex-col items-center py-16 gap-4">
-            <div className="bg-red-900/30 border border-red-700 rounded-xl px-5 py-4 text-red-300 text-sm w-full">
-              {errorMsg}
+            <div className="bg-red-900/30 border border-red-700 rounded-xl px-5 py-4 text-red-300 text-sm w-full text-center">
+              {errorMsg || t('nearby.stopsFailed', { defaultValue: 'Duraklar yüklenemedi. Lütfen tekrar deneyin.' })}
             </div>
             <div className="flex gap-2">
-              <button
-                onClick={() => setPhase('idle')}
-                className="bg-surface-muted hover:bg-slate-600 text-text-secondary font-medium px-5 py-2.5 rounded-xl text-sm transition-colors"
-              >
-                {t('nearby.specifyOnMap', { defaultValue: 'Haritadan Belirt' })}
-              </button>
-              <button onClick={requestLocate} className="btn-primary">
+              <button onClick={() => requestLocation?.()} className="btn-primary">
                 {t('common.retry', { defaultValue: 'Tekrar Dene' })}
               </button>
             </div>

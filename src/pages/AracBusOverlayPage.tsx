@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import { MapContainer, TileLayer, Marker } from 'react-leaflet'
+import * as L from 'leaflet'
 
 import { clearAracSession, loadAracSession, saveAracSession } from '@/api/aracSession'
 import {
@@ -12,6 +14,7 @@ import {
 } from '@/api/client'
 import { useTranslation } from 'react-i18next'
 import { TFunction } from 'i18next'
+import { useTheme } from '@/hooks/useTheme'
 
 type ViewState =
   | 'booting'
@@ -21,33 +24,13 @@ type ViewState =
   | 'ready'
   | 'error'
 
-const PROFILE_LABELS: Array<{ key: keyof BusPosition; label: string }> = [
-  { key: 'plate', label: 'Plaka' },
-  { key: 'route_code', label: 'Hat Kodu' },
-  { key: 'direction', label: 'Yon' },
-  { key: 'vehicle_brand', label: 'Marka' },
-  { key: 'model_year', label: 'Model Yili' },
-  { key: 'vehicle_type', label: 'Arac Tipi' },
-  { key: 'operator_name', label: 'Operator' },
-  { key: 'operator_id', label: 'Operator ID' },
-  { key: 'garage_name', label: 'Garaj' },
-  { key: 'garage_code', label: 'Garaj Kodu' },
-  { key: 'seating_capacity', label: 'Oturma Kapasitesi' },
-  { key: 'full_capacity', label: 'Toplam Kapasite' },
-  { key: 'vehicle_software_version', label: 'Yazilim Surumu' },
-  { key: 'last_seen', label: 'Son Gorus' },
-]
-
 const MISSION_LABEL_OVERRIDES: Partial<Record<keyof AracMissionItem, string>> = {
-  task_id: 'Task ID',
-  archive_id: 'Archive ID',
-  task_start_time_ms: 'Gorev Baslangic',
-  task_end_time_ms: 'Gorev Bitis',
-  task_coming_time_ms: 'Gorev Gelis',
+  task_start_time: 'Gorev Baslangic',
+  task_end_time: 'Gorev Bitis',
+  task_coming_time: 'Gorev Gelis',
   line_code: 'Hat Kodu',
   line_name: 'Hat Adi',
   route_code: 'Rota Kodu',
-  route_id: 'Rota ID',
   route_direction: 'Rota Yon',
   service_no: 'Servis No',
   driver_register_no: 'Sofor Sicil No',
@@ -57,60 +40,60 @@ const MISSION_LABEL_OVERRIDES: Partial<Record<keyof AracMissionItem, string>> = 
   old_line_name: 'Eski Hat Adi',
   superior_name: 'Amir Adi',
   bus_door_number: 'Kapi Kodu',
-  driver_id: 'Sofor ID',
-  vehicle_id: 'Arac ID',
-  line_id: 'Hat ID',
-  justification_id: 'Gerekce ID',
-  last_location_time_ms: 'Son Konum Zamani',
+  last_location_time: 'Son Konum Zamani',
   updated_by: 'Guncelleyen',
   intervention_code: 'Mudahale Kodu',
-  updated_time_ms: 'Guncelleme Zamani',
-  updated_start_time_ms: 'Guncel Baslangic',
-  task_start_time: 'Gorev Baslangic',
-  task_end_time: 'Gorev Bitis',
-  task_coming_time: 'Gorev Gelis',
-  last_location_time: 'Son Konum Zamani',
   updated_time: 'Guncelleme Zamani',
   updated_start_time: 'Guncel Baslangic',
-  approximate_start_time_ms: 'Yaklasik Baslangic',
-  approximate_end_time_ms: 'Yaklasik Bitis',
   approximate_start_time: 'Yaklasik Baslangic',
   approximate_end_time: 'Yaklasik Bitis',
   is_active: 'Aktif Mi',
   last_point_order_number: 'Son Nokta Sira No',
-  task_type_id: 'Gorev Tipi ID',
-  created_by: 'Olusturan',
   last_stop_passed_code: 'Gecilen Son Durak Kodu',
   last_stop_passed_name: 'Gecilen Son Durak Adi',
-  stop_id: 'Durak ID',
   stop_code: 'Durak Kodu',
   stop_name: 'Durak Adi',
-  sending_time_ms: 'Gonderim Zamani',
   sending_time: 'Gonderim Zamani',
-  sending_time_old_ms: 'Eski Gonderim Zamani',
   sending_time_old: 'Eski Gonderim Zamani',
   has_plan_sent: 'Plan Gonderildi Mi',
-  delivery_report_time_ms: 'Teslim Rapor Zamani',
   delivery_report_time: 'Teslim Rapor Zamani',
   gprs_active: 'GPRS Aktif',
 }
+
+const HIDDEN_KEYS = new Set<keyof AracMissionItem>([
+  'task_start_time_ms', 'task_end_time_ms', 'task_coming_time_ms',
+  'approximate_start_time_ms', 'approximate_end_time_ms',
+  'last_location_time_ms', 'updated_time_ms', 'updated_start_time_ms',
+  'sending_time_ms', 'sending_time_old_ms', 'delivery_report_time_ms',
+  'task_id', 'archive_id', 'vehicle_id', 'line_id', 'route_id',
+  'driver_id', 'stop_id', 'justification_id', 'task_type_id', 'created_by',
+])
+
+const TECHNICAL_KEYS = new Set<keyof AracMissionItem>([
+  'task_id', 'archive_id', 'vehicle_id', 'line_id', 'route_id',
+  'driver_id', 'stop_id', 'justification_id', 'task_type_id', 'created_by',
+])
+
+const TIME_KEYS = new Set<keyof AracMissionItem>([
+  'task_start_time', 'task_end_time', 'task_coming_time',
+  'approximate_start_time', 'approximate_end_time',
+  'last_location_time', 'updated_time', 'updated_start_time',
+  'sending_time', 'sending_time_old', 'delivery_report_time'
+])
 
 function missionLabel(key: keyof AracMissionItem): string {
   const override = MISSION_LABEL_OVERRIDES[key]
   if (override) return override
   return key
     .split('_')
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(' ')
 }
 
-function toCaptchaSrc(imageBase64: string): string {
-  if (imageBase64.startsWith('data:image/')) return imageBase64
-  return `data:image/png;base64,${imageBase64}`
-}
-
-function hasSessionError(error: unknown): boolean {
-  return error instanceof ApiHttpError && (error.status === 401 || error.status === 403)
+function boolBadge(value: boolean | null | undefined, t: TFunction) {
+  if (value === true) return { text: t('common.yes', { defaultValue: 'Evet' }), className: 'text-emerald-400 bg-emerald-950/30 border-emerald-800/50' }
+  if (value === false) return { text: t('common.no', { defaultValue: 'Hayir' }), className: 'text-[#888] bg-[#1a1a1a] border-[#333]' }
+  return { text: t('common.unknown', { defaultValue: 'Bilinmiyor' }), className: 'text-[#888] bg-[#1a1a1a] border-[#333]' }
 }
 
 function errorText(error: unknown, t: TFunction): string {
@@ -123,95 +106,171 @@ function errorText(error: unknown, t: TFunction): string {
   return t('arac.unknownError', { defaultValue: 'Bilinmeyen hata' })
 }
 
-function boolBadge(value: boolean | null | undefined, t: TFunction): { text: string; className: string } {
-  if (value === true) return { text: t('arac.amenityYes', { defaultValue: 'Var' }), className: 'text-emerald-400 bg-emerald-900/30 border-emerald-700/50' }
-  if (value === false) return { text: t('arac.amenityNo', { defaultValue: 'Yok' }), className: 'text-text-muted bg-[#080808] border-[#222]' }
-  return { text: t('arac.amenityUnknown', { defaultValue: 'Bilinmiyor' }), className: 'text-text-muted bg-[#080808] border-[#222]' }
+function hasSessionError(error: unknown): boolean {
+  return error instanceof ApiHttpError && (error.status === 401 || error.status === 403)
 }
 
-function formatMissionDate(value: number | string): string | null {
-  let date: Date
-  if (typeof value === 'number') {
-    date = new Date(value)
+function toCaptchaSrc(base64: string): string {
+  if (base64.startsWith('data:image')) return base64
+  return `data:image/jpeg;base64,${base64}`
+}
+
+function parseIettDate(dateString: string | null | undefined): Date {
+  if (!dateString) return new Date(NaN)
+  const d = new Date(dateString)
+  if (!isNaN(d.getTime())) return d
+
+  const match = dateString.match(/(\d{2})[\.\-](\d{2})[\.\-](\d{4})(?:\s+(\d{2}:\d{2}(?::\d{2})?))?/)
+  if (match) {
+    const [, day, month, year, time] = match
+    const iso = `${year}-${month}-${day}${time ? 'T' + time : ''}`
+    return new Date(iso)
+  }
+  return new Date(NaN)
+}
+
+function relativeTime(isoString: string, t: TFunction): string {
+  const diffMs = Date.now() - parseIettDate(isoString).getTime()
+  const diffMinutes = Math.floor(Math.abs(diffMs) / 60000)
+  const isPast = diffMs > 0
+
+  let formatted: string
+  if (diffMinutes <= 99) {
+    formatted = `${diffMinutes} ${t('common.min', { defaultValue: 'dk' })}`
   } else {
-    const parsed = Date.parse(value)
-    if (Number.isNaN(parsed)) return null
-    date = new Date(parsed)
+    const diffHours = Math.floor(diffMinutes / 60)
+    formatted = `${diffHours} ${t('arac.hour', { defaultValue: 'sa' })}`
   }
 
-  if (Number.isNaN(date.getTime())) return null
-
-  return date.toLocaleString('tr-TR', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-  })
+  return isPast
+    ? t('arac.relativeAgo', { value: formatted, defaultValue: '{{value}} önce' })
+    : t('arac.relativeIn', { value: formatted, defaultValue: '{{value}} sonra' })
 }
 
-function formatMissionValue(
-  key: keyof AracMissionItem,
-  value: AracMissionItem[keyof AracMissionItem],
-  t: TFunction
-): string {
-  if (typeof value === 'boolean') return value ? t('common.yes', { defaultValue: 'Evet' }) : t('common.no', { defaultValue: 'Hayir' })
-  if (value === null || value === undefined || value === '') return '-'
-
-  if (key.endsWith('_time') && typeof value === 'string') {
-    const formatted = formatMissionDate(value)
-    if (formatted) return formatted
+function formatMissionValue(key: keyof AracMissionItem, value: any, t: TFunction): React.ReactNode {
+  if (typeof value === 'boolean') {
+    return value ? t('common.yes', { defaultValue: 'Evet' }) : t('common.no', { defaultValue: 'Hayir' })
   }
-
-  if (key.endsWith('_ms') && typeof value === 'number') {
-    const formatted = formatMissionDate(value)
-    if (formatted) return formatted
+  if (TIME_KEYS.has(key) && typeof value === 'string' && value.trim() !== '') {
+    const date = parseIettDate(value)
+    if (!isNaN(date.getTime())) {
+      const timeStr = date.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })
+      return (
+        <span className="flex items-center justify-end gap-2">
+          <span>{timeStr}</span>
+          <span className="text-[10px] text-[#888]">({relativeTime(value, t)})</span>
+        </span>
+      )
+    }
   }
-
   return String(value)
 }
 
+function makeBusIcon(): L.DivIcon {
+  return L.divIcon({
+    className: '',
+    html: `<div style="
+      background:var(--color-warning);border-radius:50%;
+      width:14px;height:14px;
+      border:2px solid var(--color-bg);
+      box-shadow:0 1px 4px rgba(0,0,0,0.6);
+    "></div>`,
+    iconSize: [14, 14],
+    iconAnchor: [7, 7],
+  })
+}
+
+function MissionCard({ mission, index, t }: { mission: AracMissionItem; index: number; t: TFunction }) {
+  const [isExpanded, setIsExpanded] = useState(mission.is_active === true)
+
+  const isPast = !mission.is_active && (mission.task_end_time_ms ? mission.task_end_time_ms < Date.now() : index < 0)
+  
+  const startTime = mission.task_start_time
+    ? parseIettDate(mission.task_start_time).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })
+    : null
+
+  const isActive = mission.is_active === true
+
+  return (
+    <div className={`border-b border-[#1a1a1a] bg-[#0d0d0d] overflow-hidden transition-colors ${isActive ? 'border-l-4 border-l-emerald-500' : 'opacity-80'}`}>
+      <button onClick={() => setIsExpanded(!isExpanded)} className={`w-full px-4 py-3 flex items-center gap-3 ${isActive ? 'bg-emerald-950/10' : ''}`}>
+        <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${isActive ? 'bg-emerald-400' : isPast ? 'bg-[#333]' : 'bg-[#666]'}`} />
+        <div className="flex-1 text-left min-w-0">
+          <p className={`text-sm font-semibold truncate ${isActive ? 'text-text-primary' : 'text-[#888]'}`}>
+            {mission.line_code ?? mission.route_code ?? t('arac.missionIndex', { defaultValue: 'Görev {{index}}', index: index + 1 })}
+          </p>
+          {mission.line_name && (
+            <p className={`text-[10px] truncate ${isActive ? 'text-[#888]' : 'text-[#555]'}`}>{mission.line_name}</p>
+          )}
+        </div>
+        <div className="text-right shrink-0 flex flex-col items-end">
+          {startTime && <span className={`text-sm font-mono ${isActive ? 'text-text-primary' : 'text-[#888]'}`}>{startTime}</span>}
+          <span className="text-[10px] text-[#555]">{mission.task_status_code ?? (isActive ? 'ACTIVE' : 'INACTIVE')}</span>
+        </div>
+      </button>
+
+      {isExpanded && (
+        <div className="px-4 py-2 border-t border-[#1a1a1a] bg-[#080808]">
+          {(Object.keys(mission) as (keyof AracMissionItem)[])
+            .filter((key) => {
+              const value = mission[key]
+              return value !== null && value !== undefined && value !== '' && !HIDDEN_KEYS.has(key)
+            })
+            .map((key) => (
+              <div key={key} className="py-2 border-b border-[#1a1a1a] last:border-0 flex items-center justify-between gap-3">
+                <span className="text-xs text-[#777]">{missionLabel(key)}</span>
+                <span className="text-xs text-text-primary text-right break-all">
+                  {formatMissionValue(key, mission[key], t)}
+                </span>
+              </div>
+            ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function AracBusOverlayPage() {
-  const { t } = useTranslation()
-  const navigate = useNavigate()
   const { kapino } = useParams<{ kapino: string }>()
-  const aliveRef = useRef(true)
+  const navigate = useNavigate()
+  const { t } = useTranslation()
+  const { theme } = useTheme()
 
   const [viewState, setViewState] = useState<ViewState>('booting')
-  const [profile, setProfile] = useState<BusPosition | null>(null)
-  const [missions, setMissions] = useState<AracMissionsResponse | null>(null)
-  const [session, setSession] = useState<AracSessionCredentials | null>(null)
-
-  const [captchaId, setCaptchaId] = useState('')
-  const [captchaImage, setCaptchaImage] = useState('')
+  const [captchaImage, setCaptchaImage] = useState<string | null>(null)
+  const [captchaId, setCaptchaId] = useState<string | null>(null)
   const [manualAnswer, setManualAnswer] = useState('')
-
-  const [inlineWarning, setInlineWarning] = useState<string | null>(null)
+  const [profile, setProfile] = useState<BusPosition | null>(null)
+  const [missionsData, setMissionsData] = useState<AracMissionsResponse | null>(null)
   const [fatalError, setFatalError] = useState<string | null>(null)
+  const [inlineWarning, setInlineWarning] = useState<string | null>(null)
+  const [lastFetchTime, setLastFetchTime] = useState<number | null>(null)
+  const [showRefreshButton, setShowRefreshButton] = useState(false)
+  const [showTechnicalDetails, setShowTechnicalDetails] = useState(false)
+
+  const aliveRef = useRef(true)
 
   useEffect(() => {
+    aliveRef.current = true
     return () => {
       aliveRef.current = false
     }
   }, [])
 
-  const fetchBusData = useCallback(async (credentials: AracSessionCredentials) => {
-    if (!kapino) return
-
-    setViewState('loading-data')
-    const [bus, missionData] = await Promise.all([
-      api.arac.bus(kapino, credentials),
-      api.arac.missions(kapino, credentials),
-    ])
-
-    if (!aliveRef.current) return
-
-    setSession(credentials)
-    setProfile(bus)
-    setMissions(missionData)
-    setViewState('ready')
-  }, [kapino])
+  useEffect(() => {
+    if (!lastFetchTime || viewState !== 'ready') {
+      setShowRefreshButton(false)
+      return
+    }
+    const interval = setInterval(() => {
+      if (Date.now() - lastFetchTime > 5 * 60 * 1000) {
+        setShowRefreshButton(true)
+      } else {
+        setShowRefreshButton(false)
+      }
+    }, 10000)
+    return () => clearInterval(interval)
+  }, [lastFetchTime, viewState])
 
   const fetchCaptcha = useCallback(async () => {
     const challenge = await api.arac.captcha()
@@ -221,22 +280,31 @@ export default function AracBusOverlayPage() {
     return challenge
   }, [])
 
+  const fetchBusData = useCallback(async (credentials: AracSessionCredentials) => {
+    if (!kapino) return
+    setViewState('loading-data')
+    const [bus, missionData] = await Promise.all([
+      api.arac.bus(kapino, credentials),
+      api.arac.missions(kapino, credentials),
+    ])
+    if (!aliveRef.current) return
+    setProfile(bus)
+    setMissionsData(missionData)
+    setLastFetchTime(Date.now())
+    setViewState('ready')
+  }, [kapino])
+
   const startFlow = useCallback(async (forceReconnect = false) => {
     if (!kapino) {
       setViewState('error')
-      setFatalError(t('arac.doorCodeMissing', { defaultValue: 'Kapi kodu bulunamadi.' }))
+      setFatalError(t('arac.doorCodeMissing', { defaultValue: 'Kapı kodu bulunamadı.' }))
       return
     }
-
     setViewState('booting')
     setInlineWarning(null)
-    setFatalError(null)
-
     if (forceReconnect) {
       clearAracSession()
-      setSession(null)
     }
-
     const existing = forceReconnect ? null : loadAracSession()
     if (existing) {
       try {
@@ -246,7 +314,7 @@ export default function AracBusOverlayPage() {
         if (!aliveRef.current) return
         if (hasSessionError(error)) {
           clearAracSession()
-          setInlineWarning(t('arac.sessionExpired', { defaultValue: 'aracapi oturumu suresi doldu. Yeniden captcha akisi baslatiliyor.' }))
+          setInlineWarning(t('arac.sessionExpired', { defaultValue: 'Oturum süresi doldu. Yeniden captcha akışı başlatılıyor.' }))
         } else {
           setViewState('error')
           setFatalError(errorText(error, t))
@@ -254,7 +322,6 @@ export default function AracBusOverlayPage() {
         }
       }
     }
-
     try {
       await fetchCaptcha()
       if (!aliveRef.current) return
@@ -267,250 +334,292 @@ export default function AracBusOverlayPage() {
     }
   }, [fetchBusData, fetchCaptcha, kapino, t])
 
+  const flowStartedRef = useRef(false)
+
   useEffect(() => {
+    if (flowStartedRef.current) return
+    flowStartedRef.current = true
     void startFlow()
   }, [startFlow])
 
   const submitManualCaptcha = useCallback(async () => {
-    const answer = manualAnswer.trim()
-    if (!answer) {
-      setInlineWarning(t('arac.enterCaptcha', { defaultValue: 'Lutfen captcha yanitini girin.' }))
-      return
-    }
-    if (!captchaId) {
-      setInlineWarning(t('arac.captchaStale', { defaultValue: 'Captcha gorseli guncel degil. Yeni captcha alin.' }))
-      return
-    }
-
+    if (!captchaId || !manualAnswer) return
     setViewState('manual-submitting')
     setInlineWarning(null)
-
     try {
       const created = await api.arac.createSession({
         captchaId,
-        captchaAnswer: answer,
+        captchaAnswer: manualAnswer,
       })
-
       const credentials = saveAracSession({
         sessionId: created.sessionId,
         sessionKey: created.sessionKey,
       })
-
       if (!aliveRef.current) return
       await fetchBusData(credentials)
     } catch (error) {
       if (!aliveRef.current) return
       setViewState('manual-required')
-      setInlineWarning(t('arac.captchaFailed', { defaultValue: 'Captcha dogrulanamadi: {{error}}', error: errorText(error, t) }))
+      setInlineWarning(t('arac.captchaFailed', { defaultValue: 'Captcha doğrulanamadı: {{error}}', error: errorText(error, t) }))
       try {
         await fetchCaptcha()
       } catch (captchaErr) {
-        setInlineWarning(t('arac.captchaFailedDouble', { defaultValue: 'Captcha dogrulanamadi: {{err1}} | Ayrica yeni captcha alinamadi: {{err2}}', err1: errorText(error, t), err2: errorText(captchaErr, t) }))
-        setCaptchaImage('')
+        if (!aliveRef.current) return
+        setViewState('error')
+        setFatalError(errorText(captchaErr, t))
       }
     }
-  }, [captchaId, fetchBusData, fetchCaptcha, manualAnswer, t])
-
-  const profileRows = useMemo(() => {
-    if (!profile) return [] as Array<{ label: string; value: string }>
-
-    return PROFILE_LABELS
-      .map(({ key, label }) => {
-        const value = profile[key]
-        if (value === null || value === undefined || value === '') return null
-        return { label, value: String(value) }
-      })
-      .filter((item): item is { label: string; value: string } => item !== null)
-  }, [profile])
+  }, [captchaId, manualAnswer, fetchBusData, fetchCaptcha, t])
 
   const amenities = useMemo(() => {
-    if (!profile) return [] as Array<{ label: string; value: boolean | null | undefined }>
-
+    if (!profile) return []
     return [
-      { label: t('arac.accessible', { defaultValue: 'Engelli' }), value: profile.accessible },
-      { label: t('arac.usb', { defaultValue: 'USB' }), value: profile.has_usb },
-      { label: t('arac.wifi', { defaultValue: 'Wi-Fi' }), value: profile.has_wifi },
-      { label: t('arac.bicycle', { defaultValue: 'Bisiklet' }), value: profile.has_bicycle_rack },
-      { label: t('arac.airConditioned', { defaultValue: 'Klima' }), value: profile.is_air_conditioned },
+      { label: t('arac.accessible', { defaultValue: 'Engelli' }), icon: '♿', value: profile.accessible },
+      { label: t('arac.usb', { defaultValue: 'USB' }), icon: '🔌', value: profile.has_usb },
+      { label: t('arac.wifi', { defaultValue: 'Wi-Fi' }), icon: '🛜', value: profile.has_wifi },
+      { label: t('arac.bicycle', { defaultValue: 'Bisiklet' }), icon: '🚲', value: profile.has_bicycle_rack },
+      { label: t('arac.airConditioned', { defaultValue: 'Klima' }), icon: '❄️', value: profile.is_air_conditioned },
     ]
   }, [profile, t])
 
+  const sortedMissions = useMemo(() => {
+    if (!missionsData) return []
+    const missions = [...missionsData.missions]
+    missions.sort((a, b) => (a.task_start_time_ms ?? 0) - (b.task_start_time_ms ?? 0))
+    return missions
+  }, [missionsData])
+
+  const activeMissionsCount = useMemo(() => {
+    return sortedMissions.filter(m => m.is_active === true).length
+  }, [sortedMissions])
+
+  const technicalDetails = useMemo(() => {
+    if (!missionsData || sortedMissions.length === 0) return []
+    const referenceMission = sortedMissions.find(m => m.is_active) || sortedMissions[0]
+    return Array.from(TECHNICAL_KEYS)
+      .map(key => ({ key, value: referenceMission[key] }))
+      .filter(item => item.value !== null && item.value !== undefined && item.value !== '')
+  }, [sortedMissions, missionsData])
+
+  const busIcon = useMemo(() => makeBusIcon(), [])
+
   return (
-    <div className="fixed inset-0 z-[2200] bg-black flex flex-col">
-      <div className="safe-area-pt border-b border-[#111] bg-black px-4 py-3 shrink-0">
-        <div className="flex items-center justify-between gap-3">
-          <div className="min-w-0">
-            <p className="text-[10px] tracking-[0.14em] text-[#666]">{t('arac.fleetDetail', { defaultValue: 'arac.iett.gov.tr Filo Detay' })}</p>
-            <h1 className="text-base font-semibold text-white truncate">{kapino ? t('arac.busTitle', { defaultValue: 'Arac {{kapino}}', kapino }) : t('arac.busTitleEmpty', { defaultValue: 'Arac Detay' })}</h1>
-          </div>
-          <button
-            onClick={() => navigate(-1)}
-            className="metro-tilt text-sm px-3 py-1.5 border border-[#222] text-text-secondary"
-          >
-            {t('common.close', { defaultValue: 'Kapat' })}
-          </button>
+    <div className="fixed inset-0 z-[2200] bg-surface-card flex flex-col">
+      <div className="safe-area-pt border-b border-[#111] bg-surface-card px-4 py-3 shrink-0 flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-[10px] tracking-[0.14em] text-[#666]">{t('arac.fleetDetail', { defaultValue: 'ARAÇ DETAY' })}</p>
+          <h1 className="text-base font-semibold text-text-primary truncate">{kapino ? t('arac.busTitle', { defaultValue: 'Araç {{kapino}}', kapino }) : t('arac.busTitleEmpty', { defaultValue: 'Araç Detay' })}</h1>
         </div>
+        <button
+          onClick={() => navigate(-1)}
+          className="metro-tilt text-sm px-3 py-1.5 border border-surface-border text-text-secondary"
+        >
+          {t('common.close', { defaultValue: 'Kapat' })}
+        </button>
       </div>
 
-      {inlineWarning && (
-        <div className="px-4 py-2 border-b border-amber-700/30 bg-amber-950/20 text-amber-300 text-xs flex items-center gap-3">
-          <p className="flex-1 min-w-0">{inlineWarning}</p>
-          <button
-            onClick={() => { void startFlow(true) }}
-            className="metro-tilt px-2.5 py-1 border border-amber-600/40 text-amber-200 shrink-0"
-          >
-            {t('arac.reconnect', { defaultValue: 'Yeniden Baglan' })}
-          </button>
-        </div>
-      )}
-
-      <div className="flex-1 overflow-y-auto px-4 pb-8 pt-4">
+      <div className="flex-1 overflow-y-auto bg-[var(--color-bg)] flex flex-col">
         {(viewState === 'booting' || viewState === 'loading-data' || viewState === 'manual-submitting') && (
-          <div className="border border-[#111] bg-[#0d0d0d] p-4 flex items-start gap-3">
+          <div className="p-4 flex items-start gap-3">
             <div className="w-4 h-4 mt-1 border-2 border-[#00AFF0] border-t-transparent rounded-full animate-spin" />
             <div>
-              <p className="text-sm text-white font-medium">
+              <p className="text-sm text-text-primary font-medium">
                 {viewState === 'manual-submitting'
-                  ? t('arac.verifyingCaptcha', { defaultValue: 'Captcha dogrulaniyor...' })
+                  ? t('arac.verifyingCaptcha', { defaultValue: 'Captcha doğrulanıyor...' })
                   : viewState === 'loading-data'
-                  ? t('arac.loadingData', { defaultValue: 'aracapi veri paketi yukleniyor...' })
-                  : t('arac.preparingSession', { defaultValue: 'ARAÇ oturumu hazırlanıyor...' })}
+                  ? t('arac.loadingData', { defaultValue: 'Veriler yükleniyor...' })
+                  : t('arac.preparingSession', { defaultValue: 'Oturum hazırlanıyor...' })}
               </p>
-              <p className="text-xs text-[#888] mt-1">{t('arac.stayOnPage', { defaultValue: 'Islem tamamlanana kadar bu sayfada kalabilirsiniz.' })}</p>
+              <p className="text-xs text-[#888] mt-1">{t('arac.stayOnPage', { defaultValue: 'İşlem tamamlanana kadar sayfada kalabilirsiniz.' })}</p>
             </div>
           </div>
         )}
 
-        {viewState === 'manual-required' && (
-          <div className="border border-[#111] bg-[#0d0d0d] p-4 space-y-4">
-            <div>
-              <h2 className="text-sm font-semibold text-white">{t('arac.captchaManual', { defaultValue: 'Captcha manuel dogrulama' })}</h2>
-              <p className="text-xs text-[#888] mt-1">{t('arac.captchaInstruction', { defaultValue: 'Once captcha kodunu yazarak devam edin.' })}</p>
-            </div>
+        {inlineWarning && viewState !== 'ready' && (
+          <div className="px-4 py-3 border-b border-amber-700/30 bg-amber-950/20 text-amber-300 text-xs flex items-center gap-3">
+            <p className="flex-1 min-w-0">{inlineWarning}</p>
+            <button
+              onClick={() => { void startFlow(true) }}
+              className="metro-tilt px-2.5 py-1 border border-amber-600/40 text-amber-200 shrink-0"
+            >
+              {t('arac.reconnect', { defaultValue: 'Yeniden Bağlan' })}
+            </button>
+          </div>
+        )}
 
+        {viewState === 'manual-required' && (
+          <div className="p-4 space-y-4">
+            <div>
+              <h2 className="text-sm font-semibold text-text-primary">{t('arac.captchaManual', { defaultValue: 'Güvenlik Doğrulaması' })}</h2>
+              <p className="text-xs text-[#888] mt-1">{t('arac.captchaInstruction', { defaultValue: 'Oturum açmak için koddaki karakterleri girin.' })}</p>
+            </div>
             {captchaImage && (
               <img
                 src={toCaptchaSrc(captchaImage)}
-                alt="aracapi captcha"
-                className="w-full max-w-[320px] border border-[#222]"
+                alt="captcha"
+                className="w-full max-w-[320px] border border-surface-border"
               />
             )}
-
             <input
               type="text"
               value={manualAnswer}
               onChange={(event) => setManualAnswer(event.target.value.toUpperCase().slice(0, 6))}
-              placeholder={t('arac.captchaAnswer', { defaultValue: 'Captcha cevabi' })}
-              aria-label={t('arac.captchaAnswer', { defaultValue: 'Captcha cevabi' })}
-              className="w-full border border-[#222] bg-black px-3 py-2 text-sm text-white placeholder:text-[#555] focus:outline-none focus:border-[#00AFF0]"
+              placeholder={t('arac.captchaAnswer', { defaultValue: 'Cevap' })}
+              className="w-full border border-surface-border bg-surface-card px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-[#00AFF0]"
             />
-
             <div className="flex flex-wrap gap-2">
               <button
                 onClick={() => { void submitManualCaptcha() }}
                 className="metro-tilt px-3 py-2 bg-[#00AFF0] text-black text-sm font-semibold"
               >
-                {t('arac.login', { defaultValue: 'Oturumu Ac' })}
+                {t('arac.login', { defaultValue: 'Oturumu Aç' })}
               </button>
               <button
                 onClick={() => { void fetchCaptcha() }}
-                className="metro-tilt px-3 py-2 border border-[#222] text-text-primary text-sm"
+                className="metro-tilt px-3 py-2 border border-surface-border text-text-primary text-sm"
               >
-                {t('arac.newCaptcha', { defaultValue: 'Yeni Captcha' })}
+                {t('arac.newCaptcha', { defaultValue: 'Yenile' })}
               </button>
             </div>
           </div>
         )}
 
         {(viewState === 'error' || fatalError) && (
-          <div className="border border-red-800/40 bg-red-950/20 p-4 text-red-200">
-            <p className="text-sm font-semibold">{t('arac.failedToOpen', { defaultValue: 'aracapi detayi acilamadi' })}</p>
+          <div className="p-4 text-red-200 bg-red-950/20 border-b border-red-800/40">
+            <p className="text-sm font-semibold">{t('arac.failedToOpen', { defaultValue: 'Bağlantı Hatası' })}</p>
             <p className="text-xs mt-1">{fatalError ?? t('arac.unknownError', { defaultValue: 'Bilinmeyen hata' })}</p>
           </div>
         )}
 
-        {viewState === 'ready' && profile && missions && (
-          <div className="space-y-4">
-            <section className="border border-[#111] bg-[#0d0d0d]">
-              <div className="px-4 py-3 border-b border-[#111] flex items-center justify-between gap-2">
-                <h2 className="text-sm font-semibold text-white">{t('arac.vehicleProfile', { defaultValue: 'Arac Profili / Vehicle Profile' })}</h2>
-                {session && <span className="text-[10px] text-emerald-400">{t('arac.sessionReady', { defaultValue: 'Session hazir' })}</span>}
-              </div>
-
-              <div className="px-4 py-3 border-b border-[#111] flex flex-wrap gap-2">
-                {amenities.map((item) => {
-                  const badge = boolBadge(item.value, t)
-                  return (
-                    <span
-                      key={item.label}
-                      className={`text-[10px] px-2 py-1 border ${badge.className}`}
-                    >
-                      {item.label}: {badge.text}
-                    </span>
-                  )
-                })}
-              </div>
-
-              <div>
-                {profileRows.length > 0 ? (
-                  profileRows.map((row) => (
-                    <div key={row.label} className="px-4 py-2.5 border-b border-[#111] flex items-center justify-between gap-3">
-                      <span className="text-xs text-[#888]">{row.label}</span>
-                      <span className="text-xs text-white text-right break-all">{row.value}</span>
-                    </div>
-                  ))
-                ) : (
-                  <p className="px-4 py-3 text-xs text-[#888]">{t('arac.emptyProfile', { defaultValue: 'Profil alanlari su an bos dondu.' })}</p>
+        {viewState === 'ready' && profile && (
+          <>
+            <div style={{ height: '33vh', minHeight: '200px' }} className="relative bg-surface-muted/20 shrink-0 border-b border-[#111]">
+              <MapContainer 
+                center={[profile.latitude ?? 41.0082, profile.longitude ?? 28.9784]} 
+                zoom={16} 
+                style={{ height: '100%', width: '100%' }} 
+                zoomControl={false}
+              >
+                <TileLayer
+                  attribution='&copy; CartoDB'
+                  url={`https://{s}.basemaps.cartocdn.com/${theme === 'light' ? 'light_all' : 'dark_all'}/{z}/{x}/{y}{r}.png`}
+                />
+                {profile.latitude && profile.longitude && (
+                  <Marker position={[profile.latitude, profile.longitude]} icon={busIcon} />
                 )}
-              </div>
-            </section>
+              </MapContainer>
+            </div>
 
-            <section className="border border-[#111] bg-[#0d0d0d]">
-              <div className="px-4 py-3 border-b border-[#111]">
-                <h2 className="text-sm font-semibold text-white">{t('arac.missions', { defaultValue: 'Missions / Gorevler' })}</h2>
-                <p className="text-xs text-[#888] mt-1">
-                  {t('arac.missionsSummary', { defaultValue: 'Toplam {{total}} gorev, aktif {{active}}', total: missions.summary.mission_count, active: missions.summary.active_count })}
-                </p>
-              </div>
-
-              {missions.missions.length === 0 ? (
-                <p className="px-4 py-4 text-xs text-[#888]">{t('arac.noMissions', { defaultValue: 'Bu araca ait gorev bulunamadi.' })}</p>
-              ) : (
-                <div>
-                  {missions.missions.map((mission, index) => (
-                    <article key={`${mission.task_id ?? index}-${index}`} className="border-b border-[#111]">
-                      <div className="px-4 py-3 border-b border-[#111] bg-black/30">
-                        <div className="flex items-center justify-between gap-3">
-                          <p className="text-xs font-semibold text-white">
-                            {mission.line_code ?? mission.route_code ?? t('arac.missionIndex', { defaultValue: 'Gorev {{index}}', index: index + 1 })}
-                          </p>
-                          <p className="text-[10px] text-[#888]">
-                            {mission.task_status_code ?? (mission.is_active ? 'ACTIVE' : 'INACTIVE')}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div>
-                        {(Object.keys(mission) as (keyof AracMissionItem)[])
-                          .filter((key) => {
-                            const value = mission[key]
-                            return value !== null && value !== undefined && value !== ''
-                          })
-                          .map((key) => (
-                            <div key={key} className="px-4 py-2.5 border-b border-[#111] flex items-center justify-between gap-3">
-                              <span className="text-xs text-[#777]">{missionLabel(key)}</span>
-                              <span className="text-xs text-white text-right break-all">
-                                {formatMissionValue(key, mission[key], t)}
-                              </span>
-                            </div>
-                          ))}
-                      </div>
-                    </article>
-                  ))}
+            <div className="flex flex-col gap-3 p-4">
+              {showRefreshButton && (
+                <div className="flex items-center justify-between p-3 bg-amber-950/20 border border-amber-800/40 rounded">
+                  <p className="text-xs text-amber-300">{t('arac.staleDataWarning', { defaultValue: 'Bu veri eski (5 dakikadan uzun süredir güncellenmedi).' })}</p>
+                  <button onClick={() => startFlow(true)} className="px-3 py-1.5 text-xs font-semibold bg-amber-600 text-white rounded">
+                    {t('common.refresh', { defaultValue: 'Yenile' })}
+                  </button>
                 </div>
               )}
-            </section>
-          </div>
+
+              <div className="border border-[#111] bg-[#0d0d0d] rounded-lg overflow-hidden">
+                <div className="p-4 border-b border-[#1a1a1a]">
+                  <div className="flex justify-between items-start gap-2">
+                    <h2 className="text-xl font-bold text-text-primary tracking-tight">
+                      🚌 {profile.kapino}
+                    </h2>
+                    {profile.last_seen && (
+                      <span className="text-[10px] text-[#888] bg-[#1a1a1a] px-2 py-1 rounded">
+                        {t('arac.lastSeen', { defaultValue: 'Son Görülme' })}: {parseIettDate(profile.last_seen).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })} ({relativeTime(profile.last_seen, t)})
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-sm font-mono text-[#888] mt-1">{profile.plate} &middot; {profile.vehicle_brand} {profile.model_year}</p>
+                  <p className="text-xs text-[#666] mt-1">{profile.operator_name} &middot; {profile.garage_name}</p>
+                </div>
+                <div className="p-3 grid grid-cols-5 gap-2 bg-[#080808]">
+                  {amenities.map(item => {
+                    const badge = boolBadge(item.value, t)
+                    return (
+                      <div key={item.label} className={`flex flex-col items-center justify-center p-2 rounded border ${badge.className}`}>
+                        <span className="text-lg">{item.icon}</span>
+                        <span className="text-[9px] mt-1 font-semibold uppercase">{badge.text}</span>
+                      </div>
+                    )
+                  })}
+                </div>
+                {(profile.seating_capacity || profile.full_capacity) && (
+                  <div className="px-4 py-2 text-xs text-[#888] text-center bg-[#0d0d0d] border-t border-[#1a1a1a]">
+                    {t('arac.capacity', {
+                      seating: profile.seating_capacity || '?',
+                      total: profile.full_capacity || '?',
+                      defaultValue: `Kapasite: ${profile.seating_capacity || '?'} oturma / ${profile.full_capacity || '?'} toplam`
+                    })}
+                  </div>
+                )}
+              </div>
+
+              <div className="mt-4 flex items-end justify-between">
+                <h3 className="text-base font-semibold text-text-primary">{t('arac.missions', { defaultValue: 'Görevler' })}</h3>
+                {missionsData && (
+                  <span className="text-xs text-[#888]">
+                    {t('arac.missionsSummary', {
+                      count: missionsData.summary.mission_count,
+                      active: activeMissionsCount,
+                      defaultValue: `${missionsData.summary.mission_count} görev, ${activeMissionsCount} aktif`
+                    })}
+                  </span>
+                )}
+              </div>
+
+              {activeMissionsCount > 1 && (
+                <div className="px-3 py-2 bg-amber-950/30 border border-amber-800/50 rounded flex items-start gap-2">
+                  <span className="text-amber-500">⚠️</span>
+                  <p className="text-xs text-amber-200/90 leading-tight">
+                    {t('arac.multipleActiveWarning', { defaultValue: 'Sistemde bu araç için birden fazla aktif görev görünüyor. Lütfen tüm listeyi inceleyin.' })}
+                  </p>
+                </div>
+              )}
+
+              <div className="border border-[#111] rounded-lg overflow-hidden">
+                {sortedMissions.length === 0 ? (
+                  <div className="p-4 text-center text-xs text-[#888]">{t('arac.noMissions', { defaultValue: 'Görev bulunamadı.' })}</div>
+                ) : (
+                  sortedMissions.map((mission, index) => (
+                    <MissionCard key={mission.task_id ?? index} mission={mission} index={index} t={t} />
+                  ))
+                )}
+              </div>
+
+              {technicalDetails.length > 0 && (
+                <div className="mt-4 border border-[#111] bg-[#0d0d0d] rounded-lg overflow-hidden">
+                  <button onClick={() => setShowTechnicalDetails(!showTechnicalDetails)} className="w-full px-4 py-3 flex items-center justify-between text-xs text-[#888] font-semibold">
+                    <span>▶ {t('arac.technicalDetails', { defaultValue: 'Teknik Detaylar (Sistem ID\'leri)' })}</span>
+                  </button>
+                  {showTechnicalDetails && (
+                    <div className="px-4 py-2 border-t border-[#1a1a1a] bg-[#080808]">
+                      <div className="py-2 border-b border-[#1a1a1a] flex items-center justify-between gap-3">
+                        <span className="text-xs text-[#555]">{t('arac.operatorId', { defaultValue: 'Operatör ID' })}</span>
+                        <span className="text-xs text-[#777]">{profile.operator_id ?? '-'}</span>
+                      </div>
+                      <div className="py-2 border-b border-[#1a1a1a] flex items-center justify-between gap-3">
+                        <span className="text-xs text-[#555]">{t('arac.garageCode', { defaultValue: 'Garaj Kodu' })}</span>
+                        <span className="text-xs text-[#777]">{profile.garage_code ?? '-'}</span>
+                      </div>
+                      <div className="py-2 border-b border-[#1a1a1a] flex items-center justify-between gap-3">
+                        <span className="text-xs text-[#555]">{t('arac.softwareVersion', { defaultValue: 'Yazılım Sürümü' })}</span>
+                        <span className="text-xs text-[#777]">{profile.vehicle_software_version ?? '-'}</span>
+                      </div>
+                      {technicalDetails.map(({ key, value }) => (
+                        <div key={key} className="py-2 border-b border-[#1a1a1a] last:border-0 flex items-center justify-between gap-3">
+                          <span className="text-xs text-[#555]">{missionLabel(key)}</span>
+                          <span className="text-xs text-[#777] text-right break-all">{String(value)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </>
         )}
       </div>
     </div>

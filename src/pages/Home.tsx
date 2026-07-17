@@ -6,45 +6,19 @@ import { getRecent, type RecentSearch } from '@/hooks/useRecentSearches'
 import { api, type NearbyStop, type ScheduledDeparture } from '@/api/client'
 import { distanceLabel } from '@/utils/distance'
 import LocationConsentModal from '@/components/LocationConsentModal'
+import { useLocationManager } from '@/hooks/useLocationManager'
 import { etaTextClass } from '@/utils/etaColor'
 import { useFavorites } from '@/hooks/useFavorites'
+import { useGlobalNotices } from '@/hooks/useGlobalNotices'
 import { getDirectionLabel } from '@/utils/routeDirectionLabels'
 import { useSharedRouteTickerNowMs } from '@/hooks/useSharedRouteTickerClock'
 import { useRouteTickerData } from '@/hooks/useRouteTickerData'
+import PullToRefresh from '@/components/PullToRefresh'
 import { useTranslation } from 'react-i18next'
+import { Dialog } from '@headlessui/react'
+import pkg from '../../package.json'
 
-const LOCATION_CONSENT_KEY = 'location-consent'
 
-/** Format current time HH:MM */
-function useClock() {
-  const { i18n } = useTranslation()
-  const lang = i18n.language === 'en' ? 'en-US' : 'tr-TR'
-  const [time, setTime] = useState(() =>
-    new Date().toLocaleTimeString(lang, { hour: '2-digit', minute: '2-digit' }),
-  )
-  useEffect(() => {
-    const id = setInterval(
-      () => setTime(new Date().toLocaleTimeString(lang, { hour: '2-digit', minute: '2-digit' })),
-      10_000,
-    )
-    return () => clearInterval(id)
-  }, [lang])
-  return time
-}
-
-type GpsPhase = 'locating' | 'done' | 'denied' | 'unavailable'
-
-function getGeoErrorCode(err: unknown): number | undefined {
-  if (typeof err !== 'object' || err === null || !('code' in err)) return undefined
-  const code = (err as { code?: unknown }).code
-  return typeof code === 'number' ? code : undefined
-}
-
-function getCurrentPositionPromise(options: PositionOptions): Promise<GeolocationPosition> {
-  return new Promise((resolve, reject) => {
-    navigator.geolocation.getCurrentPosition(resolve, reject, options)
-  })
-}
 
 // ── Quick-access item ──────────────────────────────────────────────────────────
 function QuickRow({
@@ -66,11 +40,11 @@ function QuickRow({
         {icon}
       </span>
       <div className="flex-1 min-w-0">
-        <div className="text-sm font-medium text-white">{label}</div>
-        {sub && <div className="text-xs" style={{ color: 'var(--wp-text-sec)' }}>{sub}</div>}
+        <div className="text-sm font-medium text-text-primary">{label}</div>
+        {sub && <div className="text-xs text-text-secondary">{sub}</div>}
       </div>
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}
-           className="w-4 h-4 shrink-0" style={{ color: '#444' }}>
+           className="w-4 h-4 shrink-0 text-text-muted">
         <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
       </svg>
     </>
@@ -154,8 +128,8 @@ function RouteTickerRow({ code, name, icon }: { code: string; name: string; icon
     >
       <div className="flex items-center gap-2.5">
         <span className="text-base shrink-0 leading-none">{icon}</span>
-        <span className="flex-1 text-[13px] font-bold text-white truncate leading-tight">{name}</span>
-        <svg className="w-3.5 h-3.5 text-slate-700 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+        <span className="flex-1 text-[13px] font-bold text-text-primary truncate leading-tight">{name}</span>
+        <svg className="w-3.5 h-3.5 text-text-muted shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
         </svg>
       </div>
@@ -189,9 +163,9 @@ function RouteTickerRow({ code, name, icon }: { code: string; name: string; icon
 
 export default function Home() {
   const { t } = useTranslation()
+  const { data: globalNotices } = useGlobalNotices()
   const navigate = useNavigate()
-  const clock = useClock()
-  const { prefs } = useUserPrefs()
+  const { prefs, setGpsConsent } = useUserPrefs()
   const { pinnedStops } = prefs
   const { favorites } = useFavorites()
   const favStops = favorites.filter((f) => f.kind === 'stop')
@@ -201,139 +175,76 @@ export default function Home() {
   const [recents, setRecents] = useState<RecentSearch[]>([])
   useEffect(() => { setRecents(getRecent()) }, [])
 
-  // ── Nearest stops (consent-gated GPS) ─────────────────────────────────────
-  const [gpsPhase, setGpsPhase] = useState<GpsPhase>('unavailable')
+  // ── Nearest stops (via LocationManager) ───────────────────────────────────
+  const { location, loading: gpsLoading, error: gpsError } = useLocationManager()
   const [nearbyStops, setNearbyStops] = useState<NearbyStop[]>([])
-  const [showConsentModal, setShowConsentModal] = useState(false)
-  const isRequestingGpsRef = useRef(false)
-  const abortControllerRef = useRef<AbortController | null>(null)
+  const [apiLoading, setApiLoading] = useState(false)
+  const [apiError, setApiError] = useState<string | null>(null)
+
+  const fetchNearby = useCallback(() => {
+    if (!location) return
+    const abort = new AbortController()
+    setApiLoading(true)
+    setApiError(null)
+    api.stops.nearby(location[0], location[1], 15, 500, { signal: abort.signal })
+      .then(stops => {
+        setNearbyStops(
+          [...stops]
+            .sort((a, b) => (Number(a.distance_m) || 0) - (Number(b.distance_m) || 0))
+            .slice(0, 5),
+        )
+      })
+      .catch((err) => {
+        if (err instanceof Error && err.name === 'AbortError') return
+        console.error(err)
+        setApiError('Duraklar yüklenemedi.')
+      })
+      .finally(() => {
+        if (!abort.signal.aborted) {
+          setApiLoading(false)
+        }
+      })
+    return abort
+  }, [location])
 
   useEffect(() => {
-    return () => {
-      if (abortControllerRef.current) abortControllerRef.current.abort()
-    }
-  }, [])
-
-  const requestGps = useCallback(async () => {
-    if (isRequestingGpsRef.current) return
-    if (!navigator.geolocation) { setGpsPhase('unavailable'); return }
-    isRequestingGpsRef.current = true
-    setGpsPhase('locating')
-
-    // Some mobile WebView/PWA contexts can intermittently fail to invoke either
-    // callback on background/foreground transitions; guard against endless locating.
-    const watchdogId = window.setTimeout(() => {
-      setGpsPhase((phase) => (phase === 'locating' ? 'unavailable' : phase))
-      isRequestingGpsRef.current = false
-      if (abortControllerRef.current) abortControllerRef.current.abort()
-    }, 20_000)
-
-    if (abortControllerRef.current) abortControllerRef.current.abort()
-    abortControllerRef.current = new AbortController()
-
-    try {
-      let pos: GeolocationPosition
-      try {
-        // Prefer a fresh fix first so startup behaves like explicit Nearby actions.
-        pos = await getCurrentPositionPromise({
-          enableHighAccuracy: true,
-          timeout: 12_000,
-          maximumAge: 0,
-        })
-      } catch (firstErr) {
-        // Permission denied should not fall back.
-        if (getGeoErrorCode(firstErr) === 1) throw firstErr
-
-        // Fallback to a cached/low-power position if fresh GPS is unavailable.
-        pos = await getCurrentPositionPromise({
-          enableHighAccuracy: false,
-          timeout: 8_000,
-          maximumAge: 120_000,
-        })
-      }
-
-      const stops = await api.stops.nearby(pos.coords.latitude, pos.coords.longitude, 500, { signal: abortControllerRef.current.signal })
-      setNearbyStops(
-        [...stops]
-          .sort((a, b) => (Number(a.distance_m) || 0) - (Number(b.distance_m) || 0))
-          .slice(0, 5),
-      )
-      setGpsPhase('done')
-    } catch (err: unknown) {
-      if (err instanceof Error && err.name === 'AbortError') return
-      setGpsPhase(getGeoErrorCode(err) === 1 ? 'denied' : 'unavailable')
-    } finally {
-      window.clearTimeout(watchdogId)
-      isRequestingGpsRef.current = false
-    }
-  }, [])
-
-  const handleConsentConfirm = useCallback(() => {
-    try { localStorage.setItem(LOCATION_CONSENT_KEY, 'granted') } catch (e) { console.warn('localStorage failed', e) }
-    setShowConsentModal(false)
-    requestGps()
-  }, [requestGps])
-
-  const handleConsentDismiss = useCallback(() => {
-    try { localStorage.setItem(LOCATION_CONSENT_KEY, 'dismissed') } catch (e) { console.warn('localStorage failed', e) }
-    setShowConsentModal(false)
-    setGpsPhase('denied')
-  }, [])
-
-  useEffect(() => {
-    let cancelled = false
-    let consent: string | null = null
-    try { consent = localStorage.getItem(LOCATION_CONSENT_KEY) } catch { /* storage unavailable */ }
-
-    if (consent === 'dismissed') {
-      setGpsPhase('denied')
-      return () => { cancelled = true }
-    }
-
-    if (consent !== 'granted') {
-      // First visit (or storage unavailable) — show consent modal.
-      // Do not show locating until an actual GPS request begins.
-      setShowConsentModal(true)
-      return () => { cancelled = true }
-    }
-
-    // Consent is locally granted; verify real browser permission state.
-    const perms = (navigator as Navigator & { permissions?: Permissions }).permissions
-    if (!perms || typeof perms.query !== 'function') {
-      void requestGps()
-      return () => { cancelled = true }
-    }
-
-    perms
-      .query({ name: 'geolocation' as PermissionName })
-      .then((status) => {
-        if (cancelled) return
-        if (status.state === 'granted') {
-          void requestGps()
-          return
-        }
-        if (status.state === 'denied') {
-          setGpsPhase('denied')
-          return
-        }
-        // prompt: avoid silent auto-locate hangs; require explicit user confirmation.
-        setShowConsentModal(true)
-      })
-      .catch(() => {
-        if (!cancelled) void requestGps()
-      })
-
-    return () => { cancelled = true }
-  }, [requestGps])
+    const abort = fetchNearby()
+    return () => abort?.abort()
+  }, [fetchNearby])
 
   return (
-    <div className="flex-1 overflow-y-auto pb-4">
+    <PullToRefresh onRefresh={async () => { window.location.reload(); await new Promise(r => setTimeout(r, 600)); }}>
+      <div className="pb-4">
 
       {/* ── Title bar ────────────────────────────────────────────────────────── */}
-      <div className="px-4 safe-area-pt mt-8 pt-4 pb-3 flex items-center justify-between border-b border-[#111]">
-        <span className="text-xl font-bold text-white tracking-tight">{t('app.title', { defaultValue: 'İETT Canlı' })}</span>
-        <span className="text-[#666] tabular-nums text-xs">{clock}</span>
+      <div className="px-4 safe-area-pt mt-8 pt-4 pb-3 flex items-center justify-between border-b border-surface-border">
+        <span className="text-xl font-bold text-text-primary tracking-tight">iett-pwa</span>
+        <div className="flex items-center gap-2">
+          {pkg.version.startsWith('0.') && (
+            <span className="bg-amber-500/20 text-amber-500 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider">Beta</span>
+          )}
+          <span className="text-text-muted font-mono text-xs">v{pkg.version}</span>
+        </div>
       </div>
+
+      {/* ── Global Notices ───────────────────────────────────────────────────── */}
+      {globalNotices && globalNotices.length > 0 && (
+        <div className="px-4 py-3 border-b border-surface-border bg-amber-950/10">
+          <div className="flex flex-col gap-2">
+            {globalNotices.map((notice) => (
+              <div key={notice.notice_noticeid} className="card border-amber-800/40 bg-amber-900/10 p-3">
+                <div className="flex items-start gap-2">
+                  <span className="text-amber-500 mt-0.5">⚠️</span>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-[13px] font-bold text-amber-500 leading-tight mb-1">{notice.notice_title}</h3>
+                    <p className="text-xs text-text-secondary whitespace-pre-wrap leading-relaxed">{notice.notice_body}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* ── Pinned stops ─────────────────────────────────────────────────────── */}
       <section className="mb-4">
@@ -341,7 +252,7 @@ export default function Home() {
           <span className="metro-section p-0">{t('home.pinnedStops', { defaultValue: 'Sabitlenmiş Duraklar' })}</span>
           <div className="flex items-center gap-3">
             {pinnedStops.length > 0 && (
-              <Link to="/pinned" className="text-[11px] metro-tilt" style={{ color: '#888' }}>{t('home.manage', { defaultValue: 'Yönet →' })}</Link>
+              <Link to="/pinned" className="text-[11px] metro-tilt text-text-muted">{t('home.manage', { defaultValue: 'Yönet →' })}</Link>
             )}
             {pinnedStops.length < PINNED_STOPS_MAX && (
               <button
@@ -371,13 +282,13 @@ export default function Home() {
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
             </svg>
             <span className="text-sm">{t('home.pinStopTitle', { defaultValue: 'Durak sabitle' })}</span>
-            <span className="text-xs" style={{ color: '#333' }}>{t('home.pinStopDesc', { defaultValue: 'Durak sayfasındaki 📌 butonuna dokun' })}</span>
+            <span className="text-xs" style={{ color: '#333' }}>{t('home.noNearbyDesc', { defaultValue: 'Bulunduğunuz konuma yakın İETT durağı yok.' })}</span>
           </button>
         )}
       </section>
 
-      {/* ── Nearest stops ─ hidden when location permission revoked ────────── */}
-      {gpsPhase !== 'denied' && <section className="mb-4">
+      {/* ── Nearest stops ──────────────────────────────────────────────────────── */}
+      <section className="mb-4">
         <div className="flex items-center justify-between px-4 pt-2 pb-1">
           <span className="metro-section p-0">{t('home.nearbyStops', { defaultValue: 'Yakın Duraklar' })}</span>
           <Link
@@ -390,38 +301,36 @@ export default function Home() {
         </div>
 
         {/* Locating animation */}
-        {gpsPhase === 'locating' && <GpsLocatingDots />}
-
-        {/* Stops list */}
-        {gpsPhase === 'done' && nearbyStops.map((s) => (
-          <PinnedStopRow
-            key={s.stop_code}
-            dcode={s.stop_code}
-            nick={s.stop_name}
-            icon="📍"
-            distLabel={distanceLabel(s.distance_m)}
-            direction={s.direction}
-          />
-        ))}
-
-        {/* GPS unavailable — retry */}
-        {gpsPhase === 'unavailable' && (
-          <button
-            onClick={requestGps}
-            className="mx-4 w-[calc(100%-2rem)] py-5 flex flex-col items-center gap-2 metro-tilt"
-            style={{ border: '1px solid #222', color: '#444' }}
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-6 h-6">
-              <path strokeLinecap="round" strokeLinejoin="round"
-                d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
-              <path strokeLinecap="round" strokeLinejoin="round"
-                d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
-            </svg>
-            <span className="text-sm">{t('home.locationFailed', { defaultValue: 'Konum alınamadı' })}</span>
-            <span className="text-xs" style={{ color: '#333' }}>{t('home.retryArrow', { defaultValue: 'Tekrar dene →' })}</span>
-          </button>
+        {gpsLoading || apiLoading ? (
+          <GpsLocatingDots />
+        ) : apiError ? (
+          <div className="mx-4 py-5 flex flex-col items-center gap-2" style={{ border: '1px solid #222', borderRadius: '12px' }}>
+            <span className="text-sm text-red-400">{apiError}</span>
+            <button
+              onClick={() => fetchNearby()}
+              className="px-4 py-1.5 bg-surface-muted hover:bg-slate-700 text-text-primary rounded-lg text-xs font-semibold transition-colors"
+            >
+              {t('common.retry', { defaultValue: 'Tekrar Dene' })}
+            </button>
+          </div>
+        ) : nearbyStops.length > 0 ? (
+          nearbyStops.map((s) => (
+            <PinnedStopRow
+              key={s.stop_code}
+              dcode={s.stop_code}
+              nick={s.stop_name}
+              icon="📍"
+              distLabel={distanceLabel(s.distance_m)}
+              direction={s.direction}
+            />
+          ))
+        ) : (
+          <div className="mx-4 py-5 flex flex-col items-center gap-1.5" style={{ border: '1px solid #222' }}>
+            <span className="text-sm text-text-muted">{t('home.noNearby', { defaultValue: 'Durak Bulunamadı' })}</span>
+            <span className="text-xs" style={{ color: '#333' }}>{t('home.noNearbyDesc', { defaultValue: 'Bulunduğunuz konuma yakın İETT durağı yok.' })}</span>
+          </div>
         )}
-      </section>}
+      </section>
 
       {/* ── Favorites ───────────────────────────────────────────────────────── */}
       {(favStops.length > 0 || favRoutes.length > 0) && (
@@ -564,12 +473,13 @@ export default function Home() {
         </div>
       </section>
 
-      {showConsentModal && (
+      {prefs.gpsConsent === 'pending' && (
         <LocationConsentModal
-          onConfirm={handleConsentConfirm}
-          onDismiss={handleConsentDismiss}
+          onConfirm={() => setGpsConsent('granted')}
+          onDismiss={() => setGpsConsent('denied')}
         />
       )}
-    </div>
+      </div>
+    </PullToRefresh>
   )
 }

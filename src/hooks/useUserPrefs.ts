@@ -21,13 +21,17 @@ export interface UserPrefs {
   favStops: FavStop[]
   favRoutes: string[]              // hat_kodu[]
   nicknames: Record<string, string> // dcode → nick
+  nearbyRadius: number
+  nearbyMax: number
+  mockLocation: [number, number] | null
+  gpsConsent: 'pending' | 'granted' | 'denied'
   exportedAt?: string
 }
 
 export const PINNED_STOPS_MAX = 7
 
 function createDefaultPrefs(): UserPrefs {
-  return { pinnedStops: [], favStops: [], favRoutes: [], nicknames: {} }
+  return { pinnedStops: [], favStops: [], favRoutes: [], nicknames: {}, nearbyRadius: 500, nearbyMax: 15, mockLocation: null, gpsConsent: 'pending' }
 }
 
 const KEY = 'iett-prefs'
@@ -100,10 +104,28 @@ export function useUserPrefs() {
     }))
   }, [])
 
+  const setNearbySettings = useCallback((radius: number, max: number) => {
+    patch((p) => ({ ...p, nearbyRadius: radius, nearbyMax: max }))
+  }, [])
+
   const getNick = useCallback(
     (dcode: string) => prefs.nicknames[dcode] ?? null,
     [prefs.nicknames],
   )
+
+  // ── Mock Location & Consent ───────────────────────────────────────────────
+
+  const setMockLocation = useCallback((lat: number, lng: number) => {
+    patch((p) => ({ ...p, mockLocation: [lat, lng] }))
+  }, [])
+
+  const setGpsConsent = useCallback((status: 'pending' | 'granted' | 'denied') => {
+    patch((p) => ({ ...p, gpsConsent: status }))
+  }, [])
+
+  const resetConsent = useCallback(() => {
+    patch((p) => ({ ...p, gpsConsent: 'pending' }))
+  }, [])
 
   // ── Favourite stops ───────────────────────────────────────────────────────
 
@@ -199,6 +221,10 @@ export function useUserPrefs() {
                     .filter(([, v]) => typeof v === 'string')
                 ) as Record<string, string>
               : {},
+            nearbyRadius: typeof raw.nearbyRadius === 'number' ? raw.nearbyRadius : 500,
+            nearbyMax: typeof raw.nearbyMax === 'number' ? raw.nearbyMax : 15,
+            mockLocation: Array.isArray(raw.mockLocation) && raw.mockLocation.length === 2 && typeof raw.mockLocation[0] === 'number' && typeof raw.mockLocation[1] === 'number' ? [raw.mockLocation[0], raw.mockLocation[1]] as [number, number] : null,
+            gpsConsent: raw.gpsConsent === 'granted' || raw.gpsConsent === 'denied' ? raw.gpsConsent : 'pending',
           }
           patch(() => coerced)
           resolve()
@@ -222,5 +248,11 @@ export function useUserPrefs() {
     toggleFavRoute, isFavRoute,
     // export/import
     exportPrefs, importPrefs,
+    // nearby
+    setNearbySettings,
+    // mock location
+    setMockLocation,
+    setGpsConsent,
+    resetConsent,
   }
 }

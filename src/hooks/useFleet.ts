@@ -12,11 +12,12 @@ function mapQuery<T>(query: UseQueryResult<T, Error>): { data: T | null; loading
   }
 }
 
-export function useFleet() {
+export function useFleet(options?: { enabled?: boolean }) {
   const query = useQuery<BusPosition[]>({
     queryKey: ['fleet'],
     queryFn: ({ signal }) => api.fleet.all({ signal }),
     refetchInterval: 30_000,
+    enabled: options?.enabled ?? true,
   })
   return mapQuery(query)
 }
