@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { MapContainer, TileLayer, CircleMarker, Popup, Marker, Polyline, useMap } from 'react-leaflet'
 import * as L from 'leaflet'
@@ -104,8 +105,8 @@ function InfoModal({ onClose }: { onClose: () => void }) {
     }
   }, [onClose])
 
-  return (
-    <div className="fixed inset-0 z-[600] flex items-center justify-center p-4">
+  return createPortal(
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
       <div 
         ref={modalRef}
@@ -134,7 +135,8 @@ function InfoModal({ onClose }: { onClose: () => void }) {
           {t('common.gotIt', 'Anladım')}
         </button>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }
 

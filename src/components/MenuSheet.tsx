@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 
@@ -55,11 +56,11 @@ export default function MenuSheet({ onClose }: MenuSheetProps) {
     navigate(path)
   }
 
-  return (
+  return createPortal(
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 z-40 bg-black/60"
+        className="fixed inset-0 z-[9998] bg-black/60"
         onClick={onClose}
       />
 
@@ -69,7 +70,7 @@ export default function MenuSheet({ onClose }: MenuSheetProps) {
         role="dialog"
         aria-modal="true"
         aria-label={t('common.menu', { defaultValue: 'Menü' })}
-        className="fixed bottom-0 left-0 right-0 z-50 bg-surface-card rounded-t-2xl
+        className="fixed bottom-0 left-0 right-0 z-[9999] bg-surface-card rounded-t-2xl
                       border-t border-surface-border safe-area-pb"
       >
         {/* Drag handle */}
@@ -97,7 +98,8 @@ export default function MenuSheet({ onClose }: MenuSheetProps) {
 
         <div className="h-4" />
       </div>
-    </>
+    </>,
+    document.body
   )
 }
 

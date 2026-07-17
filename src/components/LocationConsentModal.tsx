@@ -57,7 +57,7 @@ export default function LocationConsentModal({ onConfirm, onDismiss }: Props) {
   }, [onDismiss])
 
   const modalContent = (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm px-4 pb-6 sm:pb-0">
+    <div className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm px-4 pb-6 sm:pb-0">
       <div
         ref={dialogRef}
         role="dialog"
