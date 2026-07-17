@@ -319,8 +319,13 @@ export default function NearbyPage() {
             }}
           >
             {prefs.gpsConsent === 'denied' && (
-              <div className="bg-amber-900/40 border-b border-amber-800/50 py-1.5 px-4 text-center">
-                <span className="text-[10px] text-amber-500/90 font-bold tracking-wider uppercase">Konum izni reddedildi · Mock konum</span>
+              <div className="bg-surface-muted border-b border-surface-border py-1.5 px-4 text-center">
+                <span 
+                  className="text-[10px] font-bold tracking-wider uppercase" 
+                  style={{ color: 'var(--color-warning)' }}
+                >
+                  {t('nearby.mockLocationError', { defaultValue: 'Konum izni reddedildi · Mock konum' })}
+                </span>
               </div>
             )}
 
