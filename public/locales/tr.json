@@ -23,7 +23,8 @@
     "gotIt": "Anladım",
     "selectOption": "Seçiniz",
     "iett": "İETT",
-    "update": "Güncelleme"
+    "update": "Güncelleme",
+    "all": "Tümü"
   },
   "nav": {
     "map": "Harita",
@@ -69,7 +70,8 @@
     "lastUpdated": "güncelleme: {{time}}",
     "lagExplanationAria": "Neden iki farklı saat var?",
     "systemAnnouncementType": "Sistem Genel Duyuru",
-    "gpsUpdate": "GPS Güncellemesi"
+    "gpsUpdate": "GPS Güncellemesi",
+    "announcements": "Duyurular"
   },
   "routes": {
     "title": "Hat",
@@ -181,7 +183,9 @@
     "gpsConsentWaiting": "Konum İzni: Bekliyor",
     "gpsMockWarning": "Eğer gerçek konumunuzu paylaşmak istemiyorsanız, uygulama aşağıdaki sahte konumu kullanır. Haritaya dokunarak konumunuzu değiştirebilirsiniz.",
     "resetGpsModal": "Konum İznini Sıfırla (Modalı Tekrar Göster)",
-    "gpsAndMock": "GPS ve Sahte Konum"
+    "gpsAndMock": "GPS ve Sahte Konum",
+    "requestGpsModal": "Konum İznini İste",
+    "revokeGpsModal": "İzni İptal Et (Sahte Konuma Dön)"
   },
   "embed": {
     "poweredBy": "iett-pwa",

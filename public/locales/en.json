@@ -23,7 +23,8 @@
     "gotIt": "I Got It",
     "selectOption": "Select",
     "iett": "IETT",
-    "update": "Update"
+    "update": "Update",
+    "all": "All"
   },
   "nav": {
     "map": "Map",
@@ -69,7 +70,8 @@
     "lastUpdated": "updated: {{time}}",
     "lagExplanationAria": "Why are there two different times?",
     "systemAnnouncementType": "System Announcement",
-    "gpsUpdate": "GPS Update"
+    "gpsUpdate": "GPS Update",
+    "announcements": "Announcements"
   },
   "routes": {
     "title": "Route",
@@ -181,7 +183,9 @@
     "gpsConsentWaiting": "Location Permission: Waiting",
     "gpsMockWarning": "If you do not wish to share your real location, the application uses the mock location below. You can change your location by tapping on the map.",
     "resetGpsModal": "Reset Location Permission (Show Modal Again)",
-    "gpsAndMock": "GPS and Mock Location"
+    "gpsAndMock": "GPS and Mock Location",
+    "requestGpsModal": "Request Location Permission",
+    "revokeGpsModal": "Revoke Permission (Use Mock Location)"
   },
   "embed": {
     "poweredBy": "iett-pwa",
