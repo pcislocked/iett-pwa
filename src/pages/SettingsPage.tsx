@@ -247,18 +247,22 @@ export default function SettingsPage() {
           <p className="text-sm text-text-secondary font-medium">
             {prefs.gpsConsent === 'granted' ? t('settings.gpsConsentGranted', 'Konum İzni: Verildi') : prefs.gpsConsent === 'denied' ? t('settings.gpsConsentDenied', 'Konum İzni: Reddedildi') : t('settings.gpsConsentWaiting', 'Konum İzni: Bekliyor')}
           </p>
-          <p className="text-xs text-text-muted mt-0.5 leading-relaxed">
-            {t('settings.gpsMockWarning', 'Eğer gerçek konumunuzu paylaşmak istemiyorsanız, uygulama aşağıdaki sahte konumu kullanır. Haritaya dokunarak konumunuzu değiştirebilirsiniz.')}
-          </p>
+          {prefs.gpsConsent !== 'granted' && (
+            <p className="text-xs text-text-muted mt-0.5 leading-relaxed">
+              {t('settings.gpsMockWarning', 'Eğer gerçek konumunuzu paylaşmak istemiyorsanız, uygulama aşağıdaki sahte konumu kullanır. Haritaya dokunarak konumunuzu değiştirebilirsiniz.')}
+            </p>
+          )}
         </div>
 
-        <div className="mt-2 relative z-0">
-          <MockLocationPicker
-            initialLat={prefs.mockLocation?.[0] ?? DEFAULT_MOCK_LOCATION[0]}
-            initialLon={prefs.mockLocation?.[1] ?? DEFAULT_MOCK_LOCATION[1]}
-            onPick={(lat, lon) => setMockLocation(lat, lon)}
-          />
-        </div>
+        {prefs.gpsConsent !== 'granted' && (
+          <div className="mt-2 relative z-0">
+            <MockLocationPicker
+              initialLat={prefs.mockLocation?.[0] ?? DEFAULT_MOCK_LOCATION[0]}
+              initialLon={prefs.mockLocation?.[1] ?? DEFAULT_MOCK_LOCATION[1]}
+              onPick={(lat, lon) => setMockLocation(lat, lon)}
+            />
+          </div>
+        )}
 
         <button
           onClick={() => {
