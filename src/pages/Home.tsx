@@ -52,9 +52,7 @@ function QuickRow({
   return <button onClick={onPress} className="metro-row w-full text-left">{inner}</button>
 }
 
-/** Animated "Konum alınıyor" dots: cycles ·  ··  ···  ····  every 400 ms */
-function GpsLocatingDots() {
-  const { t } = useTranslation()
+function LoadingDots({ text }: { text: string }) {
   const [frame, setFrame] = useState(0)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   useEffect(() => {
@@ -72,7 +70,7 @@ function GpsLocatingDots() {
           d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
       </svg>
       <span className="text-[13px] text-text-muted">
-        {t('common.locating', { defaultValue: 'Konum alınıyor' })}<span className="font-mono">{dots}</span>
+        {text}<span className="font-mono">{dots}</span>
       </span>
     </div>
   )
@@ -300,8 +298,10 @@ export default function Home() {
         </div>
 
         {/* Locating animation */}
-        {gpsLoading || apiLoading ? (
-          <GpsLocatingDots />
+        {gpsLoading ? (
+          <LoadingDots text={t('common.locating', { defaultValue: 'Konum alınıyor' })} />
+        ) : apiLoading ? (
+          <LoadingDots text={t('common.loadingStops', { defaultValue: 'Duraklar yükleniyor' })} />
         ) : apiError ? (
           <div className="mx-4 py-5 flex flex-col items-center gap-2" style={{ border: '1px solid #222', borderRadius: '12px' }}>
             <span className="text-sm text-red-400">{apiError}</span>
