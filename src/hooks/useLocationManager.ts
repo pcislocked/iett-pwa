@@ -22,11 +22,11 @@ export function useLocationManager() {
     isRequesting.current = true
     setLoading(true)
 
-    const fallbackToMock = () => {
+    const fallbackToMock = (explicitDenied = false) => {
       setLocation(prefs.mockLocation ?? DEFAULT_MOCK_LOCATION)
       setLoading(false)
       isRequesting.current = false
-      if (prefs.gpsConsent !== 'denied') setGpsConsent('denied')
+      if (explicitDenied && prefs.gpsConsent !== 'denied') setGpsConsent('denied')
     }
 
     // If user explicitly denied in our app, or we saved denied state, just use mock immediately
@@ -56,9 +56,9 @@ export function useLocationManager() {
         isRequesting.current = false
         if (prefs.gpsConsent !== 'granted') setGpsConsent('granted')
       },
-      (_err) => {
+      (err) => {
         if (watchdogRef.current !== null) window.clearTimeout(watchdogRef.current)
-        fallbackToMock()
+        fallbackToMock(err.code === err.PERMISSION_DENIED)
       },
       {
         enableHighAccuracy: false,

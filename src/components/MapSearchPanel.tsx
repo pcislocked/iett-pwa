@@ -92,7 +92,7 @@ export default function MapSearchPanel({
     if (query.trim().length < 2) return []
     const q = query.toUpperCase().trim()
     
-    let results: BusPosition[] = []
+    let results: any[] = []
     
     // 1. Filo yüklüyse client-side filtrele
     if (fleet) {
@@ -153,7 +153,7 @@ export default function MapSearchPanel({
             {/* Routes */}
             {routeResults.length > 0 && (
               <div className="py-1">
-                <div className="px-3 py-1 text-[10px] font-bold text-text-muted uppercase tracking-wider bg-surface-muted/50">Hatlar</div>
+                <div className="px-3 py-1 text-[10px] font-bold text-text-muted uppercase tracking-wider bg-surface-muted/50">{t('stops.routes', 'Hatlar')}</div>
                 {routeResults.map(r => (
                   <button
                     key={r.hat_kodu}
@@ -170,7 +170,7 @@ export default function MapSearchPanel({
             {/* Stops */}
             {stopResults.length > 0 && (
               <div className="py-1">
-                <div className="px-3 py-1 text-[10px] font-bold text-text-muted uppercase tracking-wider bg-surface-muted/50">Duraklar</div>
+                <div className="px-3 py-1 text-[10px] font-bold text-text-muted uppercase tracking-wider bg-surface-muted/50">{t('routes.stops', 'Duraklar')}</div>
                 {stopResults.map(s => (
                   <button
                     key={s.dcode}
@@ -223,7 +223,7 @@ export default function MapSearchPanel({
                   <button
                     onClick={() => onRemoveRoute(route)}
                     className="ml-0.5 opacity-60 hover:opacity-100 transition-opacity leading-none text-sm font-normal"
-                    aria-label={`Kaldır ${route}`}
+                    aria-label={t('stops.removeRouteFilter', { route, defaultValue: `Kaldır ${route}` })}
                   >
                     ×
                   </button>
@@ -241,7 +241,7 @@ export default function MapSearchPanel({
                 <button
                   onClick={() => onRemoveStop(stop.dcode)}
                   className="ml-0.5 opacity-60 hover:opacity-100 transition-opacity leading-none text-sm font-normal"
-                  aria-label={`Kaldır ${stop.dcode}`}
+                  aria-label={t('stops.removeEntityFilter', { entity: stop.dcode, defaultValue: `Kaldır ${stop.dcode}` })}
                 >
                   ×
                 </button>

@@ -8,15 +8,13 @@ export function useArrivals(dcode: string, via?: string) {
     refetchInterval: 20_000,
   })
 
-  const hasDataWrapper = query.data && typeof query.data === 'object' && 'data' in query.data
-
   return {
-    data: hasDataWrapper ? (query.data as { data: unknown }).data : (query.data ?? null),
+    data: query.data?.data ?? null,
     loading: query.isLoading || (query.isFetching && !query.data),
     error: query.error ? String(query.error) : null,
     refresh: query.refetch,
     stale: query.isError && !!query.data, // Stale if previous data exists but latest fetch failed
     lastUpdated: query.dataUpdatedAt ? new Date(query.dataUpdatedAt) : null,
-    iettUpdatedAt: hasDataWrapper ? (query.data as { headers?: { get?: (k: string) => string | null } }).headers?.get?.('X-IETT-Updated-At') ?? null : null,
+    iettUpdatedAt: query.data?.headers?.get?.('X-IETT-Updated-At') ?? null,
   }
 }

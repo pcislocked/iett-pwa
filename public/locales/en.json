@@ -67,7 +67,9 @@
     "systemAnnouncements": "System Warnings",
     "stopListFailed": "Failed to load stop list",
     "lastUpdated": "updated: {{time}}",
-    "lagExplanationAria": "Why are there two different times?"
+    "lagExplanationAria": "Why are there two different times?",
+    "systemAnnouncementType": "System Announcement",
+    "gpsUpdate": "GPS Update"
   },
   "routes": {
     "title": "Route",

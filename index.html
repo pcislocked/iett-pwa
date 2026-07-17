@@ -19,7 +19,7 @@
     <script>
       (function() {
         try {
-          var saved = localStorage.getItem('iett-theme');
+          var saved = localStorage.getItem('iett-pwa-theme');
           if (saved === 'dark' || saved === 'amoled' || saved === 'light') {
             document.documentElement.setAttribute('data-theme', saved);
           } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {

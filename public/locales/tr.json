@@ -67,7 +67,9 @@
     "systemAnnouncements": "Sistem Uyarıları",
     "stopListFailed": "Durak listesi yüklenemedi",
     "lastUpdated": "güncelleme: {{time}}",
-    "lagExplanationAria": "Neden iki farklı saat var?"
+    "lagExplanationAria": "Neden iki farklı saat var?",
+    "systemAnnouncementType": "Sistem Genel Duyuru",
+    "gpsUpdate": "GPS Güncellemesi"
   },
   "routes": {
     "title": "Hat",

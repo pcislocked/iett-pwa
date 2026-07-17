@@ -232,7 +232,7 @@ export default function MapPage() {
 
   const mergedDetail = useMemo(() => {
     const position = displayBuses.find(b => b.kapino === selectedKapino)
-    if (!selectedDetail) return position ? { ...position, plate: undefined, resolved_route_code: position.route_code } : null
+    if (!selectedDetail) return position ? { ...position, plate: undefined, resolved_route_code: position.route_code, route_is_live: false } : null
     return { ...position, ...selectedDetail }
   }, [selectedDetail, selectedKapino, displayBuses])
 

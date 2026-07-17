@@ -85,7 +85,7 @@ export function VariantSelect({ metadata, stopsDirections, selectedVariant, sele
     return { ...(fallbackGroup.options[0] || { name: t('common.selectOption', 'Seçiniz'), code: '' }), directionCode: fallbackGroup.directionCode }
   }, [groups, selectedDirection, selectedVariant, t])
 
-  if (groups.length === 0) return null
+  if (groups.length === 0 || !currentOption) return null
   if (groups.length === 1 && groups[0].options.length <= 1) return null // Hide if only one variant overall
 
   return (

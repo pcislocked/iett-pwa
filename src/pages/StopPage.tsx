@@ -457,7 +457,7 @@ function BusDetailSheet({
         {arrival.last_seen_ts && (
           <div className="flex justify-center pb-2 pt-1 border-b border-surface-border">
             <p className="text-[10px] text-text-muted font-mono tracking-wide">
-              GPS Update: {arrival.last_seen_ts}
+              {t('stops.gpsUpdate', 'GPS Update')}: {arrival.last_seen_ts}
             </p>
           </div>
         )}
@@ -758,7 +758,7 @@ export default function StopPage() {
 
     return [
       ...(globalNotices ?? []).map(gn => ({
-        type: 'Sistem Genel Duyuru',
+        type: t('stops.systemAnnouncementType', 'Sistem Genel Duyuru'),
         updated_at: new Date(gn.notice_starttime).toLocaleDateString('tr-TR'),
         message: `${gn.notice_title}\n\n${gn.notice_body}`,
         route_code: 'GENEL',
