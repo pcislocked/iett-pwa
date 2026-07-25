@@ -128,6 +128,9 @@
     "noDirectionInfo": "Yön Bilgisi Yok",
     "speed": "Hız",
     "openRoute": "Hattı Aç",
+    "secondsAgo": "{{seconds}} sn önce",
+    "minutesAgo": "{{minutes}} dk önce",
+    "hoursAgo": "{{hours}} sa önce",
     "ibbNotice": "İBB Yönetimi, halkın vergileriyle çalışan otobüslerin global konum verilerini halka kapattığı için tüm filoyu şu an çekemiyoruz. Arama çubuğundan belirli bir hat aratarak (ör: 500T) o hattın araçlarını sorunsuzca görmeye devam edebilirsiniz."
   },
   "fleet": {
@@ -266,7 +269,8 @@
     "staleDataWarning": "Bu veri eski (5 dakikadan uzun süredir güncellenmedi).",
     "lastSeen": "Son Görülme",
     "capacity": "Kapasite: {{seating}} oturma / {{total}} toplam",
-    "missionsSummary": "{{count}} görev, {{active}} aktif",
+    "missionsSummary": "{{count}} sefer, {{completed}} tamamlandı",
+    "futureMissionsNotice": "İETT sistem değişiklikleri sebebiyle gelecek sefer bilgisi sunulmamaktadır.",
     "multipleActiveWarning": "Sistemde bu araç için birden fazla aktif görev görünüyor. Lütfen tüm listeyi inceleyin.",
     "technicalDetails": "Teknik Detaylar (Sistem ID'leri)",
     "operatorId": "Operatör ID",

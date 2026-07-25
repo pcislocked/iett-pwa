@@ -4,6 +4,7 @@ import { useUserPrefs } from '@/hooks/useUserPrefs'
 import { useTranslation } from 'react-i18next'
 import { useTheme, type Theme } from '@/hooks/useTheme'
 import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet'
+import { ISTANBUL_BOUNDS, MAP_MIN_ZOOM, MAP_MAX_ZOOM } from '@/utils/mapConstants'
 import * as L from 'leaflet'
 import { DEFAULT_MOCK_LOCATION } from '@/hooks/useLocationManager'
 import LocationConsentModal from '@/components/LocationConsentModal'
@@ -64,8 +65,21 @@ function MockLocationPicker({ initialLat, initialLon, onPick }: { initialLat: nu
 
   return (
     <div style={{ height: 200, width: '100%', borderRadius: 12, overflow: 'hidden', border: '1px solid var(--color-border)', zIndex: 0 }}>
-      <MapContainer center={[initialLat, initialLon]} zoom={13} style={{ height: '100%', width: '100%' }}>
-        <TileLayer url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png" />
+      <MapContainer
+        center={[initialLat, initialLon]}
+        zoom={13}
+        minZoom={MAP_MIN_ZOOM}
+        maxZoom={MAP_MAX_ZOOM}
+        maxBounds={ISTANBUL_BOUNDS}
+        maxBoundsViscosity={1.0}
+        style={{ height: '100%', width: '100%' }}
+      >
+        <TileLayer
+          url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+          keepBuffer={2}
+          updateWhenIdle={true}
+          updateWhenZooming={false}
+        />
         <Marker position={[initialLat, initialLon]} icon={customIcon} />
         <PickerEvents />
       </MapContainer>

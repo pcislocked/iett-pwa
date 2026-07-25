@@ -6,6 +6,7 @@ import * as L from 'leaflet'
 import { motion, AnimatePresence, useMotionValue, useTransform } from 'framer-motion'
 import { useArrivals } from '@/hooks/useArrivals'
 import { useQuery } from '@tanstack/react-query'
+import { ISTANBUL_BOUNDS, MAP_MIN_ZOOM, MAP_MAX_ZOOM } from '@/utils/mapConstants'
 import { api, type RouteAnnouncement, type StopDetail, type BusPosition, type Arrival, type Amenities } from '@/api/client'
 import { useFavorites } from '@/hooks/useFavorites'
 import { useBottomBar } from '@/hooks/useBottomBar'
@@ -962,6 +963,10 @@ export default function StopPage() {
             <MapContainer
               center={[stopDetail.latitude, stopDetail.longitude]}
               zoom={16}
+              minZoom={MAP_MIN_ZOOM}
+              maxZoom={MAP_MAX_ZOOM}
+              maxBounds={ISTANBUL_BOUNDS}
+              maxBoundsViscosity={1.0}
               style={{ height: '100%', width: '100%' }}
               key={dcode}
               attributionControl={false}
@@ -969,6 +974,9 @@ export default function StopPage() {
               {/* MapResizer removed, relying on resize events */}
               <TileLayer
                 url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+                keepBuffer={2}
+                updateWhenIdle={true}
+                updateWhenZooming={false}
               />
               <AutoFitBuses
                 stopLat={stopDetail.latitude}

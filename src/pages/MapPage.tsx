@@ -12,18 +12,32 @@ import { useLocationManager } from '@/hooks/useLocationManager'
 import CanvasFleetLayer from '@/components/CanvasFleetLayer'
 import MapSearchPanel from '@/components/MapSearchPanel'
 import MapTileToggle, { TILES } from '@/components/MapTileToggle'
+import { ISTANBUL_BOUNDS, MAP_MIN_ZOOM, MAP_MAX_ZOOM } from '@/utils/mapConstants'
 import MapBusPicker from '@/components/MapBusPicker'
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 function parseIsoDate(value: string | null | undefined): Date | null {
   if (!value) return null
   const trimmed = value.trim()
-  const hasTimezone = /(?:[zZ]|[+\-]\d{2}:\d{2})$/.test(trimmed)
-  const parsed = new Date(hasTimezone ? trimmed : `${trimmed}Z`)
-  if (Number.isNaN(parsed.getTime()) && !hasTimezone) {
-    const fallback = new Date(trimmed)
-    return Number.isNaN(fallback.getTime()) ? null : fallback
+  if (!trimmed) return null
+
+  // Format: "HH:mm:ss" or "HH:mm"
+  const timeMatch = trimmed.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/)
+  if (timeMatch) {
+    const d = new Date()
+    d.setHours(parseInt(timeMatch[1], 10), parseInt(timeMatch[2], 10), parseInt(timeMatch[3] || '0', 10), 0)
+    return d
   }
+
+  // Format: "DD-MM-YYYY HH:mm:ss" or "DD.MM.YYYY HH:mm:ss"
+  const dmyMatch = trimmed.match(/^(\d{2})[\.\-](\d{2})[\.\-](\d{4})(?:\s+(\d{2}):(\d{2})(?::(\d{2}))?)?$/)
+  if (dmyMatch) {
+    const [, day, month, year, hh, mm, ss] = dmyMatch
+    return new Date(parseInt(year, 10), parseInt(month, 10) - 1, parseInt(day, 10), parseInt(hh || '0', 10), parseInt(mm || '0', 10), parseInt(ss || '0', 10))
+  }
+
+  // Standard date format parsing without appending 'Z'
+  const parsed = new Date(trimmed)
   return Number.isNaN(parsed.getTime()) ? null : parsed
 }
 
@@ -271,10 +285,20 @@ export default function MapPage() {
         ref={mapRef}
         center={[41.015, 28.98]}
         zoom={11}
+        minZoom={MAP_MIN_ZOOM}
+        maxZoom={MAP_MAX_ZOOM}
+        maxBounds={ISTANBUL_BOUNDS}
+        maxBoundsViscosity={1.0}
         style={{ flex: 1, width: '100%', touchAction: 'none' }}
         zoomControl={false}
       >
-        <TileLayer key={TILES[tileIdx].key} url={TILES[tileIdx].url} />
+        <TileLayer
+          key={TILES[tileIdx].key}
+          url={TILES[tileIdx].url}
+          keepBuffer={2}
+          updateWhenIdle={true}
+          updateWhenZooming={false}
+        />
 
         {/* User GPS Location */}
         <GpsMarker location={location} />

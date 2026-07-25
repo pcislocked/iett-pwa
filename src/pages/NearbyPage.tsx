@@ -8,6 +8,7 @@ import {
   Marker,
   useMap,
 } from 'react-leaflet'
+import { ISTANBUL_BOUNDS, MAP_MIN_ZOOM, MAP_MAX_ZOOM } from '@/utils/mapConstants'
 import * as L from 'leaflet'
 import { api, type NearbyStop as ApiNearbyStop } from '@/api/client'
 import { distanceLabel } from '@/utils/distance'
@@ -65,11 +66,18 @@ function NearbyMapView({
     <MapContainer
       center={[userLat, userLon]}
       zoom={15}
+      minZoom={MAP_MIN_ZOOM}
+      maxZoom={MAP_MAX_ZOOM}
+      maxBounds={ISTANBUL_BOUNDS}
+      maxBoundsViscosity={1.0}
       style={{ height: '100%', width: '100%' }}
     >
       <TileLayer
         attribution='&copy; CartoDB'
         url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+        keepBuffer={2}
+        updateWhenIdle={true}
+        updateWhenZooming={false}
       />
 
       {/* Smoothly pan to selected stop */}

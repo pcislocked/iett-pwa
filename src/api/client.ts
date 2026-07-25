@@ -324,11 +324,13 @@ export interface AracSessionCredentials {
 export interface AracCaptchaResponse {
   captchaId: string
   captchaImageBase64: string
+  suggestedAnswer: string | null
 }
 
 export interface AracSessionCreateRequest {
   captchaId: string
   captchaAnswer: string
+  kapino: string
 }
 
 export interface AracSessionCreateResponse {
@@ -337,81 +339,23 @@ export interface AracSessionCreateResponse {
 }
 
 export interface AracMissionItem {
-  task_id: number | null
-  archive_id: number | null
-  task_start_time_ms: number | null
-  task_end_time_ms: number | null
-  task_coming_time_ms: number | null
   line_code: string | null
-  line_name: string | null
-  route_code: string | null
-  route_id: number | null
-  route_direction: number | null
-  service_no: number | null
-  driver_register_no: string | null
-  unread_message: boolean | null
-  task_status: number | null
-  task_status_code: string | null
-  old_line_name: string | null
-  superior_name: string | null
-  bus_door_number: string | null
-  driver_id: number | null
-  vehicle_id: number | null
-  line_id: number | null
-  justification_id: number | null
-  last_location_time_ms: number | null
-  updated_by: string | null
-  intervention_code: string | null
-  note: string | null
-  updated_time_ms: number | null
-  updated_start_time_ms: number | null
-  task_start_time: string | null
-  task_end_time: string | null
-  task_coming_time: string | null
-  last_location_time: string | null
-  updated_time: string | null
-  updated_start_time: string | null
-  approximate_start_time_ms: number | null
-  approximate_end_time_ms: number | null
-  approximate_start_time: string | null
-  approximate_end_time: string | null
-  is_active: boolean | null
-  last_point_order_number: number | null
-  task_type_id: number | null
-  created_by: number | null
-  last_stop_passed_code: string | null
-  last_stop_passed_name: string | null
-  stop_id: number | null
-  stop_code: string | null
-  stop_name: string | null
-  sending_time_ms: number | null
-  sending_time: string | null
-  sending_time_old_ms: number | null
-  sending_time_old: string | null
-  has_plan_sent: boolean | null
-  delivery_report_time_ms: number | null
-  delivery_report_time: string | null
-  gprs_active: boolean | null
+  first_stop: string | null
+  departure_time: string | null
+  state: string | null
 }
 
 export interface AracMissionSummary {
   mission_count: number
-  active_count: number
+  completed_count: number
+  pending_count: number
   distinct_line_codes: string[]
-  distinct_route_codes: string[]
 }
 
 export interface AracMissionsResponse {
   kapino: string
   summary: AracMissionSummary
   missions: AracMissionItem[]
-}
-
-function aracAuthHeaders(session: AracSessionCredentials): HeadersInit {
-  return {
-    'X-Arac-Session-Id': session.sessionId,
-    'X-Arac-Session-Key': session.sessionKey,
-  }
 }
 
 // ─── API calls ────────────────────────────────────────────────────────────────
@@ -459,15 +403,9 @@ export const api = {
     captcha: (init?: RequestInit) => post<AracCaptchaResponse>('/v1/arac/session/captcha', undefined, init),
     createSession: (payload: AracSessionCreateRequest, init?: RequestInit) =>
       post<AracSessionCreateResponse>('/v1/arac/session/create', payload, init),
-    fleet: (session: AracSessionCredentials, init?: RequestInit) =>
-      get<BusPosition[]>('/v1/arac/fleet', { ...init, headers: { ...init?.headers, ...aracAuthHeaders(session) } }),
-    bus: (kapino: string, session: AracSessionCredentials, init?: RequestInit) =>
-      get<BusPosition>(`/v1/arac/fleet/${encodeURIComponent(kapino)}`, {
-        ...init, headers: { ...init?.headers, ...aracAuthHeaders(session) },
-      }),
-    missions: (kapino: string, session: AracSessionCredentials, init?: RequestInit) =>
-      get<AracMissionsResponse>(`/v1/arac/fleet/${encodeURIComponent(kapino)}/missions`, {
-        ...init, headers: { ...init?.headers, ...aracAuthHeaders(session) },
+    detail: (kapino: string, session: AracSessionCredentials, init?: RequestInit) =>
+      get<{ profile: BusPosition; missions: AracMissionsResponse }>(`/v1/arac/fleet/${encodeURIComponent(kapino)}/detail`, {
+        ...init, headers: { ...init?.headers, 'X-Arac-Session-Key': session.sessionKey },
       }),
   },
   notices: {

@@ -128,6 +128,9 @@
     "noDirectionInfo": "No Direction Info",
     "speed": "Speed",
     "openRoute": "Open Route",
+    "secondsAgo": "{{seconds}}s ago",
+    "minutesAgo": "{{minutes}}m ago",
+    "hoursAgo": "{{hours}}h ago",
     "ibbNotice": "Since IMM Administration has disabled the public global GPS location feeds of the buses, we cannot fetch the entire live fleet at the moment. You can still search for a specific route (e.g. 500T) from the search bar to view its active buses normally."
   },
   "fleet": {
@@ -266,7 +269,8 @@
     "staleDataWarning": "This data is stale (not updated for more than 5 minutes).",
     "lastSeen": "Last Seen",
     "capacity": "Capacity: {{seating}} seating / {{total}} total",
-    "missionsSummary": "{{count}} missions, {{active}} active",
+    "missionsSummary": "{{count}} missions, {{completed}} completed",
+    "futureMissionsNotice": "Upcoming trips are not available due to upstream IETT system changes.",
     "multipleActiveWarning": "Multiple active missions detected for this vehicle. Please review the full list.",
     "technicalDetails": "Technical Details (System IDs)",
     "operatorId": "Operator ID",

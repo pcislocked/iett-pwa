@@ -1,6 +1,7 @@
 import { useState, useMemo, useCallback } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { MapContainer, TileLayer, Marker, Popup, CircleMarker } from 'react-leaflet'
+import { ISTANBUL_BOUNDS, MAP_MIN_ZOOM, MAP_MAX_ZOOM } from '@/utils/mapConstants'
 import * as L from 'leaflet'
 import { useRouteBuses } from '@/hooks/useFleet'
 import { useQuery } from '@tanstack/react-query'
@@ -541,10 +542,21 @@ export default function RoutePage() {
               </div>
             )}
             <div className="rounded-2xl overflow-hidden border border-surface-muted" style={{ height: 420 }}>
-              <MapContainer center={center} zoom={13} style={{ height: '100%', width: '100%' }}>
+              <MapContainer
+                center={center}
+                zoom={13}
+                minZoom={MAP_MIN_ZOOM}
+                maxZoom={MAP_MAX_ZOOM}
+                maxBounds={ISTANBUL_BOUNDS}
+                maxBoundsViscosity={1.0}
+                style={{ height: '100%', width: '100%' }}
+              >
                 <TileLayer
-                  attribution='&copy; <a href="https://carto.com/">CartoDB</a>'
+                  attribution='&copy; CartoDB'
                   url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+                  keepBuffer={2}
+                  updateWhenIdle={true}
+                  updateWhenZooming={false}
                 />
                 {/* BUG-23: navigate to stop on click instead of showing popup */}
                 {stopsForMap.map((s) => (
