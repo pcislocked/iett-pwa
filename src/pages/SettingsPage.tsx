@@ -154,6 +154,7 @@ export default function SettingsPage() {
           >
             <option value="tr" className="bg-surface-card">Türkçe</option>
             <option value="en" className="bg-surface-card">English</option>
+            <option value="ku" className="bg-surface-card">Kürtçe</option>
           </select>
         </div>
 

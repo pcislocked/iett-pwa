@@ -8,7 +8,7 @@ i18n
   .use(LanguageDetector)
   .use(initReactI18next)
   .init({
-    supportedLngs: ['tr', 'en'],
+    supportedLngs: ['tr', 'en', 'ku'],
     fallbackLng: 'tr',
     // Load from public/locales/
     backend: {
