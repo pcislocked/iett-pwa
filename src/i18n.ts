@@ -25,4 +25,10 @@ i18n
     debug: import.meta.env.DEV,
   })
 
+i18n.on('languageChanged', (lng) => {
+  if (typeof document !== 'undefined') {
+    document.documentElement.lang = lng
+  }
+})
+
 export default i18n

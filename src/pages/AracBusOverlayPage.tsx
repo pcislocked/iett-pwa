@@ -28,9 +28,9 @@ type ViewState =
 
 
 function boolBadge(value: boolean | null | undefined, t: TFunction) {
-  if (value === true) return { text: t('common.yes', { defaultValue: 'Evet' }), className: 'text-emerald-400 bg-emerald-950/30 border-emerald-800/50' }
-  if (value === false) return { text: t('common.no', { defaultValue: 'Hayir' }), className: 'text-[#888] bg-[#1a1a1a] border-[#333]' }
-  return { text: t('common.unknown', { defaultValue: 'Bilinmiyor' }), className: 'text-[#888] bg-[#1a1a1a] border-[#333]' }
+  if (value === true) return { text: t('common.yes', { defaultValue: 'Evet' }), className: 'text-emerald-500 dark:text-emerald-400 bg-emerald-500/10 dark:bg-emerald-950/30 border-emerald-500/30 dark:border-emerald-800/50' }
+  if (value === false) return { text: t('common.no', { defaultValue: 'Hayır' }), className: 'text-text-secondary bg-surface-muted border-surface-border' }
+  return { text: t('common.unknown', { defaultValue: 'Bilinmiyor' }), className: 'text-text-secondary bg-surface-muted border-surface-border' }
 }
 
 function errorText(error: unknown, t: TFunction): string {
@@ -105,17 +105,17 @@ function MissionCard({ mission, t }: { mission: AracMissionItem; index?: number;
   const isPending = mission.state === 'B'
 
   return (
-    <div className={`border-b border-[#1a1a1a] bg-[#0d0d0d] px-4 py-3 flex items-center gap-3 ${isPending ? 'border-l-4 border-l-emerald-500' : ''}`}>
-      <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${isPending ? 'bg-emerald-400' : 'bg-[#333]'}`} />
+    <div className={`border-b border-surface-border bg-surface-card px-4 py-3 flex items-center gap-3 ${isPending ? 'border-l-4 border-l-emerald-500' : ''}`}>
+      <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${isPending ? 'bg-emerald-500 dark:bg-emerald-400' : 'bg-surface-border'}`} />
       <div className="flex-1 min-w-0">
-        <p className={`text-sm font-semibold ${isPending ? 'text-text-primary' : 'text-[#888]'}`}>
+        <p className={`text-sm font-semibold ${isPending ? 'text-text-primary' : 'text-text-secondary'}`}>
           {mission.line_code ?? '—'}
         </p>
-        <p className="text-xs text-[#666] truncate">{mission.first_stop ?? ''}</p>
+        <p className="text-xs text-text-secondary truncate">{mission.first_stop ?? ''}</p>
       </div>
       <div className="text-right shrink-0">
         <p className="text-sm font-mono text-text-primary">{mission.departure_time ?? '—'}</p>
-        <p className={`text-[10px] font-semibold ${isPending ? 'text-emerald-400' : 'text-[#555]'}`}>
+        <p className={`text-[10px] font-semibold ${isPending ? 'text-emerald-600 dark:text-emerald-400' : 'text-text-secondary opacity-60'}`}>
           {isCompleted ? t('arac.completed', { defaultValue: 'Tamamlandı' }) : isPending ? t('arac.pending', { defaultValue: 'Bekliyor' }) : '—'}
         </p>
       </div>
@@ -334,9 +334,9 @@ export default function AracBusOverlayPage() {
 
   return (
     <div className="fixed inset-0 z-[2200] bg-surface-card flex flex-col">
-      <div className="safe-area-pt border-b border-[#111] bg-surface-card px-4 py-3 shrink-0 flex items-center justify-between gap-3">
+      <div className="safe-area-pt border-b border-surface-border bg-surface-card px-4 py-3 shrink-0 flex items-center justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-[10px] tracking-[0.14em] text-[#666]">{t('arac.fleetDetail', { defaultValue: 'ARAÇ DETAY' })}</p>
+          <p className="text-[10px] tracking-[0.14em] text-text-secondary uppercase">{t('arac.fleetDetail', { defaultValue: 'ARAÇ DETAY' })}</p>
           <h1 className="text-base font-semibold text-text-primary truncate">{kapino ? t('arac.busTitle', { defaultValue: 'Araç {{kapino}}', kapino }) : t('arac.busTitleEmpty', { defaultValue: 'Araç Detay' })}</h1>
         </div>
         <button
@@ -350,7 +350,7 @@ export default function AracBusOverlayPage() {
       <div className="flex-1 overflow-y-auto bg-[var(--color-bg)] flex flex-col">
         {(viewState === 'booting' || viewState === 'loading-data' || viewState === 'manual-submitting') && (
           <div className="p-4 flex items-start gap-3">
-            <div className="w-4 h-4 mt-1 border-2 border-[#00AFF0] border-t-transparent rounded-full animate-spin" />
+            <div className="w-4 h-4 mt-1 border-2 border-primary border-t-transparent rounded-full animate-spin" />
             <div>
               <p className="text-sm text-text-primary font-medium">
                 {viewState === 'manual-submitting'
@@ -359,17 +359,17 @@ export default function AracBusOverlayPage() {
                   ? t('arac.loadingData', { defaultValue: 'Veriler yükleniyor...' })
                   : t('arac.preparingSession', { defaultValue: 'Oturum hazırlanıyor...' })}
               </p>
-              <p className="text-xs text-[#888] mt-1">{t('arac.stayOnPage', { defaultValue: 'İşlem tamamlanana kadar sayfada kalabilirsiniz.' })}</p>
+              <p className="text-xs text-text-secondary mt-1">{t('arac.stayOnPage', { defaultValue: 'İşlem tamamlanana kadar sayfada kalabilirsiniz.' })}</p>
             </div>
           </div>
         )}
 
         {inlineWarning && viewState !== 'ready' && (
-          <div className="px-4 py-3 border-b border-amber-700/30 bg-amber-950/20 text-amber-300 text-xs flex items-center gap-3">
+          <div className="px-4 py-3 border-b border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-300 text-xs flex items-center gap-3">
             <p className="flex-1 min-w-0">{inlineWarning}</p>
             <button
               onClick={() => { void startFlow(true) }}
-              className="metro-tilt px-2.5 py-1 border border-amber-600/40 text-amber-200 shrink-0"
+              className="metro-tilt px-2.5 py-1 border border-amber-500/40 text-amber-700 dark:text-amber-200 shrink-0"
             >
               {t('arac.reconnect', { defaultValue: 'Yeniden Bağlan' })}
             </button>
@@ -380,7 +380,7 @@ export default function AracBusOverlayPage() {
           <div className="p-4 space-y-4">
             <div>
               <h2 className="text-sm font-semibold text-text-primary">{t('arac.captchaManual', { defaultValue: 'Güvenlik Doğrulaması' })}</h2>
-              <p className="text-xs text-[#888] mt-1">{t('arac.captchaInstruction', { defaultValue: 'Oturum açmak için koddaki karakterleri girin.' })}</p>
+              <p className="text-xs text-text-secondary mt-1">{t('arac.captchaInstruction', { defaultValue: 'Oturum açmak için koddaki karakterleri girin.' })}</p>
             </div>
             {captchaImage && (
               <img
@@ -395,12 +395,12 @@ export default function AracBusOverlayPage() {
               onChange={(event) => setManualAnswer(event.target.value.toUpperCase().slice(0, 6))}
               placeholder={t('arac.captchaAnswer', { defaultValue: 'Captcha cevabı' })}
               aria-label={t('arac.captchaAnswer', { defaultValue: 'Captcha cevabı' })}
-              className="w-full border border-surface-border bg-surface-card px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-[#00AFF0]"
+              className="w-full border border-surface-border bg-surface-card px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-primary"
             />
             <div className="flex flex-wrap gap-2">
               <button
                 onClick={() => { void submitManualCaptcha() }}
-                className="metro-tilt px-3 py-2 bg-[#00AFF0] text-black text-sm font-semibold"
+                className="metro-tilt px-3 py-2 bg-primary text-text-on-primary text-sm font-semibold"
               >
                 {t('arac.login', { defaultValue: 'Oturumu Aç' })}
               </button>
@@ -415,7 +415,7 @@ export default function AracBusOverlayPage() {
         )}
 
         {(viewState === 'error' || fatalError) && (
-          <div className="p-4 text-red-200 bg-red-950/20 border-b border-red-800/40">
+          <div className="p-4 text-red-600 dark:text-red-200 bg-red-500/10 dark:bg-red-950/20 border-b border-red-500/30 dark:border-red-800/40">
             <p className="text-sm font-semibold">{t('arac.failedToOpen', { defaultValue: 'Bağlantı Hatası' })}</p>
             <p className="text-xs mt-1">{fatalError ?? t('arac.unknownError', { defaultValue: 'Bilinmeyen hata' })}</p>
           </div>
@@ -423,7 +423,7 @@ export default function AracBusOverlayPage() {
 
         {viewState === 'ready' && profile && (
           <>
-            <div style={{ height: '33vh', minHeight: '200px' }} className="relative bg-surface-muted/20 shrink-0 border-b border-[#111]">
+            <div style={{ height: '33vh', minHeight: '200px' }} className="relative bg-surface-muted/20 shrink-0 border-b border-surface-border">
               <MapContainer
                 center={[profile.latitude ?? 41.0082, profile.longitude ?? 28.9784]}
                 zoom={16}
@@ -449,29 +449,30 @@ export default function AracBusOverlayPage() {
 
             <div className="flex flex-col gap-3 p-4">
               {showRefreshButton && (
-                <div className="flex items-center justify-between p-3 bg-amber-950/20 border border-amber-800/40 rounded">
-                  <p className="text-xs text-amber-300">{t('arac.staleDataWarning', { defaultValue: 'Bu veri eski (5 dakikadan uzun süredir güncellenmedi).' })}</p>
+                <div className="flex items-center justify-between p-3 bg-amber-500/10 border border-amber-500/30 rounded">
+                  <p className="text-xs text-amber-700 dark:text-amber-300">{t('arac.staleDataWarning', { defaultValue: 'Bu veri eski (5 dakikadan uzun süredir güncellenmedi).' })}</p>
                   <button onClick={() => startFlow(true)} className="px-3 py-1.5 text-xs font-semibold bg-amber-600 text-white rounded">
                     {t('common.refresh', { defaultValue: 'Yenile' })}
                   </button>
                 </div>
               )}
 
-              <div className="border border-[#111] bg-[#0d0d0d] rounded-lg overflow-hidden">
-                <div className="p-4 border-b border-[#1a1a1a]">
+              <div className="border border-surface-border bg-surface-card rounded-lg overflow-hidden">
+                <div className="p-4 border-b border-surface-border">
                   <div className="flex justify-between items-start gap-2">
                     <h2 className="text-xl font-bold text-text-primary tracking-tight">
                       🚌 {profile.kapino}
                     </h2>
                     {profile.last_seen && (
-                      <span className="text-[10px] text-[#888] bg-[#1a1a1a] px-2 py-1 rounded">
+                      <span className="text-[10px] text-text-secondary bg-surface-muted px-2 py-1 rounded border border-surface-border">
                         {t('arac.lastSeen', { defaultValue: 'Son Görülme' })}: {parseIettDate(profile.last_seen).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })} ({relativeTime(profile.last_seen, t)})
                       </span>
                     )}
                   </div>
-                  <p className="text-sm font-mono text-[#888] mt-1">{profile.plate}</p>
-                  <p className="text-xs text-[#666] mt-1">{profile.operator_name}</p>                </div>
-                <div className="p-3 grid grid-cols-5 gap-2 bg-[#080808]">
+                  <p className="text-sm font-mono text-text-secondary mt-1">{profile.plate}</p>
+                  <p className="text-xs text-text-secondary opacity-75 mt-1">{profile.operator_name}</p>
+                </div>
+                <div className="p-3 grid grid-cols-5 gap-2 bg-surface-muted/30">
                   {amenities.map(item => {
                     const badge = boolBadge(item.value, t)
                     return (
@@ -487,7 +488,7 @@ export default function AracBusOverlayPage() {
               <div className="mt-4 flex items-end justify-between">
                 <h3 className="text-base font-semibold text-text-primary">{t('arac.missions', { defaultValue: 'Görevler' })}</h3>
                 {missionsData && (
-                  <span className="text-xs text-[#888]">
+                  <span className="text-xs text-text-secondary">
                     {t('arac.missionsSummary', {
                       count: missionsData.summary.mission_count,
                       completed: missionsData.summary.completed_count,
@@ -497,13 +498,13 @@ export default function AracBusOverlayPage() {
                 )}
               </div>
 
-              <p className="text-[11px] text-[#777] bg-[#111]/60 px-3 py-2 rounded border border-[#222]">
+              <p className="text-[11px] text-text-secondary bg-surface-muted/60 px-3 py-2 rounded border border-surface-border">
                 ℹ️ {t('arac.futureMissionsNotice', { defaultValue: 'İETT sistem değişiklikleri sebebiyle gelecek sefer bilgisi sunulmamaktadır.' })}
               </p>
 
-              <div className="border border-[#111] rounded-lg overflow-hidden">
+              <div className="border border-surface-border rounded-lg overflow-hidden">
                 {sortedMissions.length === 0 ? (
-                  <div className="p-4 text-center text-xs text-[#888]">{t('arac.noMissions', { defaultValue: 'Görev bulunamadı.' })}</div>
+                  <div className="p-4 text-center text-xs text-text-secondary">{t('arac.noMissions', { defaultValue: 'Görev bulunamadı.' })}</div>
                 ) : (
                   sortedMissions.map((mission, index) => (
                     <MissionCard key={index} mission={mission} index={index} t={t} />

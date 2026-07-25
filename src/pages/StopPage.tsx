@@ -814,7 +814,16 @@ export default function StopPage() {
     return m
   }, [arrivals])
 
-  if (!dcode) return null
+  const isIettStale = useMemo(() => {
+    if (iettUpdatedAt) {
+      const parsed = new Date(iettUpdatedAt).getTime()
+      if (!isNaN(parsed)) return Date.now() - parsed > 300_000
+    }
+    if (lastUpdated) {
+      return Date.now() - lastUpdated.getTime() > 300_000
+    }
+    return false
+  }, [iettUpdatedAt, lastUpdated])
 
   return (
     <div className="h-full flex flex-col">
@@ -886,7 +895,7 @@ export default function StopPage() {
         </div>
       </div>
 
-{/* ── Hatlar tab ────────────────────────────────────────────────────── */}
+      {/* ── Hatlar tab ────────────────────────────────────────────────────── */}
       {activeTab === 'hatlar' && (
         <div className="flex-1 overflow-y-auto px-4 py-3">
           {routes === null || routes === undefined ? (
@@ -953,7 +962,7 @@ export default function StopPage() {
         </div>
       )}
 
-{/* Split-screen body — shown on Geliş tab */}
+      {/* Split-screen body — shown on Geliş tab */}
       {activeTab === 'gelis' && (
       <div ref={splitContainerRef} className="flex-1 flex flex-col overflow-hidden max-w-2xl w-full mx-auto min-h-0">
 
@@ -1181,10 +1190,26 @@ export default function StopPage() {
         <div className="shrink-0 border-t border-surface-muted bg-surface-card pb-2">
           {/* Last updated row */}
           <div className="px-4 pt-2 pb-1 flex items-center justify-between">
-            <span className="text-[11px] text-text-muted flex items-center gap-1">
-              {lastUpdated
-                ? `${t('stops.lastUpdated', { time: lastUpdated.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }), defaultValue: 'güncelleme: {{time}}' })}, iett: ${iettTimeDisplay}`
-                : t('common.loading')}
+            <span className="text-[11px] text-text-muted flex items-center gap-1 flex-wrap">
+              {lastUpdated ? (
+                <>
+                  <span>
+                    {t('stops.lastUpdated', { time: lastUpdated.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }), defaultValue: 'güncelleme: {{time}}' })}
+                  </span>
+                  {', '}
+                  <span
+                    className={`inline-flex items-center px-1.5 py-0.5 rounded font-mono font-semibold text-[10px] transition-colors ${
+                      isIettStale
+                        ? 'bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/40'
+                        : 'bg-surface-muted text-text-secondary'
+                    }`}
+                  >
+                    iett: {iettTimeDisplay}
+                  </span>
+                </>
+              ) : (
+                t('common.loading')
+              )}
               {(iettUpdatedAt || (arrivals && arrivals.length > 0)) && (
                 <button
                   onClick={() => setShowInfo(true)}
