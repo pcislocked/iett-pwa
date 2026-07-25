@@ -10,7 +10,7 @@ const mocks = vi.hoisted(() => ({
   createSession: vi.fn(),
   detail: vi.fn(),
   loadAracSession: vi.fn(),
-  saveAracSession: vi.fn((session: { sessionId: string; sessionKey: string }, kapino?: string) => ({
+  saveAracSession: vi.fn((session: { sessionId: string; sessionKey: string }, _kapino?: string) => ({
     ...session,
     savedAt: '2026-04-19T00:00:00Z',
   })),

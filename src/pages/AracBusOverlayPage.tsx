@@ -100,7 +100,7 @@ function makeBusIcon(): L.DivIcon {
   })
 }
 
-function MissionCard({ mission, index, t }: { mission: AracMissionItem; index: number; t: TFunction }) {
+function MissionCard({ mission, t }: { mission: AracMissionItem; index?: number; t: TFunction }) {
   const isCompleted = mission.state === 'T'
   const isPending = mission.state === 'B'
 
