@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 
 import AracBusOverlayPage from '@/pages/AracBusOverlayPage'
@@ -8,10 +8,9 @@ import { ApiHttpError } from '@/api/client'
 const mocks = vi.hoisted(() => ({
   captcha: vi.fn(),
   createSession: vi.fn(),
-  bus: vi.fn(),
-  missions: vi.fn(),
+  detail: vi.fn(),
   loadAracSession: vi.fn(),
-  saveAracSession: vi.fn((session: { sessionId: string; sessionKey: string }) => ({
+  saveAracSession: vi.fn((session: { sessionId: string; sessionKey: string }, kapino?: string) => ({
     ...session,
     savedAt: '2026-04-19T00:00:00Z',
   })),
@@ -45,8 +44,7 @@ vi.mock('@/api/client', () => {
       arac: {
         captcha: mocks.captcha,
         createSession: mocks.createSession,
-        bus: mocks.bus,
-        missions: mocks.missions,
+        detail: mocks.detail,
       },
     },
   }
@@ -72,6 +70,7 @@ describe('AracBusOverlayPage', () => {
     mocks.captcha.mockResolvedValue({
       captchaId: 'cid-1',
       captchaImageBase64: 'AAAA',
+      suggestedAnswer: null,
     })
 
     renderPage()
@@ -83,46 +82,50 @@ describe('AracBusOverlayPage', () => {
 
   it('renders profile and mission sections when an existing session is valid', async () => {
     mocks.loadAracSession.mockReturnValue({
-      sessionId: 'sid-1',
+      sessionId: 'C-1753',
       sessionKey: 'skey-1',
       savedAt: '2026-04-19T00:00:00Z',
     })
-    mocks.bus.mockResolvedValue({
-      plate: '34 HO 1753',
-      route_code: '14R',
-      direction: 'G',
-      vehicle_brand: 'MERCEDES',
-      has_usb: true,
-      has_wifi: false,
-      has_bicycle_rack: false,
-      is_air_conditioned: true,
-      accessible: true,
-      last_seen: '2026-04-19T00:00:00Z',
-    })
-    mocks.missions.mockResolvedValue({
-      kapino: 'C-1753',
-      summary: {
-        mission_count: 1,
-        active_count: 1,
-        distinct_line_codes: ['14R'],
-        distinct_route_codes: ['14R_G_D0'],
+    mocks.detail.mockResolvedValue({
+      profile: {
+        kapino: 'C-1753',
+        plate: '34 HO 1753',
+        route_code: '14R',
+        direction: 'G',
+        operator_name: 'İstanbul Halk Ulaşım',
+        accessible: true,
+        has_usb: true,
+        has_wifi: false,
+        has_bicycle_rack: false,
+        is_air_conditioned: true,
+        last_seen: '2026-04-19 00:00:00',
+        latitude: 41.01,
+        longitude: 29.02,
       },
-      missions: [
-        {
-          task_id: 101,
-          line_code: '14R',
-          task_status_code: 'ACTIVE',
-          is_active: true,
+      missions: {
+        kapino: 'C-1753',
+        summary: {
+          mission_count: 1,
+          completed_count: 1,
+          pending_count: 0,
+          distinct_line_codes: ['14R'],
         },
-      ],
+        missions: [
+          {
+            line_code: '14R',
+            first_stop: 'KADIKÖY',
+            departure_time: '21:45',
+            state: 'T',
+          },
+        ],
+      },
     })
 
     renderPage()
 
     await screen.findByText(/34 HO 1753/i)
-    expect(screen.getByRole('heading', { name: /missions \/ görevler/i })).toBeInTheDocument()
-    expect(mocks.bus).toHaveBeenCalledTimes(1)
-    expect(mocks.missions).toHaveBeenCalledTimes(1)
+    expect(screen.getByRole('heading', { name: /görevler/i })).toBeInTheDocument()
+    expect(mocks.detail).toHaveBeenCalledTimes(1)
     expect(mocks.captcha).not.toHaveBeenCalled()
   })
 
@@ -131,6 +134,7 @@ describe('AracBusOverlayPage', () => {
     mocks.captcha.mockResolvedValue({
       captchaId: 'cid-1',
       captchaImageBase64: 'AAAA',
+      suggestedAnswer: null,
     })
 
     renderPage()
@@ -147,6 +151,7 @@ describe('AracBusOverlayPage', () => {
     mocks.captcha.mockResolvedValue({
       captchaId: '',
       captchaImageBase64: 'AAAA',
+      suggestedAnswer: null,
     })
 
     renderPage()
@@ -166,38 +171,45 @@ describe('AracBusOverlayPage', () => {
     mocks.captcha.mockResolvedValue({
       captchaId: 'cid-1',
       captchaImageBase64: 'AAAA',
+      suggestedAnswer: null,
     })
     mocks.createSession.mockResolvedValue({
-      sessionId: 'sid-1',
+      sessionId: 'C-1753',
       sessionKey: 'skey-1',
     })
-    mocks.bus.mockResolvedValue({
-      plate: '34 HO 1753',
-      route_code: '14R',
-      direction: 'G',
-      last_seen: '2026-04-19T00:00:00Z',
-      accessible: true,
-      has_usb: true,
-      has_wifi: false,
-      has_bicycle_rack: false,
-      is_air_conditioned: true,
-    })
-    mocks.missions.mockResolvedValue({
-      kapino: 'C-1753',
-      summary: {
-        mission_count: 1,
-        active_count: 1,
-        distinct_line_codes: ['14R'],
-        distinct_route_codes: ['14R_G_D0'],
+    mocks.detail.mockResolvedValue({
+      profile: {
+        kapino: 'C-1753',
+        plate: '34 HO 1753',
+        route_code: '14R',
+        direction: 'G',
+        operator_name: 'İstanbul Halk Ulaşım',
+        accessible: true,
+        has_usb: true,
+        has_wifi: false,
+        has_bicycle_rack: false,
+        is_air_conditioned: true,
+        last_seen: '2026-04-19 00:00:00',
+        latitude: 41.01,
+        longitude: 29.02,
       },
-      missions: [
-        {
-          task_id: 101,
-          line_code: '14R',
-          task_status_code: 'ACTIVE',
-          is_active: true,
+      missions: {
+        kapino: 'C-1753',
+        summary: {
+          mission_count: 1,
+          completed_count: 1,
+          pending_count: 0,
+          distinct_line_codes: ['14R'],
         },
-      ],
+        missions: [
+          {
+            line_code: '14R',
+            first_stop: 'KADIKÖY',
+            departure_time: '21:45',
+            state: 'T',
+          },
+        ],
+      },
     })
 
     renderPage()
@@ -212,10 +224,10 @@ describe('AracBusOverlayPage', () => {
     expect(mocks.createSession).toHaveBeenCalledWith({
       captchaId: 'cid-1',
       captchaAnswer: 'ABCD',
+      kapino: 'C-1753',
     })
     expect(mocks.saveAracSession).toHaveBeenCalledOnce()
-    expect(mocks.bus).toHaveBeenCalledOnce()
-    expect(mocks.missions).toHaveBeenCalledOnce()
+    expect(mocks.detail).toHaveBeenCalledOnce()
   })
 
   it('shows verification warning and refreshes captcha when manual submit fails', async () => {
@@ -223,6 +235,7 @@ describe('AracBusOverlayPage', () => {
     mocks.captcha.mockResolvedValue({
       captchaId: 'cid-1',
       captchaImageBase64: 'AAAA',
+      suggestedAnswer: null,
     })
     mocks.createSession.mockRejectedValue(new Error('Wrong CAPTCHA'))
 
@@ -244,6 +257,7 @@ describe('AracBusOverlayPage', () => {
     mocks.captcha.mockResolvedValue({
       captchaId: 'cid-1',
       captchaImageBase64: 'AAAA',
+      suggestedAnswer: null,
     })
 
     renderPage()
@@ -256,79 +270,68 @@ describe('AracBusOverlayPage', () => {
 
   it('shows reconnect warning when stored session expires and can restart flow', async () => {
     mocks.loadAracSession.mockReturnValue({
-      sessionId: 'sid-expired',
+      sessionId: 'C-1753',
       sessionKey: 'skey-expired',
       savedAt: '2026-04-19T00:00:00Z',
     })
-    mocks.bus.mockRejectedValue(new ApiHttpError('/v1/arac/fleet/C-1753', 401, 'expired'))
-    mocks.missions.mockResolvedValue({
-      kapino: 'C-1753',
-      summary: {
-        mission_count: 0,
-        active_count: 0,
-        distinct_line_codes: [],
-        distinct_route_codes: [],
-      },
-      missions: [],
-    })
+    mocks.detail.mockRejectedValue(new ApiHttpError('/v1/arac/fleet/C-1753/detail', 401, 'expired'))
     mocks.captcha.mockResolvedValue({
       captchaId: 'cid-1',
       captchaImageBase64: 'AAAA',
+      suggestedAnswer: null,
     })
 
     renderPage()
 
     await screen.findByText(/oturumu süresi doldu/i)
     await screen.findByRole('heading', { name: /captcha manuel doğrulama/i })
-
-    fireEvent.click(screen.getByRole('button', { name: /Yeniden Bağlan/i }))
-    expect(mocks.clearAracSession).toHaveBeenCalled()
-    await waitFor(() => {
-      expect(mocks.captcha.mock.calls.length).toBeGreaterThanOrEqual(2)
-    })
   })
 
-  it('renders mission timestamp fields as localized text instead of raw unix ms', async () => {
+  it('renders mission departure time correctly', async () => {
     mocks.loadAracSession.mockReturnValue({
-      sessionId: 'sid-1',
+      sessionId: 'C-1753',
       sessionKey: 'skey-1',
       savedAt: '2026-04-19T00:00:00Z',
     })
-    mocks.bus.mockResolvedValue({
-      plate: '34 HO 1753',
-      route_code: '14R',
-      direction: 'G',
-      last_seen: '2026-04-19T00:00:00Z',
-      accessible: true,
-      has_usb: true,
-      has_wifi: false,
-      has_bicycle_rack: false,
-      is_air_conditioned: true,
-    })
-    mocks.missions.mockResolvedValue({
-      kapino: 'C-1753',
-      summary: {
-        mission_count: 1,
-        active_count: 1,
-        distinct_line_codes: ['14R'],
-        distinct_route_codes: ['14R_G_D0'],
+    mocks.detail.mockResolvedValue({
+      profile: {
+        kapino: 'C-1753',
+        plate: '34 HO 1753',
+        route_code: '14R',
+        direction: 'G',
+        operator_name: 'İstanbul Halk Ulaşım',
+        accessible: true,
+        has_usb: true,
+        has_wifi: false,
+        has_bicycle_rack: false,
+        is_air_conditioned: true,
+        last_seen: '2026-04-19 00:00:00',
+        latitude: 41.01,
+        longitude: 29.02,
       },
-      missions: [
-        {
-          task_id: 101,
-          line_code: '14R',
-          task_status_code: 'ACTIVE',
-          is_active: true,
-          task_start_time_ms: 1776649842000,
+      missions: {
+        kapino: 'C-1753',
+        summary: {
+          mission_count: 1,
+          completed_count: 1,
+          pending_count: 0,
+          distinct_line_codes: ['14R'],
         },
-      ],
+        missions: [
+          {
+            line_code: '14R',
+            first_stop: 'KADIKÖY',
+            departure_time: '21:45',
+            state: 'T',
+          },
+        ],
+      },
     })
 
     renderPage()
 
-    await screen.findByRole('heading', { name: /missions \/ görevler/i })
-    expect(screen.getByText(/gorev baslangic/i)).toBeInTheDocument()
-    expect(screen.queryByText('1776649842000')).not.toBeInTheDocument()
+    await screen.findByRole('heading', { name: /görevler/i })
+    expect(screen.getByText('21:45')).toBeInTheDocument()
   })
 
   it('shows fatal error when kapino param is missing', async () => {

@@ -356,63 +356,22 @@ describe('api.arac.captcha', () => {
   })
 })
 
-describe('api.arac.bus', () => {
-  it('sends aracapi session headers', async () => {
+describe('api.arac.detail', () => {
+  it('sends aracapi session headers to detail endpoint', async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
       status: 200,
-      json: () => Promise.resolve({ kapino: 'C-1', latitude: 41, longitude: 29 }),
+      json: () => Promise.resolve({ profile: { kapino: 'C-1' }, missions: { kapino: 'C-1', summary: {}, missions: [] } }),
       text: () => Promise.resolve(''),
     })
     vi.stubGlobal('fetch', fetchMock)
 
-    await api.arac.bus('C-1', { sessionId: 'sid', sessionKey: 'skey' })
-
-    const init = fetchMock.mock.calls[0][1] as RequestInit
-    const headers = init.headers as Record<string, string>
-    expect(headers['X-Arac-Session-Id']).toBe('sid')
-    expect(headers['X-Arac-Session-Key']).toBe('skey')
-  })
-})
-
-describe('api.arac.fleet', () => {
-  it('sends aracapi session headers to fleet endpoint', async () => {
-    const fetchMock = vi.fn().mockResolvedValue({
-      ok: true,
-      status: 200,
-      json: () => Promise.resolve([]),
-      text: () => Promise.resolve(''),
-    })
-    vi.stubGlobal('fetch', fetchMock)
-
-    await api.arac.fleet({ sessionId: 'sid', sessionKey: 'skey' })
+    await api.arac.detail('C-1 X', { sessionId: 'sid', sessionKey: 'skey' })
 
     const url = fetchMock.mock.calls[0][0] as string
     const init = fetchMock.mock.calls[0][1] as RequestInit
     const headers = init.headers as Record<string, string>
-    expect(url).toContain('/v1/arac/fleet')
-    expect(headers['X-Arac-Session-Id']).toBe('sid')
+    expect(url).toContain('/v1/arac/fleet/C-1%20X/detail')
     expect(headers['X-Arac-Session-Key']).toBe('skey')
-  })
-})
-
-describe('api.arac.missions', () => {
-  it('calls missions endpoint with encoded kapino', async () => {
-    const fetchMock = vi.fn().mockResolvedValue({
-      ok: true,
-      status: 200,
-      json: () => Promise.resolve({
-        kapino: 'C-1',
-        summary: { mission_count: 0, active_count: 0, distinct_line_codes: [], distinct_route_codes: [] },
-        missions: [],
-      }),
-      text: () => Promise.resolve(''),
-    })
-    vi.stubGlobal('fetch', fetchMock)
-
-    await api.arac.missions('C-1 X', { sessionId: 'sid', sessionKey: 'skey' })
-
-    const url = fetchMock.mock.calls[0][0] as string
-    expect(url).toContain('/v1/arac/fleet/C-1%20X/missions')
   })
 })

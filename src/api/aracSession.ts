@@ -34,7 +34,7 @@ export function saveAracSession(session: AracSessionCredentials, kapino?: string
     savedAt: new Date().toISOString(),
   }
   try {
-    const key = getKey(kapino || session.sessionId)
+    const key = getKey(kapino)
     sessionStorage.setItem(key, JSON.stringify(stored))
   } catch {
     // Storage failures should not crash aracapi flow.
