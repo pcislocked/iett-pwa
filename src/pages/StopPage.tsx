@@ -815,12 +815,14 @@ export default function StopPage() {
   }, [arrivals])
 
   const isIettStale = useMemo(() => {
+    // eslint-disable-next-line react-hooks/purity
+    const now = Date.now()
     if (iettUpdatedAt) {
       const parsed = new Date(iettUpdatedAt).getTime()
-      if (!isNaN(parsed)) return Date.now() - parsed > 300_000
+      if (!isNaN(parsed)) return now - parsed > 300_000
     }
     if (lastUpdated) {
-      return Date.now() - lastUpdated.getTime() > 300_000
+      return now - lastUpdated.getTime() > 300_000
     }
     return false
   }, [iettUpdatedAt, lastUpdated])
@@ -1044,7 +1046,6 @@ export default function StopPage() {
         <div
             ref={dragHandleRef}
             role="separator"
-            // eslint-disable-next-line react-hooks/refs
             aria-valuenow={mapHeightPctRef.current}
             aria-valuemin={15}
             aria-valuemax={65}
