@@ -145,15 +145,11 @@ function InfoModal({ onClose, onForceRefresh, clientTime, serverTime, gpsTime }:
           </div>
 
           {/* Bottom Nodes: Left = iett-pwa (Client), Right = iett.istanbul (Bus/Field) */}
-          <div className="w-full flex items-center justify-between px-1">
+          <div className="w-full flex items-center justify-between px-2">
             <div className="flex flex-col items-center text-center max-w-[100px]">
               <span className="text-2xl mb-0.5">📱</span>
               <span className="text-[11px] font-bold text-text-primary font-mono">iett-pwa</span>
               <span className="text-[9px] text-text-muted">{t('stops.clientNodeSub')}</span>
-            </div>
-
-            <div className="text-[9px] font-semibold text-text-muted font-mono bg-surface-muted px-2 py-0.5 rounded-full border border-surface-border">
-              {t('stops.dataFlow')}
             </div>
 
             <div className="flex flex-col items-center text-center max-w-[100px]">
