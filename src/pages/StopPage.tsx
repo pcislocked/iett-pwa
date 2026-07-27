@@ -129,7 +129,42 @@ function InfoModal({ onClose, onForceRefresh, clientTime, serverTime, gpsTime }:
           {t('stops.timestamps')}
         </h2>
 
-        <div tabIndex={0} className="text-xs text-text-secondary space-y-3 mb-6 overflow-y-auto max-h-[50vh]">
+        {/* Architecture flow diagram using emojis */}
+        <div className="p-3 mb-4 bg-surface-muted/30 border border-surface-border rounded-xl flex flex-col items-center">
+          {/* Top Node: iett-middle */}
+          <div className="flex flex-col items-center text-center">
+            <span className="text-2xl mb-0.5">☁️</span>
+            <span className="text-[11px] font-bold text-brand-400 font-mono">iett-middle</span>
+            <span className="text-[9px] text-text-muted">{t('stops.serverNodeSub')}</span>
+          </div>
+
+          {/* Connection Arrows */}
+          <div className="w-full flex items-center justify-around px-8 my-1 text-text-muted text-xs font-bold font-mono">
+            <span>↗</span>
+            <span>↘</span>
+          </div>
+
+          {/* Bottom Nodes: Left = iett-pwa (Client), Right = iett.istanbul (Bus/Field) */}
+          <div className="w-full flex items-center justify-between px-1">
+            <div className="flex flex-col items-center text-center max-w-[100px]">
+              <span className="text-2xl mb-0.5">📱</span>
+              <span className="text-[11px] font-bold text-text-primary font-mono">iett-pwa</span>
+              <span className="text-[9px] text-text-muted">{t('stops.clientNodeSub')}</span>
+            </div>
+
+            <div className="text-[9px] font-semibold text-text-muted font-mono bg-surface-muted px-2 py-0.5 rounded-full border border-surface-border">
+              {t('stops.dataFlow')}
+            </div>
+
+            <div className="flex flex-col items-center text-center max-w-[100px]">
+              <span className="text-2xl mb-0.5">🚌</span>
+              <span className="text-[11px] font-bold text-text-primary font-mono">iett.istanbul</span>
+              <span className="text-[9px] text-text-muted">{t('stops.fieldNodeSub')}</span>
+            </div>
+          </div>
+        </div>
+
+        <div tabIndex={0} className="text-xs text-text-secondary space-y-3 mb-6 overflow-y-auto max-h-[40vh]">
           <div className="p-3 bg-surface-muted/50 rounded-xl border border-surface-border space-y-1">
             <div className="flex items-center justify-between font-semibold text-text-primary">
               <span>📱 {t('common.update')}</span>
