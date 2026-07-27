@@ -118,31 +118,62 @@ docker run --rm -p 8080:80 iett-pwa:0.4.1
 
 ## 🇬🇧 English
 
-`iett-pwa` is an open-source, high-performance Progressive Web App (PWA) designed for real-time Istanbul IETT bus tracking. It was created as an independent alternative to official municipal apps, focusing heavily on speed, low footprint, and instant real-world usability.
+`iett-pwa` is an open-source, lightning-fast bus tracking web application built out of pure frustration when Istanbul's municipal transit authority (IETT) shut down its battle-tested legacy app (*Mobiett*) and replaced it with a third-party agency bloatware disaster called *"Otobüsüm Nerede"*. Built entirely solo using modern AI coding tools and sheer willpower, it is designed for maximum performance, minimal footprint, and zero store bloat.
 
-### Highlights & Full Feature List
-- **Installable PWA Experience:** Mobile/Desktop home-screen installation, offline shell caching, zero store overhead.
-- **Vehicle Amenities:** View AC (❄️), USB charging (🔌), Wi-Fi (🛜), bicycle rack (🚲), and accessibility (♿) indicators.
-- **Pinned Stops & Favorites:** Pin your daily stops for one-tap live arrival access right on the home page; manage favorite routes and stops.
-- **Recent Searches & Smart Search:** Search by route code (e.g. `14M`), stop name, or 4+ digit stop code.
-- **Live Fleet Map & Search:** Track the entire fleet or specific routes on CartoDB maps; search buses by door code or license plate.
-- **Fully Customizable Settings:** Easily adjust themes, languages, API base URL, refresh intervals, nearby stop radius/limits, auto-location preferences, and mock location coordinates in Settings.
-- **Arrivals Board & Max GPS Timestamp:** Live arrivals with max valid GPS timestamp detection, stale data warnings (>5 min), and 4 dynamic announcement states.
-- **Vehicle Profile Overlay (`arac.iett.gov.tr`):** Solves vehicle captchas (automated OCR / manual modal), displays full specs (brand, model year, capacity, software version), and past/upcoming mission timelines.
-- **Location Privacy & Mock Location:** Optional GPS integration with built-in fallback to mock location or manual map pin picker.
-- **Multi-Theme:** AMOLED Black, Dark, and Light custom CSS themes matching CartoDB Dark Matter / Positron map tiles.
-- **Multi-Language (i18n):** Turkish (`tr`) and English (`en`) localization.
-- **Mobile Bottom Navigation:** Thumb-friendly bottom navigation bar for mobile screens.
+The app features stop & route live bus tracking, full fleet map view, past/upcoming bus mission timelines, depar route inspects, pinned stops on the home screen, and instant arrival ETAs the split second you open the app.
 
-### Quick Start
+It is engineered to answer one critical real-world question in a few seconds as a bus approaches your stop: **"Should I hop on this bus right now, or wait for the next one?"**
+
+Instead of forcing users to download heavy, bloated native apps from app stores, `iett-pwa` delivers this speed using **Progressive Web App (PWA)** technology. The "app" is actually a clever illusion — you've been using a website disguised as a native app all along! That's where the name PWA comes from. When built properly, it delivers a blazingly fast experience while taking up virtually **zero storage space** on your phone.
+
+Requires a running [**iett-middle**](https://github.com/pcislocked/iett-middle) API backend server.
+
+Frontend component of a three-repository stack:
+[**iett-pwa**](https://github.com/pcislocked/iett-pwa) (this repo) ·
+[iett-middle](https://github.com/pcislocked/iett-middle) (API proxy) ·
+[iett-hacs](https://github.com/pcislocked/iett-hacs) (Home Assistant integration)
+
+---
+
+### 🌟 Full Feature List
+- **📱 Installable PWA Experience:** Mobile/desktop home-screen installation, offline shell caching, zero store overhead (Standalone PWA).
+- **🚌 Vehicle Amenities:** View AC (❄️), USB charging (🔌), Wi-Fi (🛜), bicycle rack (🚲), and accessibility (♿) indicators live on vehicle sheets and arrival cards.
+- **📌 Pinned Stops:** Pin your daily stops for one-tap live arrival access right on the home page.
+- **❤️ Favorites:** Pin & manage your favorite routes and stops for fast access.
+- **🔍 Recent Searches & Smart Search:** Search by route code (e.g. `14M`), stop name, or 4+ digit stop code; automatically stores recent searches.
+- **🗺️ Live Fleet Map & Vehicle Search:** Track the entire Istanbul fleet or specific routes on CartoDB maps; search buses by door code or license plate.
+- **⚙️ Fully Customizable Settings:** Easily adjust themes (AMOLED/Dark/Light), languages, API base URL, refresh intervals, nearby stop search radius/limits, auto-location preferences, and mock location coordinates.
+- **⏱️ Arrivals Board & Max GPS Timestamp:** Live arrivals with max valid GPS timestamp detection (`maxGpsTime`), stale data warnings (>5 min), and 4 dynamic announcement banner states (Loading, Error, Empty, Active).
+- **🔒 Vehicle Profile & Captcha Engine (`arac.iett.gov.tr`):** Per-vehicle session creation, automated OCR captcha solving / manual captcha fallback, vehicle specs (brand, model year, seating/full capacity, garage code, software version), and past/upcoming mission timelines.
+- **📍 Location Privacy & Mock Location:** Optional GPS integration with built-in fallback to mock location or manual map pin placement if location access is denied.
+- **🎨 Multi-Theme Support:** AMOLED Black, Dark, and Light custom CSS themes matching CartoDB Dark Matter / Positron map tiles.
+- **🌐 Localization (i18n):** Turkish (`tr`) and English (`en`) localization.
+- **📱 Mobile Bottom Navigation:** Thumb-friendly bottom navigation bar for mobile devices.
+
+---
+
+### 🚀 Development & Build
+
 ```bash
 npm install
 npm run dev
 ```
 
-Requires a running `iett-middle` instance.
+Requires a running `iett-middle` backend instance (default: `http://localhost:8000`).
 
-### License & Legal
-In compliance with the [IBB Open Data License](https://data.ibb.gov.tr/license):
-> **Contains public sector information licensed under CC BY 4.0.**  
-Privacy & Data Policy: [https://pcislocked.net/kvkk/#iett-pwa](https://pcislocked.net/kvkk/#iett-pwa)
+### 📦 Docker Deployment
+
+```bash
+docker build -t iett-pwa:0.4.1 --build-arg VITE_API_BASE_URL=https://iettapi.pcislocked.net .
+docker run --rm -p 8080:80 iett-pwa:0.4.1
+```
+
+---
+
+### ⚖️ License & Legal
+
+- **Data Source Attribution:** Sourced from Istanbul Metropolitan Municipality (IBB) Open Data.  
+  Under the [IBB Open Data License](https://data.ibb.gov.tr/license):  
+  > **Contains public sector information licensed under CC BY 4.0.**
+- **Privacy Policy & KVKK:** Zero accounts, zero user database. Full data & privacy policy:  
+  [https://pcislocked.net/kvkk/#iett-pwa](https://pcislocked.net/kvkk/#iett-pwa)
