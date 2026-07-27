@@ -71,6 +71,8 @@
     "lagExplanationAria": "Neden iki farklı saat var?",
     "systemAnnouncementType": "Sistem Genel Duyuru",
     "gpsUpdate": "GPS Güncellemesi",
+    "gpsTimeDesc": "Otobüsteki GPS cihazından aktarılan en son konum saatidir.",
+    "forceRefresh": "Zorla Yenile",
     "announcements": "Duyurular",
     "noAnnouncements": "Aktif duyuru yok"
   },

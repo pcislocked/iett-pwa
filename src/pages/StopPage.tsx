@@ -61,7 +61,15 @@ function FitBoundsEffect({ bounds }: { bounds: [[number, number], [number, numbe
   return null
 }
 
-function InfoModal({ onClose }: { onClose: () => void }) {
+interface InfoModalProps {
+  onClose: () => void
+  onForceRefresh: () => void
+  clientTime: string
+  serverTime: string
+  gpsTime: string
+}
+
+function InfoModal({ onClose, onForceRefresh, clientTime, serverTime, gpsTime }: InfoModalProps) {
   const { t } = useTranslation()
   const modalRef = useRef<HTMLDivElement>(null)
   const btnRef = useRef<HTMLButtonElement>(null)
@@ -115,27 +123,69 @@ function InfoModal({ onClose }: { onClose: () => void }) {
         role="dialog"
         aria-modal="true"
         aria-labelledby="info-title"
-        className="relative w-full max-w-sm bg-surface-card border border-surface-border rounded-xl shadow-2xl p-6"
+        className="relative w-full max-w-sm bg-surface-card border border-surface-border rounded-2xl shadow-2xl p-6"
       >
-        <h2 id="info-title" className="text-lg font-bold text-text-primary mb-2">{t('stops.timestamps', 'Zaman Damgaları')}</h2>
-        <div tabIndex={0} className="text-sm text-text-secondary mb-6 space-y-2 overflow-y-auto max-h-[50vh]">
-          <p>
-            <strong>{t('common.update', 'Güncelleme')}:</strong> {t('stops.timestampDescUpdate', 'Uygulamanın sunucularımızdan en son veriyi çektiği anı gösterir.')}
-          </p>
-          <p>
-            <strong>{t('common.iett', 'İETT')}:</strong> {t('stops.timestampDescIett', 'Sunucularımızın İETT altyapısından veriyi gerçekten kopyaladığı anı gösterir.')}
-          </p>
-          <p>
-            {t('stops.timestampLagWarning', 'İki saat arasındaki fark büyüyorsa, İETT sistemlerinde genel bir gecikme yaşanıyor demektir.')}
+        <h2 id="info-title" className="text-lg font-bold text-text-primary mb-3">
+          {t('stops.timestamps')}
+        </h2>
+
+        <div tabIndex={0} className="text-xs text-text-secondary space-y-3 mb-6 overflow-y-auto max-h-[50vh]">
+          <div className="p-3 bg-surface-muted/50 rounded-xl border border-surface-border space-y-1">
+            <div className="flex items-center justify-between font-semibold text-text-primary">
+              <span>📱 {t('common.update')}</span>
+              <span className="font-mono text-brand-400">{clientTime}</span>
+            </div>
+            <p className="text-[11px] text-text-muted leading-relaxed">
+              {t('stops.timestampDescUpdate')}
+            </p>
+          </div>
+
+          <div className="p-3 bg-surface-muted/50 rounded-xl border border-surface-border space-y-1">
+            <div className="flex items-center justify-between font-semibold text-text-primary">
+              <span>☁️ {t('common.iett')}</span>
+              <span className="font-mono text-brand-400">{serverTime}</span>
+            </div>
+            <p className="text-[11px] text-text-muted leading-relaxed">
+              {t('stops.timestampDescIett')}
+            </p>
+          </div>
+
+          <div className="p-3 bg-surface-muted/50 rounded-xl border border-surface-border space-y-1">
+            <div className="flex items-center justify-between font-semibold text-text-primary">
+              <span>🛰️ {t('stops.gpsUpdate')}</span>
+              <span className="font-mono text-brand-400">{gpsTime}</span>
+            </div>
+            <p className="text-[11px] text-text-muted leading-relaxed">
+              {t('stops.gpsTimeDesc')}
+            </p>
+          </div>
+
+          <p className="text-[11px] text-amber-400/90 leading-relaxed px-1">
+            {t('stops.timestampLagWarning')}
           </p>
         </div>
-        <button
-          ref={btnRef}
-          onClick={onClose}
-          className="w-full py-2.5 bg-brand-600 hover:bg-brand-500 text-white font-semibold rounded-lg transition-colors"
-        >
-          {t('common.gotIt', 'Anladım')}
-        </button>
+
+        <div className="flex gap-2">
+          <button
+            ref={btnRef}
+            onClick={() => {
+              onForceRefresh()
+              onClose()
+            }}
+            className="flex-1 py-2.5 bg-brand-600 hover:bg-brand-500 text-white font-semibold rounded-xl text-xs transition-colors flex items-center justify-center gap-1.5"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+            </svg>
+            {t('stops.forceRefresh')}
+          </button>
+          <button
+            onClick={onClose}
+            className="py-2.5 px-4 bg-surface-muted hover:bg-slate-600 text-text-secondary font-semibold rounded-xl text-xs transition-colors"
+          >
+            {t('common.gotIt')}
+          </button>
+        </div>
       </div>
     </div>,
     document.body
@@ -655,20 +705,47 @@ export default function StopPage() {
 
   const { data: arrivals, loading, error, stale, refresh: refreshArrivals, lastUpdated, iettUpdatedAt } = useArrivals(dcode ?? '')
 
-  const iettTimeDisplay = useMemo(() => {
-    let maxTs = ""
-    if (arrivals && arrivals.length > 0) {
-      for (const a of arrivals) {
-        if (a.last_seen_ts && a.last_seen_ts > maxTs) {
-          maxTs = a.last_seen_ts
+  const maxGpsTime = useMemo(() => {
+    if (!arrivals || arrivals.length === 0) return null
+    // eslint-disable-next-line react-hooks/purity
+    const nowMs = Date.now()
+    let newestMs = 0
+    let newestStr = ''
+
+    for (const a of arrivals) {
+      if (!a.last_seen_ts) continue
+      const ts = a.last_seen_ts.trim()
+      let dateObj: Date | null = null
+
+      if (ts.includes('T') || (ts.includes('-') && ts.includes(':'))) {
+        const parsed = new Date(ts.replace(' ', 'T'))
+        if (!isNaN(parsed.getTime())) dateObj = parsed
+      } else if (/^\d{2}:\d{2}:\d{2}$/.test(ts)) {
+        const refDate = new Date(nowMs)
+        const [h, m, s] = ts.split(':').map(Number)
+        dateObj = new Date(refDate.getFullYear(), refDate.getMonth(), refDate.getDate(), h, m, s)
+        if (dateObj.getTime() - nowMs > 60_000) {
+          dateObj.setDate(dateObj.getDate() - 1)
         }
       }
+
+      if (dateObj) {
+        const tMs = dateObj.getTime()
+        if (tMs <= nowMs + 60_000 && tMs > newestMs) {
+          newestMs = tMs
+          newestStr = ts.length > 8 && ts.includes('T')
+            ? dateObj.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+            : ts
+        }
+      } else if (ts && !newestStr) {
+        newestStr = ts
+      }
     }
-    if (maxTs) {
-      return maxTs.length > 8 && maxTs.includes('T')
-        ? new Date(maxTs).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
-        : maxTs
-    }
+    return newestStr || null
+  }, [arrivals])
+
+  const iettTimeDisplay = useMemo(() => {
+    if (maxGpsTime) return maxGpsTime
     if (iettUpdatedAt) {
       const parsed = new Date(iettUpdatedAt)
       if (!isNaN(parsed.getTime())) {
@@ -677,7 +754,7 @@ export default function StopPage() {
       return iettUpdatedAt
     }
     return '--:--:--'
-  }, [arrivals, iettUpdatedAt])
+  }, [maxGpsTime, iettUpdatedAt])
 
   const { data: routes } = useQuery<string[]>({
     queryKey: ['routesAtStop', dcode],
@@ -1325,7 +1402,15 @@ export default function StopPage() {
       </AnimatePresence>
 
       {/* Info Modal */}
-      {showInfo && <InfoModal onClose={() => setShowInfo(false)} />}
+      {showInfo && (
+        <InfoModal
+          onClose={() => setShowInfo(false)}
+          onForceRefresh={() => refreshArrivals()}
+          clientTime={lastUpdated ? lastUpdated.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '--:--:--'}
+          serverTime={iettUpdatedAt ? (isNaN(new Date(iettUpdatedAt).getTime()) ? iettUpdatedAt : new Date(iettUpdatedAt).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })) : '--:--:--'}
+          gpsTime={maxGpsTime || '--:--:--'}
+        />
+      )}
     </div>
   )
 }

@@ -71,6 +71,8 @@
     "lagExplanationAria": "Why are there two different times?",
     "systemAnnouncementType": "System Announcement",
     "gpsUpdate": "GPS Update",
+    "gpsTimeDesc": "Latest telemetry timestamp sent from the bus GPS hardware.",
+    "forceRefresh": "Force Refresh",
     "announcements": "Announcements",
     "noAnnouncements": "No active announcements"
   },
