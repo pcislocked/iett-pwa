@@ -101,7 +101,7 @@ describe('StopPage Announcements', () => {
       latitude: 41,
       longitude: 29
     })
-    vi.mocked(api.stops.arrivals).mockResolvedValue([])
+    vi.mocked(api.stops.arrivals).mockResolvedValue([] as any)
     vi.mocked(api.stops.announcements).mockResolvedValue([])
 
     renderPage()
