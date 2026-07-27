@@ -81,7 +81,8 @@
     "gpsUpdate": "GPS Update",
     "forceRefresh": "Force Refresh",
     "announcements": "Announcements",
-    "noAnnouncements": "No active announcements"
+    "noAnnouncements": "No active announcements",
+    "loadingAnnouncements": "Loading announcements..."
   },
   "routes": {
     "title": "Route",

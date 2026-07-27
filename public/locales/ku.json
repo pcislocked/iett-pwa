@@ -81,7 +81,8 @@
     "gpsUpdate": "⠀",
     "forceRefresh": "⠀",
     "announcements": "⠀",
-    "noAnnouncements": "⠀"
+    "noAnnouncements": "⠀",
+    "loadingAnnouncements": "⠀"
   },
   "routes": {
     "title": "⠀",

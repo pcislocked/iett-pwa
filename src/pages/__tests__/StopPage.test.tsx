@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-﻿import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -44,9 +44,9 @@ describe('StopPage Announcements', () => {
       dcode: '1234', name: 'Test Stop', latitude: 41, longitude: 29
     })
     vi.mocked(api.stops.arrivals).mockResolvedValue([
-        { route_code: '15TY', destination: 'Test Dest', eta_minutes: 5, eta_raw: '5 dk', plate: null, kapino: null, lat: null, lon: null },
-        { route_code: '11H', destination: 'Test Dest', eta_minutes: 15, eta_raw: '15 dk', plate: null, kapino: null, lat: null, lon: null },
-      ] as any)
+      { route_code: '15TY', destination: 'Test Dest', eta_minutes: 5, eta_raw: '5 dk', plate: null, kapino: null, lat: null, lon: null },
+      { route_code: '11H', destination: 'Test Dest', eta_minutes: 15, eta_raw: '15 dk', plate: null, kapino: null, lat: null, lon: null },
+    ] as any)
 
     vi.mocked(api.stops.announcements).mockResolvedValue([
       { type: 'Duyuru', updated_at: '2026-06-05', message: '15TY is delayed', route_code: '15TY', route_name: '' },
@@ -69,19 +69,18 @@ describe('StopPage Announcements', () => {
     })
   })
 
-  it('shows fallback message when announcement fetch fails', async () => {
+  it('shows error banner when announcement fetch fails', async () => {
     vi.mocked(api.stops.detail).mockResolvedValue({
       dcode: '1234',
       name: 'Test Stop',
       direction: 'North',
-
       latitude: 41,
       longitude: 29
     })
     vi.mocked(api.stops.arrivals).mockResolvedValue([
-        { route_code: '15TY', destination: 'Test Dest', eta_minutes: 5, eta_raw: '5 dk', plate: null, kapino: null, lat: null, lon: null },
-        { route_code: '11H', destination: 'Test Dest', eta_minutes: 15, eta_raw: '15 dk', plate: null, kapino: null, lat: null, lon: null },
-      ] as any)
+      { route_code: '15TY', destination: 'Test Dest', eta_minutes: 5, eta_raw: '5 dk', plate: null, kapino: null, lat: null, lon: null },
+      { route_code: '11H', destination: 'Test Dest', eta_minutes: 15, eta_raw: '15 dk', plate: null, kapino: null, lat: null, lon: null },
+    ] as any)
     vi.mocked(api.stops.routes).mockResolvedValue(['15TY', '11H'])
 
     // Fails
@@ -89,17 +88,26 @@ describe('StopPage Announcements', () => {
 
     renderPage()
 
-    // Should show 1 fallback announcement
-    const btn = await screen.findByRole('button', { name: /Duyurular \(1\)/i })
-    expect(btn).toBeInTheDocument()
-
-    fireEvent.click(btn)
-
-    // Verify fallback text
+    // Verify error banner is displayed
     await waitFor(() => {
       expect(screen.getByText(/Duyurular yüklenirken geçici bir hata oluştu/i)).toBeInTheDocument()
     })
   })
+
+  it('shows empty banner when there are no announcements', async () => {
+    vi.mocked(api.stops.detail).mockResolvedValue({
+      dcode: '1234',
+      name: 'Test Stop',
+      latitude: 41,
+      longitude: 29
+    })
+    vi.mocked(api.stops.arrivals).mockResolvedValue([])
+    vi.mocked(api.stops.announcements).mockResolvedValue([])
+
+    renderPage()
+
+    await waitFor(() => {
+      expect(screen.getByText(/Aktif duyuru yok/i)).toBeInTheDocument()
+    })
+  })
 })
-
-

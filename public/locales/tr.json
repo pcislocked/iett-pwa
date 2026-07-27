@@ -81,7 +81,8 @@
     "gpsUpdate": "GPS Güncellemesi",
     "forceRefresh": "Zorla Yenile",
     "announcements": "Duyurular",
-    "noAnnouncements": "Aktif duyuru yok"
+    "noAnnouncements": "Aktif duyuru yok",
+    "loadingAnnouncements": "Duyurular yükleniyor..."
   },
   "routes": {
     "title": "Hat",

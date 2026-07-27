@@ -875,7 +875,7 @@ export default function StopPage() {
     return m
   }, [arrivalRouteOrder, routes, orderedForColors])
 
-  const { data: polledAnnouncements, isError: isAnnsError } = useQuery<RouteAnnouncement[]>({
+  const { data: polledAnnouncements, isError: isAnnsError, isLoading: isAnnsLoading } = useQuery<RouteAnnouncement[]>({
     queryKey: ['stopAnnouncements', dcode],
     queryFn: async ({ signal }) => {
       if (!dcode) return []
@@ -889,13 +889,7 @@ export default function StopPage() {
   const { data: globalNotices } = useGlobalNotices()
 
   const stopAnnouncements: RouteAnnouncement[] = useMemo(() => {
-    const raw = isAnnsError ? [{
-      type: t('common.warning', 'Uyarı'),
-      updated_at: new Date().toLocaleTimeString('tr-TR'),
-      message: t('stops.announcementsFailed', 'Duyurular yüklenirken geçici bir hata oluştu.'),
-      route_code: '',
-      route_name: '',
-    } as RouteAnnouncement] : (polledAnnouncements ?? [])
+    const raw = polledAnnouncements ?? []
 
     return [
       ...(globalNotices ?? []).map(gn => ({
@@ -907,7 +901,7 @@ export default function StopPage() {
       })),
       ...raw
     ]
-  }, [globalNotices, isAnnsError, polledAnnouncements, t])
+  }, [globalNotices, polledAnnouncements, t])
 
   const { isFavorite, toggle } = useFavorites()
   const { prefs, isPinned, pinStop, unpinStop } = useUserPrefs()
@@ -1207,39 +1201,54 @@ export default function StopPage() {
           }}
         >
           <div className="px-4 pt-2 pb-4">
-          {/* Announcements Accordion */}
-          {(stopAnnouncements ?? []).length > 0 && (
-            <div className="mb-2">
-              <button
-                type="button"
-                id="announcements-btn"
-                aria-expanded={showAnnouncements}
-                aria-controls="announcements-list"
-                onClick={() => setShowAnnouncements(!showAnnouncements)}
-                className="w-full card flex items-center justify-between text-sm text-amber-400 font-semibold"
-              >
-                <span>⚠️ {t('stops.announcements', 'Duyurular')} ({(stopAnnouncements ?? []).length})</span>
-                <svg className={`w-4 h-4 transition-transform ${showAnnouncements ? 'rotate-180' : ''}`}
-                     fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/>
-                </svg>
-              </button>
-              {showAnnouncements && (
-                <div id="announcements-list" role="region" aria-labelledby="announcements-btn" className="mt-2 flex flex-col gap-2">
-                  {(stopAnnouncements ?? []).map((ann) => (
-                    <div key={`${ann.route_code}-${ann.type}-${ann.message}-${ann.updated_at}`} className="card border-amber-800/50 bg-amber-950/20">
-                      <p className="text-xs font-semibold text-amber-400 mb-1">
-                        {ann.route_code && <span className="text-amber-200 mr-1">[{ann.route_code}]</span>}
-                        {ann.type}
-                      </p>
-                      <p className="text-sm text-text-secondary">{ann.message}</p>
-
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
+          {/* Announcements Section */}
+          <div className="mb-2">
+            {isAnnsLoading && polledAnnouncements === undefined ? (
+              <div className="w-full card flex items-center justify-between text-sm text-text-muted font-medium cursor-default select-none">
+                <span className="flex items-center gap-1.5">
+                  <span className="animate-spin text-xs">⌛</span> {t('stops.loadingAnnouncements', 'Duyurular yükleniyor...')}
+                </span>
+              </div>
+            ) : isAnnsError && stopAnnouncements.length === 0 ? (
+              <div className="w-full card flex items-center justify-between text-sm text-amber-400/90 font-medium border-amber-900/40 bg-amber-950/10 cursor-default select-none">
+                <span>⚠️ {t('stops.announcementsFailed', 'Duyurular yüklenirken geçici bir hata oluştu.')}</span>
+              </div>
+            ) : stopAnnouncements.length === 0 ? (
+              <div className="w-full card flex items-center justify-between text-sm text-text-muted font-medium cursor-default select-none opacity-80">
+                <span>ℹ️ {t('stops.noAnnouncements', 'Aktif duyuru yok')}</span>
+              </div>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  id="announcements-btn"
+                  aria-expanded={showAnnouncements}
+                  aria-controls="announcements-list"
+                  onClick={() => setShowAnnouncements(!showAnnouncements)}
+                  className="w-full card flex items-center justify-between text-sm text-amber-400 font-semibold hover:bg-surface-muted/50 transition-colors"
+                >
+                  <span>⚠️ {t('stops.announcements', 'Duyurular')} ({stopAnnouncements.length})</span>
+                  <svg className={`w-4 h-4 transition-transform ${showAnnouncements ? 'rotate-180' : ''}`}
+                       fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/>
+                  </svg>
+                </button>
+                {showAnnouncements && (
+                  <div id="announcements-list" role="region" aria-labelledby="announcements-btn" className="mt-2 flex flex-col gap-2">
+                    {stopAnnouncements.map((ann) => (
+                      <div key={`${ann.route_code}-${ann.type}-${ann.message}-${ann.updated_at}`} className="card border-amber-800/50 bg-amber-950/20">
+                        <p className="text-xs font-semibold text-amber-400 mb-1">
+                          {ann.route_code && <span className="text-amber-200 mr-1">[{ann.route_code}]</span>}
+                          {ann.type}
+                        </p>
+                        <p className="text-sm text-text-secondary">{ann.message}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+          </div>
 
           {error && !stale && (
             <div className="bg-red-900/30 border border-red-700 rounded-xl px-4 py-3 text-red-300 text-sm">
