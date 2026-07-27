@@ -163,7 +163,7 @@ function InfoModal({ onClose, onForceRefresh, clientTime, serverTime, gpsTime }:
         <div tabIndex={0} className="text-xs text-text-secondary space-y-3 mb-6 overflow-y-auto max-h-[40vh]">
           <div className="p-3 bg-surface-muted/50 rounded-xl border border-surface-border space-y-1">
             <div className="flex items-center justify-between font-semibold text-text-primary">
-              <span>📱 {t('common.update')}</span>
+              <span>📱 {t('stops.cardClientTitle')}</span>
               <span className="font-mono text-brand-400">{clientTime}</span>
             </div>
             <p className="text-[11px] text-text-muted leading-relaxed">
@@ -173,7 +173,7 @@ function InfoModal({ onClose, onForceRefresh, clientTime, serverTime, gpsTime }:
 
           <div className="p-3 bg-surface-muted/50 rounded-xl border border-surface-border space-y-1">
             <div className="flex items-center justify-between font-semibold text-text-primary">
-              <span>☁️ {t('common.iett')}</span>
+              <span>☁️ {t('stops.cardServerTitle')}</span>
               <span className="font-mono text-brand-400">{serverTime}</span>
             </div>
             <p className="text-[11px] text-text-muted leading-relaxed">
@@ -183,7 +183,7 @@ function InfoModal({ onClose, onForceRefresh, clientTime, serverTime, gpsTime }:
 
           <div className="p-3 bg-surface-muted/50 rounded-xl border border-surface-border space-y-1">
             <div className="flex items-center justify-between font-semibold text-text-primary">
-              <span>🛰️ {t('stops.gpsUpdate')}</span>
+              <span>🛰️ {t('stops.cardGpsTitle')}</span>
               <span className="font-mono text-brand-400">{gpsTime}</span>
             </div>
             <p className="text-[11px] text-text-muted leading-relaxed">
