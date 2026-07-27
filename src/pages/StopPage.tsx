@@ -188,6 +188,11 @@ function InfoModal({ onClose, onForceRefresh, clientTime, serverTime, gpsTime }:
             </div>
             <p className="text-[11px] text-text-muted leading-relaxed">
               {t('stops.gpsTimeDesc')}
+              {(gpsTime === '--:--:--' || !gpsTime) && (
+                <span className="block mt-1 text-amber-400/90 font-medium">
+                  {t('stops.gpsTimeNoBusesNote')}
+                </span>
+              )}
             </p>
           </div>
 

@@ -66,6 +66,8 @@
     "cardGpsTitle": "Live GPS",
     "timestampDescUpdate": "The timestamp when your app/browser fetched data from our relay server and updated the display.",
     "timestampDescIett": "The timestamp when our relay server fetched and cached data from official IETT systems. Data is temporarily cached to speed up responses and protect upstream servers.",
+    "gpsTimeDesc": "The most recent timestamp calculated from the GPS devices of live buses approaching this stop.",
+    "gpsTimeNoBusesNote": "If no live vehicles with active GPS are currently approaching the stop, this value may remain empty.",
     "timestampLagWarning": "If the gap between timestamps grows, it indicates a general delay in IETT systems.",
     "clientNodeSub": "This app",
     "serverNodeSub": "Relay server",

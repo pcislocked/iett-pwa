@@ -66,6 +66,8 @@
     "cardGpsTitle": "⠀",
     "timestampDescUpdate": "⠀",
     "timestampDescIett": "⠀",
+    "gpsTimeDesc": "⠀",
+    "gpsTimeNoBusesNote": "⠀",
     "timestampLagWarning": "⠀",
     "clientNodeSub": "⠀",
     "serverNodeSub": "⠀",

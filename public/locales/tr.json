@@ -66,6 +66,8 @@
     "cardGpsTitle": "Canlı GPS",
     "timestampDescUpdate": "Uygulamanın (tarayıcınızın) ara sunucumuzdan en son veriyi çekip ekranı güncellediği andır.",
     "timestampDescIett": "Ara sunucumuzun İETT resmi altyapısından veriyi çekip önbelleğe (cache) kaydettiği zamandır. Sunucu yükünü ve İETT servislerini korumak için veriler kısa süreli önbelleğe alınır.",
+    "gpsTimeDesc": "Durağa yaklaşan canlı araçların GPS donanımlarından aktarılan saatler arasından en güncel olanıdır.",
+    "gpsTimeNoBusesNote": "Şu anda durağa yaklaşan canlı konum bilgili araç bulunmadığı için bu değer boş görünebilir.",
     "timestampLagWarning": "Zaman damgaları arasında fark büyüyorsa, İETT sistemlerinde genel bir gecikme yaşanıyor demektir.",
     "clientNodeSub": "Bu uygulama",
     "serverNodeSub": "Ara sunucu",
