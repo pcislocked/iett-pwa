@@ -38,7 +38,6 @@ Bir otobüs önünüze gelirken durağı açıp *"Buna binmeli miyim, yoksa bekl
 - **🗺️ Canlı Filo Haritası & Araç Arama:** Tüm İstanbul otobüs filosunu veya belirli bir hattın araçlarını CartoDB Dark/Light harita katmanlarında canlı izleme; kapı kodu/plaka ile haritada araç bulma.
 - **⚙️ Genel Olarak Özelleştirilebilir Ayarlar:** Ayarlar sayfasından tema (AMOLED/Koyu/Açık), dil (TR/EN), API sunucu adresi, otomatik yenileme aralığı, Yakın Durak yarıçapı/limiti, konum izni ve sahte konum (mock location) tercihlerini dilediğiniz gibi özelleştirebilme.
 - **⏱️ Durak Geliş Panosu & Max GPS Zaman Damgası:** 20s otomatik yenilemeli canlı geliş panosu, durağa yaklaşan otobüslerin en güncel GPS saatini (`maxGpsTime`) tespit etme, 5 dakikadan eski veriler için bayrak uyarısı (`⚠️`) ve 4 farklı dinamik duyuru barı (Yükleniyor, Hata, Duyuru Yok, Aktif Duyurular).
-- **🛤️ Via (Üzerinden Geçme) Filtresi:** Bir duraktan geçen otobüsleri, gitmek istediğiniz ikinci bir durağa (`via`) göre anında filtreleme.
 - **🔒 Araç Detay & Oturum Altyapısı (`arac.iett.gov.tr`):** Kapı kodu ile araca özel oturum oluşturma, otomatik OCR captcha çözümü / manuel captcha modalı, araç teknik profili (marka, model yılı, kapasite, garaj kodu, yazılım sürümü), geçmiş ve gelecek görev/sefer zaman çizelgesi, depar güzergahları.
 - **📍 Konum Gizliliği & Sahte Konum (Mock Location):** İsteğe bağlı GPS ile yakın durakları bulma; GPS izni verilmezse yerleşik sahte konum (mock location) veya haritaya dokunarak pin bırakarak konum belirleme.
 - **🎨 Çoklu Tema Desteği:** AMOLED Siyah, Koyu (Dark) ve Açık (Light) tema seçenekleri; tema değişimine duyarlı CartoDB Dark Matter / Positron harita karoları.
@@ -129,7 +128,6 @@ docker run --rm -p 8080:80 iett-pwa:0.4.1
 - **Live Fleet Map & Search:** Track the entire fleet or specific routes on CartoDB maps; search buses by door code or license plate.
 - **Fully Customizable Settings:** Easily adjust themes, languages, API base URL, refresh intervals, nearby stop radius/limits, auto-location preferences, and mock location coordinates in Settings.
 - **Arrivals Board & Max GPS Timestamp:** Live arrivals with max valid GPS timestamp detection, stale data warnings (>5 min), and 4 dynamic announcement states.
-- **Via Filter:** Filter arriving buses by a second destination stop.
 - **Vehicle Profile Overlay (`arac.iett.gov.tr`):** Solves vehicle captchas (automated OCR / manual modal), displays full specs (brand, model year, capacity, software version), and past/upcoming mission timelines.
 - **Location Privacy & Mock Location:** Optional GPS integration with built-in fallback to mock location or manual map pin picker.
 - **Multi-Theme:** AMOLED Black, Dark, and Light custom CSS themes matching CartoDB Dark Matter / Positron map tiles.
