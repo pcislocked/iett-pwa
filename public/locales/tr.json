@@ -281,7 +281,7 @@
     "lastSeen": "Son Görülme",
     "capacity": "Kapasite: {{seating}} oturma / {{total}} toplam",
     "missionsSummary": "{{count}} sefer, {{completed}} tamamlandı",
-    "futureMissionsNotice": "İETT sistem değişiklikleri sebebiyle gelecek sefer bilgisi sunulmamaktadır.",
+    "futureMissionsNotice": "İETT sistem değişiklikleri sebebiyle gelecek sefer bilgileri bazen görüntülenemeyebilir veya eksik yansıyabilir.",
     "multipleActiveWarning": "Sistemde bu araç için birden fazla aktif görev görünüyor. Lütfen tüm listeyi inceleyin.",
     "technicalDetails": "Teknik Detaylar (Sistem ID'leri)",
     "operatorId": "Operatör ID",

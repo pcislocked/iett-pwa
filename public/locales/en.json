@@ -281,7 +281,7 @@
     "lastSeen": "Last Seen",
     "capacity": "Capacity: {{seating}} seating / {{total}} total",
     "missionsSummary": "{{count}} missions, {{completed}} completed",
-    "futureMissionsNotice": "Upcoming trips are not available due to upstream IETT system changes.",
+    "futureMissionsNotice": "Due to IETT system changes, some future mission details may occasionally be unavailable or incomplete.",
     "multipleActiveWarning": "Multiple active missions detected for this vehicle. Please review the full list.",
     "technicalDetails": "Technical Details (System IDs)",
     "operatorId": "Operator ID",
