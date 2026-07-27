@@ -3,6 +3,28 @@
 All notable changes to iett-pwa are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [0.4.1] - 2026-07-28
+
+### Added & Improved
+- **Stop Page Announcements Bar:**
+  - Implemented 4 distinct UI states for the announcements header: Loading (`⌛`), Error (`⚠️`), Empty (`ℹ️`), and Active (`⚠️ Duyurular (X)`).
+  - Ensured empty and error states occupy a uniform non-expandable card height.
+- **Max GPS Timestamp Calculation (`maxGpsTime`):**
+  - Displays the newest valid bus GPS timestamp as the primary İETT timestamp on StopPage.
+  - Added stale data warning (`⚠️`) for GPS updates older than 5 minutes.
+  - Added explanatory note when no live buses are approaching the stop.
+- **Architecture Diagram & InfoModal Animation:**
+  - Added Framer Motion backdrop/scale transition animations to InfoModal.
+  - Created 3-layer architecture diagram (📱 PWA -> ☁️ Middle -> 🚌 IETT) with reversed data flow arrows.
+  - Included "Zorla Yenile" (Force Refresh) button.
+- **Route Line/Name Layout Swap:**
+  - Reordered route ticker rows on Home page / Recent Searches to display the bold route code (`14M`, `15ŞN`) on top and route description (`KAVACIK YENİ CAMİ - KADIKÖY`) below.
+
+### Fixed
+- **Vehicle Mission Notice:** Updated `futureMissionsNotice` text to accurately reflect that future mission details may occasionally be missing or incomplete due to upstream API changes.
+- **KVKK & Privacy Policy:** Updated `LocationConsentModal` text and added Privacy Policy link.
+- **i18n & Locales:** Synchronized Kurdish (`ku.json`), English (`en.json`), and Turkish (`tr.json`) locale files.
+
 ---
 
 ## [0.4.0] - 2026-07-26
