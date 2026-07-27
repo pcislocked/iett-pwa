@@ -76,7 +76,7 @@ export default function LocationConsentModal({ onConfirm, onDismiss }: Props) {
             <div className="text-center">
               <h2 id="consent-title" className="text-base font-bold text-text-primary mb-1">{t('nearby.locationPermission', { defaultValue: 'Konum İzni' })}</h2>
               <p className="text-xs text-text-secondary leading-relaxed">
-                {t('nearby.locationPermissionDesc', { defaultValue: 'Yakın durakları listelemek için konumunuza ihtiyaç var. Konumunuz yalnızca bu cihazda işlenir; hiçbir sunucuya kaydedilmez.' })}
+                {t('nearby.locationPermissionDesc', { defaultValue: 'Yakın durakları listelemek için konumunuza ihtiyaç var. Konumunuz yalnızca en yakın durakları bulmak amacıyla sunucuya iletilir; veritabanında saklanmaz.' })}
               </p>
             </div>
             <div className="flex flex-col gap-2">
@@ -117,6 +117,14 @@ export default function LocationConsentModal({ onConfirm, onDismiss }: Props) {
               >
                 {t('nearby.denyPermission', 'İzin Verme')}
               </button>
+              <a
+                href="https://pcislocked.net/kvkk#iett-pwa"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full text-center text-xs text-text-muted hover:text-brand-400 underline decoration-slate-600 underline-offset-2 transition-colors pt-1"
+              >
+                {t('settings.privacyPolicy', 'Gizlilik Politikası')}
+              </a>
             </div>
           </>
         ) : (

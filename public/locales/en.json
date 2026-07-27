@@ -189,7 +189,8 @@
     "resetGpsModal": "Reset Location Permission (Show Modal Again)",
     "gpsAndMock": "GPS and Mock Location",
     "requestGpsModal": "Request Location Permission",
-    "revokeGpsModal": "Revoke Permission (Use Mock Location)"
+    "revokeGpsModal": "Revoke Permission (Use Mock Location)",
+    "privacyPolicy": "Privacy Policy"
   },
   "embed": {
     "poweredBy": "iett-pwa",
@@ -198,7 +199,7 @@
   },
   "nearby": {
     "locationPermission": "Location Permission",
-    "locationPermissionDesc": "Location is required to list nearby stops. Your location is processed only on this device and never stored on any server.",
+    "locationPermissionDesc": "Location is required to list nearby stops. Your location is sent to the server only upon request to calculate nearby stops and is not stored in any database.",
     "useGps": "Use My GPS Location",
     "specifyOnMap": "Specify on Map",
     "yourLocation": "Your Location",

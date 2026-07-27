@@ -189,7 +189,8 @@
     "resetGpsModal": "⠀",
     "gpsAndMock": "⠀",
     "requestGpsModal": "⠀",
-    "revokeGpsModal": "⠀"
+    "revokeGpsModal": "⠀",
+    "privacyPolicy": "⠀"
   },
   "embed": {
     "poweredBy": "⠀",
