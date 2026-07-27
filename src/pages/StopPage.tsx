@@ -14,6 +14,7 @@ import { PINNED_STOPS_MAX, useUserPrefs } from '@/hooks/useUserPrefs'
 import { useTranslation } from 'react-i18next'
 import { useGlobalNotices } from '@/hooks/useGlobalNotices'
 import { etaChipClass } from '@/utils/etaColor'
+import { isGpsStale } from '@/utils/dateUtils'
 import { useTheme } from '@/hooks/useTheme'
 import PullToRefresh from '@/components/PullToRefresh'
 
@@ -458,8 +459,17 @@ function BusDetailSheet({
 
         {/* Double update time (GPS Last Seen) */}
         {arrival.last_seen_ts && (
-          <div className="flex justify-center pb-2 pt-1 border-b border-surface-border">
-            <p className="text-[10px] text-text-muted font-mono tracking-wide">
+          <div className="flex justify-center items-center gap-1.5 pb-2 pt-1 border-b border-surface-border">
+            {isGpsStale(arrival.last_seen_ts) && (
+              <span
+                title={t('arac.staleDataWarning')}
+                aria-label={t('arac.staleDataWarning')}
+                className="text-xs cursor-help"
+              >
+                ⚠️
+              </span>
+            )}
+            <p className={`text-[10px] font-mono tracking-wide ${isGpsStale(arrival.last_seen_ts) ? 'text-amber-400 font-semibold' : 'text-text-muted'}`}>
               {t('stops.gpsUpdate', 'GPS Update')}: {arrival.last_seen_ts}
             </p>
           </div>
@@ -646,19 +656,28 @@ export default function StopPage() {
   const { data: arrivals, loading, error, stale, refresh: refreshArrivals, lastUpdated, iettUpdatedAt } = useArrivals(dcode ?? '')
 
   const iettTimeDisplay = useMemo(() => {
-    if (iettUpdatedAt) {
-      return new Date(iettUpdatedAt).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
-    }
-    if (!arrivals || arrivals.length === 0) return '--:--:--'
-
     let maxTs = ""
-    for (const a of arrivals) {
-      if (a.last_seen_ts && a.last_seen_ts > maxTs) {
-        maxTs = a.last_seen_ts
+    if (arrivals && arrivals.length > 0) {
+      for (const a of arrivals) {
+        if (a.last_seen_ts && a.last_seen_ts > maxTs) {
+          maxTs = a.last_seen_ts
+        }
       }
     }
-    return maxTs || '--:--:--'
-  }, [iettUpdatedAt, arrivals])
+    if (maxTs) {
+      return maxTs.length > 8 && maxTs.includes('T')
+        ? new Date(maxTs).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+        : maxTs
+    }
+    if (iettUpdatedAt) {
+      const parsed = new Date(iettUpdatedAt)
+      if (!isNaN(parsed.getTime())) {
+        return parsed.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+      }
+      return iettUpdatedAt
+    }
+    return '--:--:--'
+  }, [arrivals, iettUpdatedAt])
 
   const { data: routes } = useQuery<string[]>({
     queryKey: ['routesAtStop', dcode],
@@ -1157,7 +1176,18 @@ export default function StopPage() {
                       {a.route_code}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs text-text-primary truncate leading-snug">{a.destination}</p>
+                      <div className="flex items-center gap-1.5">
+                        <p className="text-xs text-text-primary truncate leading-snug">{a.destination}</p>
+                        {isGpsStale(a.last_seen_ts) && (
+                          <span
+                            title={t('arac.staleDataWarning')}
+                            aria-label={t('arac.staleDataWarning')}
+                            className="text-xs shrink-0 cursor-help"
+                          >
+                            ⚠️
+                          </span>
+                        )}
+                      </div>
                       {hasVehicle && (
                         <p className="text-xs text-text-secondary mt-0.5 font-mono tracking-wide">
                           {[a.plate, a.kapino].filter(Boolean).join('  ·  ')}
