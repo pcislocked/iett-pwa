@@ -74,9 +74,9 @@ export default function LocationConsentModal({ onConfirm, onDismiss }: Props) {
               </svg>
             </div>
             <div className="text-center">
-              <h2 id="consent-title" className="text-base font-bold text-text-primary mb-1">{t('nearby.locationPermission', { defaultValue: 'Konum İzni' })}</h2>
+              <h2 id="consent-title" className="text-base font-bold text-text-primary mb-1">{t('nearby.locationPermission')}</h2>
               <p className="text-xs text-text-secondary leading-relaxed">
-                {t('nearby.locationPermissionDesc', { defaultValue: 'Yakın durakları listelemek için konumunuza ihtiyaç var. Konumunuz yalnızca en yakın durakları bulmak amacıyla sunucuya iletilir; veritabanında saklanmaz.' })}
+                {t('nearby.locationPermissionDesc')}
               </p>
             </div>
             <div className="flex flex-col gap-2">
@@ -108,14 +108,14 @@ export default function LocationConsentModal({ onConfirm, onDismiss }: Props) {
                     <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                   </svg>
                 )}
-                {isLocating ? t('nearby.waitingPermission', { defaultValue: 'İzin Bekleniyor...' }) : t('nearby.useGps', { defaultValue: 'Konumumu Kullan' })}
+                {isLocating ? t('nearby.waitingPermission') : t('nearby.useGps')}
               </button>
               <button
                 onClick={() => setDeniedState(true)}
                 disabled={isLocating}
                 className="w-full bg-surface-muted hover:bg-slate-600 disabled:opacity-50 text-text-secondary font-medium py-3 rounded-xl text-sm transition-colors"
               >
-                {t('nearby.denyPermission', { defaultValue: 'İzin Verme' })}
+                {t('nearby.denyPermission')}
               </button>
               <a
                 href="https://pcislocked.net/kvkk#iett-pwa"
@@ -123,7 +123,7 @@ export default function LocationConsentModal({ onConfirm, onDismiss }: Props) {
                 rel="noopener noreferrer"
                 className="w-full text-center text-xs text-text-muted hover:text-brand-400 underline decoration-slate-600 underline-offset-2 transition-colors pt-1"
               >
-                {t('settings.privacyPolicy', { defaultValue: 'Gizlilik Politikası' })}
+                {t('settings.privacyPolicy')}
               </a>
             </div>
           </>
@@ -135,9 +135,9 @@ export default function LocationConsentModal({ onConfirm, onDismiss }: Props) {
               </svg>
             </div>
             <div className="text-center">
-              <h2 id="consent-title" className="text-base font-bold text-text-primary mb-1">{t('nearby.mockLocationTitle', { defaultValue: 'Sahte Konum Kullanılacak' })}</h2>
+              <h2 id="consent-title" className="text-base font-bold text-text-primary mb-1">{t('nearby.mockLocationTitle')}</h2>
               <p className="text-xs text-text-secondary leading-relaxed">
-                {t('nearby.mockLocationDesc', { defaultValue: 'GPS izni vermediğiniz için uygulama varsayılan sahte bir konumla çalışacak. Bu sahte konumu daha sonra Ayarlar menüsünden harita üzerinden değiştirebilirsiniz.' })}
+                {t('nearby.mockLocationDesc')}
               </p>
             </div>
             <div className="flex flex-col gap-2">
@@ -145,7 +145,7 @@ export default function LocationConsentModal({ onConfirm, onDismiss }: Props) {
                 onClick={onDismiss}
                 className="w-full bg-amber-600 hover:bg-amber-500 text-white font-semibold py-3 rounded-xl text-sm transition-colors focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus:outline-none"
               >
-                {t('common.gotIt', { defaultValue: 'Anladım' })}
+                {t('common.gotIt')}
               </button>
             </div>
           </>

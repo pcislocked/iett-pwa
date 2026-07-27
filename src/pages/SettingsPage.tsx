@@ -363,7 +363,7 @@ export default function SettingsPage() {
             rel="noopener noreferrer"
             className="flex items-center gap-1.5 text-brand-400 hover:text-brand-300 transition-colors w-fit underline decoration-brand-500/40 underline-offset-2"
           >
-            🔒 {t('settings.privacyPolicy', { defaultValue: 'Gizlilik Politikası' })}
+            🔒 {t('settings.privacyPolicy')}
           </a>
           <a
             href="https://github.com/pcislocked/iett-pwa"
