@@ -36,7 +36,7 @@ Bir otobüs önünüze gelirken durağı açıp *"Buna binmeli miyim, yoksa bekl
 - **❤️ Favori Durak ve Hatlar:** Favori durak ve hatlarınızı favorilere ekleme (❤️) ve hızlı erişim panosu.
 - **🔍 Son Aramalar & Akıllı Arama:** Hat kodu (ör: `14M`), durak adı veya 4+ haneli durak numarası ile hızlı arama; son aramaları ana sayfada saklama.
 - **🗺️ Canlı Filo Haritası & Araç Arama:** Tüm İstanbul otobüs filosunu veya belirli bir hattın araçlarını CartoDB Dark/Light harita katmanlarında canlı izleme; kapı kodu/plaka ile haritada araç bulma.
-- **📐 Özelleştirilebilir Yakın Durak Ayarları:** Ayarlar sayfasından Yakın Duraklar arama yarıçapını (100m - 3000m) ve maksimum durak sayısını (5 - 50) dilediğiniz gibi özelleştirebilme.
+- **⚙️ Genel Olarak Özelleştirilebilir Ayarlar:** Ayarlar sayfasından tema (AMOLED/Koyu/Açık), dil (TR/EN/KU), API sunucu adresi, otomatik yenileme aralığı, Yakın Durak yarıçapı/limiti, konum izni ve sahte konum (mock location) tercihlerini dilediğiniz gibi özelleştirebilme.
 - **⏱️ Durak Geliş Panosu & Max GPS Zaman Damgası:** 20s otomatik yenilemeli canlı geliş panosu, durağa yaklaşan otobüslerin en güncel GPS saatini (`maxGpsTime`) tespit etme, 5 dakikadan eski veriler için bayrak uyarısı (`⚠️`) ve 4 farklı dinamik duyuru barı (Yükleniyor, Hata, Duyuru Yok, Aktif Duyurular).
 - **🛤️ Via (Üzerinden Geçme) Filtresi:** Bir duraktan geçen otobüsleri, gitmek istediğiniz ikinci bir durağa (`via`) göre anında filtreleme.
 - **🔒 Araç Detay & Oturum Altyapısı (`arac.iett.gov.tr`):** Kapı kodu ile araca özel oturum oluşturma, otomatik OCR captcha çözümü / manuel captcha modalı, araç teknik profili (marka, model yılı, kapasite, garaj kodu, yazılım sürümü), geçmiş ve gelecek görev/sefer zaman çizelgesi, depar güzergahları.
@@ -127,7 +127,7 @@ docker run --rm -p 8080:80 iett-pwa:0.4.1
 - **Pinned Stops & Favorites:** Pin your daily stops for one-tap live arrival access right on the home page; manage favorite routes and stops.
 - **Recent Searches & Smart Search:** Search by route code (e.g. `14M`), stop name, or 4+ digit stop code.
 - **Live Fleet Map & Search:** Track the entire fleet or specific routes on CartoDB maps; search buses by door code or license plate.
-- **Customizable Nearby Settings:** Adjust nearby stop search radius (100m - 3000m) and max stops limit (5 - 50) in settings.
+- **Fully Customizable Settings:** Easily adjust themes, languages, API base URL, refresh intervals, nearby stop radius/limits, auto-location preferences, and mock location coordinates in Settings.
 - **Arrivals Board & Max GPS Timestamp:** Live arrivals with max valid GPS timestamp detection, stale data warnings (>5 min), and 4 dynamic announcement states.
 - **Via Filter:** Filter arriving buses by a second destination stop.
 - **Vehicle Profile Overlay (`arac.iett.gov.tr`):** Solves vehicle captchas (automated OCR / manual modal), displays full specs (brand, model year, capacity, software version), and past/upcoming mission timelines.
