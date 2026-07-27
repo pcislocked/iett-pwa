@@ -189,7 +189,8 @@
     "resetGpsModal": "Konum İznini Sıfırla (Modalı Tekrar Göster)",
     "gpsAndMock": "GPS ve Sahte Konum",
     "requestGpsModal": "Konum İznini İste",
-    "revokeGpsModal": "İzni İptal Et (Sahte Konuma Dön)"
+    "revokeGpsModal": "İzni İptal Et (Sahte Konuma Dön)",
+    "privacyPolicy": "Gizlilik Politikası"
   },
   "embed": {
     "poweredBy": "iett-pwa",
@@ -198,7 +199,7 @@
   },
   "nearby": {
     "locationPermission": "Konum İzni",
-    "locationPermissionDesc": "Yakın durakları listelemek için konumunuza ihtiyaç var. Konumunuz yalnızca bu cihazda işlenir; hiçbir sunucuya kaydedilmez.",
+    "locationPermissionDesc": "Yakın durakları listelemek için konumunuza ihtiyaç var. Konumunuz yalnızca en yakın durakları bulmak amacıyla sunucuya iletilir; veritabanında saklanmaz.",
     "useGps": "GPS Konumumu Kullan",
     "specifyOnMap": "Haritadan Belirt",
     "yourLocation": "Konumunuz",
