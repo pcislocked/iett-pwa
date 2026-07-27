@@ -72,7 +72,6 @@
     "clientNodeSub": "This app",
     "serverNodeSub": "Relay server",
     "fieldNodeSub": "Official data",
-    "dataFlow": "Data Flow",
     "announcementsFailed": "A temporary error occurred while loading announcements.",
     "systemAnnouncements": "System Warnings",
     "stopListFailed": "Failed to load stop list",

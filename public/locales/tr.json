@@ -72,7 +72,6 @@
     "clientNodeSub": "Bu uygulama",
     "serverNodeSub": "Ara sunucu",
     "fieldNodeSub": "Resmi veri",
-    "dataFlow": "Veri Akışı",
     "announcementsFailed": "Duyurular yüklenirken geçici bir hata oluştu.",
     "systemAnnouncements": "Sistem Uyarıları",
     "stopListFailed": "Durak listesi yüklenemedi",

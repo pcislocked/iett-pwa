@@ -1,5 +1,34 @@
 import { describe, it, expect } from 'vitest'
-import { isGpsStale } from '../dateUtils'
+import { isGpsStale, parseGpsTimestamp } from '../dateUtils'
+
+describe('parseGpsTimestamp', () => {
+  const baseTime = new Date('2026-07-27T21:18:00').getTime()
+
+  it('returns null for null, undefined, or empty string', () => {
+    expect(parseGpsTimestamp(null, baseTime)).toBeNull()
+    expect(parseGpsTimestamp(undefined, baseTime)).toBeNull()
+    expect(parseGpsTimestamp('', baseTime)).toBeNull()
+  })
+
+  it('parses valid HH:mm:ss timestamps correctly', () => {
+    const parsed = parseGpsTimestamp('21:16:00', baseTime)
+    expect(parsed).not.toBeNull()
+    expect(parsed?.getHours()).toBe(21)
+    expect(parsed?.getMinutes()).toBe(16)
+  })
+
+  it('adjusts day boundary for midnight rollover / future time beyond tolerance', () => {
+    // 00:05:00 relative to 23:58:00 (rolled over to next day)
+    const lateNightBase = new Date('2026-07-27T23:58:00').getTime()
+    const parsed = parseGpsTimestamp('23:50:00', lateNightBase)
+    expect(parsed).not.toBeNull()
+    expect(parsed?.getTime()).toBeLessThan(lateNightBase)
+  })
+
+  it('returns null for unparseable strings', () => {
+    expect(parseGpsTimestamp('invalid', baseTime)).toBeNull()
+  })
+})
 
 describe('isGpsStale', () => {
   const baseTime = new Date('2026-07-27T21:18:00').getTime()

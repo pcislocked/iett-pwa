@@ -14,7 +14,7 @@ import { PINNED_STOPS_MAX, useUserPrefs } from '@/hooks/useUserPrefs'
 import { useTranslation } from 'react-i18next'
 import { useGlobalNotices } from '@/hooks/useGlobalNotices'
 import { etaChipClass } from '@/utils/etaColor'
-import { isGpsStale } from '@/utils/dateUtils'
+import { isGpsStale, parseGpsTimestamp } from '@/utils/dateUtils'
 import { useTheme } from '@/hooks/useTheme'
 import PullToRefresh from '@/components/PullToRefresh'
 
@@ -117,12 +117,23 @@ function InfoModal({ onClose, onForceRefresh, clientTime, serverTime, gpsTime }:
 
   return createPortal(
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.2 }}
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        onClick={onClose}
+      />
+      <motion.div
         ref={modalRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="info-title"
+        initial={{ opacity: 0, scale: 0.94, y: 10 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.94, y: 10 }}
+        transition={{ type: 'spring', damping: 25, stiffness: 350 }}
         className="relative w-full max-w-sm bg-surface-card border border-surface-border rounded-2xl shadow-2xl p-6"
       >
         <h2 id="info-title" className="text-lg font-bold text-text-primary mb-3">
@@ -138,10 +149,10 @@ function InfoModal({ onClose, onForceRefresh, clientTime, serverTime, gpsTime }:
             <span className="text-[9px] text-text-muted">{t('stops.serverNodeSub')}</span>
           </div>
 
-          {/* Connection Arrows */}
+          {/* Connection Arrows: ↙ (middle -> pwa), ↖ (istanbul -> middle) */}
           <div className="w-full flex items-center justify-around px-8 my-1 text-text-muted text-xs font-bold font-mono">
-            <span>↗</span>
-            <span>↘</span>
+            <span>↙</span>
+            <span>↖</span>
           </div>
 
           {/* Bottom Nodes: Left = iett-pwa (Client), Right = iett.istanbul (Bus/Field) */}
@@ -222,7 +233,7 @@ function InfoModal({ onClose, onForceRefresh, clientTime, serverTime, gpsTime }:
             {t('common.gotIt')}
           </button>
         </div>
-      </div>
+      </motion.div>
     </div>,
     document.body
   )
@@ -742,28 +753,15 @@ export default function StopPage() {
   const { data: arrivals, loading, error, stale, refresh: refreshArrivals, lastUpdated, iettUpdatedAt } = useArrivals(dcode ?? '')
 
   const maxGpsTime = useMemo(() => {
-    if (!arrivals || arrivals.length === 0) return null
-    // eslint-disable-next-line react-hooks/purity
-    const nowMs = Date.now()
+    if (!arrivals || arrivals.length === 0 || !lastUpdated) return null
+    const nowMs = lastUpdated.getTime()
     let newestMs = 0
     let newestStr = ''
 
     for (const a of arrivals) {
       if (!a.last_seen_ts) continue
       const ts = a.last_seen_ts.trim()
-      let dateObj: Date | null = null
-
-      if (ts.includes('T') || (ts.includes('-') && ts.includes(':'))) {
-        const parsed = new Date(ts.replace(' ', 'T'))
-        if (!isNaN(parsed.getTime())) dateObj = parsed
-      } else if (/^\d{2}:\d{2}:\d{2}$/.test(ts)) {
-        const refDate = new Date(nowMs)
-        const [h, m, s] = ts.split(':').map(Number)
-        dateObj = new Date(refDate.getFullYear(), refDate.getMonth(), refDate.getDate(), h, m, s)
-        if (dateObj.getTime() - nowMs > 60_000) {
-          dateObj.setDate(dateObj.getDate() - 1)
-        }
-      }
+      const dateObj = parseGpsTimestamp(ts, nowMs)
 
       if (dateObj) {
         const tMs = dateObj.getTime()
@@ -778,19 +776,27 @@ export default function StopPage() {
       }
     }
     return newestStr || null
-  }, [arrivals])
+  }, [arrivals, lastUpdated])
+
+  const serverTimeDisplay = useMemo(() => {
+    if (!iettUpdatedAt) return '--:--:--'
+    const parsed = new Date(iettUpdatedAt)
+    if (!isNaN(parsed.getTime())) {
+      return parsed.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+    }
+    return iettUpdatedAt
+  }, [iettUpdatedAt])
+
+  const clientTimeDisplay = useMemo(() => {
+    return lastUpdated
+      ? lastUpdated.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+      : '--:--:--'
+  }, [lastUpdated])
 
   const iettTimeDisplay = useMemo(() => {
     if (maxGpsTime) return maxGpsTime
-    if (iettUpdatedAt) {
-      const parsed = new Date(iettUpdatedAt)
-      if (!isNaN(parsed.getTime())) {
-        return parsed.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
-      }
-      return iettUpdatedAt
-    }
-    return '--:--:--'
-  }, [maxGpsTime, iettUpdatedAt])
+    return serverTimeDisplay
+  }, [maxGpsTime, serverTimeDisplay])
 
   const { data: routes } = useQuery<string[]>({
     queryKey: ['routesAtStop', dcode],
@@ -1438,15 +1444,18 @@ export default function StopPage() {
       </AnimatePresence>
 
       {/* Info Modal */}
-      {showInfo && (
-        <InfoModal
-          onClose={() => setShowInfo(false)}
-          onForceRefresh={() => refreshArrivals()}
-          clientTime={lastUpdated ? lastUpdated.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '--:--:--'}
-          serverTime={iettUpdatedAt ? (isNaN(new Date(iettUpdatedAt).getTime()) ? iettUpdatedAt : new Date(iettUpdatedAt).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })) : '--:--:--'}
-          gpsTime={maxGpsTime || '--:--:--'}
-        />
-      )}
+      <AnimatePresence>
+        {showInfo && (
+          <InfoModal
+            key="info-modal"
+            onClose={() => setShowInfo(false)}
+            onForceRefresh={() => refreshArrivals()}
+            clientTime={clientTimeDisplay}
+            serverTime={serverTimeDisplay}
+            gpsTime={maxGpsTime || '--:--:--'}
+          />
+        )}
+      </AnimatePresence>
     </div>
   )
 }
