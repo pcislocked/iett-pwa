@@ -259,6 +259,25 @@ export default function App() {
     document.documentElement.lang = i18n.language
   }, [i18n.language])
 
+  useEffect(() => {
+    function handleGlobalExternalLinks(e: MouseEvent) {
+      const target = e.target as HTMLElement | null
+      const anchor = target?.closest('a')
+      if (!anchor) return
+
+      const href = anchor.getAttribute('href')
+      if (!href) return
+
+      if (href.startsWith('http://') || href.startsWith('https://')) {
+        e.preventDefault()
+        window.open(href, '_blank', 'noopener,noreferrer')
+      }
+    }
+
+    document.addEventListener('click', handleGlobalExternalLinks, { capture: true })
+    return () => document.removeEventListener('click', handleGlobalExternalLinks, { capture: true })
+  }, [])
+
   return (
     <BrowserRouter>
       <BottomBarContext.Provider value={bottomBarState}>
