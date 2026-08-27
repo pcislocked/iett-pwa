@@ -259,6 +259,37 @@ export default function App() {
     document.documentElement.lang = i18n.language
   }, [i18n.language])
 
+  useEffect(() => {
+    function handleGlobalExternalLinks(e: MouseEvent) {
+      if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
+
+      const target = e.target
+      if (!(target instanceof Element)) return
+
+      const anchor = target.closest('a')
+      if (!anchor) return
+
+      const href = anchor.getAttribute('href')
+      if (!href) return
+
+      const isStandalone =
+        window.matchMedia('(display-mode: standalone)').matches ||
+        ('standalone' in window.navigator && (window.navigator as unknown as { standalone: boolean }).standalone)
+
+      if (
+        isStandalone &&
+        (href.startsWith('http://') || href.startsWith('https://')) &&
+        anchor.origin !== window.location.origin
+      ) {
+        e.preventDefault()
+        window.open(href, '_blank', 'noopener,noreferrer')
+      }
+    }
+
+    document.addEventListener('click', handleGlobalExternalLinks, { capture: true })
+    return () => document.removeEventListener('click', handleGlobalExternalLinks, { capture: true })
+  }, [])
+
   return (
     <BrowserRouter>
       <BottomBarContext.Provider value={bottomBarState}>
