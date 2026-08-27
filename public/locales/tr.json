@@ -186,7 +186,7 @@
     "importErr": "✗ Geçersiz dosya",
     "importData": "Ayarları İçe Aktar",
     "about": "Hakkında",
-    "aboutDesc": "İstanbul otobüs ve tramvay hatlarını gerçek zamanlı takip etmek için açık kaynaklı PWA.",
+    "aboutDesc": "İstanbul otobüs hatlarını gerçek zamanlı takip etmek için açık kaynaklı PWA.",
     "dataSource": "Veri kaynağı: İETT / İBB açık API",
     "licenseInfo": "Atıf 4.0 Uluslararası (CC BY 4.0) kapsamında lisanslanan kamu sektörü bilgilerini içerir.",
     "backendSource": "Arka uç: iett-middle (FastAPI)",

@@ -186,7 +186,7 @@
     "importErr": "✗ Invalid file",
     "importData": "Import Settings",
     "about": "About",
-    "aboutDesc": "An open-source PWA to track Istanbul bus and tram lines in real-time.",
+    "aboutDesc": "An open-source PWA to track Istanbul bus lines in real-time.",
     "dataSource": "Data source: IETT / IMM Open API",
     "licenseInfo": "Contains public sector information licensed under the Attribution 4.0 International (CC BY 4.0).",
     "backendSource": "Backend: iett-middle (FastAPI)",
