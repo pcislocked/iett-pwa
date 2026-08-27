@@ -10,6 +10,7 @@ import { useFavorites } from '@/hooks/useFavorites'
 import { getDirectionLabel } from '@/utils/routeDirectionLabels'
 import { VariantSelect } from '@/components/VariantSelect'
 import { useTranslation } from 'react-i18next'
+import { useTheme } from '@/hooks/useTheme'
 
 const busIconG = L.divIcon({
   className: '',
@@ -443,6 +444,8 @@ export default function RoutePage() {
   const favItem = useMemo(() => ({ kind: 'route' as const, hat_kodu: hatKodu ?? '', name: routeName }), [hatKodu, routeName])
   const favorited = isFavorite(favItem)
 
+  const { theme } = useTheme()
+
   if (!hatKodu) return null
 
   const center: [number, number] = buses?.[0]
@@ -552,8 +555,8 @@ export default function RoutePage() {
                 style={{ height: '100%', width: '100%' }}
               >
                 <TileLayer
-                  attribution='&copy; CartoDB'
-                  url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
+                  url={`https://{s}.basemaps.cartocdn.com/${theme === 'light' ? 'light_all' : 'dark_all'}/{z}/{x}/{y}{r}.png`}
                   keepBuffer={2}
                   updateWhenIdle={true}
                   updateWhenZooming={false}

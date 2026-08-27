@@ -633,6 +633,7 @@ const globalRouteIconCache = new Map<string, L.DivIcon>()
 
 export default function StopPage() {
   const { t } = useTranslation()
+  const { theme } = useTheme()
   const { dcode } = useParams<{ dcode: string }>()
   const navigate = useNavigate()
   const [activeRoutes, setActiveRoutes] = useState<Set<string>>(new Set())
@@ -974,15 +975,15 @@ export default function StopPage() {
           </button>
 
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <h1 className="text-base font-bold text-text-primary truncate">{stopName}</h1>
+            <h1 className="text-base font-bold text-text-primary truncate">{stopName}</h1>
+            <div className="flex items-center gap-2 mt-0.5">
               <span className="text-[10px] bg-surface-muted text-text-secondary px-1.5 py-0.5 rounded font-mono shrink-0">
                 #{dcode}
               </span>
+              {stopDetail && stopDetail.direction && (
+                <span className="text-[11px] text-text-secondary truncate leading-tight uppercase tracking-wider">{t('stops.directionLabel', { direction: stopDetail.direction })}</span>
+              )}
             </div>
-            {stopDetail && stopDetail.direction && (
-              <p className="text-[11px] text-text-secondary truncate leading-tight uppercase tracking-wider">{t('stops.directionLabel', { direction: stopDetail.direction })}</p>
-            )}
             {stale && <p className="text-[11px] text-amber-400">{t('stops.staleWarning')}</p>}
           </div>
 
@@ -1112,11 +1113,11 @@ export default function StopPage() {
               maxBoundsViscosity={1.0}
               style={{ height: '100%', width: '100%' }}
               key={dcode}
-              attributionControl={false}
             >
               {/* MapResizer removed, relying on resize events */}
               <TileLayer
-                url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
+                url={`https://{s}.basemaps.cartocdn.com/${theme === 'light' ? 'light_all' : 'dark_all'}/{z}/{x}/{y}{r}.png`}
                 keepBuffer={2}
                 updateWhenIdle={true}
                 updateWhenZooming={false}
