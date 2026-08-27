@@ -3,6 +3,17 @@
 All notable changes to iett-pwa are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [0.4.3] - 2026-08-27
+
+### Added & Improved
+- **Comprehensive Unit Testing Suite:**
+  - Expanded unit test coverage using strict API schemas from `client.ts` (`BusPosition`, `Arrival`, `RouteSearchResult`, `StopSearchResult`, `RouteMetadata`, `StopDetail`).
+  - Added dedicated test suites for `VariantSelect`, `MapBusPicker`, `MapSearchPanel`, `PinnedStopRow`, `PullToRefresh`, `MapTileToggle`, `InstallBanner`, `useTheme`, `useBottomBar`, `FavoritesPage`, and `PinnedManagePage`.
+  - Reached 100% passing test suite (171/171 tests green across 33 test files).
+- **Tooling & Dependency Updates:**
+  - Updated browserslist database.
+  - Resolved Dependabot dependency alerts cleanly.
+
 ## [0.4.2] - 2026-08-27
 
 ### Added & Improved
