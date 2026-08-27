@@ -1116,7 +1116,7 @@ export default function StopPage() {
             >
               {/* MapResizer removed, relying on resize events */}
               <TileLayer
-                attribution='&copy; CartoDB'
+                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
                 url={`https://{s}.basemaps.cartocdn.com/${theme === 'light' ? 'light_all' : 'dark_all'}/{z}/{x}/{y}{r}.png`}
                 keepBuffer={2}
                 updateWhenIdle={true}
