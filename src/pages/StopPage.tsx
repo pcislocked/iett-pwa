@@ -1113,10 +1113,10 @@ export default function StopPage() {
               maxBoundsViscosity={1.0}
               style={{ height: '100%', width: '100%' }}
               key={dcode}
-              attributionControl={false}
             >
               {/* MapResizer removed, relying on resize events */}
               <TileLayer
+                attribution='&copy; CartoDB'
                 url={`https://{s}.basemaps.cartocdn.com/${theme === 'light' ? 'light_all' : 'dark_all'}/{z}/{x}/{y}{r}.png`}
                 keepBuffer={2}
                 updateWhenIdle={true}
