@@ -82,7 +82,10 @@
     "forceRefresh": "Force Refresh",
     "announcements": "Announcements",
     "noAnnouncements": "No active announcements",
-    "loadingAnnouncements": "Loading announcements..."
+    "loadingAnnouncements": "Loading announcements...",
+    "announcementsFiltered": "{{count}} announcement(s) filtered from other routes.",
+    "resetRibbonFilter": "Reset Filter",
+    "noAnnouncementsForFilter": "No active announcements for the selected route."
   },
   "routes": {
     "title": "Route",

@@ -904,6 +904,15 @@ export default function StopPage() {
     ]
   }, [globalNotices, polledAnnouncements, t])
 
+  const filteredAnnouncements = useMemo(() => {
+    if (activeRoutes.size === 0) return stopAnnouncements
+    return stopAnnouncements.filter(
+      (ann) => ann.route_code === 'GENEL' || activeRoutes.has(ann.route_code)
+    )
+  }, [stopAnnouncements, activeRoutes])
+
+  const hiddenAnnouncementsCount = stopAnnouncements.length - filteredAnnouncements.length
+
   const { isFavorite, toggle } = useFavorites()
   const { prefs, isPinned, pinStop, unpinStop } = useUserPrefs()
   const stopName = stopDetail?.name ?? `${t('stops.title')} ${dcode}`
@@ -1228,7 +1237,12 @@ export default function StopPage() {
                   onClick={() => setShowAnnouncements(!showAnnouncements)}
                   className="w-full card flex items-center justify-between text-sm text-amber-400 font-semibold hover:bg-surface-muted/50 transition-colors"
                 >
-                  <span>⚠️ {t('stops.announcements', 'Duyurular')} ({stopAnnouncements.length})</span>
+                  <span>
+                    ⚠️ {t('stops.announcements', 'Duyurular')}{' '}
+                    {activeRoutes.size > 0
+                      ? `(${filteredAnnouncements.length}/${stopAnnouncements.length})`
+                      : `(${stopAnnouncements.length})`}
+                  </span>
                   <svg className={`w-4 h-4 transition-transform ${showAnnouncements ? 'rotate-180' : ''}`}
                        fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/>
@@ -1236,15 +1250,36 @@ export default function StopPage() {
                 </button>
                 {showAnnouncements && (
                   <div id="announcements-list" role="region" aria-labelledby="announcements-btn" className="mt-2 flex flex-col gap-2">
-                    {stopAnnouncements.map((ann) => (
-                      <div key={`${ann.route_code}-${ann.type}-${ann.message}-${ann.updated_at}`} className="card border-amber-800/50 bg-amber-950/20">
-                        <p className="text-xs font-semibold text-amber-400 mb-1">
-                          {ann.route_code && <span className="text-amber-200 mr-1">[{ann.route_code}]</span>}
-                          {ann.type}
+                    {filteredAnnouncements.length === 0 ? (
+                      <div className="card border-amber-800/30 bg-amber-950/10 text-center py-3">
+                        <p className="text-xs text-amber-300 font-medium">
+                          {t('stops.noAnnouncementsForFilter', 'Seçilen hat için aktif duyuru bulunmuyor.')}
                         </p>
-                        <p className="text-sm text-text-secondary">{ann.message}</p>
                       </div>
-                    ))}
+                    ) : (
+                      filteredAnnouncements.map((ann) => (
+                        <div key={`${ann.route_code}-${ann.type}-${ann.message}-${ann.updated_at}`} className="card border-amber-800/50 bg-amber-950/20">
+                          <p className="text-xs font-semibold text-amber-400 mb-1">
+                            {ann.route_code && <span className="text-amber-200 mr-1">[{ann.route_code}]</span>}
+                            {ann.type}
+                          </p>
+                          <p className="text-sm text-text-secondary">{ann.message}</p>
+                        </div>
+                      ))
+                    )}
+
+                    {hiddenAnnouncementsCount > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setActiveRoutes(new Set())}
+                        className="w-full p-2.5 rounded-xl border border-amber-800/40 bg-amber-950/30 hover:bg-amber-900/40 flex items-center justify-between gap-2 text-xs text-amber-300 transition-colors text-left"
+                      >
+                        <span>💡 {t('stops.announcementsFiltered', { count: hiddenAnnouncementsCount, defaultValue: `Diğer hatlardan ${hiddenAnnouncementsCount} duyuru filtreleniyor.` })}</span>
+                        <span className="underline hover:text-white shrink-0 font-semibold px-2.5 py-1 bg-amber-900/50 rounded-lg">
+                          {t('stops.resetRibbonFilter', 'Filtreyi Kaldır')}
+                        </span>
+                      </button>
+                    )}
                   </div>
                 )}
               </>

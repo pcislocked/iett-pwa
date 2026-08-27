@@ -82,7 +82,10 @@
     "forceRefresh": "Zorla Yenile",
     "announcements": "Duyurular",
     "noAnnouncements": "Aktif duyuru yok",
-    "loadingAnnouncements": "Duyurular yükleniyor..."
+    "loadingAnnouncements": "Duyurular yükleniyor...",
+    "announcementsFiltered": "Diğer hatlardan {{count}} duyuru filtreleniyor.",
+    "resetRibbonFilter": "Filtreyi Kaldır",
+    "noAnnouncementsForFilter": "Seçilen hat için aktif duyuru bulunmuyor."
   },
   "routes": {
     "title": "Hat",
