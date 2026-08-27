@@ -261,14 +261,26 @@ export default function App() {
 
   useEffect(() => {
     function handleGlobalExternalLinks(e: MouseEvent) {
-      const target = e.target as HTMLElement | null
-      const anchor = target?.closest('a')
+      if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
+
+      const target = e.target
+      if (!(target instanceof Element)) return
+
+      const anchor = target.closest('a')
       if (!anchor) return
 
       const href = anchor.getAttribute('href')
       if (!href) return
 
-      if ((href.startsWith('http://') || href.startsWith('https://')) && anchor.origin !== window.location.origin) {
+      const isStandalone =
+        window.matchMedia('(display-mode: standalone)').matches ||
+        ('standalone' in window.navigator && (window.navigator as unknown as { standalone: boolean }).standalone)
+
+      if (
+        isStandalone &&
+        (href.startsWith('http://') || href.startsWith('https://')) &&
+        anchor.origin !== window.location.origin
+      ) {
         e.preventDefault()
         window.open(href, '_blank', 'noopener,noreferrer')
       }
