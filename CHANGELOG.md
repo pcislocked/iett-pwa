@@ -3,7 +3,32 @@
 All notable changes to iett-pwa are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [0.4.1] - 2026-07-28
+## [0.4.2] - 2026-08-27
+
+### Added & Improved
+- **Route-Based Announcement Filtering on Stop Page:**
+  - Synchronized stop announcement lists with active route chip filters, displaying notices for selected routes alongside system-wide notices (`GENEL`).
+  - Added dynamic count badge `Duyurular (x/y)` to announcement header when route filtering is active.
+  - Added single-button clickable reset banner (`💡 Diğer hatlardan Z duyuru filtreleniyor. [Filtreyi Kaldır]`) to clear active route filters on tap.
+- **Vehicle Fleet Detail Overlay Refresh:**
+  - Added dedicated Refresh button (`🔄`) with animated spinning state in top header bar of `AracBusOverlayPage`.
+  - Enclosed scroll container with `<PullToRefresh>` for pull-down refresh capability.
+- **PWA External Link Interceptor:**
+  - Added global click interceptor in `App.tsx` guarding PWA standalone mode to force external links (`http://`, `https://`) to launch in native system browser (Safari/Chrome) without replacing PWA webview UI.
+- **Dynamic Theme Map Tiles & Attribution:**
+  - Replaced hardcoded map tile URLs with dynamic CartoDB `light_all` / `dark_all` theme selection across `StopPage`, `RoutePage`, `NearbyPage`, `SettingsPage`, and `AracBusOverlayPage`.
+  - Added complete OpenStreetMap & CARTO attribution credit across all map layers.
+  - Scoped touch misclick protection for attribution links to `@media (pointer: coarse)` while keeping desktop mouse links clickable.
+- **Header Layout Improvement:**
+  - Moved stop code (`#dcode`) badge to line 2 in StopPage header to prevent title squishing on narrow mobile screens.
+
+### Fixed
+- **Bus Detail Sheet Gesture Dismissal:**
+  - Stopped pointer/touch event propagation on `BusDetailSheet` map wrapper container to prevent pinch-to-zoom or map panning gestures from accidentally triggering modal dismissal.
+- **About Description Text:**
+  - Removed outdated tramway references from Turkish and English locale descriptions.
+
+---
 
 ### Added & Improved
 - **Stop Page Announcements Bar:**
