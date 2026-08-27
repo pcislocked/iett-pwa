@@ -3,6 +3,8 @@ import { render, screen, fireEvent, renderHook, act } from '@testing-library/rea
 import InstallBanner, { useInstallBanner } from '../InstallBanner'
 
 describe('InstallBanner Component', () => {
+  const originalMatchMedia = window.matchMedia
+
   beforeEach(() => {
     localStorage.clear()
     vi.useFakeTimers()
@@ -20,6 +22,7 @@ describe('InstallBanner Component', () => {
 
   afterEach(() => {
     vi.useRealTimers()
+    window.matchMedia = originalMatchMedia
   })
 
   it('renders install banner and triggers onInstall and onDismiss', () => {

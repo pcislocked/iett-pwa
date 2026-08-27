@@ -52,9 +52,11 @@ const realStopDetail: StopDetail = {
 }
 
 describe('PinnedStopRow Component', () => {
+  let detailSpy: ReturnType<typeof vi.spyOn>
+
   beforeEach(() => {
     vi.clearAllMocks()
-    vi.spyOn(api.stops, 'detail').mockResolvedValue(realStopDetail)
+    detailSpy = vi.spyOn(api.stops, 'detail').mockResolvedValue(realStopDetail)
   })
 
   it('renders pinned stop with real arrival pills and navigates to stop page on click', () => {
@@ -116,7 +118,6 @@ describe('PinnedStopRow Component', () => {
   })
 
   it('skips detail fetch when directionProp is provided', () => {
-    const detailSpy = vi.spyOn(api.stops, 'detail')
     vi.spyOn(useArrivalsModule, 'useArrivals').mockReturnValue({
       data: [],
       loading: false,
