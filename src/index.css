@@ -108,9 +108,11 @@
 
 /* Leaflet */
 .leaflet-container { background: var(--color-surface-card); font-family: inherit; }
-.leaflet-control-attribution a {
-  pointer-events: none;
-  cursor: default;
+@media (pointer: coarse) {
+  .leaflet-control-attribution a {
+    pointer-events: none;
+    cursor: default;
+  }
 }
 
 .leaflet-popup-content-wrapper {

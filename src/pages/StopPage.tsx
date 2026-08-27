@@ -1125,7 +1125,7 @@ export default function StopPage() {
             >
               {/* MapResizer removed, relying on resize events */}
               <TileLayer
-                attribution='&copy; CartoDB'
+                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
                 url={`https://{s}.basemaps.cartocdn.com/${theme === 'light' ? 'light_all' : 'dark_all'}/{z}/{x}/{y}{r}.png`}
                 keepBuffer={2}
                 updateWhenIdle={true}
@@ -1269,16 +1269,16 @@ export default function StopPage() {
                     )}
 
                     {hiddenAnnouncementsCount > 0 && (
-                      <div className="p-2.5 rounded-xl border border-amber-800/40 bg-amber-950/30 flex items-center justify-between gap-2 text-xs text-amber-300">
+                      <button
+                        type="button"
+                        onClick={() => setActiveRoutes(new Set())}
+                        className="w-full p-2.5 rounded-xl border border-amber-800/40 bg-amber-950/30 hover:bg-amber-900/40 flex items-center justify-between gap-2 text-xs text-amber-300 transition-colors text-left"
+                      >
                         <span>💡 {t('stops.announcementsFiltered', { count: hiddenAnnouncementsCount, defaultValue: `Diğer hatlardan ${hiddenAnnouncementsCount} duyuru filtreleniyor.` })}</span>
-                        <button
-                          type="button"
-                          onClick={() => setActiveRoutes(new Set())}
-                          className="underline hover:text-white shrink-0 font-semibold px-2.5 py-1 bg-amber-900/50 hover:bg-amber-800/60 rounded-lg transition-colors"
-                        >
+                        <span className="underline hover:text-white shrink-0 font-semibold px-2.5 py-1 bg-amber-900/50 rounded-lg">
                           {t('stops.resetRibbonFilter', 'Filtreyi Kaldır')}
-                        </button>
-                      </div>
+                        </span>
+                      </button>
                     )}
                   </div>
                 )}
