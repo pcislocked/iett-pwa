@@ -16,6 +16,7 @@ import {
 import { useTranslation } from 'react-i18next'
 import { TFunction } from 'i18next'
 import { useTheme } from '@/hooks/useTheme'
+import PullToRefresh from '@/components/PullToRefresh'
 
 type ViewState =
   | 'booting'
@@ -273,6 +274,10 @@ export default function AracBusOverlayPage() {
     void startFlow()
   }, [startFlow])
 
+  const handlePullRefresh = useCallback(async () => {
+    await startFlow()
+  }, [startFlow])
+
   const submitManualCaptcha = useCallback(async () => {
     const answer = manualAnswer.trim()
     if (!answer) {
@@ -339,15 +344,37 @@ export default function AracBusOverlayPage() {
           <p className="text-[10px] tracking-[0.14em] text-text-secondary uppercase">{t('arac.fleetDetail', { defaultValue: 'ARAÇ DETAY' })}</p>
           <h1 className="text-base font-semibold text-text-primary truncate">{kapino ? t('arac.busTitle', { defaultValue: 'Araç {{kapino}}', kapino }) : t('arac.busTitleEmpty', { defaultValue: 'Araç Detay' })}</h1>
         </div>
-        <button
-          onClick={() => navigate(-1)}
-          className="metro-tilt text-sm px-3 py-1.5 border border-surface-border text-text-secondary"
-        >
-          {t('common.close', { defaultValue: 'Kapat' })}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => void startFlow()}
+            disabled={viewState === 'booting' || viewState === 'loading-data' || viewState === 'manual-submitting'}
+            className="metro-tilt text-sm px-2.5 py-1.5 border border-surface-border text-text-secondary disabled:opacity-50 flex items-center gap-1.5 hover:bg-surface-muted transition-colors"
+            title={t('arac.forceRefresh', { defaultValue: 'Yenile' })}
+            aria-label={t('arac.forceRefresh', { defaultValue: 'Yenile' })}
+          >
+            <svg
+              className={`w-4 h-4 ${(viewState === 'booting' || viewState === 'loading-data' || viewState === 'manual-submitting') ? 'animate-spin' : ''}`}
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+            </svg>
+            <span className="hidden sm:inline">{t('arac.forceRefresh', { defaultValue: 'Yenile' })}</span>
+          </button>
+          <button
+            onClick={() => navigate(-1)}
+            className="metro-tilt text-sm px-3 py-1.5 border border-surface-border text-text-secondary"
+          >
+            {t('common.close', { defaultValue: 'Kapat' })}
+          </button>
+        </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto bg-[var(--color-bg)] flex flex-col">
+      <PullToRefresh onRefresh={handlePullRefresh}>
+        <div className="flex-1 overflow-y-auto bg-[var(--color-bg)] flex flex-col min-h-full">
         {(viewState === 'booting' || viewState === 'loading-data' || viewState === 'manual-submitting') && (
           <div className="p-4 flex items-start gap-3">
             <div className="w-4 h-4 mt-1 border-2 border-primary border-t-transparent rounded-full animate-spin" />
@@ -517,6 +544,7 @@ export default function AracBusOverlayPage() {
           </>
         )}
       </div>
-    </div>
-  )
+    </PullToRefresh>
+  </div>
+)
 }
