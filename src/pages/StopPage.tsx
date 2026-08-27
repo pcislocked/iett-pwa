@@ -502,7 +502,13 @@ function BusDetailSheet({
 
         {/* Map — bus ↔ stop */}
         {hasPosition ? (
-          <div style={{ height: 200 }} className="relative bg-surface-muted/20">
+          <div
+            style={{ height: 200 }}
+            className="relative bg-surface-muted/20"
+            onPointerDown={(e) => e.stopPropagation()}
+            onTouchStart={(e) => e.stopPropagation()}
+            onMouseDown={(e) => e.stopPropagation()}
+          >
             {!mapReady && (
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="w-6 h-6 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
