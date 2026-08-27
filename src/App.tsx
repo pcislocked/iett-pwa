@@ -268,7 +268,7 @@ export default function App() {
       const href = anchor.getAttribute('href')
       if (!href) return
 
-      if (href.startsWith('http://') || href.startsWith('https://')) {
+      if ((href.startsWith('http://') || href.startsWith('https://')) && anchor.origin !== window.location.origin) {
         e.preventDefault()
         window.open(href, '_blank', 'noopener,noreferrer')
       }
