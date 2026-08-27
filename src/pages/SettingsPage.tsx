@@ -47,6 +47,7 @@ function ThemeSwitcher() {
 }
 
 function MockLocationPicker({ initialLat, initialLon, onPick }: { initialLat: number, initialLon: number, onPick: (lat: number, lon: number) => void }) {
+  const { theme } = useTheme()
   const customIcon = L.divIcon({
     className: '',
     html: `<div style="background:#f97316;border-radius:50%;width:18px;height:18px;border:3px solid #fff;box-shadow:0 0 0 4px rgba(249,115,22,0.35)"></div>`,
@@ -75,7 +76,7 @@ function MockLocationPicker({ initialLat, initialLon, onPick }: { initialLat: nu
         style={{ height: '100%', width: '100%' }}
       >
         <TileLayer
-          url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+          url={`https://{s}.basemaps.cartocdn.com/${theme === 'light' ? 'light_all' : 'dark_all'}/{z}/{x}/{y}{r}.png`}
           keepBuffer={2}
           updateWhenIdle={true}
           updateWhenZooming={false}

@@ -15,6 +15,7 @@ import { distanceLabel } from '@/utils/distance'
 import { useTranslation } from 'react-i18next'
 import { useUserPrefs } from '@/hooks/useUserPrefs'
 import { useLocationManager } from '@/hooks/useLocationManager'
+import { useTheme } from '@/hooks/useTheme'
 import PullToRefresh from '@/components/PullToRefresh'
 
 interface NearbyStop extends ApiNearbyStop {
@@ -48,6 +49,7 @@ function NearbyMapView({
   onSelect: (code: string) => void
 }) {
   const { t } = useTranslation()
+  const { theme } = useTheme()
   const userIcon = L.divIcon({
     className: '',
     html: `<div style="
@@ -74,7 +76,7 @@ function NearbyMapView({
     >
       <TileLayer
         attribution='&copy; CartoDB'
-        url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+        url={`https://{s}.basemaps.cartocdn.com/${theme === 'light' ? 'light_all' : 'dark_all'}/{z}/{x}/{y}{r}.png`}
         keepBuffer={2}
         updateWhenIdle={true}
         updateWhenZooming={false}

@@ -107,7 +107,11 @@
 }
 
 /* Leaflet */
-.leaflet-container { background: var(--color-surface-card); font-family: inherit; }
+.leaflet-control-attribution a {
+  pointer-events: none;
+  cursor: default;
+}
+
 .leaflet-popup-content-wrapper {
   background: var(--color-surface-card); color: var(--color-text-1);
   border: 1px solid var(--color-border); border-radius: 0 !important;
