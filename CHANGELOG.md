@@ -3,6 +3,19 @@
 All notable changes to iett-pwa are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [0.4.4] - 2026-09-07
+
+### Security & Dependencies
+- **Security Advisory Fixes:**
+  - Resolved Dependabot high-severity advisories on `fast-uri` (GHSA-5jgf-p345-68v8 / CVE-2026-75931, GHSA-c48c-v3hp-r2p2 / CVE-2026-75932) by upgrading to `3.1.7`.
+  - Resolved `postcss-selector-parser` vulnerability by updating to `6.1.4`.
+- **Dependency Maintenance:**
+  - Updated `@humanfs/node` to `0.16.8`.
+  - Updated `browserslist` to `4.28.9`.
+- **Quality & Verification:**
+  - Maintained 100% green test suite (171/171 Vitest tests passing).
+  - 0 TypeScript errors, 0 ESLint warnings.
+
 ## [0.4.3] - 2026-08-27
 
 ### Added & Improved
