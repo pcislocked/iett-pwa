@@ -401,6 +401,14 @@ function BusDetailSheet({
   const effectiveLon = arrival.lon ?? busPos?.longitude ?? null
   const hasPosition = effectiveLat !== null && effectiveLon !== null
 
+  let isMismatch = false
+  if (arrival.eta_minutes !== null && arrival.speed_kmh && arrival.distance_m) {
+    const expectedMinutes = (arrival.distance_m / 1000) / arrival.speed_kmh * 60
+    if (expectedMinutes - arrival.eta_minutes > 5 && expectedMinutes > arrival.eta_minutes * 1.5) {
+      isMismatch = true
+    }
+  }
+
   const dist =
     hasPosition ? haversineM(effectiveLat!, effectiveLon!, stopLat, stopLon) : null
   const distLabel =
@@ -540,8 +548,17 @@ function BusDetailSheet({
         <div className="px-4 py-3 grid grid-cols-4 gap-2 border-t border-surface-muted">
           <div className="flex flex-col items-center gap-0.5">
             <p className="text-[10px] text-text-muted uppercase tracking-wider">{t('stops.eta')}</p>
-            <p className="text-base font-bold text-text-primary">
+            <p className="text-base font-bold text-text-primary flex items-center justify-center gap-1">
               {arrival.eta_minutes !== null ? `${arrival.eta_minutes} dk` : arrival.eta_raw}
+              {isMismatch && (
+                <span
+                  title={t('stops.mathMismatchWarning', { defaultValue: 'Fiziksel uyuşmazlık: Aracın uzaklığına göre bu sürede gelmesi fiziksel olarak mümkün görünmüyor.' })}
+                  aria-label="Fiziksel uyuşmazlık"
+                  className="text-sm cursor-help"
+                >
+                  ⚠️
+                </span>
+              )}
             </p>
           </div>
           <div className="flex flex-col items-center gap-0.5">
