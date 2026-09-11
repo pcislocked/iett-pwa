@@ -14,7 +14,7 @@ import { PINNED_STOPS_MAX, useUserPrefs } from '@/hooks/useUserPrefs'
 import { useTranslation } from 'react-i18next'
 import { useGlobalNotices } from '@/hooks/useGlobalNotices'
 import { etaChipClass } from '@/utils/etaColor'
-import { isGpsStale, parseGpsTimestamp } from '@/utils/dateUtils'
+import { isGpsStale, parseGpsTimestamp, formatGpsTimestamp } from '@/utils/dateUtils'
 import { useTheme } from '@/hooks/useTheme'
 import PullToRefresh from '@/components/PullToRefresh'
 
@@ -336,6 +336,7 @@ function BusDetailSheet({
 }) {
   const navigate = useNavigate()
   const { t } = useTranslation()
+  const { prefs } = useUserPrefs()
   const [mapReady, setMapReady] = useState(false)
   const { theme } = useTheme()
 
@@ -573,7 +574,7 @@ function BusDetailSheet({
               </span>
             )}
             <p className={`text-[10px] font-mono tracking-wide ${isGpsStale(arrival.last_seen_ts) ? 'text-amber-400 font-semibold' : 'text-text-muted'}`}>
-              {t('stops.gpsUpdate', 'GPS Update')}: {arrival.last_seen_ts}
+              {t('stops.gpsUpdate', 'GPS Update')}: {formatGpsTimestamp(arrival.last_seen_ts, prefs.timestampMode, t)}
             </p>
           </div>
         )}
@@ -787,23 +788,19 @@ export default function StopPage() {
 
   const serverTimeDisplay = useMemo(() => {
     if (!iettUpdatedAt) return '--:--:--'
-    const parsed = new Date(iettUpdatedAt)
-    if (!isNaN(parsed.getTime())) {
-      return parsed.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
-    }
-    return iettUpdatedAt
-  }, [iettUpdatedAt])
+    return formatGpsTimestamp(iettUpdatedAt, prefs.timestampMode, t)
+  }, [iettUpdatedAt, prefs.timestampMode, t])
 
   const clientTimeDisplay = useMemo(() => {
     return lastUpdated
-      ? lastUpdated.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+      ? formatGpsTimestamp(lastUpdated.toISOString(), prefs.timestampMode, t)
       : '--:--:--'
-  }, [lastUpdated])
+  }, [lastUpdated, prefs.timestampMode, t])
 
   const iettTimeDisplay = useMemo(() => {
-    if (maxGpsTime) return maxGpsTime
+    if (maxGpsTime) return formatGpsTimestamp(maxGpsTime, prefs.timestampMode, t)
     return serverTimeDisplay
-  }, [maxGpsTime, serverTimeDisplay])
+  }, [maxGpsTime, serverTimeDisplay, prefs.timestampMode, t])
 
   const { data: routes } = useQuery<string[]>({
     queryKey: ['routesAtStop', dcode],
@@ -1395,7 +1392,7 @@ export default function StopPage() {
               {lastUpdated ? (
                 <>
                   <span>
-                    {t('stops.lastUpdated', { time: lastUpdated.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }), defaultValue: 'güncelleme: {{time}}' })}
+                    {t('stops.lastUpdated', { time: clientTimeDisplay, defaultValue: 'güncelleme: {{time}}' })}
                   </span>
                   {', '}
                   <span

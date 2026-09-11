@@ -50,3 +50,41 @@ export function isGpsStale(
   const diffMs = nowMs - dateObj.getTime()
   return diffMs > staleThresholdMs
 }
+
+/**
+ * Formats a timestamp string according to user preferences: 'relative', 'absolute', or 'both'.
+ */
+export function formatGpsTimestamp(
+  lastSeenTs: string | null | undefined,
+  mode: 'relative' | 'absolute' | 'both',
+  t: (key: string, opts?: any) => string,
+  nowMs: number = Date.now()
+): string {
+  if (!lastSeenTs) return '-'
+  const trimmed = String(lastSeenTs).trim()
+  if (!trimmed) return '-'
+  
+  if (mode === 'absolute') return trimmed
+
+  const dateObj = parseGpsTimestamp(trimmed, nowMs)
+  if (!dateObj) return trimmed // Fallback to raw if unparseable
+  
+  const diffMinutes = Math.floor(Math.max(0, nowMs - dateObj.getTime()) / 60000)
+  
+  let relativeStr = ''
+  if (diffMinutes < 1) {
+    relativeStr = t('map.secondsAgo', { defaultValue: 'az önce' })
+  } else if (diffMinutes < 60) {
+    relativeStr = t('map.minutesAgo', { defaultValue: '{{minutes}} dk önce', minutes: diffMinutes })
+  } else {
+    const diffHours = Math.floor(diffMinutes / 60)
+    if (diffHours >= 24) {
+      relativeStr = t('common.outdated', { defaultValue: 'Güncel değil' })
+    } else {
+      relativeStr = t('map.hoursAgo', { defaultValue: '{{hours}} sa önce', hours: diffHours })
+    }
+  }
+
+  if (mode === 'relative') return relativeStr
+  return `${relativeStr} - ${trimmed}`
+}

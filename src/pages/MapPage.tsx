@@ -14,6 +14,8 @@ import MapSearchPanel from '@/components/MapSearchPanel'
 import MapTileToggle, { TILES } from '@/components/MapTileToggle'
 import { ISTANBUL_BOUNDS, MAP_MIN_ZOOM, MAP_MAX_ZOOM } from '@/utils/mapConstants'
 import MapBusPicker from '@/components/MapBusPicker'
+import { formatGpsTimestamp } from '@/utils/dateUtils'
+import { useUserPrefs } from '@/hooks/useUserPrefs'
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 function parseIsoDate(value: string | null | undefined): Date | null {
@@ -39,16 +41,6 @@ function parseIsoDate(value: string | null | undefined): Date | null {
   // Standard date format parsing without appending 'Z'
   const parsed = new Date(trimmed)
   return Number.isNaN(parsed.getTime()) ? null : parsed
-}
-
-function formatAgo(from: Date | null, nowMs: number, t: TFunction): string {
-  if (!from) return '—'
-  const diffSeconds = Math.max(0, Math.floor((nowMs - from.getTime()) / 1000))
-  if (diffSeconds < 60) return t('map.secondsAgo', { defaultValue: '{{seconds}} sn önce', seconds: diffSeconds })
-  const diffMinutes = Math.floor(diffSeconds / 60)
-  if (diffMinutes < 60) return t('map.minutesAgo', { defaultValue: '{{minutes}} dk önce', minutes: diffMinutes })
-  const diffHours = Math.floor(diffMinutes / 60)
-  return t('map.hoursAgo', { defaultValue: '{{hours}} sa önce', hours: diffHours })
 }
 
 // ── GPS Button ────────────────────────────────────────────────────────────────
@@ -98,6 +90,7 @@ function GpsMarker({ location }: { location: [number, number] | null }) {
 export default function MapPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
+  const { prefs } = useUserPrefs()
   const mapRef = useRef<L.Map | null>(null)
 
   // State
@@ -392,7 +385,7 @@ export default function MapPage() {
               <div className="flex flex-col items-center gap-0.5">
                 <p className="text-[10px] text-text-muted uppercase tracking-wider">{t('arac.lastSeen', 'Son Görülme')}</p>
                 <p className="text-sm font-bold text-text-primary mt-0.5">
-                  {mergedDetail?.last_seen ? formatAgo(parseIsoDate(mergedDetail.last_seen), nowMs, t) : '—'}
+                  {mergedDetail?.last_seen ? formatGpsTimestamp(mergedDetail.last_seen, prefs.timestampMode, t) : '-'}
                 </p>
               </div>
             </div>

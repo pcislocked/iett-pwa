@@ -25,13 +25,26 @@ export interface UserPrefs {
   nearbyMax: number
   mockLocation: [number, number] | null
   gpsConsent: 'pending' | 'granted' | 'denied'
+  timestampMode: 'relative' | 'absolute' | 'both'
   exportedAt?: string
 }
 
 export const PINNED_STOPS_MAX = 7
 
+export const DEFAULT_PREFS: UserPrefs = {
+  pinnedStops: [],
+  favStops: [],
+  favRoutes: [],
+  nicknames: {},
+  nearbyRadius: 2000,
+  nearbyMax: 10,
+  mockLocation: null,
+  gpsConsent: 'pending',
+  timestampMode: 'both',
+}
+
 function createDefaultPrefs(): UserPrefs {
-  return { pinnedStops: [], favStops: [], favRoutes: [], nicknames: {}, nearbyRadius: 500, nearbyMax: 15, mockLocation: null, gpsConsent: 'pending' }
+  return { ...DEFAULT_PREFS }
 }
 
 const KEY = 'iett-prefs'
@@ -123,8 +136,12 @@ export function useUserPrefs() {
     patch((p) => ({ ...p, gpsConsent: status }))
   }, [])
 
+  const setTimestampMode = useCallback((mode: 'relative' | 'absolute' | 'both') => {
+    patch((p) => ({ ...p, timestampMode: mode }))
+  }, [])
+
   const resetConsent = useCallback(() => {
-    patch((p) => ({ ...p, gpsConsent: 'pending' }))
+    patch((p) => ({ ...p, gpsConsent: 'pending', mockLocation: null }))
   }, [])
 
   // ── Favourite stops ───────────────────────────────────────────────────────
@@ -253,6 +270,7 @@ export function useUserPrefs() {
     // mock location
     setMockLocation,
     setGpsConsent,
+    setTimestampMode,
     resetConsent,
   }
 }

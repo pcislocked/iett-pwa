@@ -17,6 +17,8 @@ import { useTranslation } from 'react-i18next'
 import { TFunction } from 'i18next'
 import { useTheme } from '@/hooks/useTheme'
 import PullToRefresh from '@/components/PullToRefresh'
+import { useUserPrefs } from '@/hooks/useUserPrefs'
+import { formatGpsTimestamp } from '@/utils/dateUtils'
 
 type ViewState =
   | 'booting'
@@ -128,6 +130,7 @@ export default function AracBusOverlayPage() {
   const { kapino } = useParams<{ kapino: string }>()
   const navigate = useNavigate()
   const { t } = useTranslation()
+  const { prefs } = useUserPrefs()
   const { theme } = useTheme()
 
   const [viewState, setViewState] = useState<ViewState>('booting')
@@ -492,7 +495,7 @@ export default function AracBusOverlayPage() {
                     </h2>
                     {profile.last_seen && (
                       <span className="text-[10px] text-text-secondary bg-surface-muted px-2 py-1 rounded border border-surface-border">
-                        {t('arac.lastSeen', { defaultValue: 'Son Görülme' })}: {parseIettDate(profile.last_seen).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })} ({relativeTime(profile.last_seen, t)})
+                        {t('arac.lastSeen', { defaultValue: 'Son Görülme' })}: {formatGpsTimestamp(profile.last_seen, prefs.timestampMode, t)}
                       </span>
                     )}
                   </div>
