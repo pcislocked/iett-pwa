@@ -37,7 +37,7 @@ describe('InstallBanner Component', () => {
     )
 
     expect(screen.getByText('Ana Ekrana Ekle')).toBeInTheDocument()
-    expect(screen.getByText('çevrimdışı çalışır, pil dostu')).toBeInTheDocument()
+    expect(screen.getByText('Hızlı erişim, pil dostu')).toBeInTheDocument()
 
     const installButton = screen.getByText('Yükle')
     fireEvent.click(installButton)

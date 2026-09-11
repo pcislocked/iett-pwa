@@ -2,6 +2,10 @@
 @tailwind components;
 @tailwind utilities;
 
+html {
+  font-size: clamp(14px, 1rem, 20px);
+}
+
 /* WP8 Metro Design Tokens */
 :root {
   --wp-accent:   #00AFF0;

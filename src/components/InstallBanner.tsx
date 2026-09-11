@@ -10,13 +10,17 @@ interface InstallBannerProps {
 export default function InstallBanner({ onDismiss, onInstall }: InstallBannerProps) {
   const { t } = useTranslation()
   return (
-    <div className="fixed bottom-16 left-3 right-3 z-30 flex items-center gap-3
-                    bg-surface-card border border-surface-border rounded-2xl
-                    px-4 py-3 shadow-xl">
-      <span className="text-2xl shrink-0">🚌</span>
+    <div className="fixed bottom-[calc(4rem+env(safe-area-inset-bottom,0px))] left-3 right-3 z-30 flex items-center gap-3
+                    bg-surface-card border border-brand-500/30 rounded-2xl p-3 shadow-2xl animate-slide-up backdrop-blur-md">
+      <div className="w-12 h-12 bg-brand-500 rounded-xl flex items-center justify-center shrink-0 shadow-inner">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-6 h-6 text-white">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v12m0 0l-4-4m4 4l4-4M4 19h16" />
+        </svg>
+      </div>
+      
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-white leading-tight">{t('common.addToHome', { defaultValue: 'Ana Ekrana Ekle' })}</p>
-        <p className="text-xs text-text-secondary leading-tight mt-0.5">{t('common.installBannerDesc', { defaultValue: 'çevrimdışı çalışır, pil dostu' })}</p>
+        <p className="font-bold text-text-primary text-sm leading-tight">{t('common.installBannerTitle', { defaultValue: 'Ana Ekrana Ekle' })}</p>
+        <p className="text-xs text-text-secondary leading-tight mt-0.5">{t('common.installBannerDesc', { defaultValue: 'Hızlı erişim, pil dostu' })}</p>
       </div>
       <button
         onClick={onInstall}
