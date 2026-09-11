@@ -48,6 +48,7 @@ function formatAgo(from: Date | null, nowMs: number, t: TFunction): string {
   const diffMinutes = Math.floor(diffSeconds / 60)
   if (diffMinutes < 60) return t('map.minutesAgo', { defaultValue: '{{minutes}} dk önce', minutes: diffMinutes })
   const diffHours = Math.floor(diffMinutes / 60)
+  if (diffHours >= 24) return t('common.outdated', { defaultValue: 'Güncel değil' })
   return t('map.hoursAgo', { defaultValue: '{{hours}} sa önce', hours: diffHours })
 }
 

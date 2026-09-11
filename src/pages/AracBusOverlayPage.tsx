@@ -77,6 +77,7 @@ function relativeTime(isoString: string, t: TFunction): string {
     formatted = `${diffMinutes} ${t('common.min', { defaultValue: 'dk' })}`
   } else {
     const diffHours = Math.floor(diffMinutes / 60)
+    if (diffHours >= 24) return t('common.outdated', { defaultValue: 'Güncel değil' })
     formatted = `${diffHours} ${t('arac.hour', { defaultValue: 'sa' })}`
   }
 
