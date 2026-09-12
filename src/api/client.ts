@@ -381,6 +381,7 @@ export const api = {
     },
     routes: async (dcode: string, init?: RequestInit) => get<string[]>(`/v1/stops/${encodeURIComponent(dcode)}/routes`, init),
     announcements: (dcode: string, init?: RequestInit) => get<RouteAnnouncement[]>(`/v1/stops/${dcode}/announcements`, init),
+    info: (dcode: string, init?: RequestInit) => get<{ dcode: string; ilce: string | null; fiziki_durum: string | null; akilli_durak: boolean | null }>(`/v1/stops/${encodeURIComponent(dcode)}/info`, init),
   },
   routes: {
     search: (q: string, init?: RequestInit) => get<RouteSearchResult[]>(`/v1/routes/search?q=${encodeURIComponent(q)}`, init),
@@ -389,6 +390,7 @@ export const api = {
     stops: (hatKodu: string, init?: RequestInit) => get<RouteStop[]>(`/v1/routes/${hatKodu}/stops`, init),
     schedule: (hatKodu: string, init?: RequestInit) => get<ScheduledDeparture[]>(`/v1/routes/${hatKodu}/schedule`, init),
     scheduleLite: (hatKodu: string, init?: RequestInit) => get<ScheduledDeparture[]>(`/v1/routes/${hatKodu}/schedule?lite=1`, init),
+    info: (hatKodu: string, init?: RequestInit) => get<{ hat_kodu: string; trip_duration_min: number | null; hat_tipi: string | null; tarife: string | null }>(`/v1/routes/${hatKodu}/info`, init),
     announcements: (hatKodu: string, init?: RequestInit) => get<Announcement[]>(`/v1/routes/${hatKodu}/announcements`, init),
     batchAnnouncements: (routes: string[], init?: RequestInit) => get<RouteAnnouncement[]>(`/v1/routes/announcements/batch?routes=${encodeURIComponent(routes.join(','))}`, init),
   },

@@ -17,6 +17,7 @@ import { etaChipClass } from '@/utils/etaColor'
 import { isGpsStale, parseGpsTimestamp } from '@/utils/dateUtils'
 import { useTheme } from '@/hooks/useTheme'
 import PullToRefresh from '@/components/PullToRefresh'
+import StopInfoModal from '@/components/StopInfoModal'
 
 
 /** Fixed palette for the first 3 routes at this stop */
@@ -647,6 +648,7 @@ export default function StopPage() {
   const [selectedArrival, setSelectedArrival] = useState<Arrival | null>(null)
   const [activeTab, setActiveTab] = useState<'gelis' | 'hatlar' | 'bilgi'>('gelis')
   const [showInfo, setShowInfo] = useState(false)
+  const [stopInfoModalOpen, setStopInfoModalOpen] = useState(false)
 
   const handleCloseBusSheet = useCallback(() => setSelectedArrival(null), [])
 
@@ -1002,14 +1004,36 @@ export default function StopPage() {
             {stale && <p className="text-[11px] text-amber-400">{t('stops.staleWarning')}</p>}
           </div>
 
-
-
-          <button
-            onClick={() => toggle(favItem)}
-            className={`p-1.5 rounded-xl transition-colors shrink-0 ${
-              favorited ? 'text-rose-400' : 'text-text-muted hover:text-text-secondary'
-            }`}
-          >
+          <div className="flex items-center gap-1 shrink-0">
+            <button
+              onClick={() => {
+                if (stopDetail?.latitude && stopDetail?.longitude) {
+                  window.open(`https://www.google.com/maps/dir/?api=1&destination=${stopDetail.latitude},${stopDetail.longitude}&travelmode=transit`, '_blank', 'noopener,noreferrer')
+                }
+              }}
+              disabled={!stopDetail?.latitude || !stopDetail?.longitude}
+              className="p-1.5 rounded-xl transition-colors text-text-muted hover:text-brand-500 disabled:opacity-40"
+              aria-label={t('stops.directions', { defaultValue: 'Yol Tarifi Al' })}
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+              </svg>
+            </button>
+            <button
+              onClick={() => setStopInfoModalOpen(true)}
+              className="p-1.5 rounded-xl transition-colors text-text-muted hover:text-text-secondary"
+              aria-label={t('stops.info', { defaultValue: 'Durak Bilgisi' })}
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </button>
+            <button
+              onClick={() => toggle(favItem)}
+              className={`p-1.5 rounded-xl transition-colors ${
+                favorited ? 'text-rose-400' : 'text-text-muted hover:text-text-secondary'
+              }`}
+            >
             <svg className="w-5 h-5" fill={favorited ? 'currentColor' : 'none'} viewBox="0 0 24 24"
                  stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round"
@@ -1042,6 +1066,7 @@ export default function StopPage() {
           >
             <span className="text-base leading-none">{pinned ? '📌' : '📍'}</span>
           </button>
+          </div>
         </div>
       </div>
 
@@ -1507,6 +1532,12 @@ export default function StopPage() {
           />
         )}
       </AnimatePresence>
+
+      <StopInfoModal
+        dcode={dcode!}
+        isOpen={stopInfoModalOpen}
+        onClose={() => setStopInfoModalOpen(false)}
+      />
     </div>
   )
 }
