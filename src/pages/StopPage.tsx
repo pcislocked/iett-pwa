@@ -601,8 +601,30 @@ function BusDetailSheet({
               </span>
             )}
             <p className={`text-[10px] font-mono tracking-wide ${isGpsStale(arrival.last_seen_ts) ? 'text-amber-400 font-semibold' : 'text-text-muted'}`}>
-              {t('stops.gpsUpdate', 'GPS Update')}: {formatGpsTimestamp(arrival.last_seen_ts, prefs.timestampMode, t)}
+              {t('stops.gpsUpdate', 'GPS Güncellemesi')}: {formatGpsTimestamp(arrival.last_seen_ts, prefs.timestampMode, t)}
             </p>
+          </div>
+        )}
+
+        {/* Explanatory Warnings Block */}
+        {(isMismatch || (arrival.last_seen_ts && isGpsStale(arrival.last_seen_ts))) && (
+          <div className="px-4 py-2 border-b border-surface-border flex flex-col gap-2">
+            {isMismatch && (
+              <div className="flex items-start gap-2 bg-amber-500/10 border border-amber-500/20 text-amber-500 rounded-lg p-2.5">
+                <span className="text-sm shrink-0">⚠️</span>
+                <p className="text-[11px] leading-tight mt-0.5">
+                  {t('stops.mathMismatchWarning', { defaultValue: 'Fiziksel uyuşmazlık: Aracın uzaklığına göre bu sürede gelmesi fiziksel olarak mümkün görünmüyor.' })}
+                </p>
+              </div>
+            )}
+            {arrival.last_seen_ts && isGpsStale(arrival.last_seen_ts) && (
+              <div className="flex items-start gap-2 bg-amber-500/10 border border-amber-500/20 text-amber-500 rounded-lg p-2.5">
+                <span className="text-sm shrink-0">⚠️</span>
+                <p className="text-[11px] leading-tight mt-0.5">
+                  {t('arac.staleDataWarning', { defaultValue: 'Araçtan alınan konum verisi güncel değil (5 dakikadan eski).' })}
+                </p>
+              </div>
+            )}
           </div>
         )}
 

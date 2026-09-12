@@ -73,21 +73,19 @@ export function formatGpsTimestamp(
   if (mode === 'absolute') return absStr
 
   const diffMs = Math.max(0, nowMs - dateObj.getTime())
-  const diffMinutes = Math.floor(diffMs / 60000)
   const diffSeconds = Math.floor(diffMs / 1000)
+  const diffMinutes = Math.floor(diffSeconds / 60)
+  const diffHours = Math.floor(diffMinutes / 60)
   
   let relativeStr = ''
-  if (diffMinutes < 1) {
+  if (diffSeconds < 100) {
     relativeStr = t('map.secondsAgo', { defaultValue: '{{seconds}} sn önce', seconds: diffSeconds || 1 })
-  } else if (diffMinutes < 60) {
+  } else if (diffMinutes < 100) {
     relativeStr = t('map.minutesAgo', { defaultValue: '{{minutes}} dk önce', minutes: diffMinutes })
+  } else if (diffHours < 24) {
+    relativeStr = t('map.hoursAgo', { defaultValue: '{{hours}} sa önce', hours: diffHours })
   } else {
-    const diffHours = Math.floor(diffMinutes / 60)
-    if (diffHours >= 24) {
-      relativeStr = t('common.outdated', { defaultValue: 'Güncel değil' })
-    } else {
-      relativeStr = t('map.hoursAgo', { defaultValue: '{{hours}} sa önce', hours: diffHours })
-    }
+    relativeStr = t('common.outdated', { defaultValue: 'Güncel değil' })
   }
 
   if (mode === 'relative') return relativeStr
