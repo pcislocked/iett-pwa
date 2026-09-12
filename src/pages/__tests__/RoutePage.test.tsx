@@ -3,6 +3,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import { MemoryRouter, Routes, Route } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { api } from '@/api/client'
 import RoutePage from '@/pages/RoutePage'
 
 vi.mock('@/api/client', () => ({
