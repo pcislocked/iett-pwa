@@ -26,10 +26,21 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [0.4.5] - 2026-09-12
 ### Added
-- Completely revamped StopPage architecture.
-- Re-implemented Map logic.
-- Filtered internal/hidden stops from search results (BUG-01).
-- Added `RouteInfoModal` integration to display detailed physical properties (BUG-04).
+- Completely revamped StopPage architecture and re-implemented Map logic.
+- **[BUG-04]** Added Stop and Route metadata modals (`RouteInfoModal`, `StopInfoModal`) and Google Maps directions button.
+- **[BUG-05]** Added Timestamp Display Mode settings (Absolute, Relative, Both) via `useUserPrefs`.
+- **[BUG-08]** Implemented Drag-to-Reorder functionality for Favorites and Pinned Stops.
+- **[BUG-09]** Increased limits and enabled mixed-type ordering for Home page favorites.
+- **[BUG-10]** Added 404/Not Found Empty State UI for invalid or non-existent route/stop searches.
+- **[BUG-11]** Integrated Stadia Maps and ArcGIS Satellite toggle, synced map theme with app theme, and fixed GPS button icon.
+- **[BUG-12]** Added Physical Math Mismatch warnings for impossible ETAs on StopPage.
+
+### Fixed
+- **[BUG-01]** Filtered internal/hidden stops from search results globally.
+- **[BUG-02]** Replaced CartoDB tiles with Stadia Maps to resolve API key enforcement errors.
+- **[BUG-03]** Fixed `InstallBanner` layout overlapping the AppBar and updated misleading offline text.
+- **[BUG-06]** Fixed extreme zoom GUI distortion by applying a maximum font-size cap.
+- **[BUG-07]** Added relative time sanity checks (capped values like 4920 hours ago).
 
 ## [0.4.4] - 2026-09-07
 
