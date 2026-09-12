@@ -3,6 +3,7 @@ import { MapContainer, TileLayer, CircleMarker, Popup, useMap } from 'react-leaf
 import * as L from 'leaflet'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { useTheme } from '@/hooks/useTheme'
 
 import { api, type BusDetail, type BusPosition, type NearbyStop } from '@/api/client'
 import { useFleet } from '@/hooks/useFleet'
@@ -103,6 +104,7 @@ export default function MapPage() {
   const navigate = useNavigate()
   const mapRef = useRef<L.Map | null>(null)
   const { currentUrl, currentAttribution, satellite, toggleSatellite } = useMapTiles()
+  const { theme } = useTheme()
   const { prefs } = useUserPrefs()
 
   // State
@@ -294,6 +296,7 @@ export default function MapPage() {
           keepBuffer={2}
           updateWhenIdle={true}
           updateWhenZooming={false}
+          className={!satellite && theme === 'dark' ? 'dark-map-tiles' : ''}
         />
 
         {/* User GPS Location */}

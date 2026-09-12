@@ -545,8 +545,9 @@ function BusDetailSheet({
             {mapReady && (
               <MapContainer center={mapCenter} zoom={15} style={{ height: '100%', width: '100%' }} zoomControl={false}>
                 <TileLayer
-                  attribution='&copy; CartoDB'
-                  url={`https://{s}.basemaps.cartocdn.com/${theme === 'light' ? 'light_all' : 'dark_all'}/{z}/{x}/{y}{r}.png`}
+                  attribution='&copy; OSM contributors'
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                  className={theme === 'dark' ? 'dark-map-tiles' : ''}
                 />
                 {bounds && <FitBoundsEffect bounds={bounds} />}
                 <Polyline
@@ -1249,8 +1250,9 @@ export default function StopPage() {
             >
               {/* MapResizer removed, relying on resize events */}
               <TileLayer
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
-                url={`https://{s}.basemaps.cartocdn.com/${theme === 'light' ? 'light_all' : 'dark_all'}/{z}/{x}/{y}{r}.png`}
+                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                className={theme === 'dark' ? 'dark-map-tiles' : ''}
                 keepBuffer={2}
                 updateWhenIdle={true}
                 updateWhenZooming={false}
