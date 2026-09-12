@@ -3,6 +3,13 @@
 All notable changes to iett-pwa are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [0.4.5.3] - 2026-09-12
+### Fixed
+- Fixed Math Mismatch threshold ignoring GPS staleness, causing false positive impossible routes.
+- Restored missing translation keys and long explanations for `tr` and `en` locales.
+- Repaired corrupted Kurdish (`ku.json`) file encoding and cleared untranslated fallback strings.
+- Fixed UI version string not displaying the patch version by updating `package.json`.
+
 ## [0.4.5.2] - 2026-09-12
 ### Added
 - Inserted visual warning boxes for stale GPS and math mismatches into the BusDetailSheet to surface upstream API anomalies clearly.

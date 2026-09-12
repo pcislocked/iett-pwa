@@ -328,7 +328,16 @@ function checkMathMismatch(arrival: Arrival, busPos: BusPosition | null, stopLat
   const distM = haversineM(effectiveLat, effectiveLon, stopLat, stopLon)
   if (distM < 200) return false // Too close to care about math mismatches
   
-  const requiredSpeedKmh = (distM / 1000) / (arrival.eta_minutes / 60)
+  let adjustedDistM = distM
+  if (arrival.last_seen_ts) {
+    const staleSeconds = (Date.now() - new Date(arrival.last_seen_ts).getTime()) / 1000
+    if (staleSeconds > 0) {
+      // Assume bus could have travelled at max 90km/h (25m/s) during the stale period
+      adjustedDistM = Math.max(0, distM - (staleSeconds * 25))
+    }
+  }
+
+  const requiredSpeedKmh = (adjustedDistM / 1000) / (arrival.eta_minutes / 60)
   // If the required average speed to meet the ETA is > 90 km/h in city transit, the ETA is physically impossible/lying
   return requiredSpeedKmh > 90
 }
@@ -613,7 +622,7 @@ function BusDetailSheet({
               <div className="flex items-start gap-2 bg-amber-500/10 border border-amber-500/20 text-amber-500 rounded-lg p-2.5">
                 <span className="text-sm shrink-0">⚠️</span>
                 <p className="text-[11px] leading-tight mt-0.5">
-                  {t('stops.mathMismatchWarning', { defaultValue: 'Fiziksel uyuşmazlık: Aracın uzaklığına göre bu sürede gelmesi fiziksel olarak mümkün görünmüyor.' })}
+                  {t('stops.mathMismatchWarningDesc', { defaultValue: 'Fiziksel uyuşmazlık: Aracın uzaklığına göre bu sürede gelmesi fiziksel olarak mümkün görünmüyor.' })}
                 </p>
               </div>
             )}
@@ -621,7 +630,7 @@ function BusDetailSheet({
               <div className="flex items-start gap-2 bg-amber-500/10 border border-amber-500/20 text-amber-500 rounded-lg p-2.5">
                 <span className="text-sm shrink-0">⚠️</span>
                 <p className="text-[11px] leading-tight mt-0.5">
-                  {t('arac.staleDataWarning', { defaultValue: 'Araçtan alınan konum verisi güncel değil (5 dakikadan eski).' })}
+                  {t('stops.staleWarningDesc', { defaultValue: 'Gecikmeli veri: Otobüsün GPS sinyali uzun süredir alınamıyor. Konum ve ETA güncel olmayabilir.' })}
                 </p>
               </div>
             )}

@@ -89,7 +89,9 @@
     "loadingAnnouncements": "Duyurular yükleniyor...",
     "announcementsFiltered": "Diğer hatlardan {{count}} duyuru filtreleniyor.",
     "resetRibbonFilter": "Filtreyi Kaldır",
-    "noAnnouncementsForFilter": "Seçilen hat için aktif duyuru bulunmuyor."
+    "noAnnouncementsForFilter": "Seçilen hat için aktif duyuru bulunmuyor.",
+    "mathMismatchWarningDesc": "Fiziksel uyuşmazlık: Aracın uzaklığına göre bu sürede gelmesi fiziksel olarak mümkün görünmüyor.",
+    "staleWarningDesc": "Gecikmeli veri: Otobüsün GPS sinyali uzun süredir alınamıyor. Konum ve ETA güncel olmayabilir."
   },
   "routes": {
     "title": "Hat",
@@ -204,12 +206,17 @@
     "gpsConsentGranted": "Konum İzni: Verildi",
     "gpsConsentDenied": "Konum İzni: Reddedildi",
     "gpsConsentWaiting": "Konum İzni: Bekliyor",
-    "gpsMockWarning": "Eğer gerçek konumunuzu paylaşmak istemiyorsanız, uygulama aşağıdaki sahte konumu kullanır. Haritaya dokunarak konumunuzu değiştirebilirsiniz.",
-    "resetGpsModal": "Konum İznini Sıfırla (Modalı Tekrar Göster)",
+    "gpsMockWarning": "Sahte konum devrede",
+    "resetGpsModal": "GPS İznini Sıfırla",
     "gpsAndMock": "GPS ve Sahte Konum",
-    "requestGpsModal": "Konum İznini İste",
-    "revokeGpsModal": "İzni İptal Et (Sahte Konuma Dön)",
-    "privacyPolicy": "Gizlilik Politikası"
+    "requestGpsModal": "GPS İzni İste",
+    "revokeGpsModal": "İzni Geri Al (Sahte Konum Kullan)",
+    "privacyPolicy": "Gizlilik Politikası",
+    "autoLocateDesc": "Yakın Duraklar açılınca GPS'le otomatik konumla (yalnızca izin verilmişse)",
+    "timestampMode": "Güncelleme Zamanı Gösterimi",
+    "timestampBoth": "Her İkisi (2 dk önce - 14:05)",
+    "timestampRelative": "Sadece Göreceli (2 dk önce)",
+    "timestampAbsolute": "Sadece Tam Saat (14:05)"
   },
   "embed": {
     "poweredBy": "iett-pwa",

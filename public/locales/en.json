@@ -89,7 +89,9 @@
     "loadingAnnouncements": "Loading announcements...",
     "announcementsFiltered": "{{count}} announcement(s) filtered from other routes.",
     "resetRibbonFilter": "Reset Filter",
-    "noAnnouncementsForFilter": "No active announcements for the selected route."
+    "noAnnouncementsForFilter": "No active announcements for the selected route.",
+    "mathMismatchWarningDesc": "Math Mismatch: It is physically impossible for the vehicle to arrive in this time based on its distance.",
+    "staleWarningDesc": "Stale Data: The bus GPS signal has not been received for a long time. Location and ETA may not be up-to-date."
   },
   "routes": {
     "title": "Route",
@@ -204,12 +206,17 @@
     "gpsConsentGranted": "Location Permission: Granted",
     "gpsConsentDenied": "Location Permission: Denied",
     "gpsConsentWaiting": "Location Permission: Waiting",
-    "gpsMockWarning": "If you do not wish to share your real location, the application uses the mock location below. You can change your location by tapping on the map.",
-    "resetGpsModal": "Reset Location Permission (Show Modal Again)",
+    "gpsMockWarning": "Mock location active",
+    "resetGpsModal": "Reset GPS Permission",
     "gpsAndMock": "GPS and Mock Location",
-    "requestGpsModal": "Request Location Permission",
+    "requestGpsModal": "Request GPS Permission",
     "revokeGpsModal": "Revoke Permission (Use Mock Location)",
-    "privacyPolicy": "Privacy Policy"
+    "privacyPolicy": "Privacy Policy",
+    "autoLocateDesc": "Automatically locate with GPS when Nearby Stops is opened (if permitted)",
+    "timestampMode": "Timestamp Display Mode",
+    "timestampBoth": "Both (2 mins ago - 14:05)",
+    "timestampRelative": "Relative Only (2 mins ago)",
+    "timestampAbsolute": "Absolute Only (14:05)"
   },
   "embed": {
     "poweredBy": "iett-pwa",
