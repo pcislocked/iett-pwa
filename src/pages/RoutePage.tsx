@@ -385,7 +385,7 @@ export default function RoutePage() {
   const { data: stops, error: stopsError, refetch: refreshStops } = useQuery<RouteStop[]>({ queryKey: ['stops', hatKodu], queryFn: stopsFetcher, refetchInterval: 300_000, enabled: !!hatKodu })
   const { data: schedule, error: scheduleError, refetch: refreshSchedule } = useQuery<ScheduledDeparture[]>({ queryKey: ['schedule', hatKodu], queryFn: scheduleFetcher, refetchInterval: 300_000, enabled: !!hatKodu })
   const { data: announcements, error: announcementsError, refetch: refreshAnnouncements } = useQuery<Announcement[]>({ queryKey: ['announcements', hatKodu], queryFn: announceFetcher, refetchInterval: 300_000, enabled: !!hatKodu })
-  const { data: metadata } = useQuery<RouteMetadata[]>({ queryKey: ['metadata', hatKodu], queryFn: metaFetcher, refetchInterval: 600_000, enabled: !!hatKodu })
+  const { data: metadata, isLoading: metaLoading, error: metaError } = useQuery<RouteMetadata[]>({ queryKey: ['metadata', hatKodu], queryFn: metaFetcher, refetchInterval: 600_000, enabled: !!hatKodu })
 
   // Unique direction keys from stops — "G" / "D"
   const stopsDirections = useMemo(
@@ -449,6 +449,33 @@ export default function RoutePage() {
   const { theme } = useTheme()
 
   if (!hatKodu) return null
+
+  const isNotFound = (!metaLoading && metadata && metadata.length === 0) || ((metaError as unknown as { status?: number })?.status === 404)
+  if (isNotFound) {
+    return (
+      <div className="flex flex-col min-h-screen bg-surface-bg">
+        <div className="sticky top-0 z-[10000] bg-surface-card border-b border-surface-muted safe-area-pt">
+          <div className="flex items-center justify-between px-4 h-14">
+            <div className="flex items-center gap-3">
+              <button type="button" aria-label={t('common.back', { defaultValue: 'Geri' })} onClick={() => navigate(-1)} className="p-2 -ml-2 text-text-muted hover:text-text-primary rounded-full hover:bg-surface-muted transition-colors">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5} aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+        <div className="flex-1 flex flex-col items-center justify-center p-6 text-center gap-4">
+          <span className="text-6xl mb-2 grayscale opacity-80">🔍</span>
+          <h2 className="text-xl font-bold text-text-primary">{t('routes.notFound', { defaultValue: 'Hat Bulunamadı' })}</h2>
+          <p className="text-sm text-text-secondary">{t('routes.notFoundDesc', { defaultValue: 'Aradığınız hat mevcut değil veya sistemde bulunamıyor.' })}</p>
+          <button onClick={() => navigate('/')} className="mt-4 px-6 py-2 bg-brand-600 hover:bg-brand-500 text-white font-semibold rounded-xl transition-colors">
+            {t('common.goHome', { defaultValue: 'Ana Sayfaya Dön' })}
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   const center: [number, number] = buses?.[0]
     ? [buses[0].latitude, buses[0].longitude]

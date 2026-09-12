@@ -110,4 +110,15 @@ describe('StopPage Announcements', () => {
       expect(screen.getByText(/Aktif duyuru yok/i)).toBeInTheDocument()
     })
   })
+
+  it('renders not found when detail throws 404', async () => {
+    // Return a mock error with status 404
+    vi.mocked(api.stops.detail).mockRejectedValue({ status: 404 })
+    renderPage()
+
+    await waitFor(() => {
+      expect(screen.getByText('Durak Bulunamadı')).toBeInTheDocument()
+      expect(screen.getByText('Ana Sayfaya Dön')).toBeInTheDocument()
+    })
+  })
 })
