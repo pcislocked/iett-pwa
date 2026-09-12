@@ -5,6 +5,22 @@ import { useArrivals } from '@/hooks/useArrivals'
 import { api, type StopDetail, type Arrival } from '@/api/client'
 import { etaTextClass } from '@/utils/etaColor'
 import { useTranslation } from 'react-i18next'
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core'
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 
 // Jiggle removed as requested
 
@@ -105,13 +121,57 @@ function PinnedRow({
   )
 }
 
+function SortablePinnedRow({ id, ...props }: { id: string, dcode: string, nick: string, editing: boolean, onUnpin: () => void }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 50 : 'auto',
+    opacity: isDragging ? 0.8 : 1,
+  }
+
+  return (
+    <div ref={setNodeRef} style={style} className="relative">
+      <PinnedRow {...props} />
+      {props.editing && (
+        <div
+          {...attributes}
+          {...listeners}
+          className="absolute right-2 top-1/2 -translate-y-1/2 z-10 w-10 h-10 flex items-center justify-center cursor-grab active:cursor-grabbing text-slate-500 hover:text-slate-300 transition-colors touch-none"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-5 h-5">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 9h16.5m-16.5 6.75h16.5" />
+          </svg>
+        </div>
+      )}
+    </div>
+  )
+}
+
 /* ── Page ───────────────────────────────────────────────────────────────── */
 export default function PinnedManagePage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const { prefs, unpinStop } = useUserPrefs()
+  const { prefs, unpinStop, reorderPinnedStops } = useUserPrefs()
   const { pinnedStops } = prefs
   const [editing, setEditing] = useState(false)
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  )
+
+  const handleDragEnd = (event: any) => {
+    const { active, over } = event
+    if (over && active.id !== over.id) {
+      const oldIndex = pinnedStops.findIndex((s) => s.dcode === active.id)
+      const newIndex = pinnedStops.findIndex((s) => s.dcode === over.id)
+      if (oldIndex !== -1 && newIndex !== -1) {
+        reorderPinnedStops(arrayMove(pinnedStops, oldIndex, newIndex))
+      }
+    }
+  }
 
   return (
     <div className="flex-1 overflow-y-auto">
@@ -132,17 +192,22 @@ export default function PinnedManagePage() {
 
       {/* List */}
       {pinnedStops.length > 0 ? (
-        <div>
-          {pinnedStops.map((p) => (
-            <PinnedRow
-              key={p.dcode}
-              dcode={p.dcode}
-              nick={p.nick}
-              editing={editing}
-              onUnpin={() => unpinStop(p.dcode)}
-            />
-          ))}
-        </div>
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext items={pinnedStops.map(p => p.dcode)} strategy={verticalListSortingStrategy}>
+            <div>
+              {pinnedStops.map((p) => (
+                <SortablePinnedRow
+                  key={p.dcode}
+                  id={p.dcode}
+                  dcode={p.dcode}
+                  nick={p.nick}
+                  editing={editing}
+                  onUnpin={() => unpinStop(p.dcode)}
+                />
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
       ) : (
         /* Empty state */
         <div className="flex flex-col items-center justify-center py-20 gap-3 text-text-muted">

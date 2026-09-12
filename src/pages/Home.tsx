@@ -165,8 +165,6 @@ export default function Home() {
   const { prefs, setGpsConsent } = useUserPrefs()
   const { pinnedStops } = prefs
   const { favorites } = useFavorites()
-  const favStops = favorites.filter((f) => f.kind === 'stop')
-  const favRoutes = favorites.filter((f) => f.kind === 'route')
 
   // ── Recent searches ───────────────────────────────────────────────────────
   const [recents, setRecents] = useState<RecentSearch[]>([])
@@ -332,31 +330,32 @@ export default function Home() {
       </section>
 
       {/* ── Favorites ───────────────────────────────────────────────────────── */}
-      {(favStops.length > 0 || favRoutes.length > 0) && (
+      {favorites.length > 0 && (
         <section className="mb-4">
           <div className="flex items-center justify-between px-4 pt-2 pb-1">
             <span className="metro-section p-0">{t('home.favorites', { defaultValue: 'Favoriler' })}</span>
             <Link to="/favorites" className="text-[11px] metro-tilt" style={{ color: 'var(--wp-accent)' }}>
-              {t('home.seeAll', { defaultValue: 'Tümünü Gör →' })}
+              {t('home.seeAll', { defaultValue: 'Tümünü Gör' })}
             </Link>
           </div>
 
           <div>
-            {favStops.slice(0, 3).map((s) => (
-              <PinnedStopRow
-                key={`fav-stop-${s.dcode}`}
-                dcode={s.dcode}
-                nick={s.name}
-                icon="❤"
-              />
-            ))}
-            {favRoutes.slice(0, 3).map((r) => (
-              <RouteTickerRow
-                key={`fav-route-${r.hat_kodu}`}
-                code={r.hat_kodu}
-                name={r.name}
-                icon="🚌"
-              />
+            {favorites.slice(0, 25).map((f) => (
+              f.kind === 'stop' ? (
+                <PinnedStopRow
+                  key={`fav-stop-${f.dcode}`}
+                  dcode={f.dcode}
+                  nick={f.name}
+                  icon="⭐"
+                />
+              ) : (
+                <RouteTickerRow
+                  key={`fav-route-${f.hat_kodu}`}
+                  code={f.hat_kodu}
+                  name={f.name}
+                  icon="🚌"
+                />
+              )
             ))}
           </div>
         </section>

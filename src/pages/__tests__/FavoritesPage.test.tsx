@@ -31,6 +31,7 @@ describe('FavoritesPage Component', () => {
       favorites: [],
       toggle: vi.fn(),
       isFavorite: vi.fn().mockReturnValue(false),
+      reorder: vi.fn(),
     })
 
     render(
@@ -51,6 +52,7 @@ describe('FavoritesPage Component', () => {
       favorites: realFavorites,
       toggle: mockToggle,
       isFavorite: vi.fn().mockReturnValue(true),
+      reorder: vi.fn(),
     })
 
     render(
