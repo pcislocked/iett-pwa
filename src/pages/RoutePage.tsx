@@ -11,6 +11,7 @@ import { getDirectionLabel } from '@/utils/routeDirectionLabels'
 import { VariantSelect } from '@/components/VariantSelect'
 import { useTranslation } from 'react-i18next'
 import { useTheme } from '@/hooks/useTheme'
+import NotFoundPage from './NotFoundPage'
 
 const busIconG = L.divIcon({
   className: '',
@@ -383,7 +384,7 @@ export default function RoutePage() {
   const { data: stops, error: stopsError, refetch: refreshStops } = useQuery<RouteStop[]>({ queryKey: ['stops', hatKodu], queryFn: stopsFetcher, refetchInterval: 300_000, enabled: !!hatKodu })
   const { data: schedule, error: scheduleError, refetch: refreshSchedule } = useQuery<ScheduledDeparture[]>({ queryKey: ['schedule', hatKodu], queryFn: scheduleFetcher, refetchInterval: 300_000, enabled: !!hatKodu })
   const { data: announcements, error: announcementsError, refetch: refreshAnnouncements } = useQuery<Announcement[]>({ queryKey: ['announcements', hatKodu], queryFn: announceFetcher, refetchInterval: 300_000, enabled: !!hatKodu })
-  const { data: metadata } = useQuery<RouteMetadata[]>({ queryKey: ['metadata', hatKodu], queryFn: metaFetcher, refetchInterval: 600_000, enabled: !!hatKodu })
+  const { data: metadata, isError: isMetaError, error: metaError } = useQuery<RouteMetadata[]>({ queryKey: ['metadata', hatKodu], queryFn: metaFetcher, refetchInterval: 600_000, enabled: !!hatKodu })
 
   // Unique direction keys from stops — "G" / "D"
   const stopsDirections = useMemo(
@@ -458,6 +459,12 @@ export default function RoutePage() {
     { id: 'stops', label: t('routes.stops') },
     { id: 'alerts', label: t('stops.announcements', 'Duyurular'), badge: announcements?.length ? announcements.length : undefined },
   ]
+
+  if (isMetaError) {
+    const status = (metaError as any)?.status
+    if (status === 404 || status === 422 || status === 400) return <NotFoundPage />
+    return <NotFoundPage />
+  }
 
   return (
     <div className="flex flex-col min-h-screen">

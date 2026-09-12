@@ -5,6 +5,7 @@ import * as L from 'leaflet'
 
 import { ISTANBUL_BOUNDS, MAP_MIN_ZOOM, MAP_MAX_ZOOM } from '@/utils/mapConstants'
 import { clearAracSession, loadAracSession, saveAracSession } from '@/api/aracSession'
+import NotFoundPage from './NotFoundPage'
 import {
   api,
   ApiHttpError,
@@ -25,6 +26,7 @@ type ViewState =
   | 'loading-data'
   | 'ready'
   | 'error'
+  | 'not-found'
 
 
 
@@ -185,7 +187,12 @@ export default function AracBusOverlayPage() {
       setLastFetchTime(Date.now())
       setInlineWarning(null)
       setViewState('ready')
-    } catch (err) {
+    } catch (err: any) {
+      if (!aliveRef.current) return
+      if (err?.status === 404 || err?.status === 422 || err?.status === 400) {
+        setViewState('not-found')
+        return
+      }
       throw err // handled by startFlow or submitManualCaptcha
     }
   }, [kapino])
@@ -336,6 +343,8 @@ export default function AracBusOverlayPage() {
   }, [missionsData])
 
   const busIcon = useMemo(() => makeBusIcon(), [])
+
+  if (viewState === 'not-found') return <NotFoundPage />
 
   return (
     <div className="fixed inset-0 z-[2200] bg-surface-card flex flex-col">

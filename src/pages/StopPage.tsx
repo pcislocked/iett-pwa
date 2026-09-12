@@ -17,7 +17,7 @@ import { etaChipClass } from '@/utils/etaColor'
 import { isGpsStale, parseGpsTimestamp } from '@/utils/dateUtils'
 import { useTheme } from '@/hooks/useTheme'
 import PullToRefresh from '@/components/PullToRefresh'
-
+import NotFoundPage from './NotFoundPage'
 
 /** Fixed palette for the first 3 routes at this stop */
 const ROUTE_PALETTE = ['var(--color-warning)', 'var(--color-success)', 'var(--color-brand)'] as const
@@ -812,12 +812,16 @@ export default function StopPage() {
     enabled: !!dcode,
   })
 
-  const { data: stopDetail } = useQuery<StopDetail>({
+  const { data: stopDetail, isError: isStopError, error: stopError } = useQuery<StopDetail>({
     queryKey: ['stopDetail', dcode],
     queryFn: () => api.stops.detail(dcode ?? ''),
     refetchInterval: 3_600_000,
     enabled: !!dcode,
   })
+
+  if (isStopError) {
+    return <NotFoundPage />
+  }
 
   // Ordered unique routes from live arrivals (used for colour assignment)
   const arrivalRouteOrder = useMemo(() => {
@@ -974,6 +978,14 @@ export default function StopPage() {
     }
     return false
   }, [iettUpdatedAt, lastUpdated])
+
+  if (isStopError) {
+    const status = (stopError as any)?.status
+    if (status === 404 || status === 422 || status === 400) {
+      return <NotFoundPage />
+    }
+    return <NotFoundPage />
+  }
 
   return (
     <div className="h-full flex flex-col">
