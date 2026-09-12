@@ -64,16 +64,21 @@ export function formatGpsTimestamp(
   const trimmed = String(lastSeenTs).trim()
   if (!trimmed) return '-'
   
-  if (mode === 'absolute') return trimmed
-
   const dateObj = parseGpsTimestamp(trimmed, nowMs)
   if (!dateObj) return trimmed // Fallback to raw if unparseable
-  
-  const diffMinutes = Math.floor(Math.max(0, nowMs - dateObj.getTime()) / 60000)
+
+  const pad = (n: number) => n.toString().padStart(2, '0')
+  const absStr = `${pad(dateObj.getHours())}:${pad(dateObj.getMinutes())}:${pad(dateObj.getSeconds())}`
+
+  if (mode === 'absolute') return absStr
+
+  const diffMs = Math.max(0, nowMs - dateObj.getTime())
+  const diffMinutes = Math.floor(diffMs / 60000)
+  const diffSeconds = Math.floor(diffMs / 1000)
   
   let relativeStr = ''
   if (diffMinutes < 1) {
-    relativeStr = t('map.secondsAgo', { defaultValue: 'az önce' })
+    relativeStr = t('map.secondsAgo', { defaultValue: '{{seconds}} sn önce', seconds: diffSeconds || 1 })
   } else if (diffMinutes < 60) {
     relativeStr = t('map.minutesAgo', { defaultValue: '{{minutes}} dk önce', minutes: diffMinutes })
   } else {
@@ -86,5 +91,5 @@ export function formatGpsTimestamp(
   }
 
   if (mode === 'relative') return relativeStr
-  return `${relativeStr} - ${trimmed}`
+  return `${relativeStr} - ${absStr}`
 }
