@@ -10,7 +10,7 @@ describe('MapTileToggle Component', () => {
       <MapTileToggle satellite={false} onToggle={handleToggle} />
     )
 
-    expect(screen.getByText('🗺️')).toBeInTheDocument()
+    expect(screen.getByText('🛰️')).toBeInTheDocument()
 
     const button = screen.getByRole('button')
     fireEvent.click(button)
@@ -18,6 +18,6 @@ describe('MapTileToggle Component', () => {
 
     // Rerender with satellite theme
     rerender(<MapTileToggle satellite={true} onToggle={handleToggle} />)
-    expect(screen.getByText('🛰️')).toBeInTheDocument()
+    expect(screen.getByText('🗺️')).toBeInTheDocument()
   })
 })
