@@ -674,6 +674,7 @@ const globalRouteIconCache = new Map<string, L.DivIcon>()
 
 export default function StopPage() {
   const { t } = useTranslation()
+  const { prefs, isPinned, pinStop, unpinStop } = useUserPrefs()
   const { theme } = useTheme()
   const { dcode } = useParams<{ dcode: string }>()
   const navigate = useNavigate()
@@ -954,7 +955,6 @@ export default function StopPage() {
   const hiddenAnnouncementsCount = stopAnnouncements.length - filteredAnnouncements.length
 
   const { isFavorite, toggle } = useFavorites()
-  const { prefs, isPinned, pinStop, unpinStop } = useUserPrefs()
   const stopName = stopDetail?.name ?? `${t('stops.title')} ${dcode}`
   const favItem = { kind: 'stop' as const, dcode: dcode ?? '', name: stopName }
   const favorited = isFavorite(favItem)

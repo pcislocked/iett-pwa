@@ -57,7 +57,7 @@ export function isGpsStale(
 export function formatGpsTimestamp(
   lastSeenTs: string | null | undefined,
   mode: 'relative' | 'absolute' | 'both',
-  t: (key: string, opts?: any) => string,
+  t: (key: string, opts?: Record<string, unknown>) => string,
   nowMs: number = Date.now()
 ): string {
   if (!lastSeenTs) return '-'

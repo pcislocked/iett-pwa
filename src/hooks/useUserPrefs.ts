@@ -249,6 +249,7 @@ export function useUserPrefs() {
             nearbyMax: typeof raw.nearbyMax === 'number' ? raw.nearbyMax : 15,
             mockLocation: Array.isArray(raw.mockLocation) && raw.mockLocation.length === 2 && typeof raw.mockLocation[0] === 'number' && typeof raw.mockLocation[1] === 'number' ? [raw.mockLocation[0], raw.mockLocation[1]] as [number, number] : null,
             gpsConsent: raw.gpsConsent === 'granted' || raw.gpsConsent === 'denied' ? raw.gpsConsent : 'pending',
+            timestampMode: (raw.timestampMode === 'relative' || raw.timestampMode === 'absolute' || raw.timestampMode === 'both') ? raw.timestampMode : 'both',
           }
           patch(() => coerced)
           resolve()

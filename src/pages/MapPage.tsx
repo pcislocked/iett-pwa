@@ -3,7 +3,6 @@ import { MapContainer, TileLayer, CircleMarker, Popup, useMap } from 'react-leaf
 import * as L from 'leaflet'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { type TFunction } from 'i18next'
 
 import { api, type BusDetail, type BusPosition, type NearbyStop } from '@/api/client'
 import { useFleet } from '@/hooks/useFleet'
@@ -102,7 +101,6 @@ function GpsMarker({ location }: { location: [number, number] | null }) {
 export default function MapPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const { prefs } = useUserPrefs()
   const mapRef = useRef<L.Map | null>(null)
   const { currentUrl, currentAttribution, satellite, toggleSatellite } = useMapTiles()
   const { prefs } = useUserPrefs()
@@ -207,12 +205,6 @@ export default function MapPage() {
   // Selected Bus Detail Fetch
   const [selectedDetail, setSelectedDetail] = useState<BusDetail | null>(null)
   const [detailLoading, setDetailLoading] = useState(false)
-  const [nowMs, setNowMs] = useState(Date.now())
-
-  useEffect(() => {
-    const id = window.setInterval(() => setNowMs(Date.now()), 5000)
-    return () => window.clearInterval(id)
-  }, [])
 
   // Fetch Bus detail when kapino selected
   useEffect(() => {

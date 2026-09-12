@@ -56,39 +56,6 @@ function toCaptchaSrc(base64: string): string {
   return `data:image/jpeg;base64,${base64}`
 }
 
-function parseIettDate(dateString: string | null | undefined): Date {
-  if (!dateString) return new Date(NaN)
-  const d = new Date(dateString)
-  if (!isNaN(d.getTime())) return d
-
-  const match = dateString.match(/(\d{2})[\.\-](\d{2})[\.\-](\d{4})(?:\s+(\d{2}:\d{2}(?::\d{2})?))?/)
-  if (match) {
-    const [, day, month, year, time] = match
-    const iso = `${year}-${month}-${day}${time ? 'T' + time : ''}`
-    return new Date(iso)
-  }
-  return new Date(NaN)
-}
-
-function relativeTime(isoString: string, t: TFunction): string {
-  const diffMs = Date.now() - parseIettDate(isoString).getTime()
-  const diffMinutes = Math.floor(Math.abs(diffMs) / 60000)
-  const isPast = diffMs > 0
-
-  let formatted: string
-  if (diffMinutes <= 99) {
-    formatted = `${diffMinutes} ${t('common.min', { defaultValue: 'dk' })}`
-  } else {
-    const diffHours = Math.floor(diffMinutes / 60)
-    if (diffHours >= 24) return t('common.outdated', { defaultValue: 'Güncel değil' })
-    formatted = `${diffHours} ${t('arac.hour', { defaultValue: 'sa' })}`
-  }
-
-  return isPast
-    ? t('arac.relativeAgo', { value: formatted, defaultValue: '{{value}} önce' })
-    : t('arac.relativeIn', { value: formatted, defaultValue: '{{value}} sonra' })
-}
-
 
 
 function makeBusIcon(): L.DivIcon {
@@ -134,7 +101,6 @@ export default function AracBusOverlayPage() {
   const { t } = useTranslation()
   const { currentUrl, currentAttribution, satellite, toggleSatellite } = useMapTiles()
   const { prefs } = useUserPrefs()
-  const { theme } = useTheme()
 
   const [viewState, setViewState] = useState<ViewState>('booting')
   const [captchaImage, setCaptchaImage] = useState<string | null>(null)
