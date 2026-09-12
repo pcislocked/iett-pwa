@@ -18,6 +18,8 @@ import { TFunction } from 'i18next'
 import { useMapTiles } from '@/hooks/useMapTiles'
 import MapTileToggle from '@/components/MapTileToggle'
 import PullToRefresh from '@/components/PullToRefresh'
+import { useUserPrefs } from '@/hooks/useUserPrefs'
+import { formatGpsTimestamp } from '@/utils/dateUtils'
 
 type ViewState =
   | 'booting'
@@ -130,6 +132,8 @@ export default function AracBusOverlayPage() {
   const navigate = useNavigate()
   const { t } = useTranslation()
   const { currentUrl, currentAttribution, satellite, toggleSatellite } = useMapTiles()
+  const { prefs } = useUserPrefs()
+  const { theme } = useTheme()
 
   const [viewState, setViewState] = useState<ViewState>('booting')
   const [captchaImage, setCaptchaImage] = useState<string | null>(null)
@@ -496,7 +500,7 @@ export default function AracBusOverlayPage() {
                     </h2>
                     {profile.last_seen && (
                       <span className="text-[10px] text-text-secondary bg-surface-muted px-2 py-1 rounded border border-surface-border">
-                        {t('arac.lastSeen', { defaultValue: 'Son Görülme' })}: {parseIettDate(profile.last_seen).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })} ({relativeTime(profile.last_seen, t)})
+                        {t('arac.lastSeen', { defaultValue: 'Son Görülme' })}: {formatGpsTimestamp(profile.last_seen, prefs.timestampMode, t)}
                       </span>
                     )}
                   </div>

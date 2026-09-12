@@ -93,7 +93,7 @@ export default function SettingsPage() {
   const { t, i18n } = useTranslation()
   const [settings, setSettings] = useState<Settings>(loadSettings)
   const [saved, setSaved] = useState(false)
-  const { prefs, setNearbySettings, exportPrefs, importPrefs, setMockLocation, setGpsConsent } = useUserPrefs()
+  const { prefs, setNearbySettings, exportPrefs, importPrefs, setMockLocation, setGpsConsent, setTimestampMode } = useUserPrefs()
   const fileRef = useRef<HTMLInputElement>(null)
   const [importStatus, setImportStatus] = useState<'idle' | 'ok' | 'err'>('idle')
   const [showConsentModal, setShowConsentModal] = useState(false)
@@ -251,6 +251,23 @@ export default function SettingsPage() {
               onChange={(e) => setNearbySettings(prefs.nearbyRadius, Number(e.target.value))}
               className="w-32 bg-surface border border-surface-muted rounded-lg px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-brand-500"
             />
+          </div>
+        </div>
+        {/* Timestamp Settings */}
+        <div className="pt-2 border-t border-surface-muted flex flex-col gap-4">
+          <div>
+            <label className="text-sm text-text-secondary block mb-1">
+              {t('settings.timestampMode', { defaultValue: 'Güncelleme Zamanı Gösterimi' })}
+            </label>
+            <select
+              value={prefs.timestampMode}
+              onChange={(e) => setTimestampMode(e.target.value as 'relative' | 'absolute' | 'both')}
+              className="bg-surface border border-surface-muted rounded-lg px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-brand-500"
+            >
+              <option value="both">{t('settings.timestampBoth', { defaultValue: 'Her İkisi (2 dk önce - 14:05)' })}</option>
+              <option value="relative">{t('settings.timestampRelative', { defaultValue: 'Sadece Göreceli (2 dk önce)' })}</option>
+              <option value="absolute">{t('settings.timestampAbsolute', { defaultValue: 'Sadece Tam Saat (14:05)' })}</option>
+            </select>
           </div>
         </div>
       </div>
