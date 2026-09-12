@@ -16,6 +16,8 @@ import { useTranslation } from 'react-i18next'
 import { useUserPrefs } from '@/hooks/useUserPrefs'
 import { useLocationManager } from '@/hooks/useLocationManager'
 import { useTheme } from '@/hooks/useTheme'
+import { useMapTiles } from '@/hooks/useMapTiles'
+import MapTileToggle from '@/components/MapTileToggle'
 import PullToRefresh from '@/components/PullToRefresh'
 
 interface NearbyStop extends ApiNearbyStop {
@@ -50,6 +52,7 @@ function NearbyMapView({
 }) {
   const { t } = useTranslation()
   const { theme } = useTheme()
+  const { currentUrl, currentAttribution, satellite, toggleSatellite } = useMapTiles()
   const userIcon = L.divIcon({
     className: '',
     html: `<div style="
@@ -75,12 +78,15 @@ function NearbyMapView({
       style={{ height: '100%', width: '100%' }}
     >
         <TileLayer
-          attribution={theme === 'light' ? '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' : 'Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ'}
-          url={theme === 'light' ? 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png' : 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}'}
-        keepBuffer={2}
-        updateWhenIdle={true}
-        updateWhenZooming={false}
-      />
+          attribution={currentAttribution}
+          url={currentUrl}
+          keepBuffer={2}
+          updateWhenIdle={true}
+          updateWhenZooming={false}
+        />
+        <div className="absolute bottom-4 left-4 z-[1000] pointer-events-auto">
+          <MapTileToggle satellite={satellite} onToggle={toggleSatellite} />
+        </div>
 
       {/* Smoothly pan to selected stop */}
       {selectedStop && (

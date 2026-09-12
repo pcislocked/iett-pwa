@@ -8,6 +8,7 @@ import { ISTANBUL_BOUNDS, MAP_MIN_ZOOM, MAP_MAX_ZOOM } from '@/utils/mapConstant
 import * as L from 'leaflet'
 import { DEFAULT_MOCK_LOCATION } from '@/hooks/useLocationManager'
 import LocationConsentModal from '@/components/LocationConsentModal'
+import { useMapTiles } from '@/hooks/useMapTiles'
 
 function ThemeSwitcher() {
   const { theme, setTheme } = useTheme()
@@ -48,6 +49,7 @@ function ThemeSwitcher() {
 
 function MockLocationPicker({ initialLat, initialLon, onPick }: { initialLat: number, initialLon: number, onPick: (lat: number, lon: number) => void }) {
   const { theme } = useTheme()
+  const { currentUrl, currentAttribution } = useMapTiles()
   const customIcon = L.divIcon({
     className: '',
     html: `<div style="background:#f97316;border-radius:50%;width:18px;height:18px;border:3px solid #fff;box-shadow:0 0 0 4px rgba(249,115,22,0.35)"></div>`,
@@ -76,8 +78,8 @@ function MockLocationPicker({ initialLat, initialLon, onPick }: { initialLat: nu
         style={{ height: '100%', width: '100%' }}
       >
         <TileLayer
-          attribution={theme === 'light' ? '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' : 'Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ'}
-          url={theme === 'light' ? 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png' : 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}'}
+          attribution={currentAttribution}
+          url={currentUrl}
           keepBuffer={2}
           updateWhenIdle={true}
           updateWhenZooming={false}

@@ -16,8 +16,10 @@ import { useGlobalNotices } from '@/hooks/useGlobalNotices'
 import { etaChipClass } from '@/utils/etaColor'
 import { isGpsStale, parseGpsTimestamp, formatGpsTimestamp } from '@/utils/dateUtils'
 import { useTheme } from '@/hooks/useTheme'
+import { useMapTiles } from '@/hooks/useMapTiles'
 import PullToRefresh from '@/components/PullToRefresh'
 import StopInfoModal from '@/components/StopInfoModal'
+import MapTileToggle from '@/components/MapTileToggle'
 
 
 /** Fixed palette for the first 3 routes at this stop */
@@ -364,6 +366,7 @@ function BusDetailSheet({
   const { prefs } = useUserPrefs()
   const [mapReady, setMapReady] = useState(false)
   const { theme } = useTheme()
+  const { currentUrl, currentAttribution, satellite, toggleSatellite } = useMapTiles()
 
   const dialogRef = useRef<HTMLDivElement>(null)
   const previouslyFocused = useRef<Element | null>(null)
@@ -544,10 +547,7 @@ function BusDetailSheet({
             )}
             {mapReady && (
               <MapContainer center={mapCenter} zoom={15} style={{ height: '100%', width: '100%' }} zoomControl={false}>
-                <TileLayer
-                  attribution={theme === 'light' ? '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' : 'Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ'}
-                  url={theme === 'light' ? 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png' : 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}'}
-                />
+                <TileLayer attribution={currentAttribution} url={currentUrl} />
                 {bounds && <FitBoundsEffect bounds={bounds} />}
                 <Polyline
                   positions={[[effectiveLat!, effectiveLon!], [stopLat, stopLon]]}
@@ -555,6 +555,9 @@ function BusDetailSheet({
                 />
                 <Marker position={[effectiveLat!, effectiveLon!]} icon={busIcon} />
                 <Marker position={[stopLat, stopLon]} icon={stopIcon} />
+                <div className="absolute bottom-2 left-2 z-[1000] pointer-events-auto scale-75 origin-bottom-left">
+                  <MapTileToggle satellite={satellite} onToggle={toggleSatellite} />
+                </div>
               </MapContainer>
             )}
           </div>
@@ -711,6 +714,7 @@ export default function StopPage() {
   const { t } = useTranslation()
   const { prefs, isPinned, pinStop, unpinStop } = useUserPrefs()
   const { theme } = useTheme()
+  const { currentUrl, currentAttribution, satellite, toggleSatellite } = useMapTiles()
   const { dcode } = useParams<{ dcode: string }>()
   const navigate = useNavigate()
   const [activeRoutes, setActiveRoutes] = useState<Set<string>>(new Set())
@@ -1248,13 +1252,7 @@ export default function StopPage() {
               key={dcode}
             >
               {/* MapResizer removed, relying on resize events */}
-              <TileLayer
-                attribution={theme === 'light' ? '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' : 'Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ'}
-                url={theme === 'light' ? 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png' : 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}'}
-                keepBuffer={2}
-                updateWhenIdle={true}
-                updateWhenZooming={false}
-              />
+              <TileLayer attribution={currentAttribution} url={currentUrl} />
               <AutoFitBuses
                 stopLat={stopDetail.latitude}
                 stopLon={stopDetail.longitude}
@@ -1293,6 +1291,9 @@ export default function StopPage() {
                   />
                 )
               })}
+              <div className="absolute bottom-4 left-4 z-[1000] pointer-events-auto">
+                <MapTileToggle satellite={satellite} onToggle={toggleSatellite} />
+              </div>
             </MapContainer>
           ) : (
             <div className="h-full flex flex-col items-center justify-center text-text-muted">

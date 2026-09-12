@@ -12,6 +12,8 @@ import { VariantSelect } from '@/components/VariantSelect'
 import RouteInfoModal from '@/components/RouteInfoModal'
 import { useTranslation } from 'react-i18next'
 import { useTheme } from '@/hooks/useTheme'
+import { useMapTiles } from '@/hooks/useMapTiles'
+import MapTileToggle from '@/components/MapTileToggle'
 
 const busIconG = L.divIcon({
   className: '',
@@ -447,6 +449,7 @@ export default function RoutePage() {
   const favorited = isFavorite(favItem)
 
   const { theme } = useTheme()
+  const { currentUrl, currentAttribution, satellite, toggleSatellite } = useMapTiles()
 
   if (!hatKodu) return null
 
@@ -595,12 +598,18 @@ export default function RoutePage() {
                 style={{ height: '100%', width: '100%' }}
               >
                 <TileLayer
-                  attribution={theme === 'light' ? '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' : 'Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ'}
-                  url={theme === 'light' ? 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png' : 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}'}
+                  attribution={currentAttribution}
+                  url={currentUrl}
                   keepBuffer={2}
                   updateWhenIdle={true}
                   updateWhenZooming={false}
                 />
+                
+                {/* Route shape / bounds effect would go here */}
+
+                <div className="absolute bottom-4 left-4 z-[1000] pointer-events-auto">
+                  <MapTileToggle satellite={satellite} onToggle={toggleSatellite} />
+                </div>
                 {/* BUG-23: navigate to stop on click instead of showing popup */}
                 {stopsForMap.map((s) => (
                   <CircleMarker
