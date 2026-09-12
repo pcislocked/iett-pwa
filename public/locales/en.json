@@ -90,7 +90,7 @@
     "announcementsFiltered": "{{count}} announcement(s) filtered from other routes.",
     "resetRibbonFilter": "Reset Filter",
     "noAnnouncementsForFilter": "No active announcements for the selected route.",
-    "mathMismatchWarningDesc": "Math Mismatch: It is physically impossible for the vehicle to arrive in this time based on its distance.",
+    "mathMismatchWarningDesc": "Math Mismatch: Unless IETT has invented teleportation or Ekrem İmamoğlu is airlifting the bus via helicopter, it is physically impossible for this vehicle to arrive in this time.",
     "staleWarningDesc": "Stale Data: The bus GPS signal has not been received for a long time. Location and ETA may not be up-to-date."
   },
   "routes": {

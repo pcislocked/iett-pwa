@@ -90,7 +90,7 @@
     "announcementsFiltered": "Diğer hatlardan {{count}} duyuru filtreleniyor.",
     "resetRibbonFilter": "Filtreyi Kaldır",
     "noAnnouncementsForFilter": "Seçilen hat için aktif duyuru bulunmuyor.",
-    "mathMismatchWarningDesc": "Fiziksel uyuşmazlık: Aracın uzaklığına göre bu sürede gelmesi fiziksel olarak mümkün görünmüyor.",
+    "mathMismatchWarningDesc": "Fiziksel uyuşmazlık: İETT ışınlanmayı icat etmediyse veya Ekrem İmamoğlu otobüsü helikopterle getirmiyorsa bu aracın bu sürede gelmesi imkansız.",
     "staleWarningDesc": "Gecikmeli veri: Otobüsün GPS sinyali uzun süredir alınamıyor. Konum ve ETA güncel olmayabilir."
   },
   "routes": {

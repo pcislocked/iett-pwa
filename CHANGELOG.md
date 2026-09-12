@@ -3,31 +3,20 @@
 All notable changes to iett-pwa are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [0.4.5.4] - 2026-09-12
-### Fixed
-- Fixed Math Mismatch threshold being too aggressive for buses coming from highways with ETAs rounded down to 1 minute by IETT. The formula now assumes a minimum effective ETA of 2 minutes to calculate required speed.
-- Cleaned up React hardcoded fallback strings (`defaultValue`) across warning components since translations are now properly merged in `tr.json` and `en.json`.
-
-## [0.4.5.3] - 2026-09-12
-### Fixed
-- Fixed Math Mismatch threshold ignoring GPS staleness, causing false positive impossible routes.
-- Restored missing translation keys and long explanations for `tr` and `en` locales.
-- Repaired corrupted Kurdish (`ku.json`) file encoding and cleared untranslated fallback strings.
-- Fixed UI version string not displaying the patch version by updating `package.json`.
-
-## [0.4.5.2] - 2026-09-12
+## [0.4.6] - 2026-09-12
 ### Added
 - Inserted visual warning boxes for stale GPS and math mismatches into the BusDetailSheet to surface upstream API anomalies clearly.
 - Extended relative time thresholds: seconds are shown up to 99s, minutes up to 99m.
-- (Dev) Injected `676767` stop and `31AMK` route mock data to test edge-cases with GPS anomalies.
+- (Dev) Injected 676767 stop and 31AMK route mock data to test edge-cases with GPS anomalies.
 
 ### Fixed
-- Fixed raw timestamp rendering bug in `InfoModal` by applying user-preferred formatting.
+- Fixed Math Mismatch threshold being too aggressive for buses coming from highways (ETAs rounded down to 1 minute) and buses stuck in traffic (GPS staleness).
+- Restored missing translation keys and long explanations for 	r and en locales, and cleaned up React hardcoded fallback strings.
+- Restored the teleportation / Ekrem İmamoğlu helicopter joke in the Math Mismatch Warning translation.
+- Repaired corrupted Kurdish (ku.json) mojibake (Ä a / â €) by encoding the invisible Braille blanks as pure ASCII escape sequences (⠀).
+- Fixed UI version string not displaying the patch version by updating package.json.
+- Fixed raw timestamp rendering bug in InfoModal by applying user-preferred formatting.
 - Fixed route info layout to adapt to IETT's new un-parsed HTML string format.
-
-## [0.4.5.1] - 2026-09-12
-### Fixed
-- Fixed bug causing false positive Math Mismatches for buses stuck in traffic by changing the formula to detect physically impossible required speeds.
 
 ## [0.4.5] - 2026-09-12
 ### Added
