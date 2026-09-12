@@ -3,25 +3,21 @@ import { render, screen, fireEvent } from '@testing-library/react'
 import MapTileToggle from '../MapTileToggle'
 
 describe('MapTileToggle Component', () => {
-  it('renders current tile icon and triggers onCycle on click', () => {
-    const handleCycle = vi.fn()
+  it('renders current tile icon and triggers onToggle on click', () => {
+    const handleToggle = vi.fn()
 
     const { rerender } = render(
-      <MapTileToggle tileIdx={0} onCycle={handleCycle} />
+      <MapTileToggle satellite={false} onToggle={handleToggle} />
     )
 
-    expect(screen.getByText('🌙')).toBeInTheDocument()
+    expect(screen.getByText('🗺️')).toBeInTheDocument()
 
     const button = screen.getByRole('button')
     fireEvent.click(button)
-    expect(handleCycle).toHaveBeenCalledTimes(1)
+    expect(handleToggle).toHaveBeenCalledTimes(1)
 
-    // Rerender with light theme (idx 1)
-    rerender(<MapTileToggle tileIdx={1} onCycle={handleCycle} />)
-    expect(screen.getByText('☀️')).toBeInTheDocument()
-
-    // Rerender with sat theme (idx 2)
-    rerender(<MapTileToggle tileIdx={2} onCycle={handleCycle} />)
+    // Rerender with satellite theme
+    rerender(<MapTileToggle satellite={true} onToggle={handleToggle} />)
     expect(screen.getByText('🛰️')).toBeInTheDocument()
   })
 })

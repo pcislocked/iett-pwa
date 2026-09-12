@@ -11,9 +11,11 @@ import { useLocationManager } from '@/hooks/useLocationManager'
 
 import CanvasFleetLayer from '@/components/CanvasFleetLayer'
 import MapSearchPanel from '@/components/MapSearchPanel'
-import MapTileToggle, { TILES } from '@/components/MapTileToggle'
+import MapTileToggle from '@/components/MapTileToggle'
 import { ISTANBUL_BOUNDS, MAP_MIN_ZOOM, MAP_MAX_ZOOM } from '@/utils/mapConstants'
 import MapBusPicker from '@/components/MapBusPicker'
+import { useUserPrefs } from '@/hooks/useUserPrefs'
+import { useMapTiles } from '@/hooks/useMapTiles'
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 function parseIsoDate(value: string | null | undefined): Date | null {
@@ -52,22 +54,33 @@ function formatAgo(from: Date | null, nowMs: number, t: TFunction): string {
 }
 
 // ── GPS Button ────────────────────────────────────────────────────────────────
-function GpsButton({ onClick, loading }: { onClick: () => void; loading: boolean }) {
+function GpsButton({ onClick, loading, consent }: { onClick: () => void; loading: boolean; consent: 'pending' | 'granted' | 'denied' }) {
   const { t } = useTranslation()
+
+  // If consent is denied, we can make it red or slashed, but for now we'll just style it differently.
+  const isDenied = consent === 'denied'
+  const colorClass = isDenied ? 'text-red-500 hover:text-red-400' : 'text-brand-500 hover:text-brand-400'
+
   return (
     <button
       onClick={onClick}
       disabled={loading}
       title={t('map.findMe', { defaultValue: 'Konumumu Bul' })}
-      className="w-10 h-10 bg-surface-card/90 backdrop-blur
+      className={`w-10 h-10 bg-surface-card/90 backdrop-blur
                  rounded-xl shadow-lg border border-surface-muted flex items-center justify-center
-                 text-brand-500 hover:text-brand-400 active:scale-95 disabled:opacity-50 transition-all"
+                 ${colorClass} active:scale-95 disabled:opacity-50 transition-all`}
     >
-      <svg className={`w-6 h-6 ${loading ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <svg className={`w-6 h-6 ${loading ? 'animate-pulse' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
         {loading ? (
           <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
         ) : (
-          <path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v10.652a1 1 0 01-1.447.894L15 18M9 10l-4.553 2.276A1 1 0 003 13.171v10.652a1 1 0 001.447.894L9 22m6-12v12m-6-12v12" />
+          <>
+            <circle cx="12" cy="12" r="4" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 2v4m0 12v4M2 12h4m12 0h4" />
+            {isDenied && (
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 4l16 16" stroke="currentColor" strokeWidth={2.5} className="text-red-500 opacity-80" />
+            )}
+          </>
         )}
       </svg>
     </button>
@@ -99,12 +112,10 @@ export default function MapPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const mapRef = useRef<L.Map | null>(null)
+  const { currentUrl, currentAttribution, satellite, toggleSatellite } = useMapTiles()
+  const { prefs } = useUserPrefs()
 
   // State
-  const [tileIdx, setTileIdx] = useState(() => {
-    const saved = localStorage.getItem('map-tile')
-    return saved ? Number(saved) : 0
-  })
 
   const [fleetVisible, setFleetVisible] = useState(false)
   const [selectedRoutes, setSelectedRoutes] = useState<string[]>([])
@@ -293,8 +304,9 @@ export default function MapPage() {
         zoomControl={false}
       >
         <TileLayer
-          key={TILES[tileIdx].key}
-          url={TILES[tileIdx].url}
+          key={currentUrl}
+          url={currentUrl}
+          attribution={currentAttribution}
           keepBuffer={2}
           updateWhenIdle={true}
           updateWhenZooming={false}
@@ -438,16 +450,12 @@ export default function MapPage() {
         {/* Floating Controls Row (GPS & Tile Toggle) */}
         <div className="flex justify-between items-end w-full">
           <div className="pointer-events-auto">
-            <GpsButton onClick={handleGpsClick} loading={gpsLoading} />
+            <GpsButton onClick={handleGpsClick} loading={gpsLoading} consent={prefs.gpsConsent} />
           </div>
           <div className="pointer-events-auto">
             <MapTileToggle
-              tileIdx={tileIdx}
-              onCycle={() => {
-                const next = (tileIdx + 1) % TILES.length
-                setTileIdx(next)
-                localStorage.setItem('map-tile', String(next))
-              }}
+              satellite={satellite}
+              onToggle={toggleSatellite}
             />
           </div>
         </div>

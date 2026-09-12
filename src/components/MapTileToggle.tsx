@@ -1,30 +1,22 @@
-/* eslint-disable react-refresh/only-export-components */
 import { useTranslation } from 'react-i18next'
 
-export const TILES = [
-  { key: 'dark', icon: 'ðŸŒ™', label: 'map.tileDark', url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png' },
-  { key: 'light', icon: 'â˜€ï¸', label: 'map.tileLight', url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png' },
-  { key: 'sat', icon: 'ðŸ›°ï¸', label: 'map.tileSat', url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}' },
-] as const
-
 interface Props {
-  tileIdx: number
-  onCycle: () => void
+  satellite: boolean
+  onToggle: () => void
 }
 
-export default function MapTileToggle({ tileIdx, onCycle }: Props) {
+export default function MapTileToggle({ satellite, onToggle }: Props) {
   const { t } = useTranslation()
-  const currentTile = TILES[tileIdx]
 
   return (
     <button
-      onClick={onCycle}
-      title={t(currentTile.label as string, { defaultValue: 'Harita gÃ¶rÃ¼nÃ¼mÃ¼nÃ¼ deÄŸiÅŸtir' })}
+      onClick={onToggle}
+      title={t(satellite ? 'map.tileMap' : 'map.tileSat', { defaultValue: satellite ? 'Harita Görünümü' : 'Uydu Görünümü' })}
       className="w-10 h-10 bg-surface-card/90 backdrop-blur
                  rounded-xl shadow-lg border border-surface-muted flex items-center justify-center
                  text-xl hover:scale-105 active:scale-95 transition-all"
     >
-      {currentTile.icon}
+      {satellite ? '???' : '???'}
     </button>
   )
 }
