@@ -390,7 +390,7 @@ export const api = {
     stops: (hatKodu: string, init?: RequestInit) => get<RouteStop[]>(`/v1/routes/${hatKodu}/stops`, init),
     schedule: (hatKodu: string, init?: RequestInit) => get<ScheduledDeparture[]>(`/v1/routes/${hatKodu}/schedule`, init),
     scheduleLite: (hatKodu: string, init?: RequestInit) => get<ScheduledDeparture[]>(`/v1/routes/${hatKodu}/schedule?lite=1`, init),
-    info: (hatKodu: string, init?: RequestInit) => get<{ hat_kodu: string; trip_duration_min: number | null; hat_tipi: string | null; tarife: string | null }>(`/v1/routes/${hatKodu}/info`, init),
+    info: (hatKodu: string, init?: RequestInit) => get<{ hat_kodu: string; trip_duration_min: number | null; hat_tipi: string | null; tarife: string | null; details?: string[] }>(`/v1/routes/${hatKodu}/info`, init),
     announcements: (hatKodu: string, init?: RequestInit) => get<Announcement[]>(`/v1/routes/${hatKodu}/announcements`, init),
     batchAnnouncements: (routes: string[], init?: RequestInit) => get<RouteAnnouncement[]>(`/v1/routes/announcements/batch?routes=${encodeURIComponent(routes.join(','))}`, init),
   },

@@ -320,14 +320,17 @@ function AmenityIcons({ amenities }: { amenities: Amenities | null }) {
 }
 
 function checkMathMismatch(arrival: Arrival, busPos: BusPosition | null, stopLat: number, stopLon: number): boolean {
-  if (arrival.eta_minutes === null || !arrival.speed_kmh) return false
+  if (arrival.eta_minutes === null || arrival.eta_minutes <= 0) return false
   const effectiveLat = arrival.lat ?? busPos?.latitude ?? null
   const effectiveLon = arrival.lon ?? busPos?.longitude ?? null
   if (effectiveLat === null || effectiveLon === null) return false
   
   const distM = haversineM(effectiveLat, effectiveLon, stopLat, stopLon)
-  const expectedMinutes = (distM / 1000) / arrival.speed_kmh * 60
-  return (expectedMinutes - arrival.eta_minutes > 5 && expectedMinutes > arrival.eta_minutes * 1.5)
+  if (distM < 200) return false // Too close to care about math mismatches
+  
+  const requiredSpeedKmh = (distM / 1000) / (arrival.eta_minutes / 60)
+  // If the required average speed to meet the ETA is > 90 km/h in city transit, the ETA is physically impossible/lying
+  return requiredSpeedKmh > 90
 }
 
 /** Bottom-sheet showing a single bus relative to the stop. */
@@ -1477,20 +1480,20 @@ export default function StopPage() {
         {/* ── Bottom strip: last updated + refresh + route filter chips ────── */}
         <div className="shrink-0 border-t border-surface-muted bg-surface-card pb-2">
           {/* Last updated row */}
-          <div className="px-4 pt-2 pb-1 flex items-center justify-between">
-            <span className="text-[11px] text-text-muted flex items-center gap-1 flex-wrap">
+          <div className="px-4 pt-2 pb-1 flex items-center justify-between gap-2">
+            <div className="text-[11px] text-text-muted flex items-center gap-2 overflow-x-auto no-scrollbar whitespace-nowrap flex-1 mask-linear-fade">
               {lastUpdated ? (
                 <>
                   <span>
                     {t('stops.lastUpdated', { time: clientTimeDisplay, defaultValue: 'güncelleme: {{time}}' })}
                   </span>
-                  {', '}
                   <span
-                    className={`inline-flex items-center px-1.5 py-0.5 rounded font-mono font-semibold text-[10px] transition-colors ${
+                    className={`shrink-0 inline-flex items-center px-1.5 py-0.5 rounded font-mono font-semibold text-[10px] transition-colors ${
                       isIettStale
                         ? 'bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/40'
                         : 'bg-surface-muted text-text-secondary'
                     }`}
+                    title={t('stops.lagTitle')}
                   >
                     iett: {iettTimeDisplay}
                   </span>
@@ -1502,15 +1505,15 @@ export default function StopPage() {
                 <button
                   onClick={() => setShowInfo(true)}
                   aria-label={t('stops.lagExplanationAria', 'Neden iki farklı saat var?')}
-                  className="flex items-center justify-center w-4 h-4 rounded-full bg-surface-muted text-[10px] font-bold text-text-secondary hover:text-text-primary transition-colors"
+                  className="shrink-0 flex items-center justify-center w-4 h-4 rounded-full bg-surface-muted text-[10px] font-bold text-text-secondary hover:text-text-primary transition-colors"
                 >
                   i
                 </button>
               )}
-            </span>
+            </div>
             <button
               onClick={() => refreshArrivals()}
-              className="flex items-center gap-1 text-[11px] text-text-secondary hover:text-text-primary transition-colors active:scale-95"
+              className="shrink-0 flex items-center gap-1 text-[11px] text-text-secondary hover:text-text-primary transition-colors active:scale-95"
             >
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
