@@ -10,13 +10,13 @@ interface InstallBannerProps {
 export default function InstallBanner({ onDismiss, onInstall }: InstallBannerProps) {
   const { t } = useTranslation()
   return (
-    <div className="fixed bottom-16 left-3 right-3 z-30 flex items-center gap-3
+    <div className="fixed bottom-[calc(4rem+env(safe-area-inset-bottom,0px))] left-3 right-3 z-[12000] flex items-center gap-3
                     bg-surface-card border border-surface-border rounded-2xl
                     px-4 py-3 shadow-xl">
       <span className="text-2xl shrink-0">🚌</span>
       <div className="flex-1 min-w-0">
         <p className="text-sm font-semibold text-white leading-tight">{t('common.addToHome', { defaultValue: 'Ana Ekrana Ekle' })}</p>
-        <p className="text-xs text-text-secondary leading-tight mt-0.5">{t('common.installBannerDesc', { defaultValue: 'çevrimdışı çalışır, pil dostu' })}</p>
+        <p className="text-xs text-text-secondary leading-tight mt-0.5">{t('common.installBannerDesc', { defaultValue: 'Hızlı erişim, pil dostu' })}</p>
       </div>
       <button
         onClick={onInstall}
