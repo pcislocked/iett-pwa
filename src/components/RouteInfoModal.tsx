@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+﻿import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { api } from '@/api/client'
 
@@ -56,7 +56,7 @@ export default function RouteInfoModal({ hatKodu, isOpen, onClose }: Props) {
         ) : data ? (
           <div className="space-y-4">
             <div className="flex flex-col gap-1">
-              <span className="text-xs font-semibold text-text-muted uppercase tracking-wider">{t('routes.duration', { defaultValue: 'Sefer S�resi' })}</span>
+              <span className="text-xs font-semibold text-text-muted uppercase tracking-wider">{t('routes.duration', { defaultValue: 'Sefer Süresi' })}</span>
               <span className="text-base text-text-primary">{data.trip_duration_min ? `${data.trip_duration_min} ${t('common.minutes', { defaultValue: 'dk' })}` : '-'}</span>
             </div>
             <div className="flex flex-col gap-1">
@@ -77,3 +77,4 @@ export default function RouteInfoModal({ hatKodu, isOpen, onClose }: Props) {
     </div>
   )
 }
+

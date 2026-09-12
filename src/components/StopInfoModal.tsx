@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+﻿import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { api } from '@/api/client'
 
@@ -56,7 +56,7 @@ export default function StopInfoModal({ dcode, isOpen, onClose }: Props) {
         ) : data ? (
           <div className="space-y-4">
             <div className="flex flex-col gap-1">
-              <span className="text-xs font-semibold text-text-muted uppercase tracking-wider">{t('stops.district', { defaultValue: 'Il�e' })}</span>
+              <span className="text-xs font-semibold text-text-muted uppercase tracking-wider">{t('stops.district', { defaultValue: 'Ilçe' })}</span>
               <span className="text-base text-text-primary">{data.ilce || '-'}</span>
             </div>
             <div className="flex flex-col gap-1">
@@ -77,3 +77,4 @@ export default function StopInfoModal({ dcode, isOpen, onClose }: Props) {
     </div>
   )
 }
+
