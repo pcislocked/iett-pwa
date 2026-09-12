@@ -94,6 +94,13 @@ export function useUserPrefs() {
     [prefs.pinnedStops],
   )
 
+  const reorderPinnedStops = useCallback((newStops: PinnedStop[]) => {
+    patch((p) => ({
+      ...p,
+      pinnedStops: newStops.map((s, i) => ({ ...s, order: i })),
+    }))
+  }, [])
+
   // ── Nicknames ─────────────────────────────────────────────────────────────
 
   const setNick = useCallback((dcode: string, nick: string) => {
@@ -240,7 +247,7 @@ export function useUserPrefs() {
   return {
     prefs,
     // pinned
-    pinStop, unpinStop, isPinned,
+    pinStop, unpinStop, isPinned, reorderPinnedStops,
     // nicknames
     setNick, getNick,
     // favourites

@@ -56,5 +56,10 @@ export function useFavorites() {
     [favorites],
   )
 
-  return { favorites, toggle, isFavorite }
+  const reorder = useCallback((newFavorites: Favorite[]) => {
+    setFavorites(newFavorites)
+    save(newFavorites)
+  }, [])
+
+  return { favorites, toggle, isFavorite, reorder }
 }

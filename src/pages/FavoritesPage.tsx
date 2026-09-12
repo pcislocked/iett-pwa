@@ -2,6 +2,23 @@ import { Link } from 'react-router-dom'
 import { useFavorites, type Favorite } from '@/hooks/useFavorites'
 import { useTranslation } from 'react-i18next'
 
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core'
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
+
 function FavItem({ fav, onRemove }: { fav: Favorite; onRemove: () => void }) {
   const { t } = useTranslation()
   const isStop = fav.kind === 'stop'
@@ -41,12 +58,52 @@ function FavItem({ fav, onRemove }: { fav: Favorite; onRemove: () => void }) {
   )
 }
 
+function SortableFavItem({ fav, onRemove }: { fav: Favorite; onRemove: () => void }) {
+  const id = fav.kind === 'stop' ? `stop-${fav.dcode}` : `route-${fav.hat_kodu}`
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 50 : 'auto',
+    opacity: isDragging ? 0.8 : 1,
+  }
+
+  return (
+    <div ref={setNodeRef} style={style} className="relative group">
+      <FavItem fav={fav} onRemove={onRemove} />
+      <div
+        {...attributes}
+        {...listeners}
+        className="absolute -left-2 top-1/2 -translate-y-1/2 z-10 w-8 h-8 flex items-center justify-center cursor-grab active:cursor-grabbing text-slate-500 hover:text-slate-300 transition-colors touch-none opacity-50 hover:opacity-100"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-4 h-4">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 9h16.5m-16.5 6.75h16.5" />
+        </svg>
+      </div>
+    </div>
+  )
+}
+
 export default function FavoritesPage() {
   const { t } = useTranslation()
-  const { favorites, toggle } = useFavorites()
+  const { favorites, toggle, reorder } = useFavorites()
 
-  const stops = favorites.filter((f) => f.kind === 'stop')
-  const routes = favorites.filter((f) => f.kind === 'route')
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  )
+
+  const handleDragEnd = (event: any) => {
+    const { active, over } = event
+    if (over && active.id !== over.id) {
+      const oldIndex = favorites.findIndex(f => (f.kind === 'stop' ? `stop-${f.dcode}` : `route-${f.hat_kodu}`) === active.id)
+      const newIndex = favorites.findIndex(f => (f.kind === 'stop' ? `stop-${f.dcode}` : `route-${f.hat_kodu}`) === over.id)
+      if (oldIndex !== -1 && newIndex !== -1) {
+        reorder(arrayMove(favorites, oldIndex, newIndex))
+      }
+    }
+  }
 
   return (
     <div className="flex flex-col h-full relative">
@@ -55,7 +112,7 @@ export default function FavoritesPage() {
         <div className="max-w-2xl mx-auto px-4 py-4">
           <h1 className="text-lg font-bold text-text-primary">{t('favorites.title', { defaultValue: 'Favorilerim' })}</h1>
           <p className="text-xs text-text-muted mt-0.5">
-            {t('favorites.savedItems', { defaultValue: '{{count}} kayıtlı öğe', count: favorites.length })}
+            {t('favorites.savedItems', { defaultValue: '{{count}} kayıtlı öge', count: favorites.length })}
           </p>
         </div>
       </div>
@@ -70,33 +127,21 @@ export default function FavoritesPage() {
             </svg>
             <p className="text-sm font-medium">{t('favorites.emptyTitle', { defaultValue: 'Henüz favori eklemediniz' })}</p>
             <p className="text-xs mt-1 text-center max-w-[200px]">
-              {t('favorites.emptyDesc', { defaultValue: 'Durak veya hat sayfalarındaki ❤ ikonuna tıklayarak ekleyebilirsiniz' })}
+              {t('favorites.emptyDesc', { defaultValue: 'Durak veya hat sayfalarındaki ⭐ ikonuna tıklayarak ekleyebilirsiniz' })}
             </p>
           </div>
         )}
 
-        {stops.length > 0 && (
+        {favorites.length > 0 && (
           <section>
-            <h2 className="text-xs font-semibold uppercase tracking-widest text-text-muted mb-3">
-              {t('favorites.stops', { defaultValue: 'Duraklar ({{count}})', count: stops.length })}
-            </h2>
-            <div className="flex flex-col gap-2">
-              {stops.map((f) => (
-                <FavItem key={`stop-${f.kind === 'stop' ? f.dcode : ''}`} fav={f} onRemove={() => toggle(f)} />
-              ))}
-            </div>
-          </section>
-        )}
-
-        {routes.length > 0 && (
-          <section>
-            <h2 className="text-xs font-semibold uppercase tracking-widest text-text-muted mb-3">
-              {t('favorites.routes', { defaultValue: 'Hatlar ({{count}})', count: routes.length })}
-            </h2>
-            <div className="flex flex-col gap-2">
-              {routes.map((f) => (
-                <FavItem key={`route-${f.kind === 'route' ? f.hat_kodu : ''}`} fav={f} onRemove={() => toggle(f)} />
-              ))}
+            <div className="flex flex-col gap-2 pl-4 pr-1">
+              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                <SortableContext items={favorites.map(f => f.kind === 'stop' ? `stop-${f.dcode}` : `route-${f.hat_kodu}`)} strategy={verticalListSortingStrategy}>
+                  {favorites.map((f) => (
+                    <SortableFavItem key={f.kind === 'stop' ? `stop-${f.dcode}` : `route-${f.hat_kodu}`} fav={f} onRemove={() => toggle(f)} />
+                  ))}
+                </SortableContext>
+              </DndContext>
             </div>
           </section>
         )}
