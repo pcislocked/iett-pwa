@@ -337,7 +337,8 @@ function checkMathMismatch(arrival: Arrival, busPos: BusPosition | null, stopLat
     }
   }
 
-  const requiredSpeedKmh = (adjustedDistM / 1000) / (arrival.eta_minutes / 60)
+  const effectiveMinutes = Math.max(2, arrival.eta_minutes)
+  const requiredSpeedKmh = (adjustedDistM / 1000) / (effectiveMinutes / 60)
   // If the required average speed to meet the ETA is > 90 km/h in city transit, the ETA is physically impossible/lying
   return requiredSpeedKmh > 90
 }
@@ -572,8 +573,8 @@ function BusDetailSheet({
               {isMismatch && (
                 <span
                   role="img"
-                  aria-label={t('stops.mathMismatchWarning', { defaultValue: 'Fiziksel uyuşmazlık' })}
-                  title={t('stops.mathMismatchWarning', { defaultValue: 'Fiziksel uyuşmazlık: Aracın uzaklığına göre bu sürede gelmesi fiziksel olarak mümkün görünmüyor.' })}
+                  aria-label={t('stops.mathMismatchWarning')}
+                  title={t('stops.mathMismatchWarning')}
                   className="text-sm cursor-help text-warning"
                 >
                   ⚠️
@@ -622,7 +623,7 @@ function BusDetailSheet({
               <div className="flex items-start gap-2 bg-amber-500/10 border border-amber-500/20 text-amber-500 rounded-lg p-2.5">
                 <span className="text-sm shrink-0">⚠️</span>
                 <p className="text-[11px] leading-tight mt-0.5">
-                  {t('stops.mathMismatchWarningDesc', { defaultValue: 'Fiziksel uyuşmazlık: Aracın uzaklığına göre bu sürede gelmesi fiziksel olarak mümkün görünmüyor.' })}
+                  {t('stops.mathMismatchWarningDesc')}
                 </p>
               </div>
             )}
@@ -630,7 +631,7 @@ function BusDetailSheet({
               <div className="flex items-start gap-2 bg-amber-500/10 border border-amber-500/20 text-amber-500 rounded-lg p-2.5">
                 <span className="text-sm shrink-0">⚠️</span>
                 <p className="text-[11px] leading-tight mt-0.5">
-                  {t('stops.staleWarningDesc', { defaultValue: 'Gecikmeli veri: Otobüsün GPS sinyali uzun süredir alınamıyor. Konum ve ETA güncel olmayabilir.' })}
+                  {t('stops.staleWarningDesc')}
                 </p>
               </div>
             )}
@@ -693,8 +694,8 @@ function EtaChip({ minutes, raw, isMismatch }: { minutes: number | null; raw: st
       {isMismatch && (
         <span
           role="img"
-          aria-label={t('stops.mathMismatchWarning', { defaultValue: 'Fiziksel uyuşmazlık' })}
-          title={t('stops.mathMismatchWarning', { defaultValue: 'Fiziksel uyuşmazlık: Aracın uzaklığına göre bu sürede gelmesi fiziksel olarak mümkün görünmüyor.' })}
+          aria-label={t('stops.mathMismatchWarning')}
+          title={t('stops.mathMismatchWarning')}
           className="ml-1 text-warning cursor-help"
         >
           ⚠️

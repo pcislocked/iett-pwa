@@ -3,6 +3,11 @@
 All notable changes to iett-pwa are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [0.4.5.4] - 2026-09-12
+### Fixed
+- Fixed Math Mismatch threshold being too aggressive for buses coming from highways with ETAs rounded down to 1 minute by IETT. The formula now assumes a minimum effective ETA of 2 minutes to calculate required speed.
+- Cleaned up React hardcoded fallback strings (`defaultValue`) across warning components since translations are now properly merged in `tr.json` and `en.json`.
+
 ## [0.4.5.3] - 2026-09-12
 ### Fixed
 - Fixed Math Mismatch threshold ignoring GPS staleness, causing false positive impossible routes.
