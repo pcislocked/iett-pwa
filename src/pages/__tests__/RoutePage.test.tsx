@@ -43,4 +43,26 @@ describe('RoutePage', () => {
       expect(screen.getByText('Tarife')).toBeInTheDocument()
     })
   })
+
+  it('renders not found for empty metadata', async () => {
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } })
+    
+    // Mock the api response for this specific test
+    vi.spyOn(require('@/api/client').api.routes, 'metadata').mockResolvedValueOnce([])
+    
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={['/route/UNKNOWN']}>
+          <Routes>
+            <Route path="/route/:hatKodu" element={<RoutePage />} />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>
+    )
+
+    await waitFor(() => {
+      expect(screen.getByText('Hat Bulunamadı')).toBeInTheDocument()
+      expect(screen.getByText('Ana Sayfaya Dön')).toBeInTheDocument()
+    })
+  })
 })

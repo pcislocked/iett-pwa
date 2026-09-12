@@ -2,6 +2,7 @@
   "common": {
     "loading": "Loading…",
     "error": "Error",
+    "goHome": "Go Home",
     "retry": "Retry",
     "close": "Close",
     "back": "Back",
@@ -39,6 +40,8 @@
   },
   "stops": {
     "title": "Stop",
+    "notFound": "Stop Not Found",
+    "notFoundDesc": "The stop you're looking for doesn't exist or could not be found in the system.",
     "arrivals": "Arrivals",
     "routes": "Routes",
     "info": "Info",
@@ -89,6 +92,8 @@
   },
   "routes": {
     "title": "Route",
+    "notFound": "Route Not Found",
+    "notFoundDesc": "The route you're looking for doesn't exist or could not be found in the system.",
     "timetable": "Timetable",
     "stops": "Stops",
     "buses": "Vehicles",

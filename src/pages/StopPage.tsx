@@ -812,12 +812,23 @@ export default function StopPage() {
     enabled: !!dcode,
   })
 
-  const { data: stopDetail, isLoading: detailLoading, isError: detailError } = useQuery<StopDetail>({
+  const { data: stopDetail, isLoading: detailLoading, error: detailErrorObj } = useQuery<StopDetail>({
     queryKey: ['stopDetail', dcode],
     queryFn: () => api.stops.detail(dcode ?? ''),
     refetchInterval: 3_600_000,
     enabled: !!dcode,
   })
+
+  // Determine freshness
+  const iettUpdatedAt = stopDetail?.updated_at ? parseGpsTimestamp(stopDetail.updated_at) : null
+  const isDataStale = useMemo(() => {
+    if (!iettUpdatedAt) return false
+    const ago = (lastUpdated - iettUpdatedAt) / 1000
+    if (ago > 300) return true
+    return false
+  }, [iettUpdatedAt, lastUpdated])
+
+  const isNotFound = (!detailLoading && !stopDetail && !detailErrorObj) || ((detailErrorObj as any)?.status === 404)
 
   // Ordered unique routes from live arrivals (used for colour assignment)
   const arrivalRouteOrder = useMemo(() => {
@@ -975,14 +986,14 @@ export default function StopPage() {
     return false
   }, [iettUpdatedAt, lastUpdated])
 
-  if (!detailLoading && !detailError && !stopDetail) {
+  if (isNotFound) {
     return (
       <div className="flex flex-col min-h-screen bg-surface-bg">
         <div className="sticky top-0 z-[10000] bg-surface-card border-b border-surface-muted safe-area-pt">
           <div className="flex items-center justify-between px-4 h-14">
             <div className="flex items-center gap-3">
-              <button type="button" onClick={() => navigate(-1)} className="p-2 -ml-2 text-text-muted hover:text-text-primary rounded-full hover:bg-surface-muted transition-colors">
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <button type="button" aria-label={t('common.back', { defaultValue: 'Geri' })} onClick={() => navigate(-1)} className="p-2 -ml-2 text-text-muted hover:text-text-primary rounded-full hover:bg-surface-muted transition-colors">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5} aria-hidden="true">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
                 </svg>
               </button>

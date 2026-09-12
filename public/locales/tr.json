@@ -2,6 +2,7 @@
   "common": {
     "loading": "Yükleniyor…",
     "error": "Hata",
+    "goHome": "Ana Sayfaya Dön",
     "retry": "Tekrar Dene",
     "close": "Kapat",
     "back": "Geri",
@@ -39,6 +40,8 @@
   },
   "stops": {
     "title": "Durak",
+    "notFound": "Durak Bulunamadı",
+    "notFoundDesc": "Aradığınız durak mevcut değil veya sistemde bulunamıyor.",
     "arrivals": "Geliş",
     "routes": "Hatlar",
     "info": "Bilgi",
@@ -89,6 +92,8 @@
   },
   "routes": {
     "title": "Hat",
+    "notFound": "Hat Bulunamadı",
+    "notFoundDesc": "Aradığınız hat mevcut değil veya sistemde bulunamıyor.",
     "timetable": "Tarife",
     "stops": "Duraklar",
     "buses": "Araçlar",
