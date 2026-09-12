@@ -545,9 +545,8 @@ function BusDetailSheet({
             {mapReady && (
               <MapContainer center={mapCenter} zoom={15} style={{ height: '100%', width: '100%' }} zoomControl={false}>
                 <TileLayer
-                  attribution='&copy; OSM contributors'
-                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                  className={theme === 'dark' ? 'dark-map-tiles' : ''}
+                  attribution={theme === 'light' ? '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' : 'Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ'}
+                  url={theme === 'light' ? 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png' : 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}'}
                 />
                 {bounds && <FitBoundsEffect bounds={bounds} />}
                 <Polyline
@@ -1250,9 +1249,8 @@ export default function StopPage() {
             >
               {/* MapResizer removed, relying on resize events */}
               <TileLayer
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                className={theme === 'dark' ? 'dark-map-tiles' : ''}
+                attribution={theme === 'light' ? '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' : 'Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ'}
+                url={theme === 'light' ? 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png' : 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}'}
                 keepBuffer={2}
                 updateWhenIdle={true}
                 updateWhenZooming={false}

@@ -296,7 +296,6 @@ export default function MapPage() {
           keepBuffer={2}
           updateWhenIdle={true}
           updateWhenZooming={false}
-          className={!satellite && theme === 'dark' ? 'dark-map-tiles' : ''}
         />
 
         {/* User GPS Location */}
