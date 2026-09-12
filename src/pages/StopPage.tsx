@@ -1593,7 +1593,7 @@ export default function StopPage() {
             onForceRefresh={() => refreshArrivals()}
             clientTime={clientTimeDisplay}
             serverTime={serverTimeDisplay}
-            gpsTime={maxGpsTime || '--:--:--'}
+            gpsTime={maxGpsTime ? formatGpsTimestamp(maxGpsTime, prefs.timestampMode, t) : '--:--:--'}
           />
         )}
       </AnimatePresence>
