@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 html {
-  font-size: clamp(14px, 1rem, 20px);
+  font-size: clamp(14px, 2vw + 10px, 20px);
 }
 
 /* WP8 Metro Design Tokens */
