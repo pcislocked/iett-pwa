@@ -15,7 +15,8 @@ import {
 } from '@/api/client'
 import { useTranslation } from 'react-i18next'
 import { TFunction } from 'i18next'
-import { useTheme } from '@/hooks/useTheme'
+import { useMapTiles } from '@/hooks/useMapTiles'
+import MapTileToggle from '@/components/MapTileToggle'
 import PullToRefresh from '@/components/PullToRefresh'
 
 type ViewState =
@@ -128,7 +129,7 @@ export default function AracBusOverlayPage() {
   const { kapino } = useParams<{ kapino: string }>()
   const navigate = useNavigate()
   const { t } = useTranslation()
-  const { theme } = useTheme()
+  const { currentUrl, currentAttribution, satellite, toggleSatellite } = useMapTiles()
 
   const [viewState, setViewState] = useState<ViewState>('booting')
   const [captchaImage, setCaptchaImage] = useState<string | null>(null)
@@ -462,8 +463,8 @@ export default function AracBusOverlayPage() {
                 zoomControl={false}
               >
                 <TileLayer
-                  attribution='&copy; CartoDB'
-                  url={`https://{s}.basemaps.cartocdn.com/${theme === 'light' ? 'light_all' : 'dark_all'}/{z}/{x}/{y}{r}.png`}
+                  attribution={currentAttribution}
+                  url={currentUrl}
                   keepBuffer={2}
                   updateWhenIdle={true}
                   updateWhenZooming={false}
@@ -472,6 +473,9 @@ export default function AracBusOverlayPage() {
                   <Marker position={[profile.latitude, profile.longitude]} icon={busIcon} />
                 )}
               </MapContainer>
+              <div className="absolute right-2 bottom-2 z-[400] pointer-events-auto">
+                <MapTileToggle satellite={satellite} onToggle={toggleSatellite} />
+              </div>
             </div>
 
             <div className="flex flex-col gap-3 p-4">
