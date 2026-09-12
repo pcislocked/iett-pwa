@@ -48,7 +48,7 @@ describe('RoutePage', () => {
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } })
     
     // Mock the api response for this specific test
-    vi.spyOn(require('@/api/client').api.routes, 'metadata').mockResolvedValueOnce([])
+    vi.mocked(api.routes.metadata).mockResolvedValueOnce([])
     
     render(
       <QueryClientProvider client={queryClient}>

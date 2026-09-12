@@ -819,16 +819,7 @@ export default function StopPage() {
     enabled: !!dcode,
   })
 
-  // Determine freshness
-  const iettUpdatedAt = stopDetail?.updated_at ? parseGpsTimestamp(stopDetail.updated_at) : null
-  const isDataStale = useMemo(() => {
-    if (!iettUpdatedAt) return false
-    const ago = (lastUpdated - iettUpdatedAt) / 1000
-    if (ago > 300) return true
-    return false
-  }, [iettUpdatedAt, lastUpdated])
-
-  const isNotFound = (!detailLoading && !stopDetail && !detailErrorObj) || ((detailErrorObj as any)?.status === 404)
+  const isNotFound = (!detailLoading && !stopDetail && !detailErrorObj) || ((detailErrorObj as unknown as { status?: number })?.status === 404)
 
   // Ordered unique routes from live arrivals (used for colour assignment)
   const arrivalRouteOrder = useMemo(() => {

@@ -448,7 +448,7 @@ export default function RoutePage() {
 
   if (!hatKodu) return null
 
-  const isNotFound = (!metaLoading && metadata && metadata.length === 0) || ((metaError as any)?.status === 404)
+  const isNotFound = (!metaLoading && metadata && metadata.length === 0) || ((metaError as unknown as { status?: number })?.status === 404)
   if (isNotFound) {
     return (
       <div className="flex flex-col min-h-screen bg-surface-bg">
