@@ -43,6 +43,7 @@
     "routes": "Routes",
     "info": "Info",
     "eta": "ETA",
+    "mathMismatchWarning": "Physical mismatch: Based on distance, this ETA is physically impossible.",
     "distance": "Distance",
     "speed": "Speed",
     "plate": "Plate",

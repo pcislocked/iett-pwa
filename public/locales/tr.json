@@ -43,6 +43,7 @@
     "routes": "Hatlar",
     "info": "Bilgi",
     "eta": "ETA",
+    "mathMismatchWarning": "Fiziksel uyuşmazlık: Aracın uzaklığına göre bu sürede gelmesi fiziksel olarak mümkün görünmüyor.",
     "distance": "Mesafe",
     "speed": "Hız",
     "plate": "Plaka",
