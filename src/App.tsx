@@ -12,6 +12,7 @@ const StopPage = lazy(() => import('@/pages/StopPage'))
 const RoutePage = lazy(() => import('@/pages/RoutePage'))
 const MapPage = lazy(() => import('@/pages/MapPage'))
 const AracBusOverlayPage = lazy(() => import('@/pages/AracBusOverlayPage'))
+const AracQueryPage = lazy(() => import('@/pages/AracQueryPage'))
 const SettingsPage = lazy(() => import('@/pages/SettingsPage'))
 const FavoritesPage = lazy(() => import('@/pages/FavoritesPage'))
 const NearbyPage = lazy(() => import('@/pages/NearbyPage'))
@@ -48,6 +49,7 @@ function MainRoutes({ loc }: { loc: ReturnType<typeof useLocation> | ReturnType<
       <Route path="/routes/:hatKodu" element={<LazyRoute><RoutePage /></LazyRoute>} />
       <Route path="/map"             element={<LazyRoute><MapPage /></LazyRoute>} />
       <Route path="/arac/bus/:kapino" element={<LazyRoute><AracBusOverlayPage /></LazyRoute>} />
+      <Route path="/arac-sorgu"      element={<LazyRoute><AracQueryPage /></LazyRoute>} />
       <Route path="/favorites"       element={<LazyRoute><FavoritesPage /></LazyRoute>} />
       <Route path="/settings"        element={<LazyRoute><SettingsPage /></LazyRoute>} />
       <Route path="/pinned"          element={<LazyRoute><PinnedManagePage /></LazyRoute>} />
