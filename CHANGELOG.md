@@ -3,6 +3,27 @@
 All notable changes to iett-pwa are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [0.4.5.2] - 2026-09-12
+### Added
+- Inserted visual warning boxes for stale GPS and math mismatches into the BusDetailSheet to surface upstream API anomalies clearly.
+- Extended relative time thresholds: seconds are shown up to 99s, minutes up to 99m.
+- (Dev) Injected `676767` stop and `31AMK` route mock data to test edge-cases with GPS anomalies.
+
+### Fixed
+- Fixed raw timestamp rendering bug in `InfoModal` by applying user-preferred formatting.
+- Fixed route info layout to adapt to IETT's new un-parsed HTML string format.
+
+## [0.4.5.1] - 2026-09-12
+### Fixed
+- Fixed bug causing false positive Math Mismatches for buses stuck in traffic by changing the formula to detect physically impossible required speeds.
+
+## [0.4.5] - 2026-09-12
+### Added
+- Completely revamped StopPage architecture.
+- Re-implemented Map logic.
+- Filtered internal/hidden stops from search results (BUG-01).
+- Added `RouteInfoModal` integration to display detailed physical properties (BUG-04).
+
 ## [0.4.4] - 2026-09-07
 
 ### Security & Dependencies
