@@ -46,6 +46,7 @@
     "routes": "Routes",
     "info": "Info",
     "eta": "ETA",
+    "mathMismatchWarning": "Physical mismatch: Unless IETT invented teleportation or the mayor brings the bus by helicopter, it's physically impossible to arrive in this time.",
     "distance": "Distance",
     "speed": "Speed",
     "plate": "Plate",

@@ -319,6 +319,17 @@ function AmenityIcons({ amenities }: { amenities: Amenities | null }) {
   )
 }
 
+function checkMathMismatch(arrival: Arrival, busPos: BusPosition | null, stopLat: number, stopLon: number): boolean {
+  if (arrival.eta_minutes === null || !arrival.speed_kmh) return false
+  const effectiveLat = arrival.lat ?? busPos?.latitude ?? null
+  const effectiveLon = arrival.lon ?? busPos?.longitude ?? null
+  if (effectiveLat === null || effectiveLon === null) return false
+  
+  const distM = haversineM(effectiveLat, effectiveLon, stopLat, stopLon)
+  const expectedMinutes = (distM / 1000) / arrival.speed_kmh * 60
+  return (expectedMinutes - arrival.eta_minutes > 5 && expectedMinutes > arrival.eta_minutes * 1.5)
+}
+
 /** Bottom-sheet showing a single bus relative to the stop. */
 function BusDetailSheet({
   arrival,
@@ -402,6 +413,8 @@ function BusDetailSheet({
   const effectiveLat = arrival.lat ?? busPos?.latitude ?? null
   const effectiveLon = arrival.lon ?? busPos?.longitude ?? null
   const hasPosition = effectiveLat !== null && effectiveLon !== null
+
+  const isMismatch = checkMathMismatch(arrival, busPos, stopLat, stopLon)
 
   const dist =
     hasPosition ? haversineM(effectiveLat!, effectiveLon!, stopLat, stopLon) : null
@@ -542,8 +555,18 @@ function BusDetailSheet({
         <div className="px-4 py-3 grid grid-cols-4 gap-2 border-t border-surface-muted">
           <div className="flex flex-col items-center gap-0.5">
             <p className="text-[10px] text-text-muted uppercase tracking-wider">{t('stops.eta')}</p>
-            <p className="text-base font-bold text-text-primary">
+            <p className="text-base font-bold text-text-primary flex items-center justify-center gap-1">
               {arrival.eta_minutes !== null ? `${arrival.eta_minutes} dk` : arrival.eta_raw}
+              {isMismatch && (
+                <span
+                  role="img"
+                  aria-label={t('stops.mathMismatchWarning', { defaultValue: 'Fiziksel uyuşmazlık' })}
+                  title={t('stops.mathMismatchWarning', { defaultValue: 'Fiziksel uyuşmazlık: Aracın uzaklığına göre bu sürede gelmesi fiziksel olarak mümkün görünmüyor.' })}
+                  className="text-sm cursor-help text-warning"
+                >
+                  ⚠️
+                </span>
+              )}
             </p>
           </div>
           <div className="flex flex-col items-center gap-0.5">
@@ -620,7 +643,8 @@ function BusDetailSheet({
   )
 }
 
-function EtaChip({ minutes, raw }: { minutes: number | null; raw: string }) {
+function EtaChip({ minutes, raw, isMismatch }: { minutes: number | null; raw: string; isMismatch?: boolean }) {
+  const { t } = useTranslation()
   const chipCls = etaChipClass(minutes)
   if (minutes === null)
     return (
@@ -630,9 +654,18 @@ function EtaChip({ minutes, raw }: { minutes: number | null; raw: string }) {
       </span>
     )
   return (
-    <span className={`inline-flex items-center justify-center text-xs font-bold
-                      px-2.5 py-1 rounded-full min-w-[52px] ${chipCls}`}>
+    <span className={`inline-flex items-center justify-center text-xs font-bold px-2.5 py-1 rounded-full min-w-[52px] ${chipCls} ${isMismatch ? 'ring-2 ring-warning' : ''}`}>
       {minutes} dk
+      {isMismatch && (
+        <span
+          role="img"
+          aria-label={t('stops.mathMismatchWarning', { defaultValue: 'Fiziksel uyuşmazlık' })}
+          title={t('stops.mathMismatchWarning', { defaultValue: 'Fiziksel uyuşmazlık: Aracın uzaklığına göre bu sürede gelmesi fiziksel olarak mümkün görünmüyor.' })}
+          className="ml-1 text-warning cursor-help"
+        >
+          ⚠️
+        </span>
+      )}
     </span>
   )
 }
@@ -1424,7 +1457,11 @@ export default function StopPage() {
                     onClick={() => setSelectedArrival(a)}
                     className="shrink-0 flex flex-col items-center justify-center gap-1 px-3 py-2 hover:bg-surface-muted/50 transition-colors"
                   >
-                    <EtaChip minutes={a.eta_minutes} raw={a.eta_raw} />
+                    <EtaChip
+                      minutes={a.eta_minutes}
+                      raw={a.eta_raw}
+                      isMismatch={stopDetail?.latitude != null && stopDetail?.longitude != null ? checkMathMismatch(a, busByKapino.get(a.kapino || '') || null, stopDetail.latitude, stopDetail.longitude) : false}
+                    />
                     <svg className="w-3 h-3 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M9 6.75V15m6-6v8.25m.503 3.498l4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 00-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0z" />
                     </svg>

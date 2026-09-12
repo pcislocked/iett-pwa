@@ -46,6 +46,7 @@
     "routes": "Hatlar",
     "info": "Bilgi",
     "eta": "ETA",
+    "mathMismatchWarning": "Fiziksel uyuşmazlık: İETT ışınlanmayı icat etmediyse veya Ekrem İmamoğlu otobüsü helikopterle getirmiyorsa bu aracın bu sürede gelmesi imkansız.",
     "distance": "Mesafe",
     "speed": "Hız",
     "plate": "Plaka",
