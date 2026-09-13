@@ -100,21 +100,28 @@ function GpsMarker({ location }: { location: [number, number] | null }) {
 }
 
 // ── Main Page ────────────────────────────────────────────────────────────────
-function AmenityIcons({ bus }: { bus: any }) {
+interface AmenityItem {
+  label: string
+  icon: string
+  value: boolean | null | undefined
+  textOverride?: string | null
+}
+
+function AmenityIcons({ bus }: { bus: Partial<BusPosition> | null | undefined }) {
   const { t } = useTranslation()
-  const items = [
+  const items: AmenityItem[] = [
     { label: t('amenities.usb', 'USB'), icon: '🔌', value: bus?.has_usb },
     { label: t('amenities.wifi', 'Wİ-Fİ'), icon: '🛜', value: bus?.has_wifi },
     { label: t('amenities.ac', 'KLİMA'), icon: '❄️', value: bus?.is_air_conditioned },
     { label: t('amenities.accessible', 'ERİŞİLEBİLİR'), icon: '♿', value: bus?.accessible },
     { label: t('amenities.bicycle', 'BİSİKLET'), icon: '🚲', value: bus?.has_bicycle_rack },
-    { label: t('amenities.capacity', 'KAPASİTE'), icon: '👥', value: bus?.full_capacity ? true : null, textOverride: bus?.full_capacity ? t('amenities.capacityCount', { count: bus.full_capacity, defaultValue: '{{count}} Kişi' }) : null },
+    { label: t('amenities.capacity', 'KAPASİTE'), icon: bus?.full_capacity ? true : null, textOverride: bus?.full_capacity ? t('amenities.capacityCount', { count: bus.full_capacity, defaultValue: '{{count}} Kişi' }) : null },
   ]
-  const known = items.filter((i: any) => i.value != null)
+  const known = items.filter((i) => i.value != null)
   if (known.length === 0) return null
   return (
     <div className="px-4 py-3 flex gap-3 justify-center flex-wrap border-t border-surface-muted bg-surface-muted/10">
-      {known.map((item: any) => (
+      {known.map((item) => (
         <span
           key={item.label}
           className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full ${
@@ -271,7 +278,7 @@ export default function MapPage() {
         } catch(e) { console.error(e) }
         
         if (alive) {
-          setSelectedDetail(enriched as any)
+          setSelectedDetail(enriched as unknown as BusDetail)
           setDetailLoading(false)
           if (res.latitude && res.longitude) {
             mapRef.current?.flyTo([res.latitude, res.longitude], 15, { duration: 0.5 })
