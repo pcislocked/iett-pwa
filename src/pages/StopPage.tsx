@@ -15,7 +15,7 @@ import { useTranslation } from 'react-i18next'
 import { useGlobalNotices } from '@/hooks/useGlobalNotices'
 import { etaChipClass } from '@/utils/etaColor'
 import { isGpsStale, parseGpsTimestamp, formatGpsTimestamp } from '@/utils/dateUtils'
-import { useTheme } from '@/hooks/useTheme'
+
 import { useMapTiles } from '@/hooks/useMapTiles'
 import PullToRefresh from '@/components/PullToRefresh'
 import StopInfoModal from '@/components/StopInfoModal'
@@ -365,7 +365,7 @@ function BusDetailSheet({
   const { t } = useTranslation()
   const { prefs } = useUserPrefs()
   const [mapReady, setMapReady] = useState(false)
-  const { theme } = useTheme()
+  
   const { currentUrl, currentAttribution, satellite, toggleSatellite } = useMapTiles()
 
   const dialogRef = useRef<HTMLDivElement>(null)
@@ -713,7 +713,7 @@ const globalRouteIconCache = new Map<string, L.DivIcon>()
 export default function StopPage() {
   const { t } = useTranslation()
   const { prefs, isPinned, pinStop, unpinStop } = useUserPrefs()
-  const { theme } = useTheme()
+  
   const { currentUrl, currentAttribution, satellite, toggleSatellite } = useMapTiles()
   const { dcode } = useParams<{ dcode: string }>()
   const navigate = useNavigate()

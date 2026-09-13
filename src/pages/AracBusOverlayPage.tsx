@@ -39,6 +39,9 @@ function boolBadge(value: boolean | null | undefined, t: TFunction) {
 
 function errorText(error: unknown, t: TFunction): string {
   if (error instanceof ApiHttpError) {
+    if (error.status === 429) {
+      return t('arac.rateLimitError', { defaultValue: 'İETT sistemi şu an çok yoğun. Lütfen biraz bekleyip tekrar deneyin. (429)' })
+    }
     return error.responseText || error.message
   }
   if (error instanceof Error) {

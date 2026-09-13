@@ -402,6 +402,7 @@ export const api = {
     segments: (init?: RequestInit) => get<TrafficSegment[]>('/v1/traffic/segments', init),
   },
   arac: {
+    suggest: (q: string, init?: RequestInit) => get<Array<{ doorNumber: string; plate: string }>>(`/v1/arac/suggest?q=${encodeURIComponent(q)}`, init),
     captcha: (init?: RequestInit) => post<AracCaptchaResponse>('/v1/arac/session/captcha', undefined, init),
     createSession: (payload: AracSessionCreateRequest, init?: RequestInit) =>
       post<AracSessionCreateResponse>('/v1/arac/session/create', payload, init),
@@ -409,6 +410,8 @@ export const api = {
       get<{ profile: BusPosition; missions: AracMissionsResponse }>(`/v1/arac/fleet/${encodeURIComponent(kapino)}/detail`, {
         ...init, headers: { ...init?.headers, 'X-Arac-Session-Key': session.sessionKey },
       }),
+    autoDetail: (kapino: string, init?: RequestInit) =>
+      get<{ profile: BusPosition; missions: AracMissionsResponse }>(`/v1/arac/fleet/${encodeURIComponent(kapino)}/auto-detail`, init),
   },
   notices: {
     global: (init?: RequestInit) => get<GlobalNotice[]>('/v1/announcements/global', init),

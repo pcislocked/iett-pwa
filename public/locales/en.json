@@ -36,7 +36,8 @@
     "search": "Search",
     "settings": "Settings",
     "favorites": "Favorites",
-    "fleetMap": "Fleet Map"
+    "fleetMap": "Fleet Map",
+    "aracQuery": "Door Number Query"
   },
   "stops": {
     "title": "Stop",
@@ -152,7 +153,8 @@
     "secondsAgo": "{{seconds}}s ago",
     "minutesAgo": "{{minutes}}m ago",
     "hoursAgo": "{{hours}}h ago",
-    "ibbNotice": "Since IMM Administration has disabled the public global GPS location feeds of the buses, we cannot fetch the entire live fleet at the moment. You can still search for a specific route (e.g. 500T) from the search bar to view its active buses normally."
+    "ibbNotice": "Since IMM Administration has disabled the public global GPS location feeds of the buses, we cannot fetch the entire live fleet at the moment. You can still search for a specific route (e.g. 500T) from the search bar to view its active buses normally.",
+    "plate": "Plate"
   },
   "fleet": {
     "lastRoute": "Last: {{code}}",
@@ -168,7 +170,10 @@
     "usb": "USB",
     "wifi": "Wi-Fi",
     "ac": "A/C",
-    "accessible": "Accessible"
+    "accessible": "Accessible",
+    "bicycle": "Bicycle",
+    "capacity": "Capacity",
+    "capacityCount": "{{count}} PAX"
   },
   "settings": {
     "title": "Settings",
@@ -305,7 +310,12 @@
     "softwareVersion": "Software Version",
     "relativeAgo": "{{value}} ago",
     "relativeIn": "in {{value}}",
-    "hour": "hr"
+    "hour": "hr",
+    "queryTitle": "Door Number Query",
+    "queryDesc": "Get detailed info via door number from arac.iett.gov.tr.",
+    "results": "Results",
+    "live": "Live",
+    "remote": "Remote"
   },
   "favorites": {
     "open": "Open",
@@ -339,7 +349,8 @@
     "manageFavsDesc": "Organize favorite stops and routes",
     "searchDesc": "Search routes or stops",
     "mapDesc": "View all buses on map",
-    "settingsDesc": "App settings and data management"
+    "settingsDesc": "App settings and data management",
+    "aracQueryDesc": "Get detailed info via arac.iett.gov.tr"
   },
   "pinned": {
     "remove": "Remove",

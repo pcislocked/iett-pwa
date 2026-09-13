@@ -1,9 +1,9 @@
 import { useState, useRef, useEffect, useMemo } from 'react'
-import { MapContainer, TileLayer, CircleMarker, Popup, useMap } from 'react-leaflet'
+import { MapContainer, TileLayer, CircleMarker, Popup, useMap, Marker } from 'react-leaflet'
 import * as L from 'leaflet'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { useTheme } from '@/hooks/useTheme'
+
 
 import { api, type BusDetail, type BusPosition, type NearbyStop } from '@/api/client'
 import { useFleet } from '@/hooks/useFleet'
@@ -80,6 +80,7 @@ function GpsButton({ onClick, loading, consent }: { onClick: () => void; loading
 
 function GpsMarker({ location }: { location: [number, number] | null }) {
   const map = useMap()
+  const { t } = useTranslation()
   useEffect(() => {
     if (location) map.flyTo(location, 15, { duration: 1.5 })
   }, [location, map])
@@ -92,24 +93,61 @@ function GpsMarker({ location }: { location: [number, number] | null }) {
       pathOptions={{ color: '#3b82f6', fillColor: '#3b82f6', fillOpacity: 0.5, weight: 2 }}
     >
       <Popup>
-        <div className="text-sm font-bold">Konumunuz</div>
+        <div className="text-sm font-bold">{t('map.yourLocation', { defaultValue: 'Konumunuz' })}</div>
       </Popup>
     </CircleMarker>
   )
 }
 
 // ── Main Page ────────────────────────────────────────────────────────────────
+function AmenityIcons({ bus }: { bus: any }) {
+  const { t } = useTranslation()
+  const items = [
+    { label: t('amenities.usb', 'USB'), icon: '🔌', value: bus?.has_usb },
+    { label: t('amenities.wifi', 'Wİ-Fİ'), icon: '🛜', value: bus?.has_wifi },
+    { label: t('amenities.ac', 'KLİMA'), icon: '❄️', value: bus?.is_air_conditioned },
+    { label: t('amenities.accessible', 'ERİŞİLEBİLİR'), icon: '♿', value: bus?.accessible },
+    { label: t('amenities.bicycle', 'BİSİKLET'), icon: '🚲', value: bus?.has_bicycle_rack },
+    { label: t('amenities.capacity', 'KAPASİTE'), icon: '👥', value: bus?.full_capacity ? true : null, textOverride: bus?.full_capacity ? t('amenities.capacityCount', { count: bus.full_capacity, defaultValue: '{{count}} Kişi' }) : null },
+  ]
+  const known = items.filter((i: any) => i.value != null)
+  if (known.length === 0) return null
+  return (
+    <div className="px-4 py-3 flex gap-3 justify-center flex-wrap border-t border-surface-muted bg-surface-muted/10">
+      {known.map((item: any) => (
+        <span
+          key={item.label}
+          className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full ${
+            item.value
+              ? 'bg-emerald-900/50 text-emerald-400'
+              : 'bg-surface-muted text-text-muted line-through'
+          }`}
+        >
+          {item.icon} {item.textOverride || item.label}
+        </span>
+      ))}
+    </div>
+  )
+}
+
+const pulseIcon = L.divIcon({
+  className: 'relative',
+  html: '<div class="w-8 h-8 bg-emerald-500/40 rounded-full animate-ping border border-emerald-400/50"></div><div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3 h-3 bg-emerald-500 rounded-full border-2 border-white shadow-lg"></div>',
+  iconSize: [32, 32],
+  iconAnchor: [16, 16],
+})
+
 export default function MapPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const mapRef = useRef<L.Map | null>(null)
   const { currentUrl, currentAttribution, satellite, toggleSatellite } = useMapTiles()
-  const { theme } = useTheme()
+  
   const { prefs } = useUserPrefs()
 
   // State
 
-  const [fleetVisible, setFleetVisible] = useState(false)
+  const [fleetVisible, setFleetVisible] = useState(true)
   const [selectedRoutes, setSelectedRoutes] = useState<string[]>([])
   const [selectedStops, setSelectedStops] = useState<{ dcode: string; name: string }[]>([])
 
@@ -217,9 +255,23 @@ export default function MapPage() {
     let alive = true
     setDetailLoading(true)
     api.fleet.detail(selectedKapino)
-      .then(res => {
+      .then(async (res) => {
+        if (!alive) return
+        let enriched = { ...res }
+        try {
+          const aracData = await api.arac.autoDetail(selectedKapino)
+          if (aracData && aracData.profile) {
+            enriched = { ...enriched, ...aracData.profile }
+            if (!enriched.resolved_route_code && aracData.missions?.missions?.length > 0) {
+              const activeMission = aracData.missions.missions[0]
+              enriched.resolved_route_code = activeMission.line_code || null
+              enriched.direction = activeMission.first_stop || null
+            }
+          }
+        } catch(e) { console.error(e) }
+        
         if (alive) {
-          setSelectedDetail(res)
+          setSelectedDetail(enriched as any)
           setDetailLoading(false)
           if (res.latitude && res.longitude) {
             mapRef.current?.flyTo([res.latitude, res.longitude], 15, { duration: 0.5 })
@@ -337,23 +389,23 @@ export default function MapPage() {
             onMultiBusClick={setPickerBuses}
           />
         )}
+
+        {/* Selected Bus Pulse Overlay */}
+        {selectedKapino && mergedDetail?.latitude && mergedDetail?.longitude && (
+          <Marker position={[mergedDetail.latitude, mergedDetail.longitude]} icon={pulseIcon} zIndexOffset={1000} />
+        )}
       </MapContainer>
 
-      {/* ── Bottom Controls Overlay ── */}
+      {/* ── 🚕 Bottom Controls Overlay ── */}
       {selectedKapino && (
-        <div className="absolute bottom-0 left-0 right-0 z-[1001] pointer-events-none flex justify-center">
-          <div className="pointer-events-auto w-full max-w-2xl bg-surface-card border-t border-surface-border rounded-t-2xl shadow-2xl overflow-hidden pb-4">
-
-            {/* Drag Handle (Visual) */}
-            <div className="flex justify-center pt-3 pb-1">
-              <div className="w-10 h-1.5 rounded-full bg-slate-600/80" />
-            </div>
+        <div className="absolute bottom-[160px] left-0 right-0 z-[1001] pointer-events-none flex justify-center pb-2 px-2">
+          <div className="pointer-events-auto w-full max-w-2xl bg-surface-card border border-surface-border rounded-xl shadow-2xl overflow-hidden pb-3">
 
             {/* Header */}
-            <div className="flex items-center gap-3 px-4 py-2">
+            <div className="flex items-center gap-3 px-4 py-3">
               <div
                 className="text-white font-mono font-bold text-sm rounded-xl px-3 py-1.5 shrink-0"
-                style={{ backgroundColor: mergedDetail?.route_is_live ? 'var(--color-warning)' : 'var(--color-text-3)' }}
+                style={{ backgroundColor: mergedDetail?.resolved_route_code ? 'var(--color-warning)' : 'var(--color-text-3)' }}
               >
                 {mergedDetail?.resolved_route_code || '...'}
               </div>
@@ -380,12 +432,12 @@ export default function MapPage() {
               <div className="flex flex-col items-center gap-0.5">
                 <p className="text-[10px] text-text-muted uppercase tracking-wider">{t('map.speed', 'Hız')}</p>
                 <p className="text-base font-bold text-text-primary">
-                  {mergedDetail?.speed ?? '—'} <span className="text-xs font-normal">km/h</span>
+                  {mergedDetail?.speed ?? '?'} <span className="text-xs font-normal">km/h</span>
                 </p>
               </div>
               <div className="flex flex-col items-center gap-0.5">
-                <p className="text-[10px] text-text-muted uppercase tracking-wider">Plaka</p>
-                <p className="text-sm font-bold text-text-primary font-mono mt-0.5">{mergedDetail?.plate ?? '—'}</p>
+                <p className="text-[10px] text-text-muted uppercase tracking-wider">{t('map.plate', { defaultValue: 'Plaka' })}</p>
+                <p className="text-sm font-bold text-text-primary font-mono mt-0.5">{mergedDetail?.plate ?? '?'}</p>
               </div>
               <div className="flex flex-col items-center gap-0.5">
                 <p className="text-[10px] text-text-muted uppercase tracking-wider">{t('arac.lastSeen', 'Son Görülme')}</p>
@@ -394,6 +446,9 @@ export default function MapPage() {
                 </p>
               </div>
             </div>
+
+            {/* Amenity Icons (Air Conditioning, etc.) */}
+            <AmenityIcons bus={mergedDetail} />
 
             {/* CTA Buttons */}
             <div className="px-4 pt-4">

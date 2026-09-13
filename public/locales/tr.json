@@ -36,7 +36,8 @@
     "search": "Arama",
     "settings": "Ayarlar",
     "favorites": "Favoriler",
-    "fleetMap": "Filo Haritası"
+    "fleetMap": "Filo Haritası",
+    "aracQuery": "Kapı No Sorgulama"
   },
   "stops": {
     "title": "Durak",
@@ -152,7 +153,8 @@
     "secondsAgo": "{{seconds}} sn önce",
     "minutesAgo": "{{minutes}} dk önce",
     "hoursAgo": "{{hours}} sa önce",
-    "ibbNotice": "İBB Yönetimi, halkın vergileriyle çalışan otobüslerin global konum verilerini halka kapattığı için tüm filoyu şu an çekemiyoruz. Arama çubuğundan belirli bir hat aratarak (ör: 500T) o hattın araçlarını sorunsuzca görmeye devam edebilirsiniz."
+    "ibbNotice": "İBB Yönetimi, halkın vergileriyle çalışan otobüslerin global konum verilerini halka kapattığı için tüm filoyu şu an çekemiyoruz. Arama çubuğundan belirli bir hat aratarak (ör: 500T) o hattın araçlarını sorunsuzca görmeye devam edebilirsiniz.",
+    "plate": "Plaka"
   },
   "fleet": {
     "lastRoute": "Son: {{code}}",
@@ -168,7 +170,10 @@
     "usb": "USB",
     "wifi": "Wi-Fi",
     "ac": "Klima",
-    "accessible": "Engelli"
+    "accessible": "Engelli",
+    "bicycle": "Bisiklet",
+    "capacity": "Kapasite",
+    "capacityCount": "{{count}} Kişi"
   },
   "settings": {
     "title": "Ayarlar",
@@ -305,7 +310,12 @@
     "softwareVersion": "Yazılım Sürümü",
     "relativeAgo": "{{value}} önce",
     "relativeIn": "{{value}} sonra",
-    "hour": "sa"
+    "hour": "sa",
+    "queryTitle": "Kapı No Sorgulama",
+    "queryDesc": "arac.iett.gov.tr üzerinden araç kapı numarası ile detaylı bilgi alın.",
+    "results": "Sonuçlar",
+    "live": "Canlı",
+    "remote": "Uzak"
   },
   "favorites": {
     "open": "Aç",
@@ -339,7 +349,8 @@
     "manageFavsDesc": "Favori durak ve hatlarını düzenle",
     "searchDesc": "Hat veya durak ara",
     "mapDesc": "Tüm otobüsleri haritada gör",
-    "settingsDesc": "Uygulama ayarları ve veri yönetimi"
+    "settingsDesc": "Uygulama ayarları ve veri yönetimi",
+    "aracQueryDesc": "arac.iett.gov.tr üzerinden detaylı bilgi alın"
   },
   "pinned": {
     "remove": "Kaldır",

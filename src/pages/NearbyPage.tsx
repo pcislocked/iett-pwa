@@ -15,7 +15,7 @@ import { distanceLabel } from '@/utils/distance'
 import { useTranslation } from 'react-i18next'
 import { useUserPrefs } from '@/hooks/useUserPrefs'
 import { useLocationManager } from '@/hooks/useLocationManager'
-import { useTheme } from '@/hooks/useTheme'
+
 import { useMapTiles } from '@/hooks/useMapTiles'
 import MapTileToggle from '@/components/MapTileToggle'
 import PullToRefresh from '@/components/PullToRefresh'
@@ -51,7 +51,7 @@ function NearbyMapView({
   onSelect: (code: string) => void
 }) {
   const { t } = useTranslation()
-  const { theme } = useTheme()
+  
   const { currentUrl, currentAttribution, satellite, toggleSatellite } = useMapTiles()
   const userIcon = L.divIcon({
     className: '',

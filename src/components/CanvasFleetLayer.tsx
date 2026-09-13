@@ -4,15 +4,15 @@ import * as L from 'leaflet'
 import type { BusPosition } from '@/api/client'
 
 // Renk paleti — seçili hatlar farklı renk alır
-const PALETTE = ['#f97316','#22c55e','#3b82f6','#a855f7','#ef4444']
+const PALETTE = ['#f97316','#3b82f6','#a855f7','#ef4444', '#eab308']
 const DEFAULT_COLOR = '#3b82f6'
 
 interface Props {
   buses: BusPosition[]
-  selectedRoutes: string[]            // Hangi hatlar seçili (renklendirme için)
-  selectedKapino: string | null       // Seçili araç (trail sadece buna çizilir)
+  selectedRoutes: string[]
+  selectedKapino: string | null
   onBusClick: (kapino: string) => void
-  onMultiBusClick: (buses: BusPosition[]) => void  // Üst üste binen araçlar
+  onMultiBusClick: (buses: BusPosition[]) => void
 }
 
 export default function CanvasFleetLayer({ buses, selectedRoutes, selectedKapino, onBusClick, onMultiBusClick }: Props) {
@@ -23,7 +23,6 @@ export default function CanvasFleetLayer({ buses, selectedRoutes, selectedKapino
   const trailsRef = useRef<L.Polyline[]>([])
   const timerRef = useRef<number | null>(null)
 
-  // Renderer bir kere oluşturulur
   useEffect(() => {
     rendererRef.current = L.canvas({ padding: 0.5 })
     layerRef.current = L.layerGroup().addTo(map)
@@ -34,37 +33,38 @@ export default function CanvasFleetLayer({ buses, selectedRoutes, selectedKapino
     }
   }, [map])
 
-  // buses veya selectedRoutes değişince marker'ları güncelle
   useEffect(() => {
     const layer = layerRef.current
     const renderer = rendererRef.current
     if (!layer || !renderer) return
 
-    // Eski marker'ları temizle
     markersRef.current.forEach(m => m.remove())
     trailsRef.current.forEach(t => t.remove())
     markersRef.current = []
     trailsRef.current = []
 
     const zoom = map.getZoom()
-    // Zoom-based sizing
     const radius = zoom < 12 ? 2 : zoom < 14 ? 4 : 6
 
     for (const bus of buses) {
       if (!Number.isFinite(bus.latitude) || !Number.isFinite(bus.longitude)) continue
 
-      // Renk: seçili hat varsa o hattın rengi, yoksa varsayılan
+      const isSelected = selectedKapino === bus.kapino
       const routeIdx = bus.route_code ? selectedRoutes.indexOf(bus.route_code) : -1
-      const color = routeIdx >= 0 ? PALETTE[routeIdx % PALETTE.length] : DEFAULT_COLOR
+      
+      // SADECE seçili araç yeşil olacak
+      const color = isSelected ? '#22c55e' : (routeIdx >= 0 ? PALETTE[routeIdx % PALETTE.length] : DEFAULT_COLOR)
+      // Seçili araç biraz daha büyük
+      const finalRadius = isSelected ? radius * 1.5 : radius
 
       const marker = L.circleMarker([bus.latitude, bus.longitude], {
         renderer,
-        radius,
+        radius: finalRadius,
         fillColor: color,
-        fillOpacity: 0.85,
-        color: 'rgba(255,255,255,0.4)',
-        weight: 1,
-        interactive: true,    // ← TIKLANABILIR
+        fillOpacity: isSelected ? 1 : 0.85,
+        color: isSelected ? '#10b981' : 'rgba(255,255,255,0.4)',
+        weight: isSelected ? 2 : 1,
+        interactive: true,
       })
 
       marker.on('click', () => {

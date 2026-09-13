@@ -11,7 +11,7 @@ import { getDirectionLabel } from '@/utils/routeDirectionLabels'
 import { VariantSelect } from '@/components/VariantSelect'
 import RouteInfoModal from '@/components/RouteInfoModal'
 import { useTranslation } from 'react-i18next'
-import { useTheme } from '@/hooks/useTheme'
+
 import { useMapTiles } from '@/hooks/useMapTiles'
 import MapTileToggle from '@/components/MapTileToggle'
 
@@ -448,7 +448,7 @@ export default function RoutePage() {
   const favItem = useMemo(() => ({ kind: 'route' as const, hat_kodu: hatKodu ?? '', name: routeName }), [hatKodu, routeName])
   const favorited = isFavorite(favItem)
 
-  const { theme } = useTheme()
+  
   const { currentUrl, currentAttribution, satellite, toggleSatellite } = useMapTiles()
 
   if (!hatKodu) return null

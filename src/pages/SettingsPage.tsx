@@ -48,7 +48,7 @@ function ThemeSwitcher() {
 }
 
 function MockLocationPicker({ initialLat, initialLon, onPick }: { initialLat: number, initialLon: number, onPick: (lat: number, lon: number) => void }) {
-  const { theme } = useTheme()
+  
   const { currentUrl, currentAttribution } = useMapTiles()
   const customIcon = L.divIcon({
     className: '',
