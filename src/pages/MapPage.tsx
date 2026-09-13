@@ -114,8 +114,7 @@ function AmenityIcons({ bus }: { bus: Partial<BusPosition> | null | undefined })
     { label: t('amenities.wifi', 'Wİ-Fİ'), icon: '🛜', value: bus?.has_wifi },
     { label: t('amenities.ac', 'KLİMA'), icon: '❄️', value: bus?.is_air_conditioned },
     { label: t('amenities.accessible', 'ERİŞİLEBİLİR'), icon: '♿', value: bus?.accessible },
-    { label: t('amenities.bicycle', 'BİSİKLET'), icon: '🚲', value: bus?.has_bicycle_rack },
-    { label: t('amenities.capacity', 'KAPASİTE'), icon: bus?.full_capacity ? true : null, textOverride: bus?.full_capacity ? t('amenities.capacityCount', { count: bus.full_capacity, defaultValue: '{{count}} Kişi' }) : null },
+    { label: t('amenities.capacity', 'KAPASİTE'), icon: '👥', value: bus?.full_capacity ? true : null, textOverride: bus?.full_capacity ? t('amenities.capacityCount', { count: bus.full_capacity, defaultValue: '{{count}} Kişi' }) : null },
   ]
   const known = items.filter((i) => i.value != null)
   if (known.length === 0) return null
