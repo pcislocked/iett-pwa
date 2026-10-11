@@ -266,6 +266,8 @@
     "favRoutes": "Favori Hatlar",
     "emptyState": "Hat kodu, durak adı veya 4+ haneli durak numarası girin",
     "stop": "Durak",
+    "stopNumber": "Durak #{{code}}",
+    "route": "Hat",
     "clearRecent": "Temizle"
   },
   "route": {

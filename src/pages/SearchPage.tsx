@@ -86,7 +86,7 @@ export default function SearchPage() {
     setQuery('')
     setResults([])
     if (r.kind === 'stop-direct') {
-      addRecent({ kind: 'stop', code: r.dcode, name: `Durak #${r.dcode}` })
+      addRecent({ kind: 'stop', code: r.dcode, name: t('search.stopNumber', { defaultValue: 'Durak #{{code}}', code: r.dcode }) })
       navigate(`/stops/${r.dcode}`)
     } else if (r.kind === 'stop') {
       addRecent({ kind: 'stop', code: r.dcode, name: r.name, direction: r.direction })
@@ -190,8 +190,8 @@ export default function SearchPage() {
                         {r.hat_kodu}
                       </span>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-bold text-text-primary truncate">{r.hat_kodu}</p>
-                        <p className="text-xs text-text-secondary truncate mt-0.5">{r.name}</p>
+                        <p className="text-sm font-semibold text-text-primary truncate">{r.name}</p>
+                        <p className="text-xs text-text-muted truncate mt-0.5">{t('search.route', { defaultValue: 'Hat' })}</p>
                       </div>
                     </div>
                   )}
