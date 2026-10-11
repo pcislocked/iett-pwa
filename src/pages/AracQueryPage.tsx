@@ -25,8 +25,8 @@ export default function AracQueryPage() {
     if (fleet) {
       // Find in local fleet first. Dash- and space-agnostic matching for kapino and plate
       const localMatches = fleet.filter(b => {
-        const cleanKapino = b.kapino.replace(/[^A-Z0-9]/g, '')
-        const cleanPlate = (b.plate || '').replace(/[^A-Z0-9]/g, '')
+        const cleanKapino = (b.kapino || '').toUpperCase().replace(/[^A-Z0-9]/g, '')
+        const cleanPlate = (b.plate || '').toUpperCase().replace(/[^A-Z0-9]/g, '')
         return cleanKapino.includes(cleanTerm) || (cleanPlate && cleanPlate.includes(cleanTerm))
       })
       results = localMatches.map(b => ({ kapino: b.kapino, plate: b.plate || undefined, source: 'local' as const })).slice(0, 10)

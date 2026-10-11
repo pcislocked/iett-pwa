@@ -266,6 +266,8 @@
     "favRoutes": "Favorite Routes",
     "emptyState": "Enter route code, stop name or 4+ digit stop number",
     "stop": "Stop",
+    "stopNumber": "Stop #{{code}}",
+    "route": "Route",
     "clearRecent": "Clear"
   },
   "route": {

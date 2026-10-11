@@ -98,15 +98,15 @@ export default function MapSearchPanel({
     // 1. Filo yüklüyse client-side filtrele
     if (fleet && cleanQ.length >= 2) {
       results = fleet.filter(b => {
-        const cleanKapino = b.kapino.replace(/[^A-Z0-9]/g, '')
-        const cleanPlate = (b.plate || '').replace(/[^A-Z0-9]/g, '')
+        const cleanKapino = (b.kapino || '').toUpperCase().replace(/[^A-Z0-9]/g, '')
+        const cleanPlate = (b.plate || '').toUpperCase().replace(/[^A-Z0-9]/g, '')
         return cleanKapino.includes(cleanQ) || (cleanPlate && cleanPlate.includes(cleanQ))
       }).slice(0, 5)
     }
 
     // 2. Filo yüklü değilse veya sonuç bulamadıysa, yazılan şey kapı no veya plakaya benziyorsa direkt arama seçeneği sun
     if (results.length === 0) {
-      const isKapinoLike = /^[A-ZÜĞŞÇÖİ]{1,2}-?\d{1,4}$/.test(q)
+      const isKapinoLike = /^[A-ZÜĞŞÇÖİ]{1,2}-?\d{3,4}$/.test(q) || /^M-?\d{4}$/.test(q)
       const isPlateLike = /^34\s?[A-Z]{1,3}\s?\d{2,4}$/.test(q.replace(/\s+/g, ''))
 
       if (isKapinoLike || isPlateLike) {
