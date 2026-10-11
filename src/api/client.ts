@@ -223,6 +223,8 @@ export interface StopSearchResult {
   dcode: string
   name: string
   path: string | null
+  direction?: string | null
+  district?: string | null
 }
 
 export interface StopDetail {

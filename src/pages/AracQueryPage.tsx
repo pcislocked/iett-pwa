@@ -14,7 +14,8 @@ export default function AracQueryPage() {
 
   useEffect(() => {
     const term = query.trim().toUpperCase()
-    if (term.length < 1) {
+    const cleanTerm = term.replace(/[^A-Z0-9]/g, '')
+    if (cleanTerm.length < 1) {
       setSuggestions([])
       return
     }
@@ -22,12 +23,12 @@ export default function AracQueryPage() {
     let results: Array<{ kapino: string; plate?: string; source: 'local' | 'remote' }> = []
     
     if (fleet) {
-      // Find in local fleet first. Allow matching C1753 to C-1753
-      const cleanTerm = term.replace(/-/g, '')
-      const localMatches = fleet.filter(b => 
-        b.kapino.replace(/-/g, '').includes(cleanTerm) || 
-        b.plate?.toUpperCase().includes(term)
-      )
+      // Find in local fleet first. Dash- and space-agnostic matching for kapino and plate
+      const localMatches = fleet.filter(b => {
+        const cleanKapino = b.kapino.replace(/[^A-Z0-9]/g, '')
+        const cleanPlate = (b.plate || '').replace(/[^A-Z0-9]/g, '')
+        return cleanKapino.includes(cleanTerm) || (cleanPlate && cleanPlate.includes(cleanTerm))
+      })
       results = localMatches.map(b => ({ kapino: b.kapino, plate: b.plate || undefined, source: 'local' as const })).slice(0, 10)
     }
 
@@ -45,12 +46,15 @@ export default function AracQueryPage() {
   }, [query, fleet])
 
   const handleQueryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let val = e.target.value.toUpperCase()
-    // Auto-inject hyphen if it starts with a letter and is followed by a number/letter (e.g. C1 -> C-1)
-    if (/^[A-Z][0-9A-Z]/.test(val) && val[1] !== '-') {
-      val = val[0] + '-' + val.substring(1)
+    const val = e.target.value.toUpperCase()
+    const isDeleting = val.length < query.length
+    // Auto-inject hyphen if it starts with a letter and is followed by a number/letter (e.g. C1 -> C-1),
+    // but only when typing forward so backspace isn't trapped.
+    if (!isDeleting && /^[A-Z][0-9A-Z]/.test(val) && val[1] !== '-') {
+      setQuery(val[0] + '-' + val.substring(1))
+    } else {
+      setQuery(val)
     }
-    setQuery(val)
   }
 
   const onSubmit = (e: React.FormEvent) => {

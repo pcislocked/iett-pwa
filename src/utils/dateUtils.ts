@@ -52,13 +52,48 @@ export function isGpsStale(
 }
 
 /**
+ * Formats a timestamp into a compact relative string (e.g. "-4s", "-2m", "-1h").
+ */
+export function formatCompactRelativeTime(
+  lastSeenTs: string | number | Date | null | undefined,
+  nowMs: number = Date.now()
+): string {
+  if (lastSeenTs === null || lastSeenTs === undefined || lastSeenTs === '') return '-'
+  let dateObj: Date | null = null
+  if (typeof lastSeenTs === 'number') {
+    dateObj = new Date(lastSeenTs)
+  } else if (lastSeenTs instanceof Date) {
+    dateObj = lastSeenTs
+  } else {
+    dateObj = parseGpsTimestamp(lastSeenTs, nowMs)
+  }
+  if (!dateObj || isNaN(dateObj.getTime())) return '-'
+
+  const diffMs = Math.max(0, nowMs - dateObj.getTime())
+  const diffSeconds = Math.floor(diffMs / 1000)
+  const diffMinutes = Math.floor(diffSeconds / 60)
+  const diffHours = Math.floor(diffMinutes / 60)
+
+  if (diffSeconds < 60) {
+    return `-${diffSeconds || 0}s`
+  } else if (diffMinutes < 60) {
+    return `-${diffMinutes}m`
+  } else if (diffHours < 24) {
+    return `-${diffHours}h`
+  }
+  return '>1d'
+}
+
+/**
  * Formats a timestamp string according to user preferences: 'relative', 'absolute', or 'both'.
+ * Supports 'standard', 'compact', and 'emoji' styles.
  */
 export function formatGpsTimestamp(
   lastSeenTs: string | null | undefined,
   mode: 'relative' | 'absolute' | 'both',
   t: (key: string, opts?: Record<string, unknown>) => string,
-  nowMs: number = Date.now()
+  nowMs: number = Date.now(),
+  style: 'standard' | 'compact' | 'emoji' = 'standard'
 ): string {
   if (!lastSeenTs) return '-'
   const trimmed = String(lastSeenTs).trim()
@@ -72,20 +107,24 @@ export function formatGpsTimestamp(
 
   if (mode === 'absolute') return absStr
 
-  const diffMs = Math.max(0, nowMs - dateObj.getTime())
-  const diffSeconds = Math.floor(diffMs / 1000)
-  const diffMinutes = Math.floor(diffSeconds / 60)
-  const diffHours = Math.floor(diffMinutes / 60)
-  
   let relativeStr = ''
-  if (diffSeconds < 100) {
-    relativeStr = t('map.secondsAgo', { defaultValue: '{{seconds}} sn önce', seconds: diffSeconds || 1 })
-  } else if (diffMinutes < 100) {
-    relativeStr = t('map.minutesAgo', { defaultValue: '{{minutes}} dk önce', minutes: diffMinutes })
-  } else if (diffHours < 24) {
-    relativeStr = t('map.hoursAgo', { defaultValue: '{{hours}} sa önce', hours: diffHours })
+  if (style === 'compact' || style === 'emoji') {
+    relativeStr = formatCompactRelativeTime(trimmed, nowMs)
   } else {
-    relativeStr = t('common.outdated', { defaultValue: 'Güncel değil' })
+    const diffMs = Math.max(0, nowMs - dateObj.getTime())
+    const diffSeconds = Math.floor(diffMs / 1000)
+    const diffMinutes = Math.floor(diffSeconds / 60)
+    const diffHours = Math.floor(diffMinutes / 60)
+    
+    if (diffSeconds < 100) {
+      relativeStr = t('map.secondsAgo', { defaultValue: '{{seconds}} sn önce', seconds: diffSeconds || 1 })
+    } else if (diffMinutes < 100) {
+      relativeStr = t('map.minutesAgo', { defaultValue: '{{minutes}} dk önce', minutes: diffMinutes })
+    } else if (diffHours < 24) {
+      relativeStr = t('map.hoursAgo', { defaultValue: '{{hours}} sa önce', hours: diffHours })
+    } else {
+      relativeStr = t('common.outdated', { defaultValue: 'Güncel değil' })
+    }
   }
 
   if (mode === 'relative') return relativeStr

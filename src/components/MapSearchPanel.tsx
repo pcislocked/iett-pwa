@@ -91,24 +91,25 @@ export default function MapSearchPanel({
   const busResults = useMemo(() => {
     if (query.trim().length < 2) return []
     const q = query.toUpperCase().trim()
+    const cleanQ = q.replace(/[^A-Z0-9]/g, '')
 
     let results: Partial<BusPosition>[] = []
 
     // 1. Filo yüklüyse client-side filtrele
-    if (fleet) {
-      results = fleet.filter(b =>
-        b.kapino.toUpperCase().includes(q) ||
-        (b.plate && b.plate.toUpperCase().includes(q))
-      ).slice(0, 5)
+    if (fleet && cleanQ.length >= 2) {
+      results = fleet.filter(b => {
+        const cleanKapino = b.kapino.replace(/[^A-Z0-9]/g, '')
+        const cleanPlate = (b.plate || '').replace(/[^A-Z0-9]/g, '')
+        return cleanKapino.includes(cleanQ) || (cleanPlate && cleanPlate.includes(cleanQ))
+      }).slice(0, 5)
     }
 
     // 2. Filo yüklü değilse veya sonuç bulamadıysa, yazılan şey kapı no veya plakaya benziyorsa direkt arama seçeneği sun
     if (results.length === 0) {
-      const isKapinoLike = /^[A-ZÜĞŞÇÖİ]-?\d{3,4}$/.test(q) || /^M\d{4}$/.test(q)
+      const isKapinoLike = /^[A-ZÜĞŞÇÖİ]{1,2}-?\d{1,4}$/.test(q)
       const isPlateLike = /^34\s?[A-Z]{1,3}\s?\d{2,4}$/.test(q.replace(/\s+/g, ''))
-      const isPartialKapino = /^[A-ZÜĞŞÇÖİ]-?\d{1,4}$/.test(q) // Partial like "C-1"
 
-      if (isKapinoLike || isPlateLike || isPartialKapino) {
+      if (isKapinoLike || isPlateLike) {
         results = [{ kapino: q.replace(/\s+/g, ''), plate: t('map.directSearch', 'Doğrudan Ara'), route_code: null }]
       }
     }

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api, type StopSearchResult, type RouteSearchResult } from '@/api/client'
-import { addRecent, getRecent, type RecentSearch } from '@/hooks/useRecentSearches'
+import { addRecent, clearRecent, getRecent, type RecentSearch } from '@/hooks/useRecentSearches'
 import { useFavorites } from '@/hooks/useFavorites'
 import { useTranslation } from 'react-i18next'
 
@@ -64,8 +64,8 @@ export default function SearchPage() {
         ])
         if (controller.signal.aborted) return
         const combined: SearchResult[] = [
-          ...stops.map((s) => ({ kind: 'stop' as const, ...s })),
           ...routes.map((r) => ({ kind: 'route' as const, ...r })),
+          ...stops.map((s) => ({ kind: 'stop' as const, ...s })),
         ]
         setResults(combined)
       } catch (err: unknown) {
@@ -86,9 +86,10 @@ export default function SearchPage() {
     setQuery('')
     setResults([])
     if (r.kind === 'stop-direct') {
+      addRecent({ kind: 'stop', code: r.dcode, name: `Durak #${r.dcode}` })
       navigate(`/stops/${r.dcode}`)
     } else if (r.kind === 'stop') {
-      addRecent({ kind: 'stop', code: r.dcode, name: r.name })
+      addRecent({ kind: 'stop', code: r.dcode, name: r.name, direction: r.direction })
       navigate(`/stops/${r.dcode}`)
     } else {
       addRecent({ kind: 'route', code: r.hat_kodu, name: r.name })
@@ -151,30 +152,48 @@ export default function SearchPage() {
                 <button
                   key={r.kind === 'stop-direct' ? `stop-direct-${r.dcode}` : r.kind === 'stop' ? `stop-${r.dcode}` : `route-${r.hat_kodu}`}
                   onClick={() => handleSelect(r)}
-                  className="w-full flex items-center gap-3 px-4 py-3.5 hover:bg-surface-muted
+                  className="w-full flex items-center gap-3 px-4 py-3 hover:bg-surface-muted
                              active:bg-surface-muted transition-colors text-left"
                 >
                   {r.kind === 'stop-direct' ? (
                     <>
-                      <span className="text-[11px] font-bold px-1.5 py-0.5 rounded bg-emerald-900 text-emerald-100 font-mono shrink-0">
+                      <span className="text-[11px] font-bold px-2 py-1 rounded bg-emerald-900 text-emerald-100 font-mono shrink-0">
                         #{r.dcode}
                       </span>
-                      <span className="text-sm text-text-primary flex-1">{t('search.goToStop', { defaultValue: 'Durak sayfasına git' })}</span>
+                      <span className="text-sm font-medium text-text-primary flex-1">{t('search.goToStop', { defaultValue: 'Durak sayfasına git' })}</span>
                     </>
                   ) : r.kind === 'stop' ? (
-                    <>
-                      <span className="text-[11px] font-bold px-1.5 py-0.5 rounded bg-brand-900 text-brand-100 font-mono shrink-0">
-                        {r.dcode}
+                    <div className="flex items-center gap-3 w-full min-w-0">
+                      <span className="text-[11px] font-bold px-2 py-1 rounded bg-brand-900 text-brand-100 font-mono shrink-0">
+                        #{r.dcode}
                       </span>
-                      <span className="text-sm text-text-primary flex-1 truncate">{r.name}</span>
-                    </>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-text-primary truncate">{r.name}</p>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          {r.direction ? (
+                            <span className="text-[11px] text-text-secondary truncate flex items-center gap-1">
+                              <span>🧭</span> {r.direction}
+                            </span>
+                          ) : r.district ? (
+                            <span className="text-[11px] text-text-muted truncate flex items-center gap-1">
+                              <span>📍</span> {r.district}
+                            </span>
+                          ) : (
+                            <span className="text-[11px] text-text-muted">{t('search.stop', { defaultValue: 'Durak' })}</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
                   ) : (
-                    <>
-                      <span className="text-[11px] font-bold px-1.5 py-0.5 rounded bg-amber-900/60 text-amber-200 font-mono shrink-0">
+                    <div className="flex items-center gap-3 w-full min-w-0">
+                      <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-amber-900/60 text-amber-200 font-mono shrink-0 min-w-[46px] text-center">
                         {r.hat_kodu}
                       </span>
-                      <span className="text-sm text-text-primary flex-1 truncate">{r.name}</span>
-                    </>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold text-text-primary truncate">{r.hat_kodu}</p>
+                        <p className="text-xs text-text-secondary truncate mt-0.5">{r.name}</p>
+                      </div>
+                    </div>
                   )}
                 </button>
               ))}
@@ -185,23 +204,40 @@ export default function SearchPage() {
           <div className="space-y-5 mt-1">
             {recents.length > 0 && (
               <section>
-                <h2 className="text-[11px] font-semibold uppercase tracking-widest text-text-muted mb-2">
-                  {t('home.recentSearches', { defaultValue: 'Son Aramalar' })}
-                </h2>
+                <div className="flex items-center justify-between mb-2">
+                  <h2 className="text-[11px] font-semibold uppercase tracking-widest text-text-muted">
+                    {t('home.recentSearches', { defaultValue: 'Son Aramalar' })}
+                  </h2>
+                  <button
+                    onClick={() => { clearRecent(); setRecents([]) }}
+                    className="text-[11px] text-text-muted hover:text-text-secondary transition-colors"
+                  >
+                    {t('common.clear', { defaultValue: 'Temizle' })}
+                  </button>
+                </div>
                 <div className="rounded-2xl overflow-hidden border border-surface-border divide-y divide-surface-border bg-surface-card">
-                  {recents.slice(0, 6).map((r) => (
+                  {recents.slice(0, 15).map((r) => (
                     <button
                       key={`${r.kind}-${r.code}`}
-                      onClick={() => navigate(r.kind === 'stop' ? `/stops/${r.code}` : `/routes/${r.code}`)}
-                      className="w-full flex items-center gap-3 px-4 py-3 hover:bg-surface-muted
+                      onClick={() => {
+                        addRecent(r)
+                        setRecents(getRecent())
+                        navigate(r.kind === 'stop' ? `/stops/${r.code}` : `/routes/${r.code}`)
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-surface-muted
                                  active:bg-surface-muted transition-colors text-left"
                     >
-                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded shrink-0 font-mono ${
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded shrink-0 font-mono ${
                         r.kind === 'stop' ? 'bg-brand-900 text-brand-100' : 'bg-amber-900/60 text-amber-200'
                       }`}>
                         {r.code}
                       </span>
-                      <span className="flex-1 text-sm text-text-primary truncate">{r.name}</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-text-primary truncate font-medium">{r.name}</p>
+                        {r.direction && (
+                          <p className="text-[10px] text-text-muted truncate">🧭 {r.direction}</p>
+                        )}
+                      </div>
                     </button>
                   ))}
                 </div>

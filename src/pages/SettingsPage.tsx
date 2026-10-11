@@ -95,7 +95,7 @@ export default function SettingsPage() {
   const { t, i18n } = useTranslation()
   const [settings, setSettings] = useState<Settings>(loadSettings)
   const [saved, setSaved] = useState(false)
-  const { prefs, setNearbySettings, exportPrefs, importPrefs, setMockLocation, setGpsConsent, setTimestampMode } = useUserPrefs()
+  const { prefs, setNearbySettings, exportPrefs, importPrefs, setMockLocation, setGpsConsent, setTimestampMode, setTimebarFormat, setShowCurrentTime } = useUserPrefs()
   const fileRef = useRef<HTMLInputElement>(null)
   const [importStatus, setImportStatus] = useState<'idle' | 'ok' | 'err'>('idle')
   const [showConsentModal, setShowConsentModal] = useState(false)
@@ -270,6 +270,46 @@ export default function SettingsPage() {
               <option value="relative">{t('settings.timestampRelative', { defaultValue: 'Sadece Göreceli (2 dk önce)' })}</option>
               <option value="absolute">{t('settings.timestampAbsolute', { defaultValue: 'Sadece Tam Saat (14:05)' })}</option>
             </select>
+          </div>
+          <div>
+            <label className="text-sm text-text-secondary block mb-1">
+              {t('settings.timebarFormat', { defaultValue: 'Zaman Barı Formatı' })}
+            </label>
+            <select
+              value={prefs.timebarFormat}
+              onChange={(e) => setTimebarFormat(e.target.value as 'standard' | 'compact' | 'emoji')}
+              className="bg-surface border border-surface-muted rounded-lg px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-brand-500 w-full"
+            >
+              <option value="standard">{t('settings.timebarStandard', { defaultValue: 'Standart / Uzun (güncelleme: 4 sn önce)' })}</option>
+              <option value="compact">{t('settings.timebarCompact', { defaultValue: 'Kısa Format (-4s)' })}</option>
+              <option value="emoji">{t('settings.timebarEmoji', { defaultValue: 'Emoji Formatı (🔄 -4s / 📡 -12s)' })}</option>
+            </select>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div>
+              <p id="showCurrentTime-label" className="text-sm text-text-secondary font-medium">
+                {t('settings.showCurrentTime', { defaultValue: 'Canlı Saati Göster (hh:mm:ss)' })}
+              </p>
+              <p className="text-xs text-text-muted mt-0.5">
+                {t('settings.showCurrentTimeDesc', { defaultValue: 'Durak alt zaman barında mevcut saati canlı gösterir' })}
+              </p>
+            </div>
+            <button
+              role="switch"
+              aria-checked={prefs.showCurrentTime}
+              aria-labelledby="showCurrentTime-label"
+              onClick={() => setShowCurrentTime(!prefs.showCurrentTime)}
+              className={`relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 ${
+                prefs.showCurrentTime ? 'bg-brand-600' : 'bg-surface-muted'
+              }`}
+            >
+              <span
+                className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow ring-0 transition-transform ${
+                  prefs.showCurrentTime ? 'translate-x-5' : 'translate-x-0'
+                }`}
+              />
+            </button>
           </div>
         </div>
       </div>
