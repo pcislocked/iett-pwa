@@ -31,48 +31,61 @@ export default function SearchBar({ placeholder, autoFocus }: Props) {
   useEffect(() => {
     const q = query.trim()
     if (q.length < 2) {
+      if (timerRef.current) clearTimeout(timerRef.current)
       setResults([])
       setOpen(false)
       return
     }
     // Numeric-only input ≥ 4 digits → treat as dcode, skip API
     if (/^\d{4,}$/.test(q)) {
+      if (timerRef.current) clearTimeout(timerRef.current)
       setResults([{ kind: 'stop-direct', dcode: q }])
       setOpen(true)
       return
     }
+
+    const abortController = new AbortController()
     if (timerRef.current) clearTimeout(timerRef.current)
+
     timerRef.current = setTimeout(async () => {
       try {
         const [stopsResult, routesResult] = await Promise.allSettled([
-          api.stops.search(q),
-          api.routes.search(q),
+          api.stops.search(q, { signal: abortController.signal }),
+          api.routes.search(q, { signal: abortController.signal }),
         ])
+
+        if (abortController.signal.aborted) return
 
         const stops = stopsResult.status === 'fulfilled' ? stopsResult.value : []
         const routes = routesResult.status === 'fulfilled' ? routesResult.value : []
 
         const combined: SearchResult[] = [
-          ...stops.map((s) => ({ kind: 'stop' as const, ...s })),
           ...routes.map((r) => ({ kind: 'route' as const, ...r })),
+          ...stops.map((s) => ({ kind: 'stop' as const, ...s })),
         ]
         setResults(combined)
         setOpen(combined.length > 0)
-      } catch {
+      } catch (err: unknown) {
+        if (err instanceof Error && err.name === 'AbortError') return
         setResults([])
         setOpen(false)
       }
     }, 300)
-    return () => { if (timerRef.current) clearTimeout(timerRef.current) }
+
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current)
+      abortController.abort()
+    }
   }, [query])
 
   function handleSelect(r: SearchResult) {
     setOpen(false)
     setQuery('')
     if (r.kind === 'stop-direct') {
+      addRecent({ kind: 'stop', code: r.dcode, name: `Durak #${r.dcode}` })
       navigate(`/stops/${r.dcode}`)
     } else if (r.kind === 'stop') {
-      addRecent({ kind: 'stop', code: r.dcode, name: r.name })
+      addRecent({ kind: 'stop', code: r.dcode, name: r.name, direction: r.direction })
       navigate(`/stops/${r.dcode}`)
     } else {
       addRecent({ kind: 'route', code: r.hat_kodu, name: r.name })
@@ -101,36 +114,45 @@ export default function SearchBar({ placeholder, autoFocus }: Props) {
       />
       {open && (
         <ul className="absolute top-full mt-1 w-full bg-surface-card border border-surface-muted
-                       rounded-xl shadow-xl z-50 overflow-hidden max-h-72 overflow-y-auto">
+                       rounded-xl shadow-xl z-50 overflow-hidden max-h-72 overflow-y-auto divide-y divide-surface-muted">
           {results.map((r, i) => (
             <li key={i}>
               <button
-                className="w-full text-left px-4 py-3 hover:bg-surface-muted transition-colors
+                className="w-full text-left px-4 py-2.5 hover:bg-surface-muted transition-colors
                            flex items-center gap-3"
                 onClick={() => handleSelect(r)}
               >
                 {r.kind === 'stop-direct' ? (
                   <>
-                    <span className="text-xs font-bold px-1.5 py-0.5 rounded bg-emerald-900 text-emerald-100 font-mono">
+                    <span className="text-xs font-bold px-2 py-0.5 rounded bg-emerald-900 text-emerald-100 font-mono shrink-0">
                       #{r.dcode}
                     </span>
-                    <span className="truncate text-sm text-text-primary">
+                    <span className="truncate text-sm font-medium text-text-primary">
                       {t('search.goToStopPage', { defaultValue: 'Durak sayfasına git' })}
                     </span>
                   </>
+                ) : r.kind === 'stop' ? (
+                  <div className="flex items-center gap-3 w-full min-w-0">
+                    <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-brand-900 text-brand-100 font-mono shrink-0">
+                      #{r.dcode}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <p className="truncate text-sm font-medium text-text-primary">{r.name}</p>
+                      {r.direction && (
+                        <p className="truncate text-[10px] text-text-secondary mt-0.5">🧭 {r.direction}</p>
+                      )}
+                    </div>
+                  </div>
                 ) : (
-                  <>
-                    <span className={`text-xs font-bold px-1.5 py-0.5 rounded font-mono ${
-                      r.kind === 'stop'
-                        ? 'bg-brand-900 text-brand-100'
-                        : 'bg-amber-900 text-amber-100'
-                    }`}>
-                      {r.kind === 'stop' ? r.dcode : r.hat_kodu}
+                  <div className="flex items-center gap-3 w-full min-w-0">
+                    <span aria-hidden="true" className="text-xs font-bold px-2 py-0.5 rounded-lg bg-amber-900/60 text-amber-200 font-mono shrink-0 min-w-[42px] text-center">
+                      {r.hat_kodu}
                     </span>
-                    <span className="truncate text-sm">
-                      {r.name}
-                    </span>
-                  </>
+                    <div className="flex-1 min-w-0">
+                      <p className="truncate text-sm font-bold text-text-primary">{r.hat_kodu}</p>
+                      <p className="truncate text-xs text-text-secondary mt-0.5">{r.name}</p>
+                    </div>
+                  </div>
                 )}
               </button>
             </li>

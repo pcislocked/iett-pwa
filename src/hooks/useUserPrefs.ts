@@ -26,6 +26,8 @@ export interface UserPrefs {
   mockLocation: [number, number] | null
   gpsConsent: 'pending' | 'granted' | 'denied'
   timestampMode: 'relative' | 'absolute' | 'both'
+  timebarFormat: 'standard' | 'compact' | 'emoji'
+  showCurrentTime: boolean
   exportedAt?: string
 }
 
@@ -41,6 +43,8 @@ export const DEFAULT_PREFS: UserPrefs = {
   mockLocation: null,
   gpsConsent: 'pending',
   timestampMode: 'both',
+  timebarFormat: 'standard',
+  showCurrentTime: false,
 }
 
 function createDefaultPrefs(): UserPrefs {
@@ -147,6 +151,14 @@ export function useUserPrefs() {
     patch((p) => ({ ...p, timestampMode: mode }))
   }, [])
 
+  const setTimebarFormat = useCallback((format: 'standard' | 'compact' | 'emoji') => {
+    patch((p) => ({ ...p, timebarFormat: format }))
+  }, [])
+
+  const setShowCurrentTime = useCallback((show: boolean) => {
+    patch((p) => ({ ...p, showCurrentTime: show }))
+  }, [])
+
   const resetConsent = useCallback(() => {
     patch((p) => ({ ...p, gpsConsent: 'pending', mockLocation: null }))
   }, [])
@@ -250,6 +262,8 @@ export function useUserPrefs() {
             mockLocation: Array.isArray(raw.mockLocation) && raw.mockLocation.length === 2 && typeof raw.mockLocation[0] === 'number' && typeof raw.mockLocation[1] === 'number' ? [raw.mockLocation[0], raw.mockLocation[1]] as [number, number] : null,
             gpsConsent: raw.gpsConsent === 'granted' || raw.gpsConsent === 'denied' ? raw.gpsConsent : 'pending',
             timestampMode: (raw.timestampMode === 'relative' || raw.timestampMode === 'absolute' || raw.timestampMode === 'both') ? raw.timestampMode : 'both',
+            timebarFormat: (raw.timebarFormat === 'compact' || raw.timebarFormat === 'emoji' || raw.timebarFormat === 'standard') ? raw.timebarFormat : 'standard',
+            showCurrentTime: typeof raw.showCurrentTime === 'boolean' ? raw.showCurrentTime : false,
           }
           patch(() => coerced)
           resolve()
@@ -279,6 +293,8 @@ export function useUserPrefs() {
     setMockLocation,
     setGpsConsent,
     setTimestampMode,
+    setTimebarFormat,
+    setShowCurrentTime,
     resetConsent,
   }
 }

@@ -221,7 +221,13 @@
     "timestampMode": "Güncelleme Zamanı Gösterimi",
     "timestampBoth": "Her İkisi (2 dk önce - 14:05)",
     "timestampRelative": "Sadece Göreceli (2 dk önce)",
-    "timestampAbsolute": "Sadece Tam Saat (14:05)"
+    "timestampAbsolute": "Sadece Tam Saat (14:05)",
+    "timebarFormat": "Zaman Barı Formatı",
+    "timebarStandard": "Standart / Uzun (güncelleme: 4 sn önce)",
+    "timebarCompact": "Kısa Format (-4s)",
+    "timebarEmoji": "Emoji Formatı (🔄 -4s / 📡 -12s)",
+    "showCurrentTime": "Canlı Saati Göster (hh:mm:ss)",
+    "showCurrentTimeDesc": "Durak alt zaman barında mevcut saati canlı gösterir"
   },
   "embed": {
     "poweredBy": "iett-pwa",
@@ -258,7 +264,9 @@
     "goToStop": "Durak sayfasına git",
     "favStops": "Favori Duraklar",
     "favRoutes": "Favori Hatlar",
-    "emptyState": "Hat kodu, durak adı veya 4+ haneli durak numarası girin"
+    "emptyState": "Hat kodu, durak adı veya 4+ haneli durak numarası girin",
+    "stop": "Durak",
+    "clearRecent": "Temizle"
   },
   "route": {
     "variant": "Güzergah Varyantı",

@@ -861,21 +861,33 @@ export default function StopPage() {
     return newestStr || null
   }, [arrivals, lastUpdated])
 
+  const [nowMs, setNowMs] = useState(() => Date.now())
+  useEffect(() => {
+    const id = setInterval(() => setNowMs(Date.now()), 1000)
+    return () => clearInterval(id)
+  }, [])
+
+  const currentTimeClock = useMemo(() => {
+    const d = new Date(nowMs)
+    const pad = (n: number) => n.toString().padStart(2, '0')
+    return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
+  }, [nowMs])
+
   const serverTimeDisplay = useMemo(() => {
     if (!iettUpdatedAt) return '--:--:--'
-    return formatGpsTimestamp(iettUpdatedAt, prefs.timestampMode, t)
-  }, [iettUpdatedAt, prefs.timestampMode, t])
+    return formatGpsTimestamp(iettUpdatedAt, prefs.timestampMode, t, nowMs, prefs.timebarFormat)
+  }, [iettUpdatedAt, prefs.timestampMode, prefs.timebarFormat, t, nowMs])
 
   const clientTimeDisplay = useMemo(() => {
     return lastUpdated
-      ? formatGpsTimestamp(lastUpdated.toISOString(), prefs.timestampMode, t)
+      ? formatGpsTimestamp(lastUpdated.toISOString(), prefs.timestampMode, t, nowMs, prefs.timebarFormat)
       : '--:--:--'
-  }, [lastUpdated, prefs.timestampMode, t])
+  }, [lastUpdated, prefs.timestampMode, prefs.timebarFormat, t, nowMs])
 
   const iettTimeDisplay = useMemo(() => {
-    if (maxGpsTime) return formatGpsTimestamp(maxGpsTime, prefs.timestampMode, t)
+    if (maxGpsTime) return formatGpsTimestamp(maxGpsTime, prefs.timestampMode, t, nowMs, prefs.timebarFormat)
     return serverTimeDisplay
-  }, [maxGpsTime, serverTimeDisplay, prefs.timestampMode, t])
+  }, [maxGpsTime, serverTimeDisplay, prefs.timestampMode, prefs.timebarFormat, t, nowMs])
 
   const { data: routes } = useQuery<string[]>({
     queryKey: ['routesAtStop', dcode],
@@ -1515,10 +1527,21 @@ export default function StopPage() {
           {/* Last updated row */}
           <div className="px-4 pt-2 pb-1 flex items-center justify-between gap-2">
             <div className="text-[11px] text-text-muted flex items-center gap-2 overflow-x-auto no-scrollbar whitespace-nowrap flex-1 mask-linear-fade">
+              {prefs.showCurrentTime && (
+                <span className="shrink-0 inline-flex items-center px-1.5 py-0.5 rounded font-mono font-bold text-[10px] bg-brand-900/40 text-brand-200 border border-brand-500/30">
+                  🕒 {currentTimeClock}
+                </span>
+              )}
               {lastUpdated ? (
                 <>
-                  <span>
-                    {t('stops.lastUpdated', { time: clientTimeDisplay, defaultValue: 'güncelleme: {{time}}' })}
+                  <span className="shrink-0 font-medium">
+                    {prefs.timebarFormat === 'emoji' ? (
+                      `🔄 ${clientTimeDisplay}`
+                    ) : prefs.timebarFormat === 'compact' ? (
+                      clientTimeDisplay
+                    ) : (
+                      t('stops.lastUpdated', { time: clientTimeDisplay, defaultValue: 'güncelleme: {{time}}' })
+                    )}
                   </span>
                   <span
                     className={`shrink-0 inline-flex items-center px-1.5 py-0.5 rounded font-mono font-semibold text-[10px] transition-colors ${
@@ -1528,7 +1551,13 @@ export default function StopPage() {
                     }`}
                     title={t('stops.lagTitle')}
                   >
-                    iett: {iettTimeDisplay}
+                    {prefs.timebarFormat === 'emoji' ? (
+                      `📡 ${iettTimeDisplay}`
+                    ) : prefs.timebarFormat === 'compact' ? (
+                      iettTimeDisplay
+                    ) : (
+                      `iett: ${iettTimeDisplay}`
+                    )}
                   </span>
                 </>
               ) : (

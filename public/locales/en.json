@@ -221,7 +221,13 @@
     "timestampMode": "Timestamp Display Mode",
     "timestampBoth": "Both (2 mins ago - 14:05)",
     "timestampRelative": "Relative Only (2 mins ago)",
-    "timestampAbsolute": "Absolute Only (14:05)"
+    "timestampAbsolute": "Absolute Only (14:05)",
+    "timebarFormat": "Time Bar Format",
+    "timebarStandard": "Standard / Long (updated: 4s ago)",
+    "timebarCompact": "Compact (-4s)",
+    "timebarEmoji": "Emoji Format (🔄 -4s / 📡 -12s)",
+    "showCurrentTime": "Show Live Clock (hh:mm:ss)",
+    "showCurrentTimeDesc": "Display live current time in the stop page bottom time bar"
   },
   "embed": {
     "poweredBy": "iett-pwa",
@@ -258,7 +264,9 @@
     "goToStop": "Go to stop page",
     "favStops": "Favorite Stops",
     "favRoutes": "Favorite Routes",
-    "emptyState": "Enter route code, stop name or 4+ digit stop number"
+    "emptyState": "Enter route code, stop name or 4+ digit stop number",
+    "stop": "Stop",
+    "clearRecent": "Clear"
   },
   "route": {
     "variant": "Route Variant",

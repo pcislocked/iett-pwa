@@ -58,3 +58,33 @@ describe('isGpsStale', () => {
     expect(isGpsStale('invalid-date', baseTime)).toBe(false)
   })
 })
+
+describe('formatCompactRelativeTime and formatGpsTimestamp styles', () => {
+  const baseTime = new Date('2026-07-27T12:00:00').getTime()
+
+  it('formats compact relative times correctly', async () => {
+    const { formatCompactRelativeTime, formatGpsTimestamp } = await import('../dateUtils')
+    
+    expect(formatCompactRelativeTime(baseTime - 4000, baseTime)).toBe('-4s')
+    expect(formatCompactRelativeTime(baseTime - 120_000, baseTime)).toBe('-2m')
+    expect(formatCompactRelativeTime(baseTime - 3600_000, baseTime)).toBe('-1h')
+    expect(formatCompactRelativeTime(baseTime + 1000, baseTime)).toBe('-0s')
+
+    const mockT = (key: string, opts?: Record<string, unknown>) => {
+      if (key === 'map.secondsAgo') return `${opts?.seconds} sn önce`
+      return key
+    }
+
+    // formatGpsTimestamp with style
+    const ts = '11:59:56' // 4 seconds before 12:00:00
+    const compactFormatted = formatGpsTimestamp(ts, 'relative', mockT, baseTime, 'compact')
+    expect(compactFormatted).toBe('-4s')
+
+    const standardFormatted = formatGpsTimestamp(ts, 'relative', mockT, baseTime, 'standard')
+    expect(standardFormatted).toBe('4 sn önce')
+
+    const emojiFormatted = formatGpsTimestamp(ts, 'relative', mockT, baseTime, 'emoji')
+    expect(emojiFormatted).toBe('-4s')
+  })
+})
+
