@@ -710,8 +710,6 @@ function EtaChip({ minutes, raw, isMismatch }: { minutes: number | null; raw: st
 
 const globalRouteIconCache = new Map<string, L.DivIcon>()
 
-let stopPageMountTimestamp = Date.now()
-
 export default function StopPage() {
   const { t } = useTranslation()
   const { prefs, isPinned, pinStop, unpinStop } = useUserPrefs()
@@ -863,10 +861,8 @@ export default function StopPage() {
     return newestStr || null
   }, [arrivals, lastUpdated])
 
-  const [nowMs, setNowMs] = useState(() => stopPageMountTimestamp)
+  const [nowMs, setNowMs] = useState(() => Date.now())
   useEffect(() => {
-    stopPageMountTimestamp = Date.now()
-    setNowMs(stopPageMountTimestamp)
     const id = setInterval(() => setNowMs(Date.now()), 1000)
     return () => clearInterval(id)
   }, [])

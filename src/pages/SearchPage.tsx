@@ -186,7 +186,7 @@ export default function SearchPage() {
                     </div>
                   ) : (
                     <div className="flex items-center gap-3 w-full min-w-0">
-                      <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-amber-900/60 text-amber-200 font-mono shrink-0 min-w-[46px] text-center">
+                      <span aria-hidden="true" className="text-xs font-bold px-2.5 py-1 rounded-lg bg-amber-900/60 text-amber-200 font-mono shrink-0 min-w-[46px] text-center">
                         {r.hat_kodu}
                       </span>
                       <div className="flex-1 min-w-0">
@@ -210,9 +210,9 @@ export default function SearchPage() {
                   </h2>
                   <button
                     onClick={() => { clearRecent(); setRecents([]) }}
-                    className="text-[11px] text-text-muted hover:text-text-secondary transition-colors"
+                    className="text-[11px] text-text-muted hover:text-text-secondary transition-colors px-2 py-1 -mr-2"
                   >
-                    {t('common.clear', { defaultValue: 'Temizle' })}
+                    {t('search.clearRecent', { defaultValue: 'Temizle' })}
                   </button>
                 </div>
                 <div className="rounded-2xl overflow-hidden border border-surface-border divide-y divide-surface-border bg-surface-card">

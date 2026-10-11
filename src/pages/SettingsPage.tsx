@@ -258,10 +258,11 @@ export default function SettingsPage() {
         {/* Timestamp Settings */}
         <div className="pt-2 border-t border-surface-muted flex flex-col gap-4">
           <div>
-            <label className="text-sm text-text-secondary block mb-1">
+            <label htmlFor="timestampMode" className="text-sm text-text-secondary block mb-1">
               {t('settings.timestampMode', { defaultValue: 'Güncelleme Zamanı Gösterimi' })}
             </label>
             <select
+              id="timestampMode"
               value={prefs.timestampMode}
               onChange={(e) => setTimestampMode(e.target.value as 'relative' | 'absolute' | 'both')}
               className="bg-surface border border-surface-muted rounded-lg px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-brand-500"
@@ -272,10 +273,11 @@ export default function SettingsPage() {
             </select>
           </div>
           <div>
-            <label className="text-sm text-text-secondary block mb-1">
+            <label htmlFor="timebarFormat" className="text-sm text-text-secondary block mb-1">
               {t('settings.timebarFormat', { defaultValue: 'Zaman Barı Formatı' })}
             </label>
             <select
+              id="timebarFormat"
               value={prefs.timebarFormat}
               onChange={(e) => setTimebarFormat(e.target.value as 'standard' | 'compact' | 'emoji')}
               className="bg-surface border border-surface-muted rounded-lg px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-brand-500 w-full"

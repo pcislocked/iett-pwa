@@ -31,23 +31,30 @@ export default function SearchBar({ placeholder, autoFocus }: Props) {
   useEffect(() => {
     const q = query.trim()
     if (q.length < 2) {
+      if (timerRef.current) clearTimeout(timerRef.current)
       setResults([])
       setOpen(false)
       return
     }
     // Numeric-only input ≥ 4 digits → treat as dcode, skip API
     if (/^\d{4,}$/.test(q)) {
+      if (timerRef.current) clearTimeout(timerRef.current)
       setResults([{ kind: 'stop-direct', dcode: q }])
       setOpen(true)
       return
     }
+
+    const abortController = new AbortController()
     if (timerRef.current) clearTimeout(timerRef.current)
+
     timerRef.current = setTimeout(async () => {
       try {
         const [stopsResult, routesResult] = await Promise.allSettled([
-          api.stops.search(q),
-          api.routes.search(q),
+          api.stops.search(q, { signal: abortController.signal }),
+          api.routes.search(q, { signal: abortController.signal }),
         ])
+
+        if (abortController.signal.aborted) return
 
         const stops = stopsResult.status === 'fulfilled' ? stopsResult.value : []
         const routes = routesResult.status === 'fulfilled' ? routesResult.value : []
@@ -58,12 +65,17 @@ export default function SearchBar({ placeholder, autoFocus }: Props) {
         ]
         setResults(combined)
         setOpen(combined.length > 0)
-      } catch {
+      } catch (err: unknown) {
+        if (err instanceof Error && err.name === 'AbortError') return
         setResults([])
         setOpen(false)
       }
     }, 300)
-    return () => { if (timerRef.current) clearTimeout(timerRef.current) }
+
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current)
+      abortController.abort()
+    }
   }, [query])
 
   function handleSelect(r: SearchResult) {
@@ -133,7 +145,7 @@ export default function SearchBar({ placeholder, autoFocus }: Props) {
                   </div>
                 ) : (
                   <div className="flex items-center gap-3 w-full min-w-0">
-                    <span className="text-xs font-bold px-2 py-0.5 rounded-lg bg-amber-900/60 text-amber-200 font-mono shrink-0 min-w-[42px] text-center">
+                    <span aria-hidden="true" className="text-xs font-bold px-2 py-0.5 rounded-lg bg-amber-900/60 text-amber-200 font-mono shrink-0 min-w-[42px] text-center">
                       {r.hat_kodu}
                     </span>
                     <div className="flex-1 min-w-0">
