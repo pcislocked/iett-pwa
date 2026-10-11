@@ -3,6 +3,20 @@
 All notable changes to iett-pwa are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+---
+
+## [0.4.8.1] - 2026-10-11
+### Fixed
+- **StopTimebar Component & Performance Isolation:** Extracted the 1-second live ticker into an isolated, memoized `<StopTimebar>` component, preventing the entire StopPage, map, and list elements from re-rendering every second.
+- **Tab Inactivity Optimization:** Added `document.hidden` visibility change listening to pause the live ticker interval while the browser tab is backgrounded, conserving device battery and CPU cycles.
+- **Search Dropdown & Page Localization:** Replaced hardcoded `Durak #` string with localized `t('search.stopNumber')` in `SearchBar` and `SearchPage`, and polished route layout badges to avoid duplicate hat code displays.
+- **Input Normalization & Kapino RegEx:** Upper-cased user input strings before whitespace and punctuation stripping in `MapSearchPanel` and `AracQueryPage`, and tightened `isKapinoLike` regex (`^[A-Z]{1,2}-?\\d{3,5}$`) to eliminate false positive matches on road abbreviations like "E5".
+
+### Tests
+- Added dedicated test suite for `<StopTimebar>` (`StopTimebar.test.tsx`), reaching 189 passing tests across 36 test files (100% green).
+
+---
+
 ## [0.4.8] - 2026-10-11
 ### Added
 - **Recent Searches Click-Promotion & 25-Item Capacity:** Clicking any recent search item promotes it directly to the top (index 0) rather than only promoting on form submission. Expanded local storage history capacity to 25 items, displaying up to 15 items on SearchPage with a touch-friendly clear action.
