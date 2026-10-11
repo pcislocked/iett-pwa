@@ -3,6 +3,26 @@
 All notable changes to iett-pwa are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [0.4.8] - 2026-10-11
+### Added
+- **Recent Searches Click-Promotion & 25-Item Capacity:** Clicking any recent search item promotes it directly to the top (index 0) rather than only promoting on form submission. Expanded local storage history capacity to 25 items, displaying up to 15 items on SearchPage with a touch-friendly clear action.
+- **Search Results Ordering & Presentation:** Enforced routes/lines first, followed by stops across both `SearchPage` and `SearchBar` dropdown.
+- **Two-Liner Search Results:** Enhanced stop search results with two-liner layout displaying destination direction (`🧭 KADIKÖY`) and district fallback badges.
+- **Stop Page Live Ticker & 3 Timebar Display Formats:**
+  - Added dynamic 1-second live ticker keeping relative timestamps fresh without frozen lags.
+  - Added 3 timebar formats in Settings: Standard / Long (`güncelleme: 4 sn önce`), Compact (`-4s`), and Emoji (`🔄 -4s / 📡 -12s`).
+  - Added optional live clock displaying current time in `hh:mm:ss` format on the bottom timebar (default off).
+
+### Fixed
+- **Vehicle Autocomplete & Fuzzy Matching:** Fixed the backspace trap in `AracQueryPage` where deleting hyphens was blocked by greedy regex. Added dash- and space-agnostic fuzzy matching across local fleet and plates in `AracQueryPage` and `MapSearchPanel`.
+- **Search Request Cancellation:** Added `AbortController` and cleanup in `SearchBar` to cancel in-flight requests on rapid typing and unmount, eliminating race conditions.
+- **Accessibility & Touch Target Polish:** Connected `<label htmlFor>` and `<select id>` in Settings, added touch padding to clear button, and added `aria-hidden="true"` to route code badges to avoid screen reader stutter.
+
+### Tests
+- Added dedicated unit test suite for `SearchBar` and expanded coverage for `dateUtils` and `useRecentSearches`, reaching 183 passing tests across 35 test files (100% green).
+
+---
+
 ## [0.4.6] - 2026-09-12
 ### Added
 - Inserted visual warning boxes for stale GPS and math mismatches into the BusDetailSheet to surface upstream API anomalies clearly.
