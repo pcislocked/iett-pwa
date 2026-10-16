@@ -146,6 +146,19 @@ export interface GlobalNotice {
   page_pageid: string
 }
 
+export interface OfficialAnnouncementItem {
+  id: string
+  title: string
+  date: string
+  url: string
+}
+
+export interface OfficialAnnouncementsResponse {
+  page: number
+  total_items: number
+  items: OfficialAnnouncementItem[]
+}
+
 // ─── API Response Wrappers ──────────────────────────────────────────────────────────────
 
 export interface TrailPoint {
@@ -417,5 +430,7 @@ export const api = {
   },
   notices: {
     global: (init?: RequestInit) => get<GlobalNotice[]>('/v1/announcements/global', init),
+    official: (page: number = 0, init?: RequestInit) =>
+      get<OfficialAnnouncementsResponse>(`/v1/announcements/official?page=${page}`, init),
   }
 }

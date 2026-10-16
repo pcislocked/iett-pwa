@@ -37,7 +37,9 @@
     "settings": "Settings",
     "favorites": "Favorites",
     "fleetMap": "Fleet Map",
-    "aracQuery": "Door Number Query"
+    "aracQuery": "Door Number Query",
+    "announcements": "Announcements",
+    "fareTariff": "Public Transit Fare Tariff ↗"
   },
   "stops": {
     "title": "Stop",
@@ -360,7 +362,27 @@
     "searchDesc": "Search routes or stops",
     "mapDesc": "View all buses on map",
     "settingsDesc": "App settings and data management",
-    "aracQueryDesc": "Get detailed info via arac.iett.gov.tr"
+    "aracQueryDesc": "Get detailed info via arac.iett.gov.tr",
+    "allAnnouncements": "All IETT Announcements →",
+    "announcements": "Announcements & Alerts",
+    "announcementsDesc": "Official announcements, route and fare info",
+    "fareTariffLink": "Public Transit Fare Tariff"
+  },
+  "announcements": {
+    "title": "IETT Announcements & Alerts",
+    "subtitle": "Official announcements, route updates and fare info",
+    "openOfficialWeb": "Open on Website",
+    "officialTab": "Official Announcements",
+    "systemTab": "Service Alerts",
+    "filterPlaceholder": "Search announcements...",
+    "loadError": "Failed to load official announcements.",
+    "empty": "No announcements found.",
+    "readMore": "Detail",
+    "systemLoadError": "Failed to load service alerts.",
+    "systemEmpty": "No active service alerts.",
+    "alert": "Alert",
+    "fareTariffTitle": "Public Transit Fare Tariff",
+    "fareTariffDesc": "Current single-ticket, subscription and transfer fares"
   },
   "pinned": {
     "remove": "Remove",
