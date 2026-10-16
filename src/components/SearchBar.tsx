@@ -28,33 +28,29 @@ export default function SearchBar({ placeholder, autoFocus }: Props) {
     if (autoFocus) inputRef.current?.focus()
   }, [autoFocus])
 
-  useEffect(() => {
-    const q = query.trim()
-    if (q.length < 2) {
-      if (timerRef.current) clearTimeout(timerRef.current)
-      setResults([])
-      setOpen(false)
-      return
-    }
-    // Numeric-only input ≥ 4 digits → treat as dcode, skip API
-    if (/^\d{4,}$/.test(q)) {
-      if (timerRef.current) clearTimeout(timerRef.current)
-      setResults([{ kind: 'stop-direct', dcode: q }])
-      setOpen(true)
-      return
-    }
+  const abortControllerRef = useRef<AbortController | null>(null)
 
-    const abortController = new AbortController()
-    if (timerRef.current) clearTimeout(timerRef.current)
+  const getSearchDebounceMs = (len: number): number => {
+    if (len === 1) return 700
+    if (len <= 3) return 300
+    return 150
+  }
 
-    timerRef.current = setTimeout(async () => {
-      try {
+  const executeSearch = async (q: string, signal: AbortSignal) => {
+    try {
+      if (q.length === 1) {
+        const routes = await api.routes.search(q, { signal })
+        if (signal.aborted) return
+        const combined: SearchResult[] = routes.map((r) => ({ kind: 'route' as const, ...r }))
+        setResults(combined)
+        setOpen(combined.length > 0)
+      } else {
         const [stopsResult, routesResult] = await Promise.allSettled([
-          api.stops.search(q, { signal: abortController.signal }),
-          api.routes.search(q, { signal: abortController.signal }),
+          api.stops.search(q, { signal }),
+          api.routes.search(q, { signal }),
         ])
 
-        if (abortController.signal.aborted) return
+        if (signal.aborted) return
 
         const stops = stopsResult.status === 'fulfilled' ? stopsResult.value : []
         const routes = routesResult.status === 'fulfilled' ? routesResult.value : []
@@ -65,16 +61,68 @@ export default function SearchBar({ placeholder, autoFocus }: Props) {
         ]
         setResults(combined)
         setOpen(combined.length > 0)
-      } catch (err: unknown) {
-        if (err instanceof Error && err.name === 'AbortError') return
-        setResults([])
-        setOpen(false)
       }
-    }, 300)
+    } catch (err: unknown) {
+      if (err instanceof Error && err.name === 'AbortError') return
+      setResults([])
+      setOpen(false)
+    }
+  }
+
+  const runInstantSearch = () => {
+    const q = query.trim().slice(0, 100)
+    if (timerRef.current) clearTimeout(timerRef.current)
+    if (abortControllerRef.current) abortControllerRef.current.abort()
+
+    if (q.length < 1) {
+      setResults([])
+      setOpen(false)
+      return
+    }
+
+    if (/^\d{4,}$/.test(q)) {
+      setResults([{ kind: 'stop-direct', dcode: q }])
+      setOpen(true)
+      return
+    }
+
+    const controller = new AbortController()
+    abortControllerRef.current = controller
+    executeSearch(q, controller.signal)
+  }
+
+  useEffect(() => {
+    const q = query.trim().slice(0, 100)
+    if (q.length < 1) {
+      if (timerRef.current) clearTimeout(timerRef.current)
+      if (abortControllerRef.current) abortControllerRef.current.abort()
+      setResults([])
+      setOpen(false)
+      return
+    }
+    // Numeric-only input ≥ 4 digits → treat as dcode, skip API
+    if (/^\d{4,}$/.test(q)) {
+      if (timerRef.current) clearTimeout(timerRef.current)
+      if (abortControllerRef.current) abortControllerRef.current.abort()
+      setResults([{ kind: 'stop-direct', dcode: q }])
+      setOpen(true)
+      return
+    }
+
+    if (timerRef.current) clearTimeout(timerRef.current)
+    if (abortControllerRef.current) abortControllerRef.current.abort()
+
+    const controller = new AbortController()
+    abortControllerRef.current = controller
+
+    const debounceMs = getSearchDebounceMs(q.length)
+    timerRef.current = setTimeout(() => {
+      executeSearch(q, controller.signal)
+    }, debounceMs)
 
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current)
-      abortController.abort()
+      controller.abort()
     }
   }, [query])
 
@@ -95,23 +143,36 @@ export default function SearchBar({ placeholder, autoFocus }: Props) {
 
   return (
     <div className="relative w-full">
-      <div className="relative">
-        <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-text-muted"
+      <form
+        onSubmit={(e) => {
+          e.preventDefault()
+          runInstantSearch()
+        }}
+        className="relative"
+      >
+        <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-text-muted pointer-events-none"
              fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round"
                 d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
         </svg>
-      <input
-        ref={inputRef}
-        type="search"
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        onBlur={() => setTimeout(() => setOpen(false), 150)}
-        placeholder={actualPlaceholder}
-        className="w-full bg-surface-card border border-surface-muted rounded-2xl
-                   pl-10 pr-4 py-3.5 text-text-primary placeholder-slate-500 text-sm
-                   focus:outline-none focus:ring-2 focus:ring-brand-500"
-      />
+        <input
+          ref={inputRef}
+          type="search"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault()
+              runInstantSearch()
+            }
+          }}
+          onBlur={() => setTimeout(() => setOpen(false), 150)}
+          placeholder={actualPlaceholder}
+          className="w-full bg-surface-card border border-surface-muted rounded-2xl
+                     pl-10 pr-4 py-3.5 text-text-primary placeholder-slate-500 text-sm
+                     focus:outline-none focus:ring-2 focus:ring-brand-500"
+        />
+      </form>
       {open && (
         <ul className="absolute top-full mt-1 w-full bg-surface-card border border-surface-muted
                        rounded-xl shadow-xl z-50 overflow-hidden max-h-72 overflow-y-auto divide-y divide-surface-muted">
@@ -159,7 +220,6 @@ export default function SearchBar({ placeholder, autoFocus }: Props) {
           ))}
         </ul>
       )}
-      </div>
     </div>
   )
 }

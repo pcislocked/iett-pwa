@@ -409,13 +409,18 @@ export const api = {
     createSession: (payload: AracSessionCreateRequest, init?: RequestInit) =>
       post<AracSessionCreateResponse>('/v1/arac/session/create', payload, init),
     detail: (kapino: string, session: AracSessionCredentials, init?: RequestInit) =>
-      get<{ profile: BusPosition; missions: AracMissionsResponse }>(`/v1/arac/fleet/${encodeURIComponent(kapino)}/detail`, {
+      get<{ profile: BusPosition; missions: AracMissionsResponse; server_time?: string; cached?: boolean }>(`/v1/arac/fleet/${encodeURIComponent(kapino)}/detail`, {
         ...init, headers: { ...init?.headers, 'X-Arac-Session-Key': session.sessionKey },
       }),
     autoDetail: (kapino: string, init?: RequestInit) =>
-      get<{ profile: BusPosition; missions: AracMissionsResponse }>(`/v1/arac/fleet/${encodeURIComponent(kapino)}/auto-detail`, init),
+      get<{ profile: BusPosition; missions: AracMissionsResponse; server_time?: string; cached?: boolean }>(`/v1/arac/fleet/${encodeURIComponent(kapino)}/auto-detail`, init),
   },
   notices: {
     global: (init?: RequestInit) => get<GlobalNotice[]>('/v1/announcements/global', init),
+    official: (page: number = 0, init?: RequestInit) =>
+      get<{ page: number; total_items: number; items: Array<{ id: string; title: string; date: string; url: string }> }>(
+        `/v1/announcements/official?page=${page}`,
+        init
+      ),
   }
 }

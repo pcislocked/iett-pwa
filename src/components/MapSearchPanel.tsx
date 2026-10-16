@@ -51,38 +51,77 @@ export default function MapSearchPanel({
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  // Auto-search effect (debounced)
-  useEffect(() => {
-    if (query.trim().length < 2) {
+  const timerRef = useRef<number | null>(null)
+  const controllerRef = useRef<AbortController | null>(null)
+
+  const getSearchDebounceMs = (len: number): number => {
+    if (len === 1) return 700
+    if (len <= 3) return 300
+    return 150
+  }
+
+  const executeMapSearch = async (q: string, signal: AbortSignal) => {
+    try {
+      if (q.length === 1) {
+        const rRes = await api.routes.search(q, { signal }).catch(() => [] as RouteSearchResult[])
+        if (signal.aborted) return
+        setRouteResults(rRes.slice(0, 5))
+        setStopResults([])
+      } else {
+        const [rRes, sRes] = await Promise.all([
+          api.routes.search(q, { signal }).catch(() => [] as RouteSearchResult[]),
+          api.stops.search(q, { signal }).catch(() => [] as StopSearchResult[]),
+        ])
+        if (signal.aborted) return
+        setRouteResults(rRes.slice(0, 5))
+        setStopResults(sRes.slice(0, 5))
+      }
+    } catch (err) {
+      if ((err as { name?: string }).name !== 'AbortError') {
+        setRouteResults([])
+        setStopResults([])
+      }
+    }
+  }
+
+  const runInstantSearch = () => {
+    const q = query.trim().slice(0, 100)
+    if (timerRef.current) window.clearTimeout(timerRef.current)
+    if (controllerRef.current) controllerRef.current.abort()
+
+    if (q.length < 1) {
       setRouteResults([])
       setStopResults([])
       return
     }
 
-    let cancelled = false
     const controller = new AbortController()
+    controllerRef.current = controller
+    executeMapSearch(q, controller.signal)
+  }
 
-    const timer = window.setTimeout(async () => {
-      try {
-        const [rRes, sRes] = await Promise.all([
-          api.routes.search(query, { signal: controller.signal }).catch(() => [] as RouteSearchResult[]),
-          api.stops.search(query, { signal: controller.signal }).catch(() => [] as StopSearchResult[]),
-        ])
-        if (!cancelled) {
-          setRouteResults(rRes.slice(0, 5))
-          setStopResults(sRes.slice(0, 5))
-        }
-      } catch (err) {
-        if (!cancelled && (err as { name?: string }).name !== 'AbortError') {
-          setRouteResults([])
-          setStopResults([])
-        }
-      }
-    }, 300)
+  // Auto-search effect (adaptive debounced)
+  useEffect(() => {
+    const q = query.trim().slice(0, 100)
+    if (q.length < 1) {
+      setRouteResults([])
+      setStopResults([])
+      return
+    }
+
+    if (timerRef.current) window.clearTimeout(timerRef.current)
+    if (controllerRef.current) controllerRef.current.abort()
+
+    const controller = new AbortController()
+    controllerRef.current = controller
+
+    const debounceMs = getSearchDebounceMs(q.length)
+    timerRef.current = window.setTimeout(() => {
+      executeMapSearch(q, controller.signal)
+    }, debounceMs)
 
     return () => {
-      cancelled = true
-      window.clearTimeout(timer)
+      if (timerRef.current) window.clearTimeout(timerRef.current)
       controller.abort()
     }
   }, [query])
@@ -107,7 +146,7 @@ export default function MapSearchPanel({
     // 2. Filo yüklü değilse veya sonuç bulamadıysa, yazılan şey kapı no veya plakaya benziyorsa direkt arama seçeneği sun
     if (results.length === 0) {
       const isKapinoLike = /^[A-ZÜĞŞÇÖİ]{1,2}-?\d{3,4}$/.test(q) || /^M-?\d{4}$/.test(q)
-      const isPlateLike = /^34\s?[A-Z]{1,3}\s?\d{2,4}$/.test(q.replace(/\s+/g, ''))
+      const isPlateLike = /^\d{2}\s?[A-Z]{1,3}\s?\d{2,5}$/.test(q.replace(/\s+/g, ''))
 
       if (isKapinoLike || isPlateLike) {
         results = [{ kapino: q.replace(/\s+/g, ''), plate: t('map.directSearch', 'Doğrudan Ara'), route_code: null }]
@@ -118,7 +157,7 @@ export default function MapSearchPanel({
   }, [query, fleet, t])
 
   const hasChips = selectedRoutes.length > 0 || selectedStops.length > 0
-  const showResults = showDropdown && query.trim().length >= 2 && (routeResults.length > 0 || stopResults.length > 0 || busResults.length > 0)
+  const showResults = showDropdown && query.trim().length >= 1 && (routeResults.length > 0 || stopResults.length > 0 || busResults.length > 0)
 
   return (
     <div className="flex flex-col gap-2 pointer-events-none w-full">
@@ -252,8 +291,14 @@ export default function MapSearchPanel({
         )}
 
         {/* Search Input */}
-        <div className="flex items-center px-4 py-3">
-          <svg className="w-5 h-5 text-text-muted shrink-0 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault()
+            runInstantSearch()
+          }}
+          className="flex items-center px-4 py-3"
+        >
+          <svg className="w-5 h-5 text-text-muted shrink-0 mr-3 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
           </svg>
           <input
@@ -261,15 +306,25 @@ export default function MapSearchPanel({
             value={query}
             onChange={(e) => { setQuery(e.target.value); setShowDropdown(true); }}
             onFocus={() => { setShowDropdown(true); }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault()
+                runInstantSearch()
+              }
+            }}
             placeholder={t('map.unifiedSearchPlaceholder', { defaultValue: 'Hat, durak veya araç ara...' })}
             className="flex-1 bg-transparent border-none text-sm text-text-primary placeholder-text-muted focus:outline-none focus:ring-0"
           />
           {query.length > 0 && (
-            <button onClick={() => setQuery('')} className="text-text-muted hover:text-text-primary p-1">
+            <button
+              type="button"
+              onClick={() => setQuery('')}
+              className="text-text-muted hover:text-text-primary p-1"
+            >
               &times;
             </button>
           )}
-        </div>
+        </form>
       </div>
 
     </div>

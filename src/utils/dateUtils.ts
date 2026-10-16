@@ -20,7 +20,20 @@ export function parseGpsTimestamp(
 
   let dateObj: Date | null = null
 
-  if (trimmed.includes('T') || (trimmed.includes('-') && trimmed.includes(':'))) {
+  // Check for Turkish DD-MM-YYYY or DD.MM.YYYY format (e.g. "14-10-2026 08:23:57")
+  const dmyMatch = trimmed.match(/^(\d{2})[-./](\d{2})[-./](\d{4})(?:[ T](\d{2}):(\d{2})(?::(\d{2}))?)?$/)
+  if (dmyMatch) {
+    const day = parseInt(dmyMatch[1], 10)
+    const month = parseInt(dmyMatch[2], 10) - 1
+    const year = parseInt(dmyMatch[3], 10)
+    const hour = parseInt(dmyMatch[4] || '0', 10)
+    const min = parseInt(dmyMatch[5] || '0', 10)
+    const sec = parseInt(dmyMatch[6] || '0', 10)
+    const parsed = new Date(year, month, day, hour, min, sec)
+    if (!isNaN(parsed.getTime())) {
+      dateObj = parsed
+    }
+  } else if (trimmed.includes('T') || (trimmed.includes('-') && trimmed.includes(':'))) {
     const parsed = new Date(trimmed.replace(' ', 'T'))
     if (!isNaN(parsed.getTime())) {
       dateObj = parsed

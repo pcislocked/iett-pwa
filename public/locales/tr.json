@@ -227,7 +227,7 @@
     "timebarCompact": "Kısa Format (-4s)",
     "timebarEmoji": "Emoji Formatı (🔄 -4s / 📡 -12s)",
     "showCurrentTime": "Canlı Saati Göster (hh:mm:ss)",
-    "showCurrentTimeDesc": "Durak alt zaman barında mevcut saati canlı gösterir"
+    "showCurrentTimeDesc": "Durak ve Araç zaman barında mevcut saati canlı gösterir"
   },
   "embed": {
     "poweredBy": "iett-pwa",
