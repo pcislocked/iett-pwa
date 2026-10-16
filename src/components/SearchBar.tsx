@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { api, type StopSearchResult, type RouteSearchResult } from '@/api/client'
 import { addRecent } from '@/hooks/useRecentSearches'
+import { parseIettShare } from '@/utils/urlResolver'
 
 type SearchResult =
   | ({ kind: 'stop' } & StopSearchResult)
@@ -106,6 +107,21 @@ export default function SearchBar({ placeholder, autoFocus }: Props) {
         type="search"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
+        onPaste={(e) => {
+          const pasted = e.clipboardData.getData('text')
+          if (pasted && (pasted.includes('iett.istanbul') || pasted.includes('hkod=') || pasted.includes('dkod='))) {
+            const resolved = parseIettShare(pasted)
+            if (resolved?.kind === 'route') {
+              e.preventDefault()
+              addRecent({ kind: 'route', code: resolved.code, name: resolved.code })
+              navigate(`/routes/${encodeURIComponent(resolved.code)}`)
+            } else if (resolved?.kind === 'stop') {
+              e.preventDefault()
+              addRecent({ kind: 'stop', code: resolved.code, name: t('search.stopNumber', { defaultValue: 'Durak #{{code}}', code: resolved.code }) })
+              navigate(`/stops/${encodeURIComponent(resolved.code)}`)
+            }
+          }
+        }}
         onBlur={() => setTimeout(() => setOpen(false), 150)}
         placeholder={actualPlaceholder}
         className="w-full bg-surface-card border border-surface-muted rounded-2xl

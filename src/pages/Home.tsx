@@ -237,6 +237,11 @@ export default function Home() {
                 </div>
               </div>
             ))}
+            <div className="flex justify-end pt-1">
+              <Link to="/announcements" className="text-xs font-semibold text-amber-500 hover:text-amber-400 transition-colors">
+                {t('home.allAnnouncements', { defaultValue: 'Tüm İETT Duyuruları →' })}
+              </Link>
+            </div>
           </div>
         </div>
       )}
@@ -467,6 +472,12 @@ export default function Home() {
             }
           />
           <QuickRow
+            to="/announcements"
+            label={t('home.announcements', { defaultValue: 'Duyurular & Uyarılar' })}
+            sub={t('home.announcementsDesc', { defaultValue: 'Resmi duyurular, güzergah ve tarife bilgileri' })}
+            icon={<span className="text-xl">📢</span>}
+          />
+          <QuickRow
             to="/settings"
             label={t('nav.settings', { defaultValue: 'Ayarlar' })}
             sub={t('home.settingsDesc', { defaultValue: 'Uygulama ayarları ve veri yönetimi' })}
@@ -480,6 +491,40 @@ export default function Home() {
           />
         </div>
       </section>
+
+      {/* External Resources & Legal Footer */}
+      <footer className="px-4 pt-2 pb-6 flex flex-col gap-2.5 text-center border-t border-surface-muted/40">
+        <a
+          href="https://iett.istanbul/icerik/IETT-Toplu-Ulasim-ucret-Tarifesi"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center justify-center gap-1.5 text-xs text-brand-400 hover:text-brand-300 transition-colors py-1 font-medium"
+        >
+          <span>💳 {t('home.fareTariffLink', { defaultValue: 'Toplu Ulaşım Ücret Tarifesi' })}</span>
+          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+          </svg>
+        </a>
+        <div className="flex items-center justify-center gap-3 text-[11px] text-text-muted">
+          <a
+            href="https://iett.istanbul"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:underline"
+          >
+            iett.istanbul ↗
+          </a>
+          <span>•</span>
+          <a
+            href="https://github.com/pcislocked/iett-pwa"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:underline"
+          >
+            GitHub ↗
+          </a>
+        </div>
+      </footer>
 
       {prefs.gpsConsent === 'pending' && (
         <LocationConsentModal

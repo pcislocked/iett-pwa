@@ -17,6 +17,8 @@ const SettingsPage = lazy(() => import('@/pages/SettingsPage'))
 const FavoritesPage = lazy(() => import('@/pages/FavoritesPage'))
 const NearbyPage = lazy(() => import('@/pages/NearbyPage'))
 const PinnedManagePage = lazy(() => import('@/pages/PinnedManagePage'))
+const ShareTargetPage = lazy(() => import('@/pages/ShareTargetPage'))
+const AnnouncementsPage = lazy(() => import('@/pages/AnnouncementsPage'))
 
 // Set by swipe commit before navigate() so useLayoutEffect skips CSS transition
 let _swipeNav = false
@@ -53,6 +55,8 @@ function MainRoutes({ loc }: { loc: ReturnType<typeof useLocation> | ReturnType<
       <Route path="/favorites"       element={<LazyRoute><FavoritesPage /></LazyRoute>} />
       <Route path="/settings"        element={<LazyRoute><SettingsPage /></LazyRoute>} />
       <Route path="/pinned"          element={<LazyRoute><PinnedManagePage /></LazyRoute>} />
+      <Route path="/share-target"    element={<LazyRoute><ShareTargetPage /></LazyRoute>} />
+      <Route path="/announcements"   element={<LazyRoute><AnnouncementsPage /></LazyRoute>} />
     </Routes>
   )
 }
