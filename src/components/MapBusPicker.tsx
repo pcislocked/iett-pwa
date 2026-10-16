@@ -1,5 +1,6 @@
 import type { BusPosition } from '@/api/client'
 import { useTranslation } from 'react-i18next'
+import { formatPlate } from '@/utils/plateUtils'
 
 interface Props {
   buses: BusPosition[]
@@ -51,7 +52,7 @@ export default function MapBusPicker({ buses, onSelect, onClose }: Props) {
                 <div className="flex items-center gap-2">
                   <span className="font-mono text-sm font-bold text-text-primary">{b.kapino}</span>
                   {b.plate && (
-                    <span className="text-[11px] text-text-muted tracking-wide font-mono">{b.plate}</span>
+                    <span className="text-[11px] text-text-muted tracking-wide font-mono">{formatPlate(b.plate)}</span>
                   )}
                 </div>
                 {b.direction && (

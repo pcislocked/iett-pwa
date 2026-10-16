@@ -227,7 +227,13 @@
     "timebarCompact": "Kısa Format (-4s)",
     "timebarEmoji": "Emoji Formatı (🔄 -4s / 📡 -12s)",
     "showCurrentTime": "Canlı Saati Göster (hh:mm:ss)",
-    "showCurrentTimeDesc": "Durak alt zaman barında mevcut saati canlı gösterir"
+    "showCurrentTimeDesc": "Durak alt zaman barında mevcut saati canlı gösterir",
+    "keepScreenAwake": "Ekranı Açık Tut (Durak Ekranı)",
+    "keepScreenAwakeDesc": "Durak sayfasındayken cihaz ekranının uyku moduna geçmesini engeller (30 dk emniyet zaman aşımı).",
+    "keepScreenAwakeNotSupported": "Cihazınız veya tarayıcınız ekran kilidi desteği sunmuyor.",
+    "hapticFeedback": "Dokunsal Geri Bildirim (Haptik)",
+    "hapticFeedbackDesc": "Önemli butonlara ve seçimlere dokunulduğunda hafif titreşim verir.",
+    "hapticFeedbackNotSupported": "Cihazınız dokunsal geri bildirimi desteklemiyor."
   },
   "embed": {
     "poweredBy": "iett-pwa",

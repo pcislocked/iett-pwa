@@ -20,6 +20,7 @@ import MapTileToggle from '@/components/MapTileToggle'
 import PullToRefresh from '@/components/PullToRefresh'
 import { useUserPrefs } from '@/hooks/useUserPrefs'
 import { formatGpsTimestamp } from '@/utils/dateUtils'
+import { formatPlate } from '@/utils/plateUtils'
 
 type ViewState =
   | 'booting'
@@ -474,7 +475,7 @@ export default function AracBusOverlayPage() {
                       </span>
                     )}
                   </div>
-                  <p className="text-sm font-mono text-text-secondary mt-1">{profile.plate}</p>
+                  <p className="text-sm font-mono text-text-secondary mt-1">{formatPlate(profile.plate)}</p>
                   <p className="text-xs text-text-secondary opacity-75 mt-1">{profile.operator_name}</p>
                 </div>
                 <div className="p-3 grid grid-cols-5 gap-2 bg-surface-muted/30">

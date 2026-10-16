@@ -1,6 +1,6 @@
 import { renderHook, act } from '@testing-library/react'
 import { describe, it, expect, beforeEach } from 'vitest'
-import { useUserPrefs, PINNED_STOPS_MAX } from '../useUserPrefs'
+import { useUserPrefs, PINNED_STOPS_MAX, type ImportResult } from '../useUserPrefs'
 
 describe('useUserPrefs', () => {
   beforeEach(() => {
@@ -129,5 +129,127 @@ describe('useUserPrefs', () => {
     act(() => { result.current.toggleFavRoute('15F') })
     const stored = JSON.parse(localStorage.getItem('iett-prefs') ?? '{}') as { favRoutes: string[] }
     expect(stored.favRoutes).toContain('15F')
+  })
+
+  // Wake lock & Haptics toggles
+  describe('keepScreenAwake & hapticFeedback', () => {
+    it('defaults keepScreenAwake to false and hapticFeedback to true', () => {
+      const { result } = renderHook(() => useUserPrefs())
+      expect(result.current.prefs.keepScreenAwake).toBe(false)
+      expect(result.current.prefs.hapticFeedback).toBe(true)
+    })
+
+    it('updates keepScreenAwake', () => {
+      const { result } = renderHook(() => useUserPrefs())
+      act(() => { result.current.setKeepScreenAwake(true) })
+      expect(result.current.prefs.keepScreenAwake).toBe(true)
+    })
+
+    it('updates hapticFeedback', () => {
+      const { result } = renderHook(() => useUserPrefs())
+      act(() => { result.current.setHapticFeedback(false) })
+      expect(result.current.prefs.hapticFeedback).toBe(false)
+    })
+  })
+
+  // Backup & Restore
+  describe('exportAllData and importAllData', () => {
+    it('exports data according to unified v2 schema', () => {
+      const { result } = renderHook(() => useUserPrefs())
+      act(() => {
+        result.current.pinStop('1001', 'Test Stop')
+        result.current.setKeepScreenAwake(true)
+      })
+
+      const backup = result.current.exportAllData()
+      expect(backup._schemaVersion).toBe(2)
+      expect(backup._app).toBe('iett-pwa')
+      expect(backup.metadata).toHaveProperty('exportedAt')
+      expect(backup.metadata).toHaveProperty('appVersion')
+      expect(backup.preferences.pinnedStops[0].nick).toBe('Test Stop')
+      expect(backup.preferences.keepScreenAwake).toBe(true)
+    })
+
+    it('imports v2 backup successfully', async () => {
+      const { result } = renderHook(() => useUserPrefs())
+      const v2Payload = {
+        _schemaVersion: 2,
+        _app: 'iett-pwa',
+        metadata: {
+          appVersion: '0.4.9',
+          exportedAt: new Date().toISOString(),
+          timestamp: Date.now(),
+        },
+        preferences: {
+          pinnedStops: [{ dcode: '5555', nick: 'V2 Stop', order: 0 }],
+          favStops: [],
+          favRoutes: ['34AS'],
+          nicknames: {},
+          gpsConsent: null,
+          nearbyRadius: 600,
+          nearbyMax: 15,
+          timestampMode: 'relative',
+          timebarFormat: 'emoji',
+          showCurrentTime: true,
+          keepScreenAwake: true,
+          hapticFeedback: false,
+        },
+        searchHistory: [{ kind: 'stop', code: '1001', name: 'Kadıköy' }],
+        ui: {
+          theme: 'amoled',
+          language: 'tr',
+        },
+      }
+
+      const file = new File([JSON.stringify(v2Payload)], 'backup-v2.json', { type: 'application/json' })
+      let importRes: ImportResult | undefined
+      await act(async () => {
+        importRes = await result.current.importAllData(file)
+      })
+
+      expect(importRes?.success).toBe(true)
+      expect(result.current.prefs.pinnedStops[0].nick).toBe('V2 Stop')
+      expect(result.current.prefs.favRoutes).toContain('34AS')
+      expect(result.current.prefs.keepScreenAwake).toBe(true)
+      expect(result.current.prefs.hapticFeedback).toBe(false)
+      expect(localStorage.getItem('iett_recent')).toContain('Kadıköy')
+      expect(localStorage.getItem('iett-pwa-theme')).toBe('amoled')
+    })
+
+    it('migrates and restores legacy v1 backup with versionNotice', async () => {
+      const { result } = renderHook(() => useUserPrefs())
+      const v1Payload = {
+        pinnedStops: [{ dcode: '1111', nick: 'Legacy V1 Stop', order: 0 }],
+        favStops: ['1111'],
+        favRoutes: ['500T'],
+        nicknames: { '1111': 'Legacy V1 Stop' },
+      }
+
+      const file = new File([JSON.stringify(v1Payload)], 'backup-v1.json', { type: 'application/json' })
+      let importRes: ImportResult | undefined
+      await act(async () => {
+        importRes = await result.current.importAllData(file)
+      })
+
+      expect(importRes?.success).toBe(true)
+      expect(importRes?.versionNotice).toBeDefined()
+      expect(result.current.prefs.pinnedStops[0].nick).toBe('Legacy V1 Stop')
+      expect(result.current.prefs.favRoutes).toContain('500T')
+      // defaults should remain stable
+      expect(result.current.prefs.keepScreenAwake).toBe(false)
+      expect(result.current.prefs.hapticFeedback).toBe(true)
+    })
+
+    it('fails gracefully on invalid json file', async () => {
+      const { result } = renderHook(() => useUserPrefs())
+      const file = new File(['not a valid json content'], 'corrupted.json', { type: 'application/json' })
+      let importRes: ImportResult | undefined
+      await act(async () => {
+        importRes = await result.current.importAllData(file)
+      })
+
+      expect(importRes?.success).toBe(false)
+      expect(importRes?.error).toBeDefined()
+    })
   })
 })

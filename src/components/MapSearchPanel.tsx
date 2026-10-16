@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { api, type RouteSearchResult, type StopSearchResult, type BusPosition } from '@/api/client'
+import { formatPlate } from '@/utils/plateUtils'
 
 // Palette from CanvasFleetLayer to color the chips identically
 const PALETTE = ['#f97316','#22c55e','#3b82f6','#a855f7','#ef4444']
@@ -198,7 +199,7 @@ export default function MapSearchPanel({
                   >
                     <span className="text-xs shrink-0">🚌</span>
                     <span className="font-mono font-bold text-brand-400 text-xs shrink-0">{b.kapino}</span>
-                    <span className="text-text-secondary truncate text-xs">{b.plate}</span>
+                    <span className="text-text-secondary truncate text-xs">{formatPlate(b.plate)}</span>
                     {b.route_code && <span className="text-text-muted text-[10px] shrink-0 ml-auto bg-surface-muted px-1.5 py-0.5 rounded">{b.route_code}</span>}
                   </button>
                 ))}

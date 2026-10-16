@@ -21,6 +21,9 @@ import PullToRefresh from '@/components/PullToRefresh'
 import StopInfoModal from '@/components/StopInfoModal'
 import MapTileToggle from '@/components/MapTileToggle'
 import { StopTimebar } from '@/components/StopTimebar'
+import { formatPlate } from '@/utils/plateUtils'
+import { useWakeLock } from '@/hooks/useWakeLock'
+import { triggerHaptic } from '@/utils/haptics'
 
 
 /** Fixed palette for the first 3 routes at this stop */
@@ -521,7 +524,7 @@ function BusDetailSheet({
             <p id="bus-detail-title" className="text-sm font-semibold text-text-primary truncate">{arrival.destination}</p>
             {(arrival.plate || arrival.kapino) && (
               <p className="text-xs text-text-secondary font-mono">
-                {[arrival.plate, arrival.kapino].filter(Boolean).join('  ·  ')}
+                {[formatPlate(arrival.plate), arrival.kapino].filter(Boolean).join('  ·  ')}
               </p>
             )}
           </div>
@@ -598,7 +601,7 @@ function BusDetailSheet({
           </div>
           <div className="flex flex-col items-center gap-0.5">
             <p className="text-[10px] text-text-muted uppercase tracking-wider">{t('stops.plate')}</p>
-            <p className="text-sm font-bold text-text-primary font-mono">{arrival.plate ?? '—'}</p>
+            <p className="text-sm font-bold text-text-primary font-mono">{formatPlate(arrival.plate) ?? '—'}</p>
           </div>
         </div>
 
@@ -714,6 +717,7 @@ const globalRouteIconCache = new Map<string, L.DivIcon>()
 export default function StopPage() {
   const { t } = useTranslation()
   const { prefs, isPinned, pinStop, unpinStop } = useUserPrefs()
+  useWakeLock({ enabled: prefs.keepScreenAwake })
   
   const { currentUrl, currentAttribution, satellite, toggleSatellite } = useMapTiles()
   const { dcode } = useParams<{ dcode: string }>()
@@ -803,7 +807,10 @@ export default function StopPage() {
                 d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12" />
         </svg>
       ),
-      onPress: () => setActiveTab('gelis'),
+      onPress: () => {
+        triggerHaptic('selection', prefs.hapticFeedback)
+        setActiveTab('gelis')
+      },
       active: activeTab === 'gelis',
     },
     {
@@ -815,7 +822,10 @@ export default function StopPage() {
                 d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM3.75 12h.007v.008H3.75V12zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm-.375 5.25h.007v.008H3.75v-.008zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
         </svg>
       ),
-      onPress: () => setActiveTab('hatlar'),
+      onPress: () => {
+        triggerHaptic('selection', prefs.hapticFeedback)
+        setActiveTab('hatlar')
+      },
       active: activeTab === 'hatlar',
     },
     {
@@ -827,10 +837,13 @@ export default function StopPage() {
                 d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
         </svg>
       ),
-      onPress: () => setActiveTab('bilgi'),
+      onPress: () => {
+        triggerHaptic('selection', prefs.hapticFeedback)
+        setActiveTab('bilgi')
+      },
       active: activeTab === 'bilgi',
     },
-  ], [activeTab, t])
+  ], [activeTab, t, prefs.hapticFeedback])
 
   useBottomBar(bottomBarTabs)
 
@@ -1098,7 +1111,10 @@ export default function StopPage() {
               </svg>
             </button>
             <button
-              onClick={() => toggle(favItem)}
+              onClick={() => {
+                triggerHaptic('medium', prefs.hapticFeedback)
+                toggle(favItem)
+              }}
               className={`p-1.5 rounded-xl transition-colors ${
                 favorited ? 'text-rose-400' : 'text-text-muted hover:text-text-secondary'
               }`}
@@ -1114,6 +1130,7 @@ export default function StopPage() {
             onClick={() => {
               if (!dcode) return
               if (pinAtLimit) return
+              triggerHaptic('medium', prefs.hapticFeedback)
               if (pinned) unpinStop(dcode)
               else pinStop(dcode, stopName)
             }}
@@ -1451,7 +1468,7 @@ export default function StopPage() {
                       </div>
                       {hasVehicle && (
                         <p className="text-xs text-text-secondary mt-0.5 font-mono tracking-wide">
-                          {[a.plate, a.kapino].filter(Boolean).join('  ·  ')}
+                          {[formatPlate(a.plate), a.kapino].filter(Boolean).join('  ·  ')}
                         </p>
                       )}
                     </div>
@@ -1462,7 +1479,10 @@ export default function StopPage() {
 
                   {/* RIGHT half — open single-bus sheet */}
                   <button
-                    onClick={() => setSelectedArrival(a)}
+                    onClick={() => {
+                      triggerHaptic('light', prefs.hapticFeedback)
+                      setSelectedArrival(a)
+                    }}
                     className="shrink-0 flex flex-col items-center justify-center gap-1 px-3 py-2 hover:bg-surface-muted/50 transition-colors"
                   >
                     <EtaChip
