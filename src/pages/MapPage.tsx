@@ -17,6 +17,7 @@ import MapBusPicker from '@/components/MapBusPicker'
 import { formatGpsTimestamp } from '@/utils/dateUtils'
 import { useUserPrefs } from '@/hooks/useUserPrefs'
 import { useMapTiles } from '@/hooks/useMapTiles'
+import { formatPlate } from '@/utils/plateUtils'
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 function parseIsoDate(value: string | null | undefined): Date | null {
@@ -423,7 +424,7 @@ export default function MapPage() {
                   {detailLoading && <span className="text-[10px] text-brand-500 animate-pulse">{t('common.loading', 'yükleniyor...')}</span>}
                 </div>
                 <p className="text-xs text-text-secondary font-mono">
-                  {selectedKapino} {mergedDetail?.plate ? ` \u00b7 ${mergedDetail.plate}` : ''}
+                  {selectedKapino} {mergedDetail?.plate ? ` \u00b7 ${formatPlate(mergedDetail.plate)}` : ''}
                 </p>
               </div>
               <button onClick={() => setSelectedKapino(null)} className="p-1.5 text-text-muted hover:text-text-secondary shrink-0">
@@ -443,7 +444,7 @@ export default function MapPage() {
               </div>
               <div className="flex flex-col items-center gap-0.5">
                 <p className="text-[10px] text-text-muted uppercase tracking-wider">{t('map.plate', { defaultValue: 'Plaka' })}</p>
-                <p className="text-sm font-bold text-text-primary font-mono mt-0.5">{mergedDetail?.plate ?? '?'}</p>
+                <p className="text-sm font-bold text-text-primary font-mono mt-0.5">{formatPlate(mergedDetail?.plate) ?? '?'}</p>
               </div>
               <div className="flex flex-col items-center gap-0.5">
                 <p className="text-[10px] text-text-muted uppercase tracking-wider">{t('arac.lastSeen', 'Son Görülme')}</p>

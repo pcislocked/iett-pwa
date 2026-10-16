@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useFleet } from '@/hooks/useFleet'
 import { api } from '@/api/client'
+import { formatPlate } from '@/utils/plateUtils'
 
 export default function AracQueryPage() {
   const navigate = useNavigate()
@@ -117,7 +118,7 @@ export default function AracQueryPage() {
                     </span>
                     <div className="flex flex-col">
                       <span className="font-bold text-text-primary text-lg leading-tight">{s.kapino}</span>
-                      {s.plate && <span className="text-xs font-mono text-text-secondary mt-0.5">{s.plate}</span>}
+                      {s.plate && <span className="text-xs font-mono text-text-secondary mt-0.5">{formatPlate(s.plate)}</span>}
                     </div>
                   </div>
                   <div className="flex flex-col items-end gap-1">
