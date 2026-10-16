@@ -294,7 +294,7 @@ export default function SettingsPage() {
                 {t('settings.showCurrentTime', { defaultValue: 'Canlı Saati Göster (hh:mm:ss)' })}
               </p>
               <p className="text-xs text-text-muted mt-0.5">
-                {t('settings.showCurrentTimeDesc', { defaultValue: 'Durak alt zaman barında mevcut saati canlı gösterir' })}
+                {t('settings.showCurrentTimeDesc', { defaultValue: 'Durak ve Araç zaman barında mevcut saati canlı gösterir' })}
               </p>
             </div>
             <button

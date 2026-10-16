@@ -1,5 +1,4 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
-import { createPortal } from 'react-dom'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { MapContainer, TileLayer, CircleMarker, Popup, Marker, Polyline, useMap } from 'react-leaflet'
 import * as L from 'leaflet'
@@ -19,6 +18,7 @@ import { isGpsStale, parseGpsTimestamp, formatGpsTimestamp } from '@/utils/dateU
 import { useMapTiles } from '@/hooks/useMapTiles'
 import PullToRefresh from '@/components/PullToRefresh'
 import StopInfoModal from '@/components/StopInfoModal'
+import TimestampInfoModal from '@/components/TimestampInfoModal'
 import MapTileToggle from '@/components/MapTileToggle'
 import { StopTimebar } from '@/components/StopTimebar'
 
@@ -65,183 +65,6 @@ function FitBoundsEffect({ bounds }: { bounds: [[number, number], [number, numbe
   return null
 }
 
-interface InfoModalProps {
-  onClose: () => void
-  onForceRefresh: () => void
-  clientTime: string
-  serverTime: string
-  gpsTime: string
-}
-
-function InfoModal({ onClose, onForceRefresh, clientTime, serverTime, gpsTime }: InfoModalProps) {
-  const { t } = useTranslation()
-  const modalRef = useRef<HTMLDivElement>(null)
-  const btnRef = useRef<HTMLButtonElement>(null)
-
-  useEffect(() => {
-    const previouslyFocused = document.activeElement
-    btnRef.current?.focus()
-    return () => {
-      if (previouslyFocused instanceof HTMLElement) {
-        previouslyFocused.focus()
-      }
-    }
-  }, [])
-
-  useEffect(() => {
-    const handleKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
-      if (e.key === 'Tab') {
-        if (!modalRef.current) return
-        const focusable = modalRef.current.querySelectorAll<HTMLElement>(
-          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
-        )
-        if (focusable.length === 0) return
-        const first = focusable[0]
-        const last = focusable[focusable.length - 1]
-
-        if (e.shiftKey) {
-          if (document.activeElement === first) {
-            e.preventDefault()
-            last.focus()
-          }
-        } else {
-          if (document.activeElement === last) {
-            e.preventDefault()
-            first.focus()
-          }
-        }
-      }
-    }
-    document.addEventListener('keydown', handleKey)
-    return () => {
-      document.removeEventListener('keydown', handleKey)
-    }
-  }, [onClose])
-
-  return createPortal(
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        transition={{ duration: 0.2 }}
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-        onClick={onClose}
-      />
-      <motion.div
-        ref={modalRef}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="info-title"
-        initial={{ opacity: 0, scale: 0.94, y: 10 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.94, y: 10 }}
-        transition={{ type: 'spring', damping: 25, stiffness: 350 }}
-        className="relative w-full max-w-sm bg-surface-card border border-surface-border rounded-2xl shadow-2xl p-6"
-      >
-        <h2 id="info-title" className="text-lg font-bold text-text-primary mb-3">
-          {t('stops.timestamps')}
-        </h2>
-
-        {/* Architecture flow diagram using emojis */}
-        <div className="p-3 mb-4 bg-surface-muted/30 border border-surface-border rounded-xl flex flex-col items-center">
-          {/* Top Node: iett-middle */}
-          <div className="flex flex-col items-center text-center">
-            <span className="text-2xl mb-0.5">☁️</span>
-            <span className="text-[11px] font-bold text-brand-400 font-mono">iett-middle</span>
-            <span className="text-[9px] text-text-muted">{t('stops.serverNodeSub')}</span>
-          </div>
-
-          {/* Connection Arrows: ↙ (middle -> pwa), ↖ (istanbul -> middle) */}
-          <div className="w-full flex items-center justify-around px-8 my-1 text-text-muted text-xs font-bold font-mono">
-            <span>↙</span>
-            <span>↖</span>
-          </div>
-
-          {/* Bottom Nodes: Left = iett-pwa (Client), Right = iett.istanbul (Bus/Field) */}
-          <div className="w-full flex items-center justify-between px-2">
-            <div className="flex flex-col items-center text-center max-w-[100px]">
-              <span className="text-2xl mb-0.5">📱</span>
-              <span className="text-[11px] font-bold text-text-primary font-mono">iett-pwa</span>
-              <span className="text-[9px] text-text-muted">{t('stops.clientNodeSub')}</span>
-            </div>
-
-            <div className="flex flex-col items-center text-center max-w-[100px]">
-              <span className="text-2xl mb-0.5">🚌</span>
-              <span className="text-[11px] font-bold text-text-primary font-mono">iett.istanbul</span>
-              <span className="text-[9px] text-text-muted">{t('stops.fieldNodeSub')}</span>
-            </div>
-          </div>
-        </div>
-
-        <div tabIndex={0} className="text-xs text-text-secondary space-y-3 mb-6 overflow-y-auto max-h-[40vh]">
-          <div className="p-3 bg-surface-muted/50 rounded-xl border border-surface-border space-y-1">
-            <div className="flex items-center justify-between font-semibold text-text-primary">
-              <span>📱 {t('stops.cardClientTitle')}</span>
-              <span className="font-mono text-brand-400">{clientTime}</span>
-            </div>
-            <p className="text-[11px] text-text-muted leading-relaxed">
-              {t('stops.timestampDescUpdate')}
-            </p>
-          </div>
-
-          <div className="p-3 bg-surface-muted/50 rounded-xl border border-surface-border space-y-1">
-            <div className="flex items-center justify-between font-semibold text-text-primary">
-              <span>☁️ {t('stops.cardServerTitle')}</span>
-              <span className="font-mono text-brand-400">{serverTime}</span>
-            </div>
-            <p className="text-[11px] text-text-muted leading-relaxed">
-              {t('stops.timestampDescIett')}
-            </p>
-          </div>
-
-          <div className="p-3 bg-surface-muted/50 rounded-xl border border-surface-border space-y-1">
-            <div className="flex items-center justify-between font-semibold text-text-primary">
-              <span>🛰️ {t('stops.cardGpsTitle')}</span>
-              <span className="font-mono text-brand-400">{gpsTime}</span>
-            </div>
-            <p className="text-[11px] text-text-muted leading-relaxed">
-              {t('stops.gpsTimeDesc')}
-              {(gpsTime === '--:--:--' || !gpsTime) && (
-                <span className="block mt-1 text-amber-400/90 font-medium">
-                  {t('stops.gpsTimeNoBusesNote')}
-                </span>
-              )}
-            </p>
-          </div>
-
-          <p className="text-[11px] text-amber-400/90 leading-relaxed px-1">
-            {t('stops.timestampLagWarning')}
-          </p>
-        </div>
-
-        <div className="flex gap-2">
-          <button
-            ref={btnRef}
-            onClick={() => {
-              onForceRefresh()
-              onClose()
-            }}
-            className="flex-1 py-2.5 bg-brand-600 hover:bg-brand-500 text-white font-semibold rounded-xl text-xs transition-colors flex items-center justify-center gap-1.5"
-          >
-            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
-            </svg>
-            {t('stops.forceRefresh')}
-          </button>
-          <button
-            onClick={onClose}
-            className="py-2.5 px-4 bg-surface-muted hover:bg-slate-600 text-text-secondary font-semibold rounded-xl text-xs transition-colors"
-          >
-            {t('common.gotIt')}
-          </button>
-        </div>
-      </motion.div>
-    </div>,
-    document.body
-  )
-}
 
 /**
  * Fits the map to include the stop marker + up to 3 nearest buses (those
@@ -1571,7 +1394,7 @@ export default function StopPage() {
       {/* Info Modal */}
       <AnimatePresence>
         {showInfo && (
-          <InfoModal
+          <TimestampInfoModal
             key="info-modal"
             onClose={() => setShowInfo(false)}
             onForceRefresh={() => refreshArrivals()}
