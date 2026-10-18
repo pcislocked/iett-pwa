@@ -166,10 +166,14 @@ export default function AnnouncementsPage() {
               </div>
             )}
 
-            {filteredOfficial.map((item: OfficialAnnouncementItem) => (
+            {filteredOfficial.map((item: OfficialAnnouncementItem) => {
+              const safeHref = /^https?:\/\//i.test(item.url)
+                ? item.url
+                : 'https://iett.istanbul/announcement/Index'
+              return (
               <a
                 key={item.id}
-                href={item.url}
+                href={safeHref}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="block p-4 bg-surface-card border border-surface-muted hover:border-brand-500/40 rounded-2xl transition-all shadow-sm group"
@@ -186,7 +190,8 @@ export default function AnnouncementsPage() {
                   {item.title}
                 </h3>
               </a>
-            ))}
+              )
+            })}
 
             {/* Pagination Controls */}
             {officialData && officialData.total_items > 0 && (

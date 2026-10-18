@@ -5,6 +5,25 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [0.4.9] - 2026-10-18
+### Added
+- **[BUG-01] 1-Character Route Search & Adaptive Debounce:** Enabled 1-character route searching (e.g., `1`, `2`, `E`, `B`) while preserving `>= 2` characters for stop searches to avoid backend HTTP `422` errors. Added adaptive debounce (`700ms` for 1 char, `300ms` for 2–3 chars, `150ms` for 4+ chars) and instant `Enter`/submit search execution across `SearchPage`, `SearchBar`, and `MapSearchPanel`.
+- **[BUG-02] ARAC Live Timebar & Timestamp Info Modal:** Fixed `parseGpsTimestamp` to support `DD-MM-YYYY HH:mm:ss` timestamps returned by `arac.iett.gov.tr`, integrated `<StopTimebar>` into `AracBusOverlayPage`, and extracted a shared `<TimestampInfoModal>` component used across both `StopPage` and `AracBusOverlayPage`.
+- **[BUG-03] Ring Route Apex Detection & Naming:** Added `getVariantDisplayName` (`src/utils/variantUtils.ts`) to automatically detect circular/ring routes where start and end stops match and format their display labels as `🔄 FirstStop > ApexStop Ring` across `RoutePage` and `VariantSelect`.
+- **[BUG-04] PWA Web Share Target & Smart URL Paste:** Registered OS-level `share_target` (`/share-target`) in `manifest.webmanifest` and `vite.config.ts`, added `ShareTargetPage` with `{ replace: true }` history navigation, and added `parseIettShare` paste-to-navigate support in `SearchPage` and `SearchBar` for `iett.istanbul` route/stop links.
+- **[BUG-05] Official IETT Announcements & Fare Tariff Hub (`AnnouncementsPage`):** Added `/announcements` page with tabs for official `iett.istanbul` corporate announcements (with pagination and instant filter) and system-wide service alerts, plus direct links to the official IETT Fare Tariff in `AnnouncementsPage`, `MenuSheet`, and `Home`.
+- **[BUG-06] Backup & Restore Schema v2:** Upgraded settings export/import to `BackupDataV2` (`iett-backup-YYYY-MM-DD.json`) capturing preferences, pinned stops, favorites, recent searches, theme/language/satellite UI state, and sanitized settings with full backward compatibility for v1 backup files.
+- **[BUG-07] Turkish License Plate Formatting (`plateUtils.ts`):** Added `formatPlate`, `isPlate`, and `cleanPlate` utilities to display standardized spaced Turkish plates (`34 HO 1900`) and enable space/dash-agnostic plate searching across `StopPage`, `MapPage`, `MapBusPicker`, `MapSearchPanel`, `AracBusOverlayPage`, and `AracQueryPage`.
+- **[BUG-08] Screen Wake Lock on Stop Page (`useWakeLock.ts`):** Added optional Screen Wake Lock support on `StopPage` with automatic visibility re-acquisition and a strict 30-minute safety timeout to prevent battery drain.
+- **[BUG-09] Haptic Feedback (`haptics.ts`):** Added subtle vibration feedback (`triggerHaptic`) on key interactive controls with a user-configurable toggle in `SettingsPage`.
+
+### Security & Dependencies
+- Hardened `importAllData` in `useUserPrefs.ts` to validate `apiBase` URL schemes (`http:`/`https:` or same-origin relative path) and clamp `refreshInterval` to `[10, 120]` seconds.
+- Validated external announcement URLs in `AnnouncementsPage.tsx` before rendering `href`.
+- Bumped `i18next-http-backend` (`4.0.2`), `undici` (`7.30.0`), `source-map-js` (`1.2.2`), `postcss-selector-parser`, and `brace-expansion`.
+
+---
+
 ## [0.4.8.1] - 2026-10-11
 ### Fixed
 - **StopTimebar Component & Performance Isolation:** Extracted the 1-second live ticker into an isolated, memoized `<StopTimebar>` component, preventing the entire StopPage, map, and list elements from re-rendering every second.
