@@ -414,9 +414,27 @@ export function useUserPrefs() {
         // Restore Settings
         if (v2.settings && typeof v2.settings === 'object') {
           const s = v2.settings as Partial<Settings>
+          let safeApiBase = ''
+          if (typeof s.apiBase === 'string') {
+            const trimmed = s.apiBase.trim().replace(/\/+$/, '')
+            if (trimmed === '' || (trimmed.startsWith('/') && !trimmed.startsWith('//'))) {
+              safeApiBase = trimmed
+            } else {
+              try {
+                const parsedUrl = new URL(trimmed)
+                if (parsedUrl.protocol === 'https:' || parsedUrl.protocol === 'http:') {
+                  safeApiBase = trimmed
+                }
+              } catch { /* ignore invalid URL */ }
+            }
+          }
+          const safeRefresh =
+            typeof s.refreshInterval === 'number' && Number.isFinite(s.refreshInterval)
+              ? Math.min(120, Math.max(10, Math.round(s.refreshInterval)))
+              : 20
           saveSettings({
-            apiBase: typeof s.apiBase === 'string' ? s.apiBase : '',
-            refreshInterval: typeof s.refreshInterval === 'number' ? s.refreshInterval : 20,
+            apiBase: safeApiBase,
+            refreshInterval: safeRefresh,
             autoLocate: typeof s.autoLocate === 'boolean' ? s.autoLocate : false,
           })
         }
