@@ -1,6 +1,7 @@
-import { memo, useState, useEffect, useMemo } from 'react'
+import { memo, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { formatGpsTimestamp } from '@/utils/dateUtils'
+import { useNowTicker } from '@/hooks/useNowTicker'
 
 export interface StopTimebarProps {
   lastUpdated: Date | null
@@ -22,46 +23,7 @@ export const StopTimebar = memo(function StopTimebar({
   onShowInfo,
 }: StopTimebarProps) {
   const { t } = useTranslation()
-  const [nowMs, setNowMs] = useState(() => Date.now())
-
-  useEffect(() => {
-    let timerId: ReturnType<typeof setInterval> | null = null
-
-    const startTimer = () => {
-      if (!timerId) {
-        setNowMs(Date.now())
-        timerId = setInterval(() => {
-          setNowMs(Date.now())
-        }, 1000)
-      }
-    }
-
-    const stopTimer = () => {
-      if (timerId) {
-        clearInterval(timerId)
-        timerId = null
-      }
-    }
-
-    const handleVisibilityChange = () => {
-      if (document.hidden) {
-        stopTimer()
-      } else {
-        startTimer()
-      }
-    }
-
-    if (!document.hidden) {
-      startTimer()
-    }
-
-    document.addEventListener('visibilitychange', handleVisibilityChange)
-
-    return () => {
-      stopTimer()
-      document.removeEventListener('visibilitychange', handleVisibilityChange)
-    }
-  }, [])
+  const nowMs = useNowTicker(1000)
 
   const currentTimeClock = useMemo(() => {
     const d = new Date(nowMs)

@@ -1418,9 +1418,10 @@ export default function StopPage() {
             key="info-modal"
             onClose={() => setShowInfo(false)}
             onForceRefresh={() => refreshArrivals()}
-            clientTime={lastUpdated ? formatGpsTimestamp(lastUpdated.toISOString(), prefs.timestampMode, t) : '--:--:--'}
-            serverTime={iettUpdatedAt ? formatGpsTimestamp(iettUpdatedAt, prefs.timestampMode, t) : '--:--:--'}
-            gpsTime={maxGpsTime ? formatGpsTimestamp(maxGpsTime, prefs.timestampMode, t) : '--:--:--'}
+            lastUpdated={lastUpdated}
+            iettUpdatedAt={iettUpdatedAt}
+            maxGpsTime={maxGpsTime}
+            timestampMode={prefs.timestampMode}
           />
         )}
       </AnimatePresence>

@@ -1,14 +1,20 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import { motion } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
+import { formatGpsTimestamp } from '@/utils/dateUtils'
+import { useNowTicker } from '@/hooks/useNowTicker'
 
 export interface TimestampInfoModalProps {
   onClose: () => void
   onForceRefresh: () => void
-  clientTime: string
-  serverTime: string
-  gpsTime: string
+  clientTime?: string
+  serverTime?: string
+  gpsTime?: string
+  lastUpdated?: Date | string | null
+  iettUpdatedAt?: string | null
+  maxGpsTime?: string | null
+  timestampMode?: 'relative' | 'absolute' | 'both'
 }
 
 export default function TimestampInfoModal({
@@ -17,10 +23,43 @@ export default function TimestampInfoModal({
   clientTime,
   serverTime,
   gpsTime,
+  lastUpdated,
+  iettUpdatedAt,
+  maxGpsTime,
+  timestampMode,
 }: TimestampInfoModalProps) {
   const { t } = useTranslation()
   const modalRef = useRef<HTMLDivElement>(null)
   const btnRef = useRef<HTMLButtonElement>(null)
+  const nowMs = useNowTicker(1000)
+
+  const currentTimeFormatted = useMemo(() => {
+    const d = new Date(nowMs)
+    const pad = (n: number) => n.toString().padStart(2, '0')
+    return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
+  }, [nowMs])
+
+  const resolvedClientTime = useMemo(() => {
+    if (lastUpdated !== undefined) {
+      const ts = typeof lastUpdated === 'string' ? lastUpdated : lastUpdated?.toISOString() ?? null
+      return formatGpsTimestamp(ts, timestampMode ?? 'relative', t, nowMs)
+    }
+    return clientTime ?? '--:--:--'
+  }, [lastUpdated, timestampMode, t, nowMs, clientTime])
+
+  const resolvedServerTime = useMemo(() => {
+    if (iettUpdatedAt !== undefined) {
+      return formatGpsTimestamp(iettUpdatedAt, timestampMode ?? 'relative', t, nowMs)
+    }
+    return serverTime ?? '--:--:--'
+  }, [iettUpdatedAt, timestampMode, t, nowMs, serverTime])
+
+  const resolvedGpsTime = useMemo(() => {
+    if (maxGpsTime !== undefined) {
+      return formatGpsTimestamp(maxGpsTime, timestampMode ?? 'relative', t, nowMs)
+    }
+    return gpsTime ?? '--:--:--'
+  }, [maxGpsTime, timestampMode, t, nowMs, gpsTime])
 
   useEffect(() => {
     const previouslyFocused = document.activeElement
@@ -120,10 +159,24 @@ export default function TimestampInfoModal({
         </div>
 
         <div tabIndex={0} className="text-xs text-text-secondary space-y-3 mb-6 overflow-y-auto max-h-[40vh]">
+          {/* Live current device clock */}
+          <div className="p-3 bg-brand-500/10 rounded-xl border border-brand-500/20 space-y-1">
+            <div className="flex items-center justify-between font-semibold text-text-primary">
+              <span className="flex items-center gap-1.5">
+                <span>🕒</span>
+                <span>{t('stops.cardNowTitle')}</span>
+              </span>
+              <span className="font-mono text-brand-400 font-bold text-sm tracking-wider">{currentTimeFormatted}</span>
+            </div>
+            <p className="text-[11px] text-text-muted leading-relaxed">
+              {t('stops.nowTimeDesc')}
+            </p>
+          </div>
+
           <div className="p-3 bg-surface-muted/50 rounded-xl border border-surface-border space-y-1">
             <div className="flex items-center justify-between font-semibold text-text-primary">
               <span>📱 {t('stops.cardClientTitle')}</span>
-              <span className="font-mono text-brand-400">{clientTime}</span>
+              <span className="font-mono text-brand-400">{resolvedClientTime}</span>
             </div>
             <p className="text-[11px] text-text-muted leading-relaxed">
               {t('stops.timestampDescUpdate')}
@@ -133,7 +186,7 @@ export default function TimestampInfoModal({
           <div className="p-3 bg-surface-muted/50 rounded-xl border border-surface-border space-y-1">
             <div className="flex items-center justify-between font-semibold text-text-primary">
               <span>☁️ {t('stops.cardServerTitle')}</span>
-              <span className="font-mono text-brand-400">{serverTime}</span>
+              <span className="font-mono text-brand-400">{resolvedServerTime}</span>
             </div>
             <p className="text-[11px] text-text-muted leading-relaxed">
               {t('stops.timestampDescIett')}
@@ -143,11 +196,11 @@ export default function TimestampInfoModal({
           <div className="p-3 bg-surface-muted/50 rounded-xl border border-surface-border space-y-1">
             <div className="flex items-center justify-between font-semibold text-text-primary">
               <span>🛰️ {t('stops.cardGpsTitle')}</span>
-              <span className="font-mono text-brand-400">{gpsTime}</span>
+              <span className="font-mono text-brand-400">{resolvedGpsTime}</span>
             </div>
             <p className="text-[11px] text-text-muted leading-relaxed">
               {t('stops.gpsTimeDesc')}
-              {(gpsTime === '--:--:--' || !gpsTime) && (
+              {(resolvedGpsTime === '--:--:--' || resolvedGpsTime === '-' || !resolvedGpsTime) && (
                 <span className="block mt-1 text-amber-400/90 font-medium">
                   {t('stops.gpsTimeNoBusesNote')}
                 </span>
