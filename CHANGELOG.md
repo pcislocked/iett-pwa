@@ -3,6 +3,15 @@
 All notable changes to iett-pwa are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [0.4.9.2] - 2026-10-18
+### Fixed & Accessibility Polish
+- **Offline Esri Satellite Tile Caching:** Configured Workbox caching in `vite.config.ts` for Esri ArcGIS satellite tiles (`/ArcGIS/rest/services/World_Imagery/MapServer/tile/`) with opaque response caching support (`cacheableResponse: { statuses: [0, 200] }`), enabling offline map viewing.
+- **Backup & Settings Satellite Sync:** Synced satellite map preference across localStorage (`map-satellite` and `iett_satellite`) and included it in the `BackupDataV2` export/import schema.
+- **Dialog Accessibility (WCAG 2.1 AA):** Upgraded `RouteInfoModal` and `StopInfoModal` with focus traps, escape key listeners, `aria-modal="true"`, accessible close buttons with localized `aria-label`s, and contrast-compliant borders.
+- **Unmounted Lifecycle Safety Guards:** Added `AbortController` and component mount guards across `useLocationManager`, `NearbyPage`, `AracQueryPage`, and `StopPage` to prevent memory leaks and unmounted `setState` warnings.
+
+---
+
 ## [0.4.9.1] - 2026-10-18
 ### Added
 - **Today's Announcement Banner on Home (`Home.tsx`):** Automatically checks official IETT announcements for today's date using `isTodayAnnouncement` (`dateUtils.ts`, supporting Turkish textual dates like `18 Ekim 2026`, numeric dates, and ISO dates) and presents them directly in the Home page announcement banner with a one-click external link to the full announcement details.
