@@ -424,7 +424,7 @@ export default function RoutePage() {
   const favorited = isFavorite(favItem)
 
   
-  const { currentUrl, currentAttribution, satellite, toggleSatellite } = useMapTiles()
+  const { currentUrl, currentAttribution, satellite, toggleSatellite, mapClassName, tileClassName } = useMapTiles()
 
   if (!hatKodu) return null
 
@@ -582,8 +582,10 @@ export default function RoutePage() {
                 maxBounds={ISTANBUL_BOUNDS}
                 maxBoundsViscosity={1.0}
                 style={{ height: '100%', width: '100%' }}
+                className={mapClassName}
               >
                 <TileLayer
+                  className={tileClassName}
                   attribution={currentAttribution}
                   url={currentUrl}
                   keepBuffer={2}

@@ -34,5 +34,8 @@ export function useMapTiles() {
 
   const currentAttribution = satellite ? TILE_ATTRIBUTION.satellite : TILE_ATTRIBUTION.esri
 
-  return { currentUrl, currentAttribution, satellite, toggleSatellite }
+  const mapClassName = satellite ? 'map-satellite' : 'map-base'
+  const tileClassName = satellite ? 'leaflet-tiles-satellite' : 'leaflet-tiles-base'
+
+  return { currentUrl, currentAttribution, satellite, toggleSatellite, mapClassName, tileClassName }
 }

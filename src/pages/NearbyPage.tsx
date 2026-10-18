@@ -52,7 +52,7 @@ function NearbyMapView({
 }) {
   const { t } = useTranslation()
   
-  const { currentUrl, currentAttribution, satellite, toggleSatellite } = useMapTiles()
+  const { currentUrl, currentAttribution, satellite, toggleSatellite, mapClassName, tileClassName } = useMapTiles()
   const userIcon = L.divIcon({
     className: '',
     html: `<div style="
@@ -76,8 +76,10 @@ function NearbyMapView({
       maxBounds={ISTANBUL_BOUNDS}
       maxBoundsViscosity={1.0}
       style={{ height: '100%', width: '100%' }}
+      className={mapClassName}
     >
         <TileLayer
+          className={tileClassName}
           attribution={currentAttribution}
           url={currentUrl}
           keepBuffer={2}

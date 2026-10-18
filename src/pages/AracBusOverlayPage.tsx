@@ -106,7 +106,7 @@ export default function AracBusOverlayPage() {
   const { kapino } = useParams<{ kapino: string }>()
   const navigate = useNavigate()
   const { t } = useTranslation()
-  const { currentUrl, currentAttribution, satellite, toggleSatellite } = useMapTiles()
+  const { currentUrl, currentAttribution, satellite, toggleSatellite, mapClassName, tileClassName } = useMapTiles()
   const { prefs } = useUserPrefs()
 
   const [viewState, setViewState] = useState<ViewState>('booting')
@@ -442,8 +442,10 @@ export default function AracBusOverlayPage() {
                 maxBoundsViscosity={1.0}
                 style={{ height: '100%', width: '100%' }}
                 zoomControl={false}
+                className={mapClassName}
               >
                 <TileLayer
+                  className={tileClassName}
                   attribution={currentAttribution}
                   url={currentUrl}
                   keepBuffer={2}

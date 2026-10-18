@@ -148,7 +148,7 @@ export default function MapPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const mapRef = useRef<L.Map | null>(null)
-  const { currentUrl, currentAttribution, satellite, toggleSatellite } = useMapTiles()
+  const { currentUrl, currentAttribution, satellite, toggleSatellite, mapClassName, tileClassName } = useMapTiles()
   
   const { prefs } = useUserPrefs()
 
@@ -347,9 +347,11 @@ export default function MapPage() {
         maxBoundsViscosity={1.0}
         style={{ flex: 1, width: '100%', touchAction: 'none' }}
         zoomControl={false}
+        className={mapClassName}
       >
         <TileLayer
           key={currentUrl}
+          className={tileClassName}
           url={currentUrl}
           attribution={currentAttribution}
           keepBuffer={2}

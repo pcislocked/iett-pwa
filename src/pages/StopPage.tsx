@@ -193,7 +193,7 @@ function BusDetailSheet({
   const { prefs } = useUserPrefs()
   const [mapReady, setMapReady] = useState(false)
   
-  const { currentUrl, currentAttribution, satellite, toggleSatellite } = useMapTiles()
+  const { currentUrl, currentAttribution, satellite, toggleSatellite, mapClassName, tileClassName } = useMapTiles()
 
   const dialogRef = useRef<HTMLDivElement>(null)
   const previouslyFocused = useRef<Element | null>(null)
@@ -373,8 +373,8 @@ function BusDetailSheet({
               </div>
             )}
             {mapReady && (
-              <MapContainer center={mapCenter} zoom={15} style={{ height: '100%', width: '100%' }} zoomControl={false}>
-                <TileLayer attribution={currentAttribution} url={currentUrl} />
+              <MapContainer center={mapCenter} zoom={15} style={{ height: '100%', width: '100%' }} zoomControl={false} className={mapClassName}>
+                <TileLayer className={tileClassName} attribution={currentAttribution} url={currentUrl} />
                 {bounds && <FitBoundsEffect bounds={bounds} />}
                 <Polyline
                   positions={[[effectiveLat!, effectiveLon!], [stopLat, stopLon]]}
@@ -542,7 +542,7 @@ export default function StopPage() {
   const { prefs, isPinned, pinStop, unpinStop } = useUserPrefs()
   useWakeLock({ enabled: prefs.keepScreenAwake })
   
-  const { currentUrl, currentAttribution, satellite, toggleSatellite } = useMapTiles()
+  const { currentUrl, currentAttribution, satellite, toggleSatellite, mapClassName, tileClassName } = useMapTiles()
   const { dcode } = useParams<{ dcode: string }>()
   const navigate = useNavigate()
   const [activeRoutes, setActiveRoutes] = useState<Set<string>>(new Set())
@@ -1062,9 +1062,10 @@ export default function StopPage() {
               maxBoundsViscosity={1.0}
               style={{ height: '100%', width: '100%' }}
               key={dcode}
+              className={mapClassName}
             >
               {/* MapResizer removed, relying on resize events */}
-              <TileLayer attribution={currentAttribution} url={currentUrl} />
+              <TileLayer className={tileClassName} attribution={currentAttribution} url={currentUrl} />
               <AutoFitBuses
                 stopLat={stopDetail.latitude}
                 stopLon={stopDetail.longitude}

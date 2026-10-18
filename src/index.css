@@ -29,6 +29,7 @@
   --color-danger:        #ef4444;
   --color-warning:       #f59e0b;
   --color-success:       #10b981;
+  --map-tile-filter:     brightness(0.55) contrast(1.25);
 }
 
 /* AMOLED — true black */
@@ -45,6 +46,7 @@
   --color-danger:        #ff4444;
   --color-warning:       #ffaa00;
   --color-success:       #00e676;
+  --map-tile-filter:     brightness(0.48) contrast(1.3);
 }
 
 /* Light */
@@ -61,6 +63,7 @@
   --color-danger:        #dc2626;
   --color-warning:       #d97706;
   --color-success:       #059669;
+  --map-tile-filter:     none;
 }
 
 /* Respect system preference ONLY when no explicit theme is set */
@@ -78,6 +81,7 @@
     --color-danger:        #dc2626;
     --color-warning:       #d97706;
     --color-success:       #059669;
+    --map-tile-filter:     none;
   }
 }
 
@@ -108,6 +112,13 @@
 
 /* Leaflet */
 .leaflet-container { background: var(--color-surface-card); font-family: inherit; }
+.leaflet-container:not(.map-satellite) .leaflet-tile-pane {
+  filter: var(--map-tile-filter, none);
+}
+.map-satellite .leaflet-tile-pane,
+.leaflet-container .leaflet-tile-pane:has(.leaflet-tiles-satellite) {
+  filter: none !important;
+}
 @media (pointer: coarse) {
   .leaflet-control-attribution a {
     pointer-events: none;

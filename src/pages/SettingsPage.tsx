@@ -53,7 +53,7 @@ function ThemeSwitcher({ hapticFeedback = true }: { hapticFeedback?: boolean }) 
 
 function MockLocationPicker({ initialLat, initialLon, onPick }: { initialLat: number, initialLon: number, onPick: (lat: number, lon: number) => void }) {
   
-  const { currentUrl, currentAttribution } = useMapTiles()
+  const { currentUrl, currentAttribution, mapClassName, tileClassName } = useMapTiles()
   const customIcon = L.divIcon({
     className: '',
     html: `<div style="background:#f97316;border-radius:50%;width:18px;height:18px;border:3px solid #fff;box-shadow:0 0 0 4px rgba(249,115,22,0.35)"></div>`,
@@ -80,8 +80,10 @@ function MockLocationPicker({ initialLat, initialLon, onPick }: { initialLat: nu
         maxBounds={ISTANBUL_BOUNDS}
         maxBoundsViscosity={1.0}
         style={{ height: '100%', width: '100%' }}
+        className={mapClassName}
       >
         <TileLayer
+          className={tileClassName}
           attribution={currentAttribution}
           url={currentUrl}
           keepBuffer={2}
