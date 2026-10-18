@@ -3,12 +3,21 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { useLocationManager, DEFAULT_MOCK_LOCATION } from '../useLocationManager'
 
 describe('useLocationManager Hook', () => {
+  let originalGeolocation: PropertyDescriptor | undefined
+
   beforeEach(() => {
     localStorage.clear()
     vi.useFakeTimers()
+    originalGeolocation = Object.getOwnPropertyDescriptor(global.navigator, 'geolocation')
   })
 
   afterEach(() => {
+    if (originalGeolocation) {
+      Object.defineProperty(global.navigator, 'geolocation', originalGeolocation)
+    } else {
+      // @ts-expect-error cleanup mock
+      delete global.navigator.geolocation
+    }
     vi.restoreAllMocks()
     vi.useRealTimers()
   })
@@ -94,6 +103,32 @@ describe('useLocationManager Hook', () => {
 
     act(() => {
       vi.advanceTimersByTime(12000)
+    })
+
+    expect(result.current.location).toEqual(DEFAULT_MOCK_LOCATION)
+    expect(result.current.loading).toBe(false)
+  })
+
+  it('falls back to mock location when geolocation errors', () => {
+    localStorage.setItem(
+      'iett-prefs',
+      JSON.stringify({ gpsConsent: 'granted' })
+    )
+
+    const getCurrentPositionMock = vi.fn((_success, error) => {
+      error({ code: 1, message: 'User denied geolocation' })
+    })
+
+    Object.defineProperty(global.navigator, 'geolocation', {
+      value: { getCurrentPosition: getCurrentPositionMock },
+      configurable: true,
+      writable: true,
+    })
+
+    const { result } = renderHook(() => useLocationManager())
+
+    act(() => {
+      result.current.requestLocation()
     })
 
     expect(result.current.location).toEqual(DEFAULT_MOCK_LOCATION)

@@ -23,7 +23,7 @@ if (!i18n.isInitialized) {
       interpolation: {
         escapeValue: false, // React escapes by default
       },
-      debug: Boolean(import.meta.env.DEV && !process.env.VITEST),
+      debug: Boolean(import.meta.env.DEV && !(typeof process !== 'undefined' && process.env?.VITEST)),
     })
 }
 

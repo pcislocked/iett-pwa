@@ -58,4 +58,18 @@ describe('ShareTargetPage Component', () => {
       expect(mockNavigate).toHaveBeenCalledWith('/', { replace: true })
     })
   })
+
+  it('parses search share query and navigates to /search?q=...', async () => {
+    render(
+      <MemoryRouter initialEntries={['/share-target?text=Kad%C4%B1k%C3%B6y']}>
+        <Routes>
+          <Route path="/share-target" element={<ShareTargetPage />} />
+        </Routes>
+      </MemoryRouter>
+    )
+
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith('/search?q=Kad%C4%B1k%C3%B6y', { replace: true })
+    })
+  })
 })
