@@ -32,9 +32,68 @@ export default function SearchPage() {
 
   const abortControllerRef = useRef<AbortController | null>(null)
 
+  const getSearchDebounceMs = (len: number): number => {
+    if (len === 1) return 700
+    if (len <= 3) return 300
+    return 150
+  }
+
+  const executeSearch = async (q: string, signal: AbortSignal) => {
+    try {
+      if (q.length === 1) {
+        // Stop search requires min_length=2 on backend (/v1/stops/search returns 422 for 1 char).
+        // Only search routes for 1 char.
+        const routes = await api.routes.search(q, { signal })
+        if (signal.aborted) return
+        setResults(routes.map((r) => ({ kind: 'route' as const, ...r })))
+      } else {
+        const [stopsResult, routesResult] = await Promise.allSettled([
+          api.stops.search(q, { signal }),
+          api.routes.search(q, { signal }),
+        ])
+        if (signal.aborted) return
+        const stops = stopsResult.status === 'fulfilled' ? stopsResult.value : []
+        const routes = routesResult.status === 'fulfilled' ? routesResult.value : []
+        const combined: SearchResult[] = [
+          ...routes.map((r) => ({ kind: 'route' as const, ...r })),
+          ...stops.map((s) => ({ kind: 'stop' as const, ...s })),
+        ]
+        setResults(combined)
+      }
+    } catch (err: unknown) {
+      if (err instanceof Error && err.name === 'AbortError') return
+      setResults([])
+    } finally {
+      if (!signal.aborted) setLoading(false)
+    }
+  }
+
+  const runInstantSearch = () => {
+    const q = query.trim().slice(0, 100)
+    if (timerRef.current) clearTimeout(timerRef.current)
+    if (abortControllerRef.current) abortControllerRef.current.abort()
+
+    if (q.length < 1) {
+      setResults([])
+      setLoading(false)
+      return
+    }
+
+    if (/^\d{4,}$/.test(q)) {
+      setResults([{ kind: 'stop-direct', dcode: q }])
+      setLoading(false)
+      return
+    }
+
+    setLoading(true)
+    const controller = new AbortController()
+    abortControllerRef.current = controller
+    executeSearch(q, controller.signal)
+  }
+
   useEffect(() => {
-    const q = query.trim()
-    if (q.length < 2) {
+    const q = query.trim().slice(0, 100)
+    if (q.length < 1) {
       if (timerRef.current) clearTimeout(timerRef.current)
       if (abortControllerRef.current) abortControllerRef.current.abort()
       setResults([])
@@ -56,25 +115,10 @@ export default function SearchPage() {
     const controller = new AbortController()
     abortControllerRef.current = controller
 
-    timerRef.current = setTimeout(async () => {
-      try {
-        const [stops, routes] = await Promise.all([
-          api.stops.search(q, { signal: controller.signal }),
-          api.routes.search(q, { signal: controller.signal }),
-        ])
-        if (controller.signal.aborted) return
-        const combined: SearchResult[] = [
-          ...routes.map((r) => ({ kind: 'route' as const, ...r })),
-          ...stops.map((s) => ({ kind: 'stop' as const, ...s })),
-        ]
-        setResults(combined)
-      } catch (err: unknown) {
-        if (err instanceof Error && err.name === 'AbortError') return
-        setResults([])
-      } finally {
-        if (!controller.signal.aborted) setLoading(false)
-      }
-    }, 300)
+    const debounceMs = getSearchDebounceMs(q.length)
+    timerRef.current = setTimeout(() => {
+      executeSearch(q, controller.signal)
+    }, debounceMs)
 
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current)
@@ -97,13 +141,19 @@ export default function SearchPage() {
     }
   }
 
-  const showResults = query.trim().length >= 2
+  const showResults = query.trim().length >= 1
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
       {/* ── Search input ─────────────────────────────────────────────────── */}
       <div className="px-4 safe-area-pt pt-4 pb-3">
-        <div className="relative">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault()
+            runInstantSearch()
+          }}
+          className="relative"
+        >
           <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-text-muted pointer-events-none"
                fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round"
@@ -115,6 +165,12 @@ export default function SearchPage() {
             inputMode="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault()
+                runInstantSearch()
+              }
+            }}
             placeholder={t('search.placeholder', { defaultValue: 'Hat kodu, durak adı veya numara...' })}
             className="w-full bg-surface-card border border-surface-border rounded-2xl
                        pl-11 pr-10 py-3.5 text-text-primary placeholder-slate-500 text-[15px]
@@ -122,6 +178,7 @@ export default function SearchPage() {
           />
           {query.length > 0 && (
             <button
+              type="button"
               onClick={() => { setQuery(''); setResults([]); inputRef.current?.focus() }}
               className="absolute right-3.5 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-secondary"
               aria-label={t('common.clear', { defaultValue: 'Temizle' })}
@@ -131,7 +188,7 @@ export default function SearchPage() {
               </svg>
             </button>
           )}
-        </div>
+        </form>
       </div>
 
       {/* ── Results or discovery ─────────────────────────────────────────── */}

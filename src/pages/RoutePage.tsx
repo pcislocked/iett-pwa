@@ -11,6 +11,7 @@ import { getDirectionLabel } from '@/utils/routeDirectionLabels'
 import { VariantSelect } from '@/components/VariantSelect'
 import RouteInfoModal from '@/components/RouteInfoModal'
 import { useTranslation } from 'react-i18next'
+import { getVariantDisplayName, formatStopName } from '@/utils/variantUtils'
 
 import { useMapTiles } from '@/hooks/useMapTiles'
 import MapTileToggle from '@/components/MapTileToggle'
@@ -52,7 +53,6 @@ function ErrorRetry({ message, onRetry }: { message: string; onRetry: () => void
     </div>
   )
 }
-const formatStopName = (name: string) => name.split(' - ')[0]
 
 function TimetableView({ schedule, scheduleError, onRetry, metadata, stops, hatKodu, onSelectVariant }: {
   schedule: ScheduledDeparture[] | null
@@ -170,43 +170,13 @@ function TimetableView({ schedule, scheduleError, onRetry, metadata, stops, hatK
       const num = officialVariantNum.get(v) ?? (idx + 1)
       fnMap.set(v, num)
 
-      let label = v
-
-      let stopsLabel = ''
       const variantStops = stops?.filter(s => s.route_code === v || (!metadata?.length && `${hatKodu}_${s.direction}` === v))
-      if (variantStops && variantStops.length > 1) {
-        const first = formatStopName(variantStops[0].stop_name)
-        const last = formatStopName(variantStops[variantStops.length - 1].stop_name)
-        stopsLabel = `${first} > ${last}`
-      }
-
-      if (stopsLabel) {
-        label = stopsLabel
-      } else {
-        const meta = metadata?.find(m => m.variant_code === v)
-        if (meta && meta.direction_name) {
-          const parts = meta.direction_name.split(' - ')
-          label = parts.length >= 2 ? `${parts[0].trim()} > ${parts[parts.length - 1].trim()}` : (meta.full_name || v)
-        } else if (meta && meta.full_name) {
-          label = meta.full_name
-        }
-      }
-
-      // If label is still the raw variant code, try harder with metadata
-      if (label === v) {
-        const meta = metadata?.find(m => m.variant_code === v)
-        if (meta) {
-          label = meta.full_name || meta.direction_name || v
-        }
-      }
-
-      const isCanonical = v.endsWith('_D0') || v.endsWith('_G0')
-      if (!isCanonical && label !== v) {
-        const suffix = v.split('_').pop()
-        if (suffix && suffix !== 'G' && suffix !== 'D') {
-          label += ` (${suffix})`
-        }
-      }
+      const meta = metadata?.find(m => m.variant_code === v)
+      const label = getVariantDisplayName({
+        variantCode: v,
+        metadata: meta,
+        variantStops,
+      })
 
       fnNameMap.set(num, label)
       fnVariantMap.set(num, v)
@@ -573,6 +543,7 @@ export default function RoutePage() {
                 stopsDirections={stopsDirections}
                 selectedDirection={effectiveDir}
                 selectedVariant={effectiveVariant}
+                stops={stops ?? null}
                 onChange={handleChangeVariant}
               />
             </div>
@@ -654,6 +625,7 @@ export default function RoutePage() {
                 stopsDirections={stopsDirections}
                 selectedDirection={effectiveDir}
                 selectedVariant={effectiveVariant}
+                stops={stops ?? null}
                 onChange={handleChangeVariant}
               />
             </div>

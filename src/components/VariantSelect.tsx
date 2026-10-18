@@ -1,6 +1,7 @@
-import { RouteMetadata } from '@/api/client'
+import { RouteMetadata, RouteStop } from '@/api/client'
 import { useTranslation } from 'react-i18next'
 import { useState, useRef, useEffect, useMemo } from 'react'
+import { getVariantDisplayName } from '@/utils/variantUtils'
 
 interface VariantSelectProps {
   metadata: RouteMetadata[] | null
@@ -8,6 +9,7 @@ interface VariantSelectProps {
   selectedVariant: string
   selectedDirection: string
   onChange: (variantCode: string, directionCode: string) => void
+  stops?: RouteStop[] | null
 }
 
 interface VariantOption {
@@ -16,7 +18,7 @@ interface VariantOption {
   isCanonical: boolean
 }
 
-export function VariantSelect({ metadata, stopsDirections, selectedVariant, selectedDirection, onChange }: VariantSelectProps) {
+export function VariantSelect({ metadata, stopsDirections, selectedVariant, selectedDirection, onChange, stops }: VariantSelectProps) {
   const { t } = useTranslation()
   const [isOpen, setIsOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -39,9 +41,10 @@ export function VariantSelect({ metadata, stopsDirections, selectedVariant, sele
       if (groupVariants.length === 0 && !stopsDirections.includes(dirLetter)) return null
 
       const options: VariantOption[] = groupVariants.map(m => {
+        const variantStops = stops?.filter(s => s.route_code === m.variant_code)
         return {
           code: m.variant_code,
-          name: m.full_name || m.direction_name || m.variant_code,
+          name: getVariantDisplayName({ variantCode: m.variant_code, metadata: m, variantStops }),
           isCanonical: m.variant_code.endsWith('_G0') || m.variant_code.endsWith('_D0')
         }
       })
@@ -69,7 +72,7 @@ export function VariantSelect({ metadata, stopsDirections, selectedVariant, sele
     const dGroup = buildGroup('D', 1, t('routes.directionD', 'Dönüş'))
 
     return [gGroup, dGroup].filter(Boolean) as { directionCode: string, label: string, options: VariantOption[] }[]
-  }, [metadata, stopsDirections, t])
+  }, [metadata, stopsDirections, stops, t])
 
   // eslint-disable-next-line react-hooks/preserve-manual-memoization
   const currentOption = useMemo(() => {

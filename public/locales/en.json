@@ -227,7 +227,7 @@
     "timebarCompact": "Compact (-4s)",
     "timebarEmoji": "Emoji Format (🔄 -4s / 📡 -12s)",
     "showCurrentTime": "Show Live Clock (hh:mm:ss)",
-    "showCurrentTimeDesc": "Display live current time in the stop page bottom time bar"
+    "showCurrentTimeDesc": "Display live current time in Stop and Arac timebars"
   },
   "embed": {
     "poweredBy": "iett-pwa",

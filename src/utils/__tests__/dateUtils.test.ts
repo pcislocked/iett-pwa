@@ -25,6 +25,24 @@ describe('parseGpsTimestamp', () => {
     expect(parsed?.getTime()).toBeLessThan(lateNightBase)
   })
 
+  it('parses Turkish DD-MM-YYYY and DD.MM.YYYY format timestamps', () => {
+    const parsedDash = parseGpsTimestamp('27-07-2026 21:16:00', baseTime)
+    expect(parsedDash).not.toBeNull()
+    expect(parsedDash?.getFullYear()).toBe(2026)
+    expect(parsedDash?.getMonth()).toBe(6) // 0-indexed: July
+    expect(parsedDash?.getDate()).toBe(27)
+    expect(parsedDash?.getHours()).toBe(21)
+    expect(parsedDash?.getMinutes()).toBe(16)
+
+    const parsedDot = parseGpsTimestamp('27.07.2026 14:30:15', baseTime)
+    expect(parsedDot).not.toBeNull()
+    expect(parsedDot?.getFullYear()).toBe(2026)
+    expect(parsedDot?.getMonth()).toBe(6)
+    expect(parsedDot?.getDate()).toBe(27)
+    expect(parsedDot?.getHours()).toBe(14)
+    expect(parsedDot?.getMinutes()).toBe(30)
+  })
+
   it('returns null for unparseable strings', () => {
     expect(parseGpsTimestamp('invalid', baseTime)).toBeNull()
   })

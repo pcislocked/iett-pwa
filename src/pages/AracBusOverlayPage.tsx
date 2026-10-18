@@ -15,9 +15,12 @@ import {
 } from '@/api/client'
 import { useTranslation } from 'react-i18next'
 import { TFunction } from 'i18next'
+import { AnimatePresence } from 'framer-motion'
 import { useMapTiles } from '@/hooks/useMapTiles'
 import MapTileToggle from '@/components/MapTileToggle'
 import PullToRefresh from '@/components/PullToRefresh'
+import { StopTimebar } from '@/components/StopTimebar'
+import TimestampInfoModal from '@/components/TimestampInfoModal'
 import { useUserPrefs } from '@/hooks/useUserPrefs'
 import { formatGpsTimestamp } from '@/utils/dateUtils'
 
@@ -114,6 +117,8 @@ export default function AracBusOverlayPage() {
   const [fatalError, setFatalError] = useState<string | null>(null)
   const [inlineWarning, setInlineWarning] = useState<string | null>(null)
   const [lastFetchTime, setLastFetchTime] = useState<number | null>(null)
+  const [serverTime, setServerTime] = useState<string | null>(null)
+  const [showTimeInfoModal, setShowTimeInfoModal] = useState(false)
   const [showRefreshButton, setShowRefreshButton] = useState(false)
 
 
@@ -153,10 +158,11 @@ export default function AracBusOverlayPage() {
     if (!kapino) return
     setViewState('loading-data')
     try {
-      const { profile: busProfile, missions } = await api.arac.detail(kapino, credentials)
+      const res = await api.arac.detail(kapino, credentials)
       if (!aliveRef.current) return
-      setProfile(busProfile)
-      setMissionsData(missions)
+      setProfile(res.profile)
+      setMissionsData(res.missions)
+      setServerTime(res.server_time ?? null)
       setLastFetchTime(Date.now())
       setInlineWarning(null)
       setViewState('ready')
@@ -452,6 +458,27 @@ export default function AracBusOverlayPage() {
               </div>
             </div>
 
+            {/* ── Timebar ── */}
+            <div className="px-4 py-2 bg-surface-card border-b border-surface-border flex items-center justify-between gap-2 shrink-0">
+              <StopTimebar
+                lastUpdated={lastFetchTime ? new Date(lastFetchTime) : null}
+                iettUpdatedAt={serverTime}
+                maxGpsTime={profile.last_seen}
+                timestampMode={prefs.timestampMode}
+                timebarFormat={prefs.timebarFormat}
+                showCurrentTime={prefs.showCurrentTime}
+                onShowInfo={() => setShowTimeInfoModal(true)}
+              />
+              <button
+                type="button"
+                onClick={() => setShowTimeInfoModal(true)}
+                className="p-1 text-text-muted hover:text-text-primary text-xs shrink-0"
+                aria-label={t('stops.timestamps', { defaultValue: 'Zaman Damgaları' })}
+              >
+                ℹ️
+              </button>
+            </div>
+
             <div className="flex flex-col gap-3 p-4">
               {showRefreshButton && (
                 <div className="flex items-center justify-between p-3 bg-amber-500/10 border border-amber-500/30 rounded">
@@ -468,9 +495,9 @@ export default function AracBusOverlayPage() {
                     <h2 className="text-xl font-bold text-text-primary tracking-tight">
                       🚌 {profile.kapino}
                     </h2>
-                    {profile.last_seen && (
-                      <span className="text-[10px] text-text-secondary bg-surface-muted px-2 py-1 rounded border border-surface-border">
-                        {t('arac.lastSeen', { defaultValue: 'Son Görülme' })}: {formatGpsTimestamp(profile.last_seen, prefs.timestampMode, t)}
+                    {profile.route_code && (
+                      <span className="text-xs font-bold font-mono px-2.5 py-1 rounded-lg bg-brand-500/10 text-brand-400 border border-brand-500/20">
+                        {profile.route_code}
                       </span>
                     )}
                   </div>
@@ -523,6 +550,19 @@ export default function AracBusOverlayPage() {
         )}
       </div>
     </PullToRefresh>
+
+    <AnimatePresence>
+      {showTimeInfoModal && (
+        <TimestampInfoModal
+          key="time-modal"
+          onClose={() => setShowTimeInfoModal(false)}
+          onForceRefresh={() => void startFlow(true)}
+          clientTime={lastFetchTime ? formatGpsTimestamp(new Date(lastFetchTime).toISOString(), prefs.timestampMode, t) : '--:--:--'}
+          serverTime={serverTime ? formatGpsTimestamp(serverTime, prefs.timestampMode, t) : '--:--:--'}
+          gpsTime={profile?.last_seen ? formatGpsTimestamp(profile.last_seen, prefs.timestampMode, t) : '--:--:--'}
+        />
+      )}
+    </AnimatePresence>
   </div>
 )
 }
