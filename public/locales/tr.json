@@ -68,6 +68,8 @@
     "removeRouteFilter": "{{route}} filtresini kaldır",
     "removeEntityFilter": "{{entity}} filtresini kaldır",
     "timestamps": "Zaman Damgaları",
+    "cardNowTitle": "Şu An (Cihaz Saati)",
+    "nowTimeDesc": "Cihazınızın mevcut yerel saatidir. Canlı olarak saniyede bir güncellenir.",
     "cardClientTitle": "Uygulama",
     "cardServerTitle": "Sunucu Önbelleği",
     "cardGpsTitle": "Canlı GPS",

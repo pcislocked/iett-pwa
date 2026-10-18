@@ -22,7 +22,6 @@ import PullToRefresh from '@/components/PullToRefresh'
 import { StopTimebar } from '@/components/StopTimebar'
 import TimestampInfoModal from '@/components/TimestampInfoModal'
 import { useUserPrefs } from '@/hooks/useUserPrefs'
-import { formatGpsTimestamp } from '@/utils/dateUtils'
 import { formatPlate } from '@/utils/plateUtils'
 
 type ViewState =
@@ -560,9 +559,10 @@ export default function AracBusOverlayPage() {
           key="time-modal"
           onClose={() => setShowTimeInfoModal(false)}
           onForceRefresh={() => void startFlow(true)}
-          clientTime={lastFetchTime ? formatGpsTimestamp(new Date(lastFetchTime).toISOString(), prefs.timestampMode, t) : '--:--:--'}
-          serverTime={serverTime ? formatGpsTimestamp(serverTime, prefs.timestampMode, t) : '--:--:--'}
-          gpsTime={profile?.last_seen ? formatGpsTimestamp(profile.last_seen, prefs.timestampMode, t) : '--:--:--'}
+          lastUpdated={lastFetchTime ? new Date(lastFetchTime) : null}
+          iettUpdatedAt={serverTime}
+          maxGpsTime={profile?.last_seen ?? null}
+          timestampMode={prefs.timestampMode}
         />
       )}
     </AnimatePresence>

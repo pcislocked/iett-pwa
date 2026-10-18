@@ -68,6 +68,8 @@
     "removeRouteFilter": "Remove {{route}} filter",
     "removeEntityFilter": "Remove {{entity}} filter",
     "timestamps": "Timestamps",
+    "cardNowTitle": "Current Time",
+    "nowTimeDesc": "Your device's current local time, updated live every second.",
     "cardClientTitle": "App",
     "cardServerTitle": "Server Cache",
     "cardGpsTitle": "Live GPS",
