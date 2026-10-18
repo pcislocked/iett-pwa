@@ -15,6 +15,8 @@ import { getVariantDisplayName, formatStopName } from '@/utils/variantUtils'
 
 import { useMapTiles } from '@/hooks/useMapTiles'
 import MapTileToggle from '@/components/MapTileToggle'
+import { useUserPrefs } from '@/hooks/useUserPrefs'
+import { triggerHaptic } from '@/utils/haptics'
 
 const busIconG = L.divIcon({
   className: '',
@@ -328,6 +330,7 @@ type Tab = 'schedule' | 'map' | 'stops' | 'alerts'
 
 export default function RoutePage() {
   const { t } = useTranslation()
+  const { prefs } = useUserPrefs()
   const { hatKodu } = useParams<{ hatKodu: string }>()
   const navigate = useNavigate()
   const [tab, setTab] = useState<Tab>('schedule')
@@ -336,16 +339,18 @@ export default function RoutePage() {
   const [infoModalOpen, setInfoModalOpen] = useState(false)
 
   const handleSelectVariant = useCallback((variantCode: string, directionCode: string) => {
+    triggerHaptic('selection', prefs.hapticFeedback)
     setActiveDir(directionCode)
     setActiveVariant(variantCode)
     setTab('stops')
     window.scrollTo({ top: 0, behavior: 'instant' })
-  }, [])
+  }, [prefs.hapticFeedback])
 
   const handleChangeVariant = useCallback((variantCode: string, directionCode: string) => {
+    triggerHaptic('selection', prefs.hapticFeedback)
     setActiveDir(directionCode)
     setActiveVariant(variantCode)
-  }, [])
+  }, [prefs.hapticFeedback])
 
   const { data: buses, stale } = useRouteBuses(hatKodu ?? '')
 
@@ -490,7 +495,10 @@ export default function RoutePage() {
               </svg>
             </button>
             <button
-              onClick={() => toggle(favItem)}
+              onClick={() => {
+                triggerHaptic('medium', prefs.hapticFeedback)
+                toggle(favItem)
+              }}
               className={`p-1.5 rounded-xl transition-colors ${
                 favorited ? 'text-rose-400' : 'text-text-muted hover:text-text-secondary'
               }`}
@@ -507,7 +515,14 @@ export default function RoutePage() {
         {/* Tab bar — Metro flat style */}
         <div role="tablist" aria-label={t('routes.tabs', 'Sekmeler')} className="max-w-2xl mx-auto px-4 pb-0 flex gap-0 overflow-x-auto no-scrollbar">
           {tabs.map(({ id, label, badge }) => (
-            <button role="tab" aria-selected={tab === id} key={id} onClick={() => setTab(id)}
+            <button
+              role="tab"
+              aria-selected={tab === id}
+              key={id}
+              onClick={() => {
+                triggerHaptic('selection', prefs.hapticFeedback)
+                setTab(id)
+              }}
               className={`flex-1 shrink-0 text-sm py-2.5 px-2 font-medium border-b-2 -mb-px transition-colors
                           flex items-center justify-center gap-1 ${
                 tab === id

@@ -5,6 +5,7 @@ import { useArrivals } from '@/hooks/useArrivals'
 import { api, type StopDetail, type Arrival } from '@/api/client'
 import { etaTextClass } from '@/utils/etaColor'
 import { useTranslation } from 'react-i18next'
+import { triggerHaptic } from '@/utils/haptics'
 import {
   DndContext,
   closestCenter,
@@ -15,7 +16,6 @@ import {
   type DragEndEvent,
 } from '@dnd-kit/core'
 import {
-  arrayMove,
   SortableContext,
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
@@ -169,7 +169,8 @@ export default function PinnedManagePage() {
       const oldIndex = pinnedStops.findIndex((s) => s.dcode === active.id)
       const newIndex = pinnedStops.findIndex((s) => s.dcode === over.id)
       if (oldIndex !== -1 && newIndex !== -1) {
-        reorderPinnedStops(arrayMove(pinnedStops, oldIndex, newIndex))
+        triggerHaptic('light', prefs.hapticFeedback)
+        reorderPinnedStops(oldIndex, newIndex)
       }
     }
   }
@@ -182,7 +183,10 @@ export default function PinnedManagePage() {
         <h1 className="text-base font-bold text-text-primary">{t('home.pinnedStops', { defaultValue: 'Sabitlenmiş Duraklar' })}</h1>
         {pinnedStops.length > 0 && (
           <button
-            onClick={() => setEditing((e) => !e)}
+            onClick={() => {
+              triggerHaptic('selection', prefs.hapticFeedback)
+              setEditing((e) => !e)
+            }}
             className="text-[12px] font-semibold tracking-wide metro-tilt"
             style={{ color: editing ? '#fff' : 'var(--wp-accent)' }}
           >
@@ -203,7 +207,10 @@ export default function PinnedManagePage() {
                   dcode={p.dcode}
                   nick={p.nick}
                   editing={editing}
-                  onUnpin={() => unpinStop(p.dcode)}
+                  onUnpin={() => {
+                    triggerHaptic('warning', prefs.hapticFeedback)
+                    unpinStop(p.dcode)
+                  }}
                 />
               ))}
             </div>

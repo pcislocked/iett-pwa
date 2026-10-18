@@ -229,7 +229,13 @@
     "timebarCompact": "Compact (-4s)",
     "timebarEmoji": "Emoji Format (🔄 -4s / 📡 -12s)",
     "showCurrentTime": "Show Live Clock (hh:mm:ss)",
-    "showCurrentTimeDesc": "Display live current time in Stop and Arac timebars"
+    "showCurrentTimeDesc": "Display live current time in Stop and Arac timebars",
+    "keepScreenAwake": "Keep Screen Awake (Stop Page)",
+    "keepScreenAwakeDesc": "Prevents device display from sleeping while on the stop page (30 min safety timeout).",
+    "keepScreenAwakeNotSupported": "Your device or browser does not support Screen Wake Lock.",
+    "hapticFeedback": "Haptic Feedback",
+    "hapticFeedbackDesc": "Provides subtle vibration feedback on key buttons and tab switches.",
+    "hapticFeedbackNotSupported": "Your device or browser does not support haptic feedback."
   },
   "embed": {
     "poweredBy": "iett-pwa",

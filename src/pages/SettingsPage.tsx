@@ -9,8 +9,9 @@ import * as L from 'leaflet'
 import { DEFAULT_MOCK_LOCATION } from '@/hooks/useLocationManager'
 import LocationConsentModal from '@/components/LocationConsentModal'
 import { useMapTiles } from '@/hooks/useMapTiles'
+import { triggerHaptic } from '@/utils/haptics'
 
-function ThemeSwitcher() {
+function ThemeSwitcher({ hapticFeedback = true }: { hapticFeedback?: boolean }) {
   const { theme, setTheme } = useTheme()
   const { t } = useTranslation()
   const options: { value: Theme; label: string }[] = [
@@ -27,7 +28,10 @@ function ThemeSwitcher() {
         {options.map((opt) => (
           <button
             key={opt.value}
-            onClick={() => setTheme(opt.value)}
+            onClick={() => {
+              triggerHaptic('selection', hapticFeedback)
+              setTheme(opt.value)
+            }}
             aria-pressed={theme === opt.value}
             style={{
               flex: 1, padding: '8px 14px', borderRadius: 8,
@@ -95,12 +99,28 @@ export default function SettingsPage() {
   const { t, i18n } = useTranslation()
   const [settings, setSettings] = useState<Settings>(loadSettings)
   const [saved, setSaved] = useState(false)
-  const { prefs, setNearbySettings, exportPrefs, importPrefs, setMockLocation, setGpsConsent, setTimestampMode, setTimebarFormat, setShowCurrentTime } = useUserPrefs()
+  const {
+    prefs,
+    setNearbySettings,
+    exportAllData,
+    importAllData,
+    setMockLocation,
+    setGpsConsent,
+    setTimestampMode,
+    setTimebarFormat,
+    setShowCurrentTime,
+    setKeepScreenAwake,
+    setHapticFeedback,
+  } = useUserPrefs()
   const fileRef = useRef<HTMLInputElement>(null)
   const [importStatus, setImportStatus] = useState<'idle' | 'ok' | 'err'>('idle')
+  const [importNotice, setImportNotice] = useState<string | null>(null)
   const [showConsentModal, setShowConsentModal] = useState(false)
   const reloadTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const statusTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const isWakeLockSupported = typeof navigator !== 'undefined' && 'wakeLock' in navigator
+  const isHapticsSupported = typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function'
 
   const isMounted = useRef(true)
 
@@ -126,14 +146,24 @@ export default function SettingsPage() {
     e.target.value = ''
     if (!file) return
     try {
-      await importPrefs(file)
+      const res = await importAllData(file)
       if (!isMounted.current) return
-      setImportStatus('ok')
-      reloadTimer.current = setTimeout(() => { window.location.reload() }, 800)
+      if (res.success) {
+        triggerHaptic('success', prefs.hapticFeedback)
+        setImportStatus('ok')
+        if (res.versionNotice) setImportNotice(res.versionNotice)
+        reloadTimer.current = setTimeout(() => { window.location.reload() }, 1000)
+      } else {
+        triggerHaptic('warning', prefs.hapticFeedback)
+        setImportStatus('err')
+        if (res.error) setImportNotice(res.error)
+        statusTimer.current = setTimeout(() => { setImportStatus('idle'); setImportNotice(null) }, 3000)
+      }
     } catch {
       if (!isMounted.current) return
+      triggerHaptic('warning', prefs.hapticFeedback)
       setImportStatus('err')
-      statusTimer.current = setTimeout(() => setImportStatus('idle'), 2500)
+      statusTimer.current = setTimeout(() => { setImportStatus('idle'); setImportNotice(null) }, 3000)
     }
   }
 
@@ -162,7 +192,7 @@ export default function SettingsPage() {
           </select>
         </div>
 
-        <ThemeSwitcher />
+        <ThemeSwitcher hapticFeedback={prefs.hapticFeedback} />
 
         <div>
           <label className="text-sm text-text-secondary block mb-1">
@@ -313,6 +343,72 @@ export default function SettingsPage() {
               />
             </button>
           </div>
+
+          <div className="flex items-center justify-between">
+            <div>
+              <p id="keepScreenAwake-label" className="text-sm text-text-secondary font-medium">
+                {t('settings.keepScreenAwake', { defaultValue: 'Ekranı Açık Tut (Durak Ekranı)' })}
+              </p>
+              <p className="text-xs text-text-muted mt-0.5">
+                {isWakeLockSupported
+                  ? t('settings.keepScreenAwakeDesc', { defaultValue: 'Durak sayfasındayken cihaz ekranının uyku moduna geçmesini engeller (30 dk emniyet zaman aşımı).' })
+                  : t('settings.keepScreenAwakeNotSupported', { defaultValue: 'Cihazınız veya tarayıcınız ekran kilidi desteği sunmuyor.' })}
+              </p>
+            </div>
+            <button
+              role="switch"
+              disabled={!isWakeLockSupported}
+              aria-checked={prefs.keepScreenAwake}
+              aria-labelledby="keepScreenAwake-label"
+              onClick={() => {
+                triggerHaptic('medium', prefs.hapticFeedback)
+                setKeepScreenAwake(!prefs.keepScreenAwake)
+              }}
+              className={`relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 ${
+                !isWakeLockSupported ? 'opacity-40 cursor-not-allowed bg-surface-muted' :
+                prefs.keepScreenAwake ? 'bg-brand-600' : 'bg-surface-muted'
+              }`}
+            >
+              <span
+                className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow ring-0 transition-transform ${
+                  prefs.keepScreenAwake ? 'translate-x-5' : 'translate-x-0'
+                }`}
+              />
+            </button>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div>
+              <p id="hapticFeedback-label" className="text-sm text-text-secondary font-medium">
+                {t('settings.hapticFeedback', { defaultValue: 'Dokunsal Geri Bildirim (Haptik)' })}
+              </p>
+              <p className="text-xs text-text-muted mt-0.5">
+                {isHapticsSupported
+                  ? t('settings.hapticFeedbackDesc', { defaultValue: 'Önemli butonlara ve seçimlere dokunulduğunda hafif titreşim verir.' })
+                  : t('settings.hapticFeedbackNotSupported', { defaultValue: 'Cihazınız dokunsal geri bildirimi desteklemiyor.' })}
+              </p>
+            </div>
+            <button
+              role="switch"
+              disabled={!isHapticsSupported}
+              aria-checked={prefs.hapticFeedback}
+              aria-labelledby="hapticFeedback-label"
+              onClick={() => {
+                triggerHaptic('medium', true)
+                setHapticFeedback(!prefs.hapticFeedback)
+              }}
+              className={`relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 ${
+                !isHapticsSupported ? 'opacity-40 cursor-not-allowed bg-surface-muted' :
+                prefs.hapticFeedback ? 'bg-brand-600' : 'bg-surface-muted'
+              }`}
+            >
+              <span
+                className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow ring-0 transition-transform ${
+                  prefs.hapticFeedback ? 'translate-x-5' : 'translate-x-0'
+                }`}
+              />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -382,7 +478,10 @@ export default function SettingsPage() {
       <div className="card flex flex-col gap-3">
         <p className="text-sm font-semibold text-text-secondary">{t('settings.dataBackup', { defaultValue: 'Veri Yedekleme' })}</p>
         <button
-          onClick={exportPrefs}
+          onClick={() => {
+            triggerHaptic('success', prefs.hapticFeedback)
+            exportAllData()
+          }}
           className="flex items-center gap-3 py-2.5 px-3 bg-surface-muted hover:bg-slate-700
                      rounded-xl text-sm text-text-primary transition-colors w-full text-left"
         >
@@ -399,6 +498,11 @@ export default function SettingsPage() {
           <span className="text-base">&#x1F4E5;</span>
           {importStatus === 'ok' ? t('settings.importOk', { defaultValue: '✓ İçe aktarıldı' }) : importStatus === 'err' ? t('settings.importErr', { defaultValue: '✗ Geçersiz dosya' }) : t('settings.importData', { defaultValue: 'Ayarları İçe Aktar' })}
         </button>
+        {importNotice && (
+          <p className={`text-xs px-2.5 py-1.5 rounded-lg leading-relaxed ${importStatus === 'err' ? 'bg-red-950/40 text-red-300 border border-red-800/40' : 'bg-brand-950/40 text-brand-300 border border-brand-800/40'}`}>
+            {importNotice}
+          </p>
+        )}
         <input ref={fileRef} type="file" accept="application/json" className="hidden" onChange={handleImport} />
       </div>
 
