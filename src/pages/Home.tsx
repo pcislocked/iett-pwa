@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import PinnedStopRow from '@/components/PinnedStopRow'
 import { PINNED_STOPS_MAX, useUserPrefs, type PinnedStop } from '@/hooks/useUserPrefs'
 import { getRecent, type RecentSearch } from '@/hooks/useRecentSearches'
-import { api, type NearbyStop, type ScheduledDeparture } from '@/api/client'
+import { api, type NearbyStop, type ScheduledDeparture, type OfficialAnnouncementItem, type OfficialAnnouncementsResponse } from '@/api/client'
 import { distanceLabel } from '@/utils/distance'
 import LocationConsentModal from '@/components/LocationConsentModal'
 import { useLocationManager } from '@/hooks/useLocationManager'
@@ -15,23 +15,27 @@ import { useSharedRouteTickerNowMs } from '@/hooks/useSharedRouteTickerClock'
 import { useRouteTickerData } from '@/hooks/useRouteTickerData'
 import PullToRefresh from '@/components/PullToRefresh'
 import { useTranslation } from 'react-i18next'
+import { useQuery } from '@tanstack/react-query'
+import { isTodayAnnouncement } from '@/utils/dateUtils'
 import pkg from '../../package.json'
-
-
 
 // ── Quick-access item ──────────────────────────────────────────────────────────
 function QuickRow({
   to,
+  href,
   onPress,
   icon,
   label,
   sub,
+  external,
 }: {
   to?: string
+  href?: string
   onPress?: () => void
   icon: React.ReactNode
   label: string
   sub: string
+  external?: boolean
 }) {
   const inner = (
     <>
@@ -39,15 +43,33 @@ function QuickRow({
         {icon}
       </span>
       <div className="flex-1 min-w-0">
-        <div className="text-sm font-medium text-text-primary">{label}</div>
+        <div className="text-sm font-medium text-text-primary flex items-center gap-1.5">
+          <span>{label}</span>
+          {external && (
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-3.5 h-3.5 text-text-muted shrink-0">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+            </svg>
+          )}
+        </div>
         {sub && <div className="text-xs text-text-secondary">{sub}</div>}
       </div>
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}
            className="w-4 h-4 shrink-0 text-text-muted">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+        {external ? (
+          <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+        ) : (
+          <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+        )}
       </svg>
     </>
   )
+  if (href) {
+    return (
+      <a href={href} target="_blank" rel="noopener noreferrer" className="metro-row block">
+        {inner}
+      </a>
+    )
+  }
   if (to) return <Link to={to} className="metro-row">{inner}</Link>
   return <button onClick={onPress} className="metro-row w-full text-left">{inner}</button>
 }
@@ -161,6 +183,17 @@ function RouteTickerRow({ code, name, icon }: { code: string; name: string; icon
 export default function Home() {
   const { t } = useTranslation()
   const { data: globalNotices } = useGlobalNotices()
+  const { data: officialAnnouncements } = useQuery<OfficialAnnouncementsResponse>({
+    queryKey: ['announcements', 'official', 0],
+    queryFn: () => (api.notices?.official ? api.notices.official(0) : Promise.resolve({ page: 0, total_items: 0, items: [] })),
+    staleTime: 5 * 60 * 1000,
+  })
+
+  const todayAnnouncements = useMemo(() => {
+    if (!officialAnnouncements?.items) return [] as OfficialAnnouncementItem[]
+    return officialAnnouncements.items.filter((item: OfficialAnnouncementItem) => isTodayAnnouncement(item.date))
+  }, [officialAnnouncements])
+
   const navigate = useNavigate()
   const { prefs, setGpsConsent } = useUserPrefs()
   const { pinnedStops } = prefs
@@ -222,11 +255,12 @@ export default function Home() {
         </div>
       </div>
 
-      {/* ── Global Notices ───────────────────────────────────────────────────── */}
-      {globalNotices && globalNotices.length > 0 && (
+      {/* ── Global Notices & Today's Announcements Banner ─────────────────────── */}
+      {((globalNotices && globalNotices.length > 0) || todayAnnouncements.length > 0) && (
         <div className="px-4 py-3 border-b border-surface-border bg-amber-950/10">
           <div className="flex flex-col gap-2">
-            {globalNotices.map((notice) => (
+            {/* System / Global Notices */}
+            {globalNotices?.map((notice) => (
               <div key={notice.notice_noticeid} className="card border-amber-800/40 bg-amber-900/10 p-3">
                 <div className="flex items-start gap-2">
                   <span className="text-amber-500 mt-0.5">⚠️</span>
@@ -237,10 +271,53 @@ export default function Home() {
                 </div>
               </div>
             ))}
+
+            {/* Today's Official Announcements */}
+            {todayAnnouncements.map((ann: OfficialAnnouncementItem) => {
+              const safeHref = /^https?:\/\//i.test(ann.url)
+                ? ann.url
+                : 'https://iett.istanbul/announcement/Index'
+              return (
+                <a
+                  key={ann.id}
+                  href={safeHref}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="card border-amber-800/40 bg-amber-900/10 p-3 hover:border-amber-600/60 transition-colors block group"
+                >
+                  <div className="flex items-start gap-2">
+                    <span className="text-amber-500 mt-0.5">📢</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+                        <span className="text-[10px] font-bold uppercase tracking-wider bg-amber-500/20 text-amber-400 px-1.5 py-0.5 rounded">
+                          {t('common.today', { defaultValue: 'Bugün' })}
+                        </span>
+                        <span className="text-[11px] text-text-muted">{ann.date}</span>
+                      </div>
+                      <h3 className="text-[13px] font-bold text-amber-500 leading-tight group-hover:text-amber-400 transition-colors">
+                        {ann.title}
+                      </h3>
+                    </div>
+                    <svg className="w-4 h-4 text-amber-500/70 group-hover:text-amber-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                    </svg>
+                  </div>
+                </a>
+              )
+            })}
+
             <div className="flex justify-end pt-1">
-              <Link to="/announcements" className="text-xs font-semibold text-amber-500 hover:text-amber-400 transition-colors">
-                {t('home.allAnnouncements', { defaultValue: 'Tüm İETT Duyuruları →' })}
-              </Link>
+              <a
+                href="https://iett.istanbul/announcement/Index"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs font-semibold text-amber-500 hover:text-amber-400 transition-colors inline-flex items-center gap-1"
+              >
+                <span>{t('home.allAnnouncements', { defaultValue: 'Tüm İETT Duyuruları' })}</span>
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                </svg>
+              </a>
             </div>
           </div>
         </div>
@@ -472,10 +549,26 @@ export default function Home() {
             }
           />
           <QuickRow
-            to="/announcements"
+            href="https://iett.istanbul/announcement/Index"
+            external
             label={t('home.announcements', { defaultValue: 'Duyurular & Uyarılar' })}
             sub={t('home.announcementsDesc', { defaultValue: 'Resmi duyurular, güzergah ve tarife bilgileri' })}
-            icon={<span className="text-xl">📢</span>}
+            icon={
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19.114 5.636a9 9 0 010 12.728M16.463 8.288a5.25 5.25 0 010 7.424M6.75 8.25l4.72-4.72a.75.75 0 011.28.53v15.88a.75.75 0 01-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.01 9.01 0 012.25 12c0-.83.268-1.603.722-2.228.234-.847 1.058-1.354 1.938-1.354h2.24z" />
+              </svg>
+            }
+          />
+          <QuickRow
+            href="https://iett.istanbul/icerik/IETT-Toplu-Ulasim-ucret-Tarifesi"
+            external
+            label={t('home.fareTariffLink', { defaultValue: 'Toplu Ulaşım Ücret Tarifesi' })}
+            sub={t('home.fareTariffDesc', { defaultValue: 'Güncel bilet, abonman ve aktarma ücretleri' })}
+            icon={
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z" />
+              </svg>
+            }
           />
           <QuickRow
             to="/settings"
@@ -493,18 +586,7 @@ export default function Home() {
       </section>
 
       {/* External Resources & Legal Footer */}
-      <footer className="px-4 pt-2 pb-6 flex flex-col gap-2.5 text-center border-t border-surface-muted/40">
-        <a
-          href="https://iett.istanbul/icerik/IETT-Toplu-Ulasim-ucret-Tarifesi"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center justify-center gap-1.5 text-xs text-brand-400 hover:text-brand-300 transition-colors py-1 font-medium"
-        >
-          <span>💳 {t('home.fareTariffLink', { defaultValue: 'Toplu Ulaşım Ücret Tarifesi' })}</span>
-          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-          </svg>
-        </a>
+      <footer className="px-4 pt-3 pb-6 flex flex-col gap-2.5 text-center border-t border-surface-muted/40">
         <div className="flex items-center justify-center gap-3 text-[11px] text-text-muted">
           <a
             href="https://iett.istanbul"

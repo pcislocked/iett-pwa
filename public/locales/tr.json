@@ -372,7 +372,8 @@
     "allAnnouncements": "Tüm İETT Duyuruları →",
     "announcements": "Duyurular & Uyarılar",
     "announcementsDesc": "Resmi duyurular, güzergah ve tarife bilgileri",
-    "fareTariffLink": "Toplu Ulaşım Ücret Tarifesi"
+    "fareTariffLink": "Toplu Ulaşım Ücret Tarifesi",
+    "fareTariffDesc": "Güncel bilet, abonman ve aktarma ücretleri"
   },
   "announcements": {
     "title": "İETT Duyuruları & Uyarılar",

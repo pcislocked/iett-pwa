@@ -82,19 +82,23 @@ export default function MenuSheet({ onClose }: MenuSheetProps) {
 
           <MenuRow icon="⭐" label={t('nav.favorites', { defaultValue: 'Favoriler' })}      onPress={() => go('/favorites')} />
           <MenuRow icon="🗺"  label={t('nav.fleetMap', { defaultValue: 'Filo Haritası' })} onPress={() => go('/map')} />
-          <MenuRow icon="📢" label={t('nav.announcements', { defaultValue: 'Duyurular' })} onPress={() => go('/announcements')} />
-          <MenuRow icon="⚙"  label={t('nav.settings', { defaultValue: 'Ayarlar' })}        onPress={() => go('/settings')} />
-
-          <div className="py-1" />
-
+          <MenuRow
+            icon="📢"
+            label={`${t('nav.announcements', { defaultValue: 'Duyurular & Uyarılar' })} ↗`}
+            onPress={() => {
+              window.open('https://iett.istanbul/announcement/Index', '_blank', 'noopener,noreferrer')
+              onClose()
+            }}
+          />
           <MenuRow
             icon="💳"
-            label={t('nav.fareTariff', { defaultValue: 'Toplu Ulaşım Ücret Tarifesi ↗' })}
+            label={`${t('nav.fareTariff', { defaultValue: 'Toplu Ulaşım Ücret Tarifesi' })} ↗`}
             onPress={() => {
               window.open('https://iett.istanbul/icerik/IETT-Toplu-Ulasim-ucret-Tarifesi', '_blank', 'noopener,noreferrer')
               onClose()
             }}
           />
+          <MenuRow icon="⚙"  label={t('nav.settings', { defaultValue: 'Ayarlar' })}        onPress={() => go('/settings')} />
           <MenuRow
             icon="🐱"
             label="GitHub"

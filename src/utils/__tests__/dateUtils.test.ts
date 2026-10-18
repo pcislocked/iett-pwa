@@ -106,3 +106,45 @@ describe('formatCompactRelativeTime and formatGpsTimestamp styles', () => {
   })
 })
 
+describe('isTodayAnnouncement', () => {
+  const today = new Date(2026, 9, 18) // 18 Ekim 2026
+
+  it('matches Turkish month format for today', async () => {
+    const { isTodayAnnouncement } = await import('../dateUtils')
+    expect(isTodayAnnouncement('18 Ekim 2026', today)).toBe(true)
+    expect(isTodayAnnouncement('18 ekim 2026', today)).toBe(true)
+    expect(isTodayAnnouncement('18 EKİM 2026', today)).toBe(true)
+    expect(isTodayAnnouncement('18 Ekim', today)).toBe(true)
+  })
+
+  it('rejects past or future Turkish month dates', async () => {
+    const { isTodayAnnouncement } = await import('../dateUtils')
+    expect(isTodayAnnouncement('17 Ekim 2026', today)).toBe(false)
+    expect(isTodayAnnouncement('19 Ekim 2026', today)).toBe(false)
+    expect(isTodayAnnouncement('18 Eylül 2026', today)).toBe(false)
+    expect(isTodayAnnouncement('18 Ekim 2025', today)).toBe(false)
+  })
+
+  it('matches numeric dates', async () => {
+    const { isTodayAnnouncement } = await import('../dateUtils')
+    expect(isTodayAnnouncement('18.10.2026', today)).toBe(true)
+    expect(isTodayAnnouncement('18/10/2026', today)).toBe(true)
+    expect(isTodayAnnouncement('18-10-2026', today)).toBe(true)
+    expect(isTodayAnnouncement('17.10.2026', today)).toBe(false)
+  })
+
+  it('matches ISO dates', async () => {
+    const { isTodayAnnouncement } = await import('../dateUtils')
+    expect(isTodayAnnouncement('2026-10-18', today)).toBe(true)
+    expect(isTodayAnnouncement('2026-10-17', today)).toBe(false)
+  })
+
+  it('handles null, undefined, and empty string safely', async () => {
+    const { isTodayAnnouncement } = await import('../dateUtils')
+    expect(isTodayAnnouncement(null, today)).toBe(false)
+    expect(isTodayAnnouncement(undefined, today)).toBe(false)
+    expect(isTodayAnnouncement('', today)).toBe(false)
+    expect(isTodayAnnouncement('invalid string', today)).toBe(false)
+  })
+})
+

@@ -3,6 +3,19 @@
 All notable changes to iett-pwa are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [0.4.9.1] - 2026-10-18
+### Added
+- **Today's Announcement Banner on Home (`Home.tsx`):** Automatically checks official IETT announcements for today's date using `isTodayAnnouncement` (`dateUtils.ts`, supporting Turkish textual dates like `18 Ekim 2026`, numeric dates, and ISO dates) and presents them directly in the Home page announcement banner with a one-click external link to the full announcement details.
+- **Toplu Ulaşım Ücret Tarifesi Menu Tab:** Relocated the Fare Tariff from the small footer link into a full, first-class quick-access tab row positioned directly above Settings in `Home.tsx` and `MenuSheet.tsx`, displaying an external link indicator (`↗`).
+
+### Changed
+- **Uniform Cyan/Blue Quick-Access Icons:** Replaced the red/pink megaphone emoji on "Duyurular & Uyarılar" with an SVG speaker/horn icon that inherits the uniform cyan/blue Metro theme accent (`var(--wp-accent)`), restoring visual consistency with all other quick-access rows.
+- **Direct External Announcements Navigation:** "Duyurular & Uyarılar" in the quick-access list and global menu now opens `https://iett.istanbul/announcement/Index` directly in a new tab with an external link indicator.
+
+### Fixed & Dependencies
+- **CI & Dependabot Compatibility:** Added `@testing-library/dom` (`^10.4.1`) to `devDependencies` and synchronized `vitest`, `@vitest/coverage-v8`, and `@vitest/ui` at `4.1.11` to resolve Dependabot Arborist peer-dependency failures.
+- **Test Suite Expansion:** Added comprehensive unit tests for `isTodayAnnouncement` (`src/utils/__tests__/dateUtils.test.ts`), bringing the test suite to 247 passing tests across 41 test files (100% green).
+
 ---
 
 ## [0.4.9] - 2026-10-18

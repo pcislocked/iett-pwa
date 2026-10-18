@@ -372,7 +372,8 @@
     "allAnnouncements": "All IETT Announcements →",
     "announcements": "Announcements & Alerts",
     "announcementsDesc": "Official announcements, route and fare info",
-    "fareTariffLink": "Public Transit Fare Tariff"
+    "fareTariffLink": "Public Transit Fare Tariff",
+    "fareTariffDesc": "Current single-ticket, subscription and transfer fares"
   },
   "announcements": {
     "title": "IETT Announcements & Alerts",

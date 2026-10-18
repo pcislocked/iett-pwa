@@ -1,10 +1,10 @@
 # iett-pwa
 
-[![Tests](https://img.shields.io/badge/tests-242%20passed-brightgreen)](#geliştirme-development)
+[![Tests](https://img.shields.io/badge/tests-247%20passed-brightgreen)](#geliştirme-development)
 [![React](https://img.shields.io/badge/React-18-61DAFB?logo=react)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript)](https://www.typescriptlang.org/)
 [![PWA](https://img.shields.io/badge/PWA-installable-5A0FC8?logo=pwa)](https://web.dev/progressive-web-apps/)
-[![Version](https://img.shields.io/badge/version-0.4.9-orange)](https://github.com/pcislocked/iett-pwa/releases/tag/v0.4.9)
+[![Version](https://img.shields.io/badge/version-0.4.9.1-orange)](https://github.com/pcislocked/iett-pwa/releases/tag/v0.4.9.1)
 [![License](https://img.shields.io/badge/license-CC%20BY%204.0-blue)](https://data.ibb.gov.tr/license)
 
 [🇹🇷 Türkçe (Turkish)](#türkçe) | [🇬🇧 English](#english)
@@ -101,8 +101,8 @@ npm run preview
 Statik dosyaları derlemek ve Nginx ile sunmak için çok aşamalı (multi-stage) Dockerfile kullanır:
 
 ```bash
-docker build -t iett-pwa:0.4.9 --build-arg VITE_API_BASE_URL=https://iettapi.pcislocked.net .
-docker run --rm -p 8080:80 iett-pwa:0.4.9
+docker build -t iett-pwa:0.4.9.1 --build-arg VITE_API_BASE_URL=https://iettapi.pcislocked.net .
+docker run --rm -p 8080:80 iett-pwa:0.4.9.1
 ```
 
 ---

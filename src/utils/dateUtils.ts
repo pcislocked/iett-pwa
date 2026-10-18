@@ -143,3 +143,52 @@ export function formatGpsTimestamp(
   if (mode === 'relative') return relativeStr
   return `${relativeStr} - ${absStr}`
 }
+
+const TURKISH_MONTHS = [
+  'ocak', 'şubat', 'mart', 'nisan', 'mayıs', 'haziran',
+  'temmuz', 'ağustos', 'eylül', 'ekim', 'kasım', 'aralık'
+]
+
+/**
+ * Checks whether an announcement date string corresponds to today's date.
+ * Supports Turkish month names ("18 Ekim 2026"), numeric DD.MM.YYYY / DD-MM-YYYY, and ISO YYYY-MM-DD.
+ */
+export function isTodayAnnouncement(dateStr?: string | null, now: Date = new Date()): boolean {
+  if (!dateStr || typeof dateStr !== 'string') return false
+  const raw = dateStr.trim().toLocaleLowerCase('tr-TR')
+  if (!raw) return false
+
+  const day = now.getDate()
+  const monthIdx = now.getMonth() // 0-11
+  const monthNum = monthIdx + 1
+  const year = now.getFullYear()
+  const monthName = TURKISH_MONTHS[monthIdx]
+
+  // Check 1: Turkish textual date: e.g. "18 Ekim 2026" or "18 Ekim"
+  const dayMatch = new RegExp(`(^|\\D)0?${day}(\\D|$)`).test(raw)
+  if (dayMatch && raw.includes(monthName)) {
+    const yearMatch = raw.match(/\b(20\d{2})\b/)
+    if (!yearMatch || parseInt(yearMatch[1], 10) === year) {
+      return true
+    }
+  }
+
+  // Check 2: Numeric date: DD.MM.YYYY, DD/MM/YYYY, DD-MM-YYYY
+  const numericMatch = raw.match(/(^|\D)0?(\d{1,2})[./-]0?(\d{1,2})([./-](\d{4}))?(\D|$)/)
+  if (numericMatch) {
+    const d = parseInt(numericMatch[2], 10)
+    const m = parseInt(numericMatch[3], 10)
+    const y = numericMatch[5] ? parseInt(numericMatch[5], 10) : year
+    if (d === day && m === monthNum && y === year) {
+      return true
+    }
+  }
+
+  // Check 3: ISO YYYY-MM-DD
+  const isoPrefix = `${year}-${String(monthNum).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+  if (raw.includes(isoPrefix)) {
+    return true
+  }
+
+  return false
+}
