@@ -190,5 +190,22 @@ export function isTodayAnnouncement(dateStr?: string | null, now: Date = new Dat
     return true
   }
 
+  // Check 4: Date ranges e.g. "17.10.2026 - 19.10.2026" or "17.10 - 19.10"
+  const rangeMatch = raw.match(/(\d{1,2})[./-](\d{1,2})(?:[./-](\d{4}))?\s*[-–—]\s*(\d{1,2})[./-](\d{1,2})(?:[./-](\d{4}))?/)
+  if (rangeMatch) {
+    const startD = parseInt(rangeMatch[1], 10)
+    const startM = parseInt(rangeMatch[2], 10) - 1
+    const startY = rangeMatch[3] ? parseInt(rangeMatch[3], 10) : year
+    const endD = parseInt(rangeMatch[4], 10)
+    const endM = parseInt(rangeMatch[5], 10) - 1
+    const endY = rangeMatch[6] ? parseInt(rangeMatch[6], 10) : year
+    const start = new Date(startY, startM, startD, 0, 0, 0)
+    const end = new Date(endY, endM, endD, 23, 59, 59)
+    const today = new Date(year, monthIdx, day, 12, 0, 0)
+    if (today >= start && today <= end) {
+      return true
+    }
+  }
+
   return false
 }

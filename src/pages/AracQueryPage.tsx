@@ -38,11 +38,18 @@ export default function AracQueryPage() {
     } else {
       // Fallback to remote if no local matches
       let active = true
-      api.arac.suggest(term).then(remote => {
+      const controller = new AbortController()
+      api.arac.suggest(term, { signal: controller.signal }).then(remote => {
         if (!active) return
         setSuggestions(remote.map(r => ({ kapino: r.doorNumber, plate: r.plate, source: 'remote' })))
-      }).catch(e => console.error(e))
-      return () => { active = false }
+      }).catch(e => {
+        if (e instanceof Error && e.name === 'AbortError') return
+        console.error(e)
+      })
+      return () => {
+        active = false
+        controller.abort()
+      }
     }
   }, [query, fleet])
 
@@ -88,6 +95,7 @@ export default function AracQueryPage() {
               value={query}
               onChange={handleQueryChange}
               placeholder={t('arac.queryPlaceholder', { defaultValue: 'Örn: O-3124, K-1234...' })}
+              aria-label={t('arac.queryPlaceholder', { defaultValue: 'Örn: O-3124, K-1234...' })}
               className="w-full bg-surface-card border-2 border-surface-muted rounded-xl px-4 py-4 text-xl font-bold text-center uppercase focus:border-brand-500 focus:outline-none transition-colors"
               autoFocus
             />

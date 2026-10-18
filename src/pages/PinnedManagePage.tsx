@@ -44,7 +44,17 @@ function PinnedRow({
   const top2 = arrivals?.slice(0, 2) ?? []
 
   useEffect(() => {
-    api.stops.detail(dcode).then(setStopDetail).catch(() => {})
+    let mounted = true
+    const controller = new AbortController()
+    api.stops.detail(dcode, { signal: controller.signal })
+      .then(res => {
+        if (mounted) setStopDetail(res)
+      })
+      .catch(() => {})
+    return () => {
+      mounted = false
+      controller.abort()
+    }
   }, [dcode])
 
   return (

@@ -20,7 +20,7 @@ export default function AnnouncementsPage() {
     refetch: refetchOfficial,
   } = useQuery({
     queryKey: ['announcements', 'official', page],
-    queryFn: () => api.notices.official(page),
+    queryFn: ({ signal }) => api.notices.official(page, { signal }),
     staleTime: 5 * 60 * 1000,
   })
 
@@ -86,8 +86,10 @@ export default function AnnouncementsPage() {
       </div>
 
       {/* Tabs */}
-      <div className="px-4 pt-3 pb-2 flex gap-2 border-b border-surface-muted/40">
+      <div role="tablist" aria-label={t('announcements.tabsLabel', { defaultValue: 'Duyuru sekmeleri' })} className="px-4 pt-3 pb-2 flex gap-2 border-b border-surface-muted/40">
         <button
+          role="tab"
+          aria-selected={activeTab === 'official'}
           onClick={() => setActiveTab('official')}
           className={`flex-1 py-2 px-3 text-xs font-semibold rounded-xl transition-all ${
             activeTab === 'official'
@@ -99,6 +101,8 @@ export default function AnnouncementsPage() {
           {officialData?.total_items ? ` (${officialData.total_items})` : ''}
         </button>
         <button
+          role="tab"
+          aria-selected={activeTab === 'system'}
           onClick={() => setActiveTab('system')}
           className={`flex-1 py-2 px-3 text-xs font-semibold rounded-xl transition-all ${
             activeTab === 'system'
@@ -128,6 +132,7 @@ export default function AnnouncementsPage() {
             value={filterText}
             onChange={(e) => setFilterText(e.target.value)}
             placeholder={t('announcements.filterPlaceholder', { defaultValue: 'Duyurularda ara...' })}
+            aria-label={t('announcements.filterPlaceholder', { defaultValue: 'Duyurularda ara...' })}
             className="w-full bg-surface-card border border-surface-muted rounded-xl pl-9 pr-3 py-2 text-xs text-text-primary placeholder-text-muted focus:outline-none focus:ring-1 focus:ring-brand-500"
           />
         </div>

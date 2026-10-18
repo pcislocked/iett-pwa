@@ -97,11 +97,14 @@ export default defineConfig({
             },
           },
           {
-            urlPattern: /cartodb|openstreetmap/,
+            urlPattern: /cartodb|openstreetmap|arcgisonline\.com/,
             handler: 'CacheFirst',
             options: {
               cacheName: 'map-tiles',
               expiration: { maxEntries: 500, maxAgeSeconds: 86400 },
+              cacheableResponse: {
+                statuses: [0, 200],
+              },
             },
           },
         ],
