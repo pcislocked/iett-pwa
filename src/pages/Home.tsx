@@ -55,17 +55,13 @@ function QuickRow({
       </div>
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}
            className="w-4 h-4 shrink-0 text-text-muted">
-        {external ? (
-          <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-        ) : (
-          <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-        )}
+        <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
       </svg>
     </>
   )
   if (href) {
     return (
-      <a href={href} target="_blank" rel="noopener noreferrer" className="metro-row block">
+      <a href={href} target="_blank" rel="noopener noreferrer" className="metro-row">
         {inner}
       </a>
     )
