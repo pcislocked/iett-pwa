@@ -25,7 +25,8 @@
     "selectOption": "Seçiniz",
     "iett": "İETT",
     "update": "Güncelleme",
-    "all": "Tümü"
+    "all": "Tümü",
+    "outdated": "Güncel değil"
   },
   "nav": {
     "map": "Harita",
@@ -97,7 +98,9 @@
     "resetRibbonFilter": "Filtreyi Kaldır",
     "noAnnouncementsForFilter": "Seçilen hat için aktif duyuru bulunmuyor.",
     "mathMismatchWarningDesc": "Fiziksel uyuşmazlık: İETT ışınlanmayı icat etmediyse veya Ekrem İmamoğlu otobüsü helikopterle getirmiyorsa bu aracın bu sürede gelmesi imkansız.",
-    "staleWarningDesc": "Gecikmeli veri: Otobüsün GPS sinyali uzun süredir alınamıyor. Konum ve ETA güncel olmayabilir."
+    "staleWarningDesc": "Gecikmeli veri: Otobüsün GPS sinyali uzun süredir alınamıyor. Konum ve ETA güncel olmayabilir.",
+    "directions": "Yol Tarifi Al",
+    "heightAdjust": "Harita yüksekliğini ayarla"
   },
   "routes": {
     "title": "Hat",
@@ -126,7 +129,9 @@
     "failedToLoadSchedule": "Sefer saatleri yüklenemedi",
     "activeBuses": "{{count}} aktif araç",
     "directionG": "Gidiş",
-    "directionD": "Dönüş"
+    "directionD": "Dönüş",
+    "tabs": "Sekmeler",
+    "daySelect": "Gün seçimi"
   },
   "map": {
     "searchPlaceholder": "Hat kodu ara (örn: 500T, 14M)…",
@@ -159,7 +164,12 @@
     "minutesAgo": "{{minutes}} dk önce",
     "hoursAgo": "{{hours}} sa önce",
     "ibbNotice": "İBB Yönetimi, halkın vergileriyle çalışan otobüslerin global konum verilerini halka kapattığı için tüm filoyu şu an çekemiyoruz. Arama çubuğundan belirli bir hat aratarak (ör: 500T) o hattın araçlarını sorunsuzca görmeye devam edebilirsiniz.",
-    "plate": "Plaka"
+    "plate": "Plaka",
+    "tileSat": "Uydu Görünümü",
+    "findMe": "Konumumu Bul",
+    "hideFleet": "Filoyu Gizle",
+    "noVehicles": "Araç yok",
+    "unifiedSearchPlaceholder": "Hat, durak veya araç ara..."
   },
   "fleet": {
     "lastRoute": "Son: {{code}}",
@@ -340,7 +350,8 @@
     "queryDesc": "arac.iett.gov.tr üzerinden araç kapı numarası ile detaylı bilgi alın.",
     "results": "Sonuçlar",
     "live": "Canlı",
-    "remote": "Uzak"
+    "remote": "Uzak",
+    "captchaFailed": "Captcha doğrulanamadı: {{error}}"
   },
   "favorites": {
     "open": "Aç",

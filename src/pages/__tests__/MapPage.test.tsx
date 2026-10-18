@@ -5,15 +5,21 @@ import { MemoryRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import MapPage from '@/pages/MapPage'
 
-vi.mock('react-leaflet', () => ({
-  MapContainer: ({ children }: any) => <div data-testid="map-container">{children}</div>,
-  TileLayer: () => <div data-testid="tile-layer" />,
-  Marker: () => <div data-testid="marker" />,
-  Popup: () => <div data-testid="popup" />,
-  Polyline: () => <div data-testid="polyline" />,
-  useMap: () => ({ setView: vi.fn(), getBounds: vi.fn(), fitBounds: vi.fn(), addLayer: vi.fn(), removeLayer: vi.fn() }),
-  useMapEvents: () => ({})
-}))
+vi.mock('react-leaflet', async () => {
+  const React = await import('react')
+  return {
+    MapContainer: React.forwardRef(({ children }: any, ref: any) => (
+      <div ref={ref} data-testid="map-container">{children}</div>
+    )),
+    TileLayer: () => <div data-testid="tile-layer" />,
+    Marker: () => <div data-testid="marker" />,
+    Popup: () => <div data-testid="popup" />,
+    Polyline: () => <div data-testid="polyline" />,
+    CircleMarker: () => <div data-testid="circle-marker" />,
+    useMap: () => ({ setView: vi.fn(), getBounds: vi.fn(), fitBounds: vi.fn(), addLayer: vi.fn(), removeLayer: vi.fn() }),
+    useMapEvents: () => ({})
+  }
+})
 
 describe('MapPage', () => {
   it('renders correctly', () => {
