@@ -88,7 +88,7 @@ function LoadingDots({ text }: { text: string }) {
           d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
       </svg>
       <span className="text-[13px] text-text-muted">
-        {text}<span className="font-mono">{dots}</span>
+        {text}<span aria-hidden="true" className="font-mono">{dots}</span>
       </span>
     </div>
   )
@@ -181,7 +181,7 @@ export default function Home() {
   const { data: globalNotices } = useGlobalNotices()
   const { data: officialAnnouncements } = useQuery<OfficialAnnouncementsResponse>({
     queryKey: ['announcements', 'official', 0],
-    queryFn: () => (api.notices?.official ? api.notices.official(0) : Promise.resolve({ page: 0, total_items: 0, items: [] })),
+    queryFn: ({ signal }) => (api.notices?.official ? api.notices.official(0, { signal }) : Promise.resolve({ page: 0, total_items: 0, items: [] })),
     staleTime: 5 * 60 * 1000,
   })
 
@@ -212,6 +212,7 @@ export default function Home() {
     setApiError(null)
     api.stops.nearby(location[0], location[1], 15, 500, { signal: abort.signal })
       .then(stops => {
+        if (abort.signal.aborted) return
         setNearbyStops(
           [...stops]
             .sort((a, b) => (Number(a.distance_m) || 0) - (Number(b.distance_m) || 0))
@@ -348,8 +349,7 @@ export default function Home() {
         ) : (
           <button
             onClick={() => navigate('/search')}
-            className="mx-4 w-[calc(100%-2rem)] py-6 flex flex-col items-center gap-2 metro-tilt"
-            style={{ border: '1px solid #222', color: '#444' }}
+            className="mx-4 w-[calc(100%-2rem)] py-6 flex flex-col items-center gap-2 metro-tilt border border-dashed border-surface-border text-text-secondary hover:text-text-primary transition-colors"
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-7 h-7">
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />

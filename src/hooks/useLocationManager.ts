@@ -10,6 +10,15 @@ export function useLocationManager() {
   const [loading, setLoading] = useState(true)
   const isRequesting = useRef(false)
   const watchdogRef = useRef<number | null>(null)
+  const isMountedRef = useRef(true)
+
+  useEffect(() => {
+    isMountedRef.current = true
+    return () => {
+      isMountedRef.current = false
+      if (watchdogRef.current !== null) window.clearTimeout(watchdogRef.current)
+    }
+  }, [])
 
   const requestLocation = useCallback(() => {
     // If consent is pending, we do not request GPS. We just wait.
@@ -23,6 +32,7 @@ export function useLocationManager() {
     setLoading(true)
 
     const fallbackToMock = (explicitDenied = false) => {
+      if (!isMountedRef.current) return
       setLocation(prefs.mockLocation ?? DEFAULT_MOCK_LOCATION)
       setLoading(false)
       isRequesting.current = false
@@ -50,6 +60,7 @@ export function useLocationManager() {
 
     navigator.geolocation.getCurrentPosition(
       (pos) => {
+        if (!isMountedRef.current) return
         if (watchdogRef.current !== null) window.clearTimeout(watchdogRef.current)
         setLocation([pos.coords.latitude, pos.coords.longitude])
         setLoading(false)
@@ -57,6 +68,7 @@ export function useLocationManager() {
         if (prefs.gpsConsent !== 'granted') setGpsConsent('granted')
       },
       (err) => {
+        if (!isMountedRef.current) return
         if (watchdogRef.current !== null) window.clearTimeout(watchdogRef.current)
         fallbackToMock(err.code === err.PERMISSION_DENIED)
       },
@@ -70,9 +82,6 @@ export function useLocationManager() {
 
   useEffect(() => {
     requestLocation()
-    return () => {
-      if (watchdogRef.current !== null) window.clearTimeout(watchdogRef.current)
-    }
   }, [requestLocation])
 
   return { location, loading, requestLocation }

@@ -1,6 +1,6 @@
 import { renderHook, act } from '@testing-library/react'
 import { describe, it, expect, beforeEach } from 'vitest'
-import { useUserPrefs, PINNED_STOPS_MAX, type ImportResult } from '../useUserPrefs'
+import { useUserPrefs, PINNED_STOPS_MAX, type ImportResult, type BackupDataV2 } from '../useUserPrefs'
 
 describe('useUserPrefs', () => {
   beforeEach(() => {
@@ -250,6 +250,31 @@ describe('useUserPrefs', () => {
 
       expect(importRes?.success).toBe(false)
       expect(importRes?.error).toBeDefined()
+    })
+
+    it('exports and restores satellite preference correctly from localStorage', async () => {
+      localStorage.setItem('map-satellite', '1')
+      const { result } = renderHook(() => useUserPrefs())
+      let backup: BackupDataV2 | undefined
+      act(() => {
+        backup = result.current.exportAllData()
+      })
+      expect(backup?.ui.satellite).toBe(true)
+
+      // Test importing satellite: false
+      const v2Payload = {
+        _schemaVersion: 2,
+        _app: 'iett-pwa',
+        preferences: {},
+        ui: {
+          satellite: false,
+        },
+      }
+      await act(async () => {
+        await result.current.importAllData(JSON.stringify(v2Payload))
+      })
+      expect(localStorage.getItem('map-satellite')).toBe('0')
+      expect(localStorage.getItem('iett_satellite')).toBe('false')
     })
   })
 })

@@ -316,7 +316,7 @@ export function useUserPrefs() {
     const recents = getRecent()
     const theme = (typeof localStorage !== 'undefined' && localStorage.getItem('iett-pwa-theme')) || 'dark'
     const language = (typeof localStorage !== 'undefined' && localStorage.getItem('iett-pwa-lang')) || i18n.language || 'tr'
-    const satellite = typeof localStorage !== 'undefined' && localStorage.getItem('iett_satellite') === 'true'
+    const satellite = typeof localStorage !== 'undefined' && (localStorage.getItem('map-satellite') === '1' || localStorage.getItem('iett_satellite') === 'true')
     const settings = loadSettings()
 
     const backup: BackupDataV2 = {
@@ -407,6 +407,7 @@ export function useUserPrefs() {
         // Restore Satellite map setting
         if (typeof v2.ui?.satellite === 'boolean') {
           try {
+            localStorage.setItem('map-satellite', v2.ui.satellite ? '1' : '0')
             localStorage.setItem('iett_satellite', String(v2.ui.satellite))
           } catch { /* storage blocked */ }
         }

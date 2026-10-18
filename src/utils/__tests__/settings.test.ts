@@ -55,4 +55,18 @@ describe('saveSettings', () => {
     saveSettings(settings)
     expect(loadSettings()).toEqual(settings)
   })
+
+  it('sanitizes unsafe protocols in apiBase before saving', () => {
+    saveSettings({ ...DEFAULT_SETTINGS, apiBase: 'javascript:alert(1)' })
+    expect(loadSettings().apiBase).toBe('')
+
+    saveSettings({ ...DEFAULT_SETTINGS, apiBase: 'ftp://ftp.example.com' })
+    expect(loadSettings().apiBase).toBe('')
+
+    saveSettings({ ...DEFAULT_SETTINGS, apiBase: 'https://valid.api.org' })
+    expect(loadSettings().apiBase).toBe('https://valid.api.org')
+
+    saveSettings({ ...DEFAULT_SETTINGS, apiBase: '/local-proxy' })
+    expect(loadSettings().apiBase).toBe('/local-proxy')
+  })
 })

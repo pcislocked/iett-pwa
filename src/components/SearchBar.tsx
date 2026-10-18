@@ -184,6 +184,7 @@ export default function SearchBar({ placeholder, autoFocus }: Props) {
           }}
           onBlur={() => setTimeout(() => setOpen(false), 150)}
           placeholder={actualPlaceholder}
+          aria-label={actualPlaceholder}
           className="w-full bg-surface-card border border-surface-muted rounded-2xl
                      pl-10 pr-4 py-3.5 text-text-primary placeholder-slate-500 text-sm
                      focus:outline-none focus:ring-2 focus:ring-brand-500"
@@ -222,7 +223,7 @@ export default function SearchBar({ placeholder, autoFocus }: Props) {
                   </div>
                 ) : (
                   <div className="flex items-center gap-3 w-full min-w-0">
-                    <span aria-hidden="true" className="text-xs font-bold px-2 py-0.5 rounded-lg bg-amber-900/60 text-amber-200 font-mono shrink-0 min-w-[42px] text-center">
+                    <span className="text-xs font-bold px-2 py-0.5 rounded-lg bg-amber-900/60 text-amber-200 font-mono shrink-0 min-w-[42px] text-center">
                       {r.hat_kodu}
                     </span>
                     <div className="flex-1 min-w-0">

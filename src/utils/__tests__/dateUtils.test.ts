@@ -139,6 +139,15 @@ describe('isTodayAnnouncement', () => {
     expect(isTodayAnnouncement('2026-10-17', today)).toBe(false)
   })
 
+  it('matches date ranges containing today', async () => {
+    const { isTodayAnnouncement } = await import('../dateUtils')
+    expect(isTodayAnnouncement('17.10.2026 - 19.10.2026', today)).toBe(true)
+    expect(isTodayAnnouncement('18.10.2026 - 20.10.2026', today)).toBe(true)
+    expect(isTodayAnnouncement('15.10.2026 - 18.10.2026', today)).toBe(true)
+    expect(isTodayAnnouncement('10.10.2026 - 15.10.2026', today)).toBe(false)
+    expect(isTodayAnnouncement('19.10.2026 - 25.10.2026', today)).toBe(false)
+  })
+
   it('handles null, undefined, and empty string safely', async () => {
     const { isTodayAnnouncement } = await import('../dateUtils')
     expect(isTodayAnnouncement(null, today)).toBe(false)

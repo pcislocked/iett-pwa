@@ -27,8 +27,18 @@ export default function PinnedStopRow({ dcode, nick, icon = '📌', distLabel, d
   const [stopDetail, setStopDetail] = useState<StopDetail | null>(null)
 
   useEffect(() => {
-    if (directionProp != null) return  // direction already provided — skip extra fetch
-    api.stops.detail(dcode).then(setStopDetail).catch(() => {})
+    if (directionProp != null) return // direction already provided — skip extra fetch
+    let mounted = true
+    const controller = new AbortController()
+    api.stops.detail(dcode, { signal: controller.signal })
+      .then(res => {
+        if (mounted) setStopDetail(res)
+      })
+      .catch(() => {})
+    return () => {
+      mounted = false
+      controller.abort()
+    }
   }, [dcode, directionProp])
 
   const resolvedDirection = directionProp ?? stopDetail?.direction

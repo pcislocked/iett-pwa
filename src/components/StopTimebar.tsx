@@ -82,7 +82,7 @@ export const StopTimebar = memo(function StopTimebar({
                 ? 'bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/40'
                 : 'bg-surface-muted text-text-secondary'
             }`}
-            title={t('stops.lagTitle')}
+            title={t('stops.lagTitle', { defaultValue: 'İETT veri gecikmesi' })}
           >
             {timebarFormat === 'emoji' ? (
               `📡 ${iettTimeDisplay}`

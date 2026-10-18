@@ -20,9 +20,27 @@ export function loadSettings(): Settings {
   return { ...DEFAULT_SETTINGS }
 }
 
+export function sanitizeApiBase(url: string): string {
+  if (typeof url !== 'string') return ''
+  const trimmed = url.trim().replace(/\/+$/, '')
+  if (!trimmed) return ''
+  if (trimmed.startsWith('/') && !trimmed.startsWith('//')) return trimmed
+  try {
+    const parsed = new URL(trimmed)
+    if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+      return trimmed
+    }
+  } catch { /* invalid URL */ }
+  return ''
+}
+
 export function saveSettings(settings: Settings): void {
   try {
-    localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings))
+    const sanitized: Settings = {
+      ...settings,
+      apiBase: sanitizeApiBase(settings.apiBase),
+    }
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(sanitized))
   } catch {
     /* ignore QuotaExceededError / SecurityError (private mode, storage disabled) */
   }

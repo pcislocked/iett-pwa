@@ -226,11 +226,12 @@ export default function NearbyPage() {
     setSelectedCode(code)
   }, [])
 
-  const fetchNearby = useCallback(async (lat: number, lon: number) => {
+  const fetchNearby = useCallback(async (lat: number, lon: number, signal?: AbortSignal) => {
     setPhase('loading')
     setSelectedCode(null)
     try {
-      const nearby = await api.stops.nearby(lat, lon, prefs.nearbyMax, prefs.nearbyRadius)
+      const nearby = await api.stops.nearby(lat, lon, prefs.nearbyMax, prefs.nearbyRadius, { signal })
+      if (signal?.aborted) return
       const base: NearbyStop[] = [...nearby]
         .sort((a, b) => (Number(a.distance_m) || 0) - (Number(b.distance_m) || 0))
         .map((s) => ({ ...s, routes: [] }))
@@ -240,17 +241,20 @@ export default function NearbyPage() {
       // Silently enrich route pills in the background in chunks of 5 to prevent unbounded concurrency
       const enriched: PromiseSettledResult<string[]>[] = []
       for (let i = 0; i < nearby.length; i += 5) {
+        if (signal?.aborted) return
         const chunk = nearby.slice(i, i + 5)
         const results = await Promise.allSettled(
-          chunk.map((s) => api.stops.routes(s.stop_code))
+          chunk.map((s) => api.stops.routes(s.stop_code, { signal }))
         )
+        if (signal?.aborted) return
         enriched.push(...results)
       }
+      if (signal?.aborted) return
       // Build stop_code → routes map (enriched is indexed by original nearby order)
       const routeMap = new Map(
         nearby.map((s, i) => [
           s.stop_code,
-          enriched[i].status === 'fulfilled' ? (enriched[i] as PromiseFulfilledResult<string[]>).value : [],
+          enriched[i]?.status === 'fulfilled' ? (enriched[i] as PromiseFulfilledResult<string[]>).value : [],
         ]),
       )
       setAllStops(
@@ -261,7 +265,8 @@ export default function NearbyPage() {
             routes: routeMap.get(s.stop_code) ?? [],
           })),
       )
-    } catch {
+    } catch (err) {
+      if (signal?.aborted || (err instanceof Error && err.name === 'AbortError')) return
       setPhase('error')
       setErrorMsg(t('nearby.stopsFailed', { defaultValue: 'Duraklar yüklenemedi. Lütfen tekrar deneyin.' }))
     }
@@ -269,8 +274,11 @@ export default function NearbyPage() {
 
   // ── React to LocationManager ─────────────────────────────────────────────
   useEffect(() => {
-    if (location) {
-      fetchNearby(location[0], location[1])
+    if (!location) return
+    const controller = new AbortController()
+    fetchNearby(location[0], location[1], controller.signal)
+    return () => {
+      controller.abort()
     }
   }, [location, fetchNearby])
 

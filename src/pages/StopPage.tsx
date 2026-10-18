@@ -351,7 +351,11 @@ function BusDetailSheet({
               </p>
             )}
           </div>
-          <button onClick={onClose} className="p-1.5 text-text-muted hover:text-text-secondary shrink-0">
+          <button
+            onClick={onClose}
+            aria-label={t('common.close', { defaultValue: 'Kapat' })}
+            className="p-1.5 text-text-muted hover:text-text-secondary shrink-0"
+          >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -700,14 +704,14 @@ export default function StopPage() {
 
   const { data: routes } = useQuery<string[]>({
     queryKey: ['routesAtStop', dcode],
-    queryFn: () => api.stops.routes(dcode ?? ''),
+    queryFn: ({ signal }) => api.stops.routes(dcode ?? '', { signal }),
     refetchInterval: 300_000,
     enabled: !!dcode,
   })
 
   const { data: stopDetail, isLoading: detailLoading, error: detailErrorObj } = useQuery<StopDetail>({
     queryKey: ['stopDetail', dcode],
-    queryFn: () => api.stops.detail(dcode ?? ''),
+    queryFn: ({ signal }) => api.stops.detail(dcode ?? '', { signal }),
     refetchInterval: 3_600_000,
     enabled: !!dcode,
   })
