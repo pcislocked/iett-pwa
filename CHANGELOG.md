@@ -3,6 +3,15 @@
 All notable changes to iett-pwa are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [0.4.9.3] - 2026-10-18
+### CI/CD, Quality & Test Guardrails
+- **CI/CD Hardening**: Added `npm run build` verification to `.github/workflows/ci.yml` and scoped concurrency with `cancel-in-progress: true`.
+- **Docker Multi-Arch Optimization**: Scoped Docker cancellation to `!startsWith(github.ref, 'refs/tags/')` so production tag releases are never aborted in flight; upgraded build caching from `mode=min` to `mode=max` across `amd64` and `arm64`.
+- **i18n & Locales**: Protected `i18n.init` against duplicate initialization during HMR; added browser runtime safety against undeclared Node `process` globals; achieved 100% key parity between English and Turkish locale catalogs (11 missing keys added).
+- **Test Infrastructure & Coverage**: Expanded test suite to 50 test files and 277 passing tests (+30 new tests) with leak-free test suites for `AnnouncementsPage`, `AracQueryPage`, `ShareTargetPage` (100% covered), and `useLocationManager` (95.7% covered).
+
+---
+
 ## [0.4.9.2] - 2026-10-18
 ### Fixed & Accessibility Polish
 - **Offline Esri Satellite Tile Caching:** Configured Workbox caching in `vite.config.ts` for Esri ArcGIS satellite tiles (`/ArcGIS/rest/services/World_Imagery/MapServer/tile/`) with opaque response caching support (`cacheableResponse: { statuses: [0, 200] }`), enabling offline map viewing.
