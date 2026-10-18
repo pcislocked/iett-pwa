@@ -10,7 +10,7 @@ env:
 
 concurrency:
   group: docker-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
 
 jobs:
   build-amd64:
@@ -59,7 +59,7 @@ jobs:
           build-args: |
             VITE_API_BASE_URL=${{ vars.VITE_API_BASE_URL }}
           cache-from: type=gha,scope=pwa-amd64
-          cache-to: type=gha,mode=min,scope=pwa-amd64
+          cache-to: type=gha,mode=max,scope=pwa-amd64
 
   build-arm64:
     runs-on: ubuntu-24.04-arm
@@ -107,7 +107,7 @@ jobs:
           build-args: |
             VITE_API_BASE_URL=${{ vars.VITE_API_BASE_URL }}
           cache-from: type=gha,scope=pwa-arm64
-          cache-to: type=gha,mode=min,scope=pwa-arm64
+          cache-to: type=gha,mode=max,scope=pwa-arm64
 
   merge-manifest:
     runs-on: ubuntu-latest

@@ -1,10 +1,14 @@
-﻿name: CI
+name: CI
 
 on:
   push:
     branches: ["master", "main"]
   pull_request:
     branches: ["master", "main"]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -36,3 +40,6 @@ jobs:
 
       - name: Test
         run: npm run test:coverage
+
+      - name: Build
+        run: npm run build

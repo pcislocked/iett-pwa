@@ -32,9 +32,9 @@ describe('RoutePage', () => {
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } })
     render(
       <QueryClientProvider client={queryClient}>
-        <MemoryRouter initialEntries={['/route/15TY']}>
+        <MemoryRouter initialEntries={['/routes/15TY']}>
           <Routes>
-            <Route path="/route/:hatKodu" element={<RoutePage />} />
+            <Route path="/routes/:hatKodu" element={<RoutePage />} />
           </Routes>
         </MemoryRouter>
       </QueryClientProvider>
@@ -53,9 +53,9 @@ describe('RoutePage', () => {
     
     render(
       <QueryClientProvider client={queryClient}>
-        <MemoryRouter initialEntries={['/route/UNKNOWN']}>
+        <MemoryRouter initialEntries={['/routes/UNKNOWN']}>
           <Routes>
-            <Route path="/route/:hatKodu" element={<RoutePage />} />
+            <Route path="/routes/:hatKodu" element={<RoutePage />} />
           </Routes>
         </MemoryRouter>
       </QueryClientProvider>

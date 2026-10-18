@@ -11,12 +11,16 @@ vi.mock('@/api/client', () => ({
   api: {
     stops: {
       detail: vi.fn(),
-      arrivals: vi.fn(),
-      routes: vi.fn(),
-      announcements: vi.fn(),
+      arrivals: vi.fn().mockResolvedValue([]),
+      routes: vi.fn().mockResolvedValue([]),
+      announcements: vi.fn().mockResolvedValue([]),
     },
     routes: {
-      announcements: vi.fn(),
+      announcements: vi.fn().mockResolvedValue([]),
+    },
+    notices: {
+      global: vi.fn().mockResolvedValue([]),
+      official: vi.fn().mockResolvedValue({ items: [], total: 0 }),
     },
   },
 }))

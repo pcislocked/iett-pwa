@@ -25,7 +25,8 @@
     "selectOption": "Select",
     "iett": "IETT",
     "update": "Update",
-    "all": "All"
+    "all": "All",
+    "outdated": "Outdated"
   },
   "nav": {
     "map": "Map",
@@ -97,7 +98,9 @@
     "resetRibbonFilter": "Reset Filter",
     "noAnnouncementsForFilter": "No active announcements for the selected route.",
     "mathMismatchWarningDesc": "Math Mismatch: Unless IETT has invented teleportation or Ekrem İmamoğlu is airlifting the bus via helicopter, it is physically impossible for this vehicle to arrive in this time.",
-    "staleWarningDesc": "Stale Data: The bus GPS signal has not been received for a long time. Location and ETA may not be up-to-date."
+    "staleWarningDesc": "Stale Data: The bus GPS signal has not been received for a long time. Location and ETA may not be up-to-date.",
+    "directions": "Get Directions",
+    "heightAdjust": "Adjust map height"
   },
   "routes": {
     "title": "Route",
@@ -126,7 +129,9 @@
     "failedToLoadSchedule": "Failed to load schedule times",
     "activeBuses": "{{count}} active vehicles",
     "directionG": "Outbound",
-    "directionD": "Inbound"
+    "directionD": "Inbound",
+    "tabs": "Tabs",
+    "daySelect": "Day selection"
   },
   "map": {
     "searchPlaceholder": "Search route (e.g. 500T, 14M)…",
@@ -159,7 +164,12 @@
     "minutesAgo": "{{minutes}}m ago",
     "hoursAgo": "{{hours}}h ago",
     "ibbNotice": "Since IMM Administration has disabled the public global GPS location feeds of the buses, we cannot fetch the entire live fleet at the moment. You can still search for a specific route (e.g. 500T) from the search bar to view its active buses normally.",
-    "plate": "Plate"
+    "plate": "Plate",
+    "tileSat": "Satellite View",
+    "findMe": "Find Me",
+    "hideFleet": "Hide Fleet",
+    "noVehicles": "No vehicles",
+    "unifiedSearchPlaceholder": "Search route, stop or vehicle..."
   },
   "fleet": {
     "lastRoute": "Last: {{code}}",
@@ -340,7 +350,8 @@
     "queryDesc": "Get detailed info via door number from arac.iett.gov.tr.",
     "results": "Results",
     "live": "Live",
-    "remote": "Remote"
+    "remote": "Remote",
+    "captchaFailed": "Captcha verification failed: {{error}}"
   },
   "favorites": {
     "open": "Open",
