@@ -3,6 +3,13 @@
 All notable changes to iett-pwa are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [0.4.9.4] - 2026-10-19
+### Fixed
+- **Satellite Map Styling**: Fixed dark theme tile darkening inadvertently affecting the satellite view; scoped base map tile filters to `.leaflet-tiles-base`, removed container-level pane filter, and applied `contrast(1.05)` strictly to the satellite layer with no brightness reduction.
+- **TileLayer Dynamic Re-mounting**: Added `key={currentUrl}` across all map-rendering pages (`StopPage`, `RoutePage`, `AracBusOverlayPage`, `NearbyPage`, `SettingsPage`) to ensure Leaflet properly cleans up and updates tile layer CSS classes on layer switches.
+
+---
+
 ## [0.4.9.3] - 2026-10-18
 ### CI/CD, Quality & Test Guardrails
 - **CI/CD Hardening**: Added `npm run build` verification to `.github/workflows/ci.yml` and scoped concurrency with `cancel-in-progress: true`.

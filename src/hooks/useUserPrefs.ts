@@ -312,7 +312,7 @@ export function useUserPrefs() {
   // ── Unified Export / Import (Schema v2 with v1 Backward Compatibility) ───
 
   const exportAllData = useCallback((backendVersion?: string | null) => {
-    const appVersion = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '0.4.9.3'
+    const appVersion = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '0.4.9.4'
     const recents = getRecent()
     const theme = (typeof localStorage !== 'undefined' && localStorage.getItem('iett-pwa-theme')) || 'dark'
     const language = (typeof localStorage !== 'undefined' && localStorage.getItem('iett-pwa-lang')) || i18n.language || 'tr'
@@ -369,7 +369,7 @@ export function useUserPrefs() {
       }
 
       const parsed = JSON.parse(rawText) as Record<string, unknown>
-      const currentAppVersion = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '0.4.9.3'
+      const currentAppVersion = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '0.4.9.4'
 
       // Detect Schema v2
       if (parsed._schemaVersion === 2 && parsed._app === 'iett-pwa') {
