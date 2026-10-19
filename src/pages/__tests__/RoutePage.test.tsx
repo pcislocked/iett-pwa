@@ -2,7 +2,7 @@ import { render, screen, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi } from 'vitest'
 import { MemoryRouter, Routes, Route } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { api, type RouteMetadata } from '@/api/client'
+import { api } from '@/api/client'
 import RoutePage from '@/pages/RoutePage'
 import React from 'react'
 
