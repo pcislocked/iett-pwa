@@ -585,6 +585,7 @@ export default function RoutePage() {
                 className={mapClassName}
               >
                 <TileLayer
+                  key={currentUrl}
                   className={tileClassName}
                   attribution={currentAttribution}
                   url={currentUrl}

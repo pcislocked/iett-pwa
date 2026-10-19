@@ -112,12 +112,28 @@
 
 /* Leaflet */
 .leaflet-container { background: var(--color-surface-card); font-family: inherit; }
-.leaflet-container:not(.map-satellite) .leaflet-tile-pane {
+
+/* Reset pane-level filter so individual tile rules take effect cleanly */
+.leaflet-tile-pane {
+  filter: none !important;
+}
+
+/* Base map tiles: keep theme darkening (dark / amoled) */
+.leaflet-tile.leaflet-tiles-base,
+.leaflet-tiles-base .leaflet-tile,
+.map-base .leaflet-tile-pane .leaflet-tile,
+.leaflet-container:not(.map-satellite) .leaflet-tile-pane:not(:has(.leaflet-tiles-satellite)) .leaflet-tile {
   filter: var(--map-tile-filter, none);
 }
-.map-satellite .leaflet-tile-pane,
-.leaflet-container .leaflet-tile-pane:has(.leaflet-tiles-satellite) {
-  filter: none !important;
+
+/* Satellite tiles: NEVER darken (no brightness reduction), add +0.05 contrast */
+.leaflet-tile.leaflet-tiles-satellite,
+.leaflet-tiles-satellite .leaflet-tile,
+.map-satellite .leaflet-tile-pane .leaflet-tile,
+.map-satellite .leaflet-tile,
+.leaflet-tile-pane:has(.leaflet-tiles-satellite) .leaflet-tile,
+.leaflet-container .leaflet-tile-pane:has(.leaflet-tiles-satellite) .leaflet-tile {
+  filter: contrast(1.05) !important;
 }
 @media (pointer: coarse) {
   .leaflet-control-attribution a {

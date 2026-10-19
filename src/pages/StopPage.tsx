@@ -378,7 +378,7 @@ function BusDetailSheet({
             )}
             {mapReady && (
               <MapContainer center={mapCenter} zoom={15} style={{ height: '100%', width: '100%' }} zoomControl={false} className={mapClassName}>
-                <TileLayer className={tileClassName} attribution={currentAttribution} url={currentUrl} />
+                <TileLayer key={currentUrl} className={tileClassName} attribution={currentAttribution} url={currentUrl} />
                 {bounds && <FitBoundsEffect bounds={bounds} />}
                 <Polyline
                   positions={[[effectiveLat!, effectiveLon!], [stopLat, stopLon]]}
@@ -1069,7 +1069,7 @@ export default function StopPage() {
               className={mapClassName}
             >
               {/* MapResizer removed, relying on resize events */}
-              <TileLayer className={tileClassName} attribution={currentAttribution} url={currentUrl} />
+              <TileLayer key={currentUrl} className={tileClassName} attribution={currentAttribution} url={currentUrl} />
               <AutoFitBuses
                 stopLat={stopDetail.latitude}
                 stopLon={stopDetail.longitude}

@@ -444,6 +444,7 @@ export default function AracBusOverlayPage() {
                 className={mapClassName}
               >
                 <TileLayer
+                  key={currentUrl}
                   className={tileClassName}
                   attribution={currentAttribution}
                   url={currentUrl}

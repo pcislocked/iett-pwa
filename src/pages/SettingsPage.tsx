@@ -83,6 +83,7 @@ function MockLocationPicker({ initialLat, initialLon, onPick }: { initialLat: nu
         className={mapClassName}
       >
         <TileLayer
+          key={currentUrl}
           className={tileClassName}
           attribution={currentAttribution}
           url={currentUrl}
