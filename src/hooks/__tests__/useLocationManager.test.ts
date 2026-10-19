@@ -15,8 +15,7 @@ describe('useLocationManager Hook', () => {
     if (originalGeolocation) {
       Object.defineProperty(global.navigator, 'geolocation', originalGeolocation)
     } else {
-      // @ts-expect-error cleanup mock
-      delete global.navigator.geolocation
+      Reflect.deleteProperty(global.navigator, 'geolocation')
     }
     vi.restoreAllMocks()
     vi.useRealTimers()

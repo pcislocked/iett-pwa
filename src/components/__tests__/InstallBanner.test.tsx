@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, fireEvent, renderHook, act } from '@testing-library/react'
-import InstallBanner, { useInstallBanner } from '../InstallBanner'
+import InstallBanner from '../InstallBanner'
+import { useInstallBanner } from '@/hooks/useInstallBanner'
 
 describe('InstallBanner Component', () => {
   const originalMatchMedia = window.matchMedia

@@ -1,8 +1,7 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-﻿import { renderHook, waitFor } from '@testing-library/react'
+import { renderHook, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { useFleet, useRouteBuses } from '@/hooks/useFleet'
-import { api } from '@/api/client'
+import { api, type BusPosition } from '@/api/client'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
 
@@ -12,6 +11,23 @@ vi.mock('@/api/client', () => ({
     routes: { buses: vi.fn() }
   }
 }))
+
+const createMockBus = (overrides: Partial<BusPosition> = {}): BusPosition => ({
+  kapino: 'K123',
+  plate: '34 HO 1234',
+  latitude: 41.0,
+  longitude: 29.0,
+  speed: 25,
+  operator: 'IETT',
+  last_seen: '12:00:00',
+  route_code: '15TY',
+  route_name: 'TOKATKÖY - ÜSKÜDAR',
+  direction: 'ÜSKÜDAR',
+  direction_letter: 'D',
+  nearest_stop: '1234',
+  stop_sequence: 1,
+  ...overrides,
+})
 
 describe('useFleet', () => {
   let queryClient: QueryClient
@@ -30,8 +46,8 @@ describe('useFleet', () => {
   }
 
   it('fetches all fleet data and maps state correctly', async () => {
-    const mockData = [{ route_code: '15TY', kapino: 'K123' }]
-    vi.mocked(api.fleet.all).mockResolvedValue(mockData as any)
+    const mockData: BusPosition[] = [createMockBus({ route_code: '15TY', kapino: 'K123' })]
+    vi.mocked(api.fleet.all).mockResolvedValue(mockData)
 
     const { result } = renderHook(() => useFleet(), { wrapper })
 
@@ -60,8 +76,8 @@ describe('useFleet', () => {
   })
 
   it('fetches route buses only when hatKodu is provided', async () => {
-    const mockData = [{ route_code: '11H', kapino: 'K456' }]
-    vi.mocked(api.routes.buses).mockResolvedValue(mockData as any)
+    const mockData: BusPosition[] = [createMockBus({ route_code: '11H', kapino: 'K456' })]
+    vi.mocked(api.routes.buses).mockResolvedValue(mockData)
 
     const { result, rerender } = renderHook(({ hk }) => useRouteBuses(hk), {
       initialProps: { hk: '' },

@@ -21,13 +21,14 @@ describe('i18n configuration', () => {
   })
 
   it('translations_json_files_have_matching_keys', () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const getKeys = (obj: any, prefix = ''): string[] => {
+    const getKeys = (obj: unknown, prefix = ''): string[] => {
       let keys: string[] = []
       if (!obj || typeof obj !== 'object') return keys
-      for (const key in obj) {
-        if (typeof obj[key] === 'object' && obj[key] !== null) {
-          keys = keys.concat(getKeys(obj[key], `${prefix}${key}.`))
+      const record = obj as Record<string, unknown>
+      for (const key in record) {
+        const val = record[key]
+        if (typeof val === 'object' && val !== null) {
+          keys = keys.concat(getKeys(val, `${prefix}${key}.`))
         } else {
           keys.push(`${prefix}${key}`)
         }

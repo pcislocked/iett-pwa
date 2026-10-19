@@ -1,8 +1,7 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-﻿import { renderHook, waitFor } from '@testing-library/react'
+import { renderHook, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { useArrivals } from '@/hooks/useArrivals'
-import { api } from '@/api/client'
+import { api, type Arrival } from '@/api/client'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
 
@@ -29,9 +28,23 @@ describe('useArrivals', () => {
   }
 
   it('fetches arrivals when stopCode is provided', async () => {
-    const mockData = [{ route_code: '15TY', eta_minutes: 5 }]
+    const mockData: Arrival[] = [
+      {
+        route_code: '15TY',
+        destination: 'KADIKÖY',
+        eta_minutes: 5,
+        eta_raw: '5 dk',
+        plate: '34 TP 1234',
+        kapino: 'B-1234',
+        lat: null,
+        lon: null,
+        speed_kmh: null,
+        last_seen_ts: null,
+        amenities: null,
+      },
+    ]
     const mockHeaders = new Headers()
-    vi.mocked(api.stops.arrivals).mockResolvedValue({ data: mockData, headers: mockHeaders } as any)
+    vi.mocked(api.stops.arrivals).mockResolvedValue({ data: mockData, headers: mockHeaders })
 
     const { result } = renderHook(() => useArrivals('1234'), { wrapper })
 

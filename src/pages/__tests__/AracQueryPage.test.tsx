@@ -1,10 +1,9 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { MemoryRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import AracQueryPage from '@/pages/AracQueryPage'
-import { api } from '@/api/client'
+import { api, type BusPosition } from '@/api/client'
 import * as useFleetModule from '@/hooks/useFleet'
 
 const mockNavigate = vi.fn()
@@ -23,6 +22,17 @@ vi.mock('@/api/client', () => ({
     },
   },
 }))
+
+const mockUseFleetReturn = (
+  data: BusPosition[] | null = null
+): ReturnType<typeof useFleetModule.useFleet> => ({
+  data,
+  loading: false,
+  error: null,
+  refresh: vi.fn(),
+  stale: false,
+  lastUpdated: null,
+})
 
 describe('AracQueryPage Component', () => {
   let queryClient: QueryClient
@@ -51,8 +61,8 @@ describe('AracQueryPage Component', () => {
   }
 
   it('matches local fleet vehicles by kapino or plate and navigates on click', async () => {
-    vi.spyOn(useFleetModule, 'useFleet').mockReturnValue({
-      data: [
+    vi.spyOn(useFleetModule, 'useFleet').mockReturnValue(
+      mockUseFleetReturn([
         {
           kapino: 'C-1753',
           plate: '34 HO 1753',
@@ -60,12 +70,16 @@ describe('AracQueryPage Component', () => {
           latitude: 41.05,
           longitude: 29.01,
           speed: 35,
+          operator: 'IETT',
           last_seen: '12:00',
+          route_name: '500T',
+          direction: 'D',
+          direction_letter: 'D',
+          nearest_stop: null,
+          stop_sequence: null,
         },
-      ],
-      isLoading: false,
-      isError: false,
-    } as any)
+      ])
+    )
 
     renderPage()
 
@@ -81,11 +95,7 @@ describe('AracQueryPage Component', () => {
   })
 
   it('falls back to remote suggest if not found in local fleet', async () => {
-    vi.spyOn(useFleetModule, 'useFleet').mockReturnValue({
-      data: [],
-      isLoading: false,
-      isError: false,
-    } as any)
+    vi.spyOn(useFleetModule, 'useFleet').mockReturnValue(mockUseFleetReturn([]))
 
     vi.mocked(api.arac.suggest).mockResolvedValue([
       { doorNumber: 'M-9999', plate: '34 HO 9999' },

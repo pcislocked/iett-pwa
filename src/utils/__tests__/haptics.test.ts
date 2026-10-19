@@ -43,8 +43,11 @@ describe('haptics', () => {
   })
 
   it('does not throw when navigator.vibrate is undefined', () => {
-    // @ts-expect-error simulating missing vibrate
-    navigator.vibrate = undefined
+    Object.defineProperty(navigator, 'vibrate', {
+      value: undefined,
+      configurable: true,
+      writable: true,
+    })
     expect(() => triggerHaptic('light', true)).not.toThrow()
   })
 })

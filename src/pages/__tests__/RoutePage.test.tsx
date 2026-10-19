@@ -1,24 +1,35 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-﻿import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi } from 'vitest'
 import { MemoryRouter, Routes, Route } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { api } from '@/api/client'
+import { api, type RouteMetadata } from '@/api/client'
 import RoutePage from '@/pages/RoutePage'
+import React from 'react'
 
 vi.mock('@/api/client', () => ({
   api: {
     routes: {
-      metadata: vi.fn().mockResolvedValue([{ route_code: '15TY', full_name: 'Test' }]),
+      metadata: vi.fn().mockResolvedValue([
+        {
+          hat_kodu: '15TY',
+          direction_name: 'Gidiş',
+          full_name: 'Test',
+          variant_code: '15TY_G',
+          direction: 0,
+          depar_no: 1,
+        },
+      ]),
       schedule: vi.fn().mockResolvedValue([]),
-      stops: vi.fn().mockResolvedValue([])
+      stops: vi.fn().mockResolvedValue([]),
     },
-    stops: { announcements: vi.fn().mockResolvedValue([]) }
-  }
+    stops: { announcements: vi.fn().mockResolvedValue([]) },
+  },
 }))
 
 vi.mock('react-leaflet', () => ({
-  MapContainer: ({ children }: any) => <div data-testid="map-container">{children}</div>,
+  MapContainer: ({ children }: { children?: React.ReactNode }) => (
+    <div data-testid="map-container">{children}</div>
+  ),
   TileLayer: () => <div data-testid="tile-layer" />,
   Marker: () => <div data-testid="marker" />,
   Popup: () => <div data-testid="popup" />,

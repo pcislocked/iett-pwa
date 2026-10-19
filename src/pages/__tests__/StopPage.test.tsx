@@ -1,17 +1,23 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
 import StopPage from '@/pages/StopPage'
-import { api } from '@/api/client'
+import { api, ApiHttpError, type Arrival } from '@/api/client'
 
 vi.mock('@/api/client', () => ({
+  ApiHttpError: class ApiHttpError extends Error {
+    status: number
+    constructor(_path: string, status: number, _text: string) {
+      super(`HTTP ${status}`)
+      this.status = status
+    }
+  },
   api: {
     stops: {
       detail: vi.fn(),
-      arrivals: vi.fn().mockResolvedValue([]),
+      arrivals: vi.fn().mockResolvedValue({ data: [], headers: new Headers() }),
       routes: vi.fn().mockResolvedValue([]),
       announcements: vi.fn().mockResolvedValue([]),
     },
@@ -24,6 +30,21 @@ vi.mock('@/api/client', () => ({
     },
   },
 }))
+
+const createMockArrival = (overrides: Partial<Arrival> = {}): Arrival => ({
+  route_code: '15TY',
+  destination: 'Test Dest',
+  eta_minutes: 5,
+  eta_raw: '5 dk',
+  plate: null,
+  kapino: null,
+  lat: null,
+  lon: null,
+  speed_kmh: null,
+  last_seen_ts: null,
+  amenities: null,
+  ...overrides,
+})
 
 describe('StopPage Announcements', () => {
   afterEach(() => {
@@ -47,10 +68,13 @@ describe('StopPage Announcements', () => {
     vi.mocked(api.stops.detail).mockResolvedValue({
       dcode: '1234', name: 'Test Stop', latitude: 41, longitude: 29
     })
-    vi.mocked(api.stops.arrivals).mockResolvedValue([
-      { route_code: '15TY', destination: 'Test Dest', eta_minutes: 5, eta_raw: '5 dk', plate: null, kapino: null, lat: null, lon: null },
-      { route_code: '11H', destination: 'Test Dest', eta_minutes: 15, eta_raw: '15 dk', plate: null, kapino: null, lat: null, lon: null },
-    ] as any)
+    vi.mocked(api.stops.arrivals).mockResolvedValue({
+      data: [
+        createMockArrival({ route_code: '15TY', eta_minutes: 5 }),
+        createMockArrival({ route_code: '11H', eta_minutes: 15 }),
+      ],
+      headers: new Headers(),
+    })
 
     vi.mocked(api.stops.announcements).mockResolvedValue([
       { type: 'Duyuru', updated_at: '2026-06-05', message: '15TY is delayed', route_code: '15TY', route_name: '' },
@@ -81,10 +105,13 @@ describe('StopPage Announcements', () => {
       latitude: 41,
       longitude: 29
     })
-    vi.mocked(api.stops.arrivals).mockResolvedValue([
-      { route_code: '15TY', destination: 'Test Dest', eta_minutes: 5, eta_raw: '5 dk', plate: null, kapino: null, lat: null, lon: null },
-      { route_code: '11H', destination: 'Test Dest', eta_minutes: 15, eta_raw: '15 dk', plate: null, kapino: null, lat: null, lon: null },
-    ] as any)
+    vi.mocked(api.stops.arrivals).mockResolvedValue({
+      data: [
+        createMockArrival({ route_code: '15TY', eta_minutes: 5 }),
+        createMockArrival({ route_code: '11H', eta_minutes: 15 }),
+      ],
+      headers: new Headers(),
+    })
     vi.mocked(api.stops.routes).mockResolvedValue(['15TY', '11H'])
 
     // Fails
@@ -105,7 +132,7 @@ describe('StopPage Announcements', () => {
       latitude: 41,
       longitude: 29
     })
-    vi.mocked(api.stops.arrivals).mockResolvedValue([] as any)
+    vi.mocked(api.stops.arrivals).mockResolvedValue({ data: [], headers: new Headers() })
     vi.mocked(api.stops.announcements).mockResolvedValue([])
 
     renderPage()
@@ -117,7 +144,7 @@ describe('StopPage Announcements', () => {
 
   it('renders not found when detail throws 404', async () => {
     // Return a mock error with status 404
-    vi.mocked(api.stops.detail).mockRejectedValue({ status: 404 })
+    vi.mocked(api.stops.detail).mockRejectedValue(new ApiHttpError('/v1/stops/1234', 404, 'Not Found'))
     renderPage()
 
     await waitFor(() => {
