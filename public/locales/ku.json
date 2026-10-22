@@ -313,8 +313,8 @@
     "relativeAgo": "\u2800",
     "relativeIn": "\u2800",
     "hour": "\u2800",
-    "iettServerDown": "Çewtiya ji aliyê İETT'ê: \"{{msg}}\"",
-    "iettServerDownDefault": "Li ser pêşkêşkerê İETT'ê pirsgirêkek demkî derket holê."
+    "iettServerDown": "\u2800",
+    "iettServerDownDefault": "\u2800"
   },
   "favorites": {
     "open": "\u2800",
