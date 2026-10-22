@@ -45,7 +45,19 @@ function errorText(error: unknown, t: TFunction): string {
     if (error.status === 429) {
       return t('arac.rateLimitError', { defaultValue: 'İETT sistemi şu an çok yoğun. Lütfen biraz bekleyip tekrar deneyin. (429)' })
     }
-    return error.responseText || error.message
+    if (error.status === 502 || error.status === 503 || error.status === 504) {
+      let msg = (error.responseText || '').trim()
+      if (msg.startsWith('<') || msg.includes('<!DOCTYPE') || msg.includes('<html')) {
+        msg = t('arac.iettServerDownDefault', { defaultValue: 'İETT sunucusunda geçici bir arıza/kesinti yaşanıyor.' })
+      }
+      return t('arac.iettServerDown', { msg: msg || t('arac.iettServerDownDefault'), defaultValue: `İETT kaynaklı hata: "${msg}"` })
+    }
+    const raw = (error.responseText || error.message || '').trim()
+    if (raw.startsWith('<') || raw.includes('<!DOCTYPE') || raw.includes('<html')) {
+      const fallbackMsg = t('arac.iettServerDownDefault', { defaultValue: 'İETT sunucusunda geçici bir arıza/kesinti yaşanıyor.' })
+      return t('arac.iettServerDown', { msg: fallbackMsg, defaultValue: `İETT kaynaklı hata: "${fallbackMsg}"` })
+    }
+    return raw
   }
   if (error instanceof Error) {
     return error.message

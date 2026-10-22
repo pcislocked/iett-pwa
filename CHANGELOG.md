@@ -3,6 +3,14 @@
 All notable changes to iett-pwa are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [0.4.10.1] - 2026-10-22
+### Fixed & Upstream Outage Relay
+- **Dedicated Outage Translation Keys**: Added `arac.iettServerDown` (`"İETT kaynaklı hata: \"{{msg}}\""`) and `arac.iettServerDownDefault` across all locales (`tr`, `en`, `ku`) to explicitly relay İETT server outages without hardcoding UI strings.
+- **Raw HTML Leak Protection**: Sanitized `ApiHttpError` in `client.ts` to automatically extract JSON `detail` fields and prevent raw HTML landing pages (e.g. Cloudflare 502/504) from ever being dumped into UI error toasts.
+- **Relay Upstream Error In Vehicle Overlay**: `AracBusOverlayPage` now clearly identifies upstream 502/503/504 outages as İETT-side issues and prints the parsed server message.
+
+---
+
 ## [0.4.10] - 2026-10-22
 *Minor version bump consolidating all cumulative patch releases (0.4.9 through 0.4.9.7) into a major stability, resilience, and UI performance release.*
 

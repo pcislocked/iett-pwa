@@ -41,11 +41,20 @@ export class ApiHttpError extends Error {
   responseText: string
 
   constructor(path: string, status: number, responseText: string) {
-    super(`API ${path} -> HTTP ${status}: ${responseText}`)
+    let cleanText = responseText
+    try {
+      const parsed = JSON.parse(responseText) as { detail?: string }
+      if (parsed && typeof parsed.detail === 'string') {
+        cleanText = parsed.detail
+      }
+    } catch {
+      // not JSON
+    }
+    super(`API ${path} -> HTTP ${status}: ${cleanText}`)
     this.name = 'ApiHttpError'
     this.status = status
     this.path = path
-    this.responseText = responseText
+    this.responseText = cleanText
   }
 }
 

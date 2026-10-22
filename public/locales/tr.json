@@ -351,7 +351,9 @@
     "results": "Sonuçlar",
     "live": "Canlı",
     "remote": "Uzak",
-    "captchaFailed": "Captcha doğrulanamadı: {{error}}"
+    "captchaFailed": "Captcha doğrulanamadı: {{error}}",
+    "iettServerDown": "İETT kaynaklı hata: \"{{msg}}\"",
+    "iettServerDownDefault": "İETT sunucusunda geçici bir arıza/kesinti yaşanıyor."
   },
   "favorites": {
     "open": "Aç",

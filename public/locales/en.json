@@ -351,7 +351,9 @@
     "results": "Results",
     "live": "Live",
     "remote": "Remote",
-    "captchaFailed": "Captcha verification failed: {{error}}"
+    "captchaFailed": "Captcha verification failed: {{error}}",
+    "iettServerDown": "IETT-side error: \"{{msg}}\"",
+    "iettServerDownDefault": "A temporary outage occurred on the IETT server."
   },
   "favorites": {
     "open": "Open",
