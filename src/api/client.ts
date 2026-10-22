@@ -339,6 +339,16 @@ export interface TrafficSegment {
   timestamp: string
 }
 
+export interface ServerTimeResponse {
+  status: string
+  iso: string
+  time: string
+  date?: string
+  timestamp: number
+  timezone: string
+  source?: string
+}
+
 export type FleetRefreshResponse =
   | { status: 'queued' }
   | { status: 'cooldown'; retry_after_seconds: number }
@@ -444,5 +454,8 @@ export const api = {
     global: (init?: RequestInit) => get<GlobalNotice[]>('/v1/announcements/global', init),
     official: (page: number = 0, init?: RequestInit) =>
       get<OfficialAnnouncementsResponse>(`/v1/announcements/official?page=${page}`, init),
-  }
+  },
+  system: {
+    time: (init?: RequestInit) => get<ServerTimeResponse>('/v1/time', init),
+  },
 }

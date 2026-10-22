@@ -200,7 +200,7 @@ export default function Home() {
   useEffect(() => { setRecents(getRecent()) }, [])
 
   // ── Nearest stops (via LocationManager) ───────────────────────────────────
-  const { location, loading: gpsLoading } = useLocationManager()
+  const { location, loading: gpsLoading, requestLocation } = useLocationManager()
   const [nearbyStops, setNearbyStops] = useState<NearbyStop[]>([])
   const [apiLoading, setApiLoading] = useState(false)
   const [apiError, setApiError] = useState<string | null>(null)
@@ -606,8 +606,14 @@ export default function Home() {
 
       {prefs.gpsConsent === 'pending' && (
         <LocationConsentModal
-          onConfirm={() => setGpsConsent('granted')}
-          onDismiss={() => setGpsConsent('denied')}
+          onConfirm={() => {
+            setGpsConsent('granted')
+            requestLocation()
+          }}
+          onDismiss={() => {
+            setGpsConsent('denied')
+            requestLocation()
+          }}
         />
       )}
       </div>

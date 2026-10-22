@@ -1,9 +1,10 @@
-import { useEffect, useRef, useMemo } from 'react'
+import { useEffect, useRef, useMemo, useState, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { motion } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
 import { formatGpsTimestamp } from '@/utils/dateUtils'
 import { useNowTicker } from '@/hooks/useNowTicker'
+import { api } from '@/api/client'
 
 export interface TimestampInfoModalProps {
   onClose: () => void
@@ -32,6 +33,49 @@ export default function TimestampInfoModal({
   const modalRef = useRef<HTMLDivElement>(null)
   const btnRef = useRef<HTMLButtonElement>(null)
   const nowMs = useNowTicker(1000)
+
+  const [initialServerData, setInitialServerData] = useState<{
+    serverTimeStr: string
+    serverTimestampMs: number
+    fetchedAtClientMs: number
+  } | null>(null)
+  const [serverTimeLoading, setServerTimeLoading] = useState(true)
+
+  const fetchServerClock = useCallback(() => {
+    setServerTimeLoading(true)
+    api.system
+      ?.time()
+      .then((res) => {
+        const parts = res.time.split(':').map(Number)
+        const baseDate = new Date()
+        baseDate.setHours(parts[0] || 0, parts[1] || 0, parts[2] || 0, 0)
+        setInitialServerData({
+          serverTimeStr: res.time,
+          serverTimestampMs: baseDate.getTime(),
+          fetchedAtClientMs: Date.now(),
+        })
+      })
+      .catch((err) => {
+        console.warn('Failed to fetch server time:', err)
+      })
+      .finally(() => {
+        setServerTimeLoading(false)
+      })
+  }, [])
+
+  useEffect(() => {
+    fetchServerClock()
+  }, [fetchServerClock])
+
+  const liveServerTimeFormatted = useMemo(() => {
+    if (!initialServerData) {
+      return serverTimeLoading ? '...' : '--:--:--'
+    }
+    const elapsedMs = Math.max(0, nowMs - initialServerData.fetchedAtClientMs)
+    const currentServerDate = new Date(initialServerData.serverTimestampMs + elapsedMs)
+    const pad = (n: number) => n.toString().padStart(2, '0')
+    return `${pad(currentServerDate.getHours())}:${pad(currentServerDate.getMinutes())}:${pad(currentServerDate.getSeconds())}`
+  }, [initialServerData, serverTimeLoading, nowMs])
 
   const currentTimeFormatted = useMemo(() => {
     const d = new Date(nowMs)
@@ -159,8 +203,8 @@ export default function TimestampInfoModal({
         </div>
 
         <div tabIndex={0} className="text-xs text-text-secondary space-y-3 mb-6 overflow-y-auto max-h-[40vh]">
-          {/* Live current device clock */}
-          <div className="p-3 bg-brand-500/10 rounded-xl border border-brand-500/20 space-y-1">
+          {/* Live current device clock & Server clock */}
+          <div className="p-3 bg-brand-500/10 rounded-xl border border-brand-500/20 space-y-2">
             <div className="flex items-center justify-between font-semibold text-text-primary">
               <span className="flex items-center gap-1.5">
                 <span>🕒</span>
@@ -168,8 +212,17 @@ export default function TimestampInfoModal({
               </span>
               <span className="font-mono text-brand-400 font-bold text-sm tracking-wider">{currentTimeFormatted}</span>
             </div>
-            <p className="text-[11px] text-text-muted leading-relaxed">
-              {t('stops.nowTimeDesc')}
+
+            <div className="flex items-center justify-between font-semibold text-text-primary pt-1.5 border-t border-brand-500/20">
+              <span className="flex items-center gap-1.5">
+                <span>☁️</span>
+                <span>{t('stops.cardServerNowTitle', { defaultValue: 'Sunucu Saati' })}</span>
+              </span>
+              <span className="font-mono text-brand-400 font-bold text-sm tracking-wider">{liveServerTimeFormatted}</span>
+            </div>
+
+            <p className="text-[11px] text-text-muted leading-relaxed pt-0.5">
+              {t('stops.serverNtpDesc', { defaultValue: "Sunucularımızda zaman senkronizasyonu için Tübitak Ulusal Metroloji Enstitüsü'nün zaman sunucusu kullanılmaktadır." })}
             </p>
           </div>
 
@@ -217,6 +270,7 @@ export default function TimestampInfoModal({
           <button
             ref={btnRef}
             onClick={() => {
+              fetchServerClock()
               onClose()
               onForceRefresh()
             }}

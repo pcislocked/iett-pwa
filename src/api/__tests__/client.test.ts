@@ -375,3 +375,19 @@ describe('api.arac.detail', () => {
     expect(headers['X-Arac-Session-Key']).toBe('skey')
   })
 })
+
+describe('api.system.time', () => {
+  it('calls /v1/time and returns server time payload', async () => {
+    const payload = {
+      status: 'ok',
+      iso: '2026-10-22T22:00:00Z',
+      time: '01:00:00',
+      timestamp: 1729634400,
+      timezone: 'Europe/Istanbul',
+      source: 'TÜBİTAK UME NTP',
+    }
+    mockFetch(payload)
+    const result = await api.system.time()
+    expect(result).toEqual(payload)
+  })
+})

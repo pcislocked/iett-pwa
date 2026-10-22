@@ -3,6 +3,20 @@
 All notable changes to iett-pwa are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [0.4.10.3] - 2026-10-22
+### Fixed
+- **Location Consent Denied Stuck Bug Resolved:** Fixed state synchronization across multiple `useUserPrefs` hook instances using an in-memory listener registry (`prefsListeners`) and storage event listener. When location permission is denied and the mock location dialog is dismissed, `Home` and `useLocationManager` immediately transition to the mock location and fetch nearby stops without getting permanently stuck on "Konum alınıyor...".
+
+### Changed
+- **Version Synchronized:** Bumped version to `0.4.10.3` in sync with `iett-middle` (NTP server time endpoint `/v1/time`, distance-ordered nearby stops truncation fix).
+- **Default Theme Changed to AMOLED:** New installations and users without a stored theme preference now default to the pitch-black, battery-saving AMOLED theme across `index.html` inline script, `useTheme.ts`, and backup export defaults.
+- **Default Mock Location Updated to Üsküdar (Salacak):** Updated `DEFAULT_MOCK_LOCATION` coordinates from Sultanahmet (`[41.0082, 28.9784]`) to Üsküdar Salacak (`[41.019553, 29.00823]`, Polat Alemdar's bench).
+
+### Added
+- **Live TÜBİTAK UME NTP Server Clock in Timestamp Modal:** Added live server clock inside `TimestampInfoModal` right below the device clock in the primary status card. Fetches initial server time from `api.system.time()` (`/v1/time`) without polling every second, ticks locally via `useNowTicker`, re-fetches on force refresh, and displays time synchronization attribution to TÜBİTAK Ulusal Metroloji Enstitüsü (UME) across all locales (`tr`, `en`, `ku`).
+
+---
+
 ## [0.4.10.2] - 2026-10-22
 ### Changed & Synchronized
 - **Version Synchronized**: Bumped version to `0.4.10.2` in sync with `iett-middle` (adaptive SOAP proxy pool, opportunistic background health checks, and resilient upstream routing).

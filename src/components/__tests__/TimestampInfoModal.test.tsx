@@ -9,7 +9,9 @@ vi.mock('react-i18next', () => ({
       const dict: Record<string, string> = {
         'stops.timestamps': 'Zaman Damgaları',
         'stops.cardNowTitle': 'Şu An (Cihaz Saati)',
+        'stops.cardServerNowTitle': 'Sunucu Saati',
         'stops.nowTimeDesc': 'Cihazınızın mevcut yerel saatidir.',
+        'stops.serverNtpDesc': "Sunucularımızda zaman senkronizasyonu için Tübitak Ulusal Metroloji Enstitüsü'nün zaman sunucusu kullanılmaktadır.",
         'stops.cardClientTitle': 'Uygulama',
         'stops.cardServerTitle': 'Sunucu Önbelleği',
         'stops.cardGpsTitle': 'Canlı GPS',
@@ -30,6 +32,21 @@ vi.mock('react-i18next', () => ({
       return dict[key] || key
     },
   }),
+}))
+
+vi.mock('@/api/client', () => ({
+  api: {
+    system: {
+      time: vi.fn().mockResolvedValue({
+        status: 'ok',
+        iso: '2026-10-18T12:00:10.000Z',
+        time: '15:00:10',
+        timestamp: 1729252810,
+        timezone: 'Europe/Istanbul',
+        source: 'TÜBİTAK UME NTP',
+      }),
+    },
+  },
 }))
 
 describe('TimestampInfoModal', () => {
@@ -66,6 +83,8 @@ describe('TimestampInfoModal', () => {
 
     expect(screen.getByText('Zaman Damgaları')).toBeInTheDocument()
     expect(screen.getByText('Şu An (Cihaz Saati)')).toBeInTheDocument()
+    expect(screen.getByText('Sunucu Saati')).toBeInTheDocument()
+    expect(screen.getByText(/Tübitak Ulusal Metroloji Enstitüsü/)).toBeInTheDocument()
 
     // Assert initial time contains seconds
     const initialNowText = screen.getByText('Şu An (Cihaz Saati)').closest('div')?.querySelector('.font-mono')?.textContent

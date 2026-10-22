@@ -8,12 +8,14 @@ describe('useTheme hook', () => {
     document.documentElement.removeAttribute('data-theme')
   })
 
-  it('initializes with default dark theme or stored theme', () => {
-    localStorage.setItem('iett-pwa-theme', 'amoled')
+  it('initializes with default amoled theme or stored theme', () => {
     expect(getInitialTheme()).toBe('amoled')
 
+    localStorage.setItem('iett-pwa-theme', 'dark')
+    expect(getInitialTheme()).toBe('dark')
+
     const { result } = renderHook(() => useTheme())
-    expect(result.current.theme).toBe('amoled')
+    expect(result.current.theme).toBe('dark')
   })
 
   it('applies and switches themes reactively', () => {

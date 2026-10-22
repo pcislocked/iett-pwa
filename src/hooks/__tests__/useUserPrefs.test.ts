@@ -277,4 +277,21 @@ describe('useUserPrefs', () => {
       expect(localStorage.getItem('iett_satellite')).toBe('false')
     })
   })
+
+  describe('cross-hook instance synchronization', () => {
+    it('synchronizes preferences across multiple hook instances', () => {
+      const hookA = renderHook(() => useUserPrefs())
+      const hookB = renderHook(() => useUserPrefs())
+
+      expect(hookA.result.current.prefs.gpsConsent).toBe('pending')
+      expect(hookB.result.current.prefs.gpsConsent).toBe('pending')
+
+      act(() => {
+        hookA.result.current.setGpsConsent('denied')
+      })
+
+      expect(hookA.result.current.prefs.gpsConsent).toBe('denied')
+      expect(hookB.result.current.prefs.gpsConsent).toBe('denied')
+    })
+  })
 })

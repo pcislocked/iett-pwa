@@ -133,4 +133,20 @@ describe('useLocationManager Hook', () => {
     expect(result.current.location).toEqual(DEFAULT_MOCK_LOCATION)
     expect(result.current.loading).toBe(false)
   })
+
+  it('transitions immediately to DEFAULT_MOCK_LOCATION when gpsConsent is set to denied', async () => {
+    const { useUserPrefs } = await import('../useUserPrefs')
+    const prefsHook = renderHook(() => useUserPrefs())
+    const locHook = renderHook(() => useLocationManager())
+
+    expect(locHook.result.current.location).toBeNull()
+    expect(locHook.result.current.loading).toBe(true)
+
+    act(() => {
+      prefsHook.result.current.setGpsConsent('denied')
+    })
+
+    expect(locHook.result.current.location).toEqual(DEFAULT_MOCK_LOCATION)
+    expect(locHook.result.current.loading).toBe(false)
+  })
 })

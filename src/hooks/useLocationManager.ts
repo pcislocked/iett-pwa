@@ -1,13 +1,15 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useUserPrefs } from '@/hooks/useUserPrefs'
 
-export const DEFAULT_MOCK_LOCATION: [number, number] = [41.0082, 28.9784] // Sultanahmet
+export const DEFAULT_MOCK_LOCATION: [number, number] = [41.019553, 29.00823] // Üsküdar (Salacak / Polat Alemdar'ın Bankı)
 
 export function useLocationManager() {
   const { prefs, setGpsConsent } = useUserPrefs()
-  const [location, setLocation] = useState<[number, number] | null>(null)
+  const [location, setLocation] = useState<[number, number] | null>(() => {
+    return prefs.gpsConsent === 'denied' ? (prefs.mockLocation ?? DEFAULT_MOCK_LOCATION) : null
+  })
   // loading is true while we don't have a location AND we are either pending consent or actively requesting GPS
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(() => prefs.gpsConsent !== 'denied')
   const isRequesting = useRef(false)
   const watchdogRef = useRef<number | null>(null)
   const isMountedRef = useRef(true)

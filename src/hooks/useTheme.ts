@@ -17,7 +17,7 @@ export function getInitialTheme(): Theme {
     if (saved === 'dark' || saved === 'amoled' || saved === 'light') return saved
   } catch { /* storage blocked */ }
   if (typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) return 'light'
-  return 'dark'
+  return 'amoled'
 }
 
 export function useTheme() {

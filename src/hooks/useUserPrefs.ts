@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { applyTheme, type Theme } from '@/hooks/useTheme'
 import i18n from '@/i18n'
 import { loadSettings, saveSettings, type Settings } from '@/utils/settings'
@@ -165,13 +165,47 @@ function persist(p: UserPrefs) {
 // Hook
 // ---------------------------------------------------------------------------
 
+// Active listeners for cross-hook synchronization within the same window
+const prefsListeners = new Set<(p: UserPrefs) => void>()
+
+function broadcastPrefs(p: UserPrefs) {
+  prefsListeners.forEach((listener) => {
+    try {
+      listener(p)
+    } catch {
+      // ignore
+    }
+  })
+}
+
 export function useUserPrefs() {
   const [prefs, setPrefs] = useState<UserPrefs>(load)
+
+  useEffect(() => {
+    prefsListeners.add(setPrefs)
+    return () => {
+      prefsListeners.delete(setPrefs)
+    }
+  }, [])
+
+  useEffect(() => {
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === KEY && e.newValue) {
+        try {
+          const loaded = coercePrefs(JSON.parse(e.newValue))
+          setPrefs(loaded)
+        } catch { /* storage format mismatch */ }
+      }
+    }
+    window.addEventListener('storage', handleStorage)
+    return () => window.removeEventListener('storage', handleStorage)
+  }, [])
 
   function patch(fn: (p: UserPrefs) => UserPrefs) {
     setPrefs((prev) => {
       const next = fn(prev)
       persist(next)
+      broadcastPrefs(next)
       return next
     })
   }
@@ -312,9 +346,9 @@ export function useUserPrefs() {
   // ── Unified Export / Import (Schema v2 with v1 Backward Compatibility) ───
 
   const exportAllData = useCallback((backendVersion?: string | null) => {
-    const appVersion = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '0.4.10.2'
+    const appVersion = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '0.4.10.3'
     const recents = getRecent()
-    const theme = (typeof localStorage !== 'undefined' && localStorage.getItem('iett-pwa-theme')) || 'dark'
+    const theme = (typeof localStorage !== 'undefined' && localStorage.getItem('iett-pwa-theme')) || 'amoled'
     const language = (typeof localStorage !== 'undefined' && localStorage.getItem('iett-pwa-lang')) || i18n.language || 'tr'
     const satellite = typeof localStorage !== 'undefined' && (localStorage.getItem('map-satellite') === '1' || localStorage.getItem('iett_satellite') === 'true')
     const settings = loadSettings()
@@ -369,7 +403,7 @@ export function useUserPrefs() {
       }
 
       const parsed = JSON.parse(rawText) as Record<string, unknown>
-      const currentAppVersion = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '0.4.10.2'
+      const currentAppVersion = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '0.4.10.3'
 
       // Detect Schema v2
       if (parsed._schemaVersion === 2 && parsed._app === 'iett-pwa') {
