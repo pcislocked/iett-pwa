@@ -3,6 +3,44 @@
 All notable changes to iett-pwa are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [0.4.10] - 2026-10-22
+*Minor version bump consolidating all cumulative patch releases (0.4.9 through 0.4.9.7) into a major stability, resilience, and UI performance release.*
+
+### Complete Changelog Since 0.4.9
+
+#### 1. Dynamic Plate Synchronization & Resilience (0.4.9.7)
+- **Version Synchronized**: Bumped version to `0.4.9.7` in sync with `iett-middle` (dynamic NTCAPI plate enrichment and vehicle cache resilience). Approaching buses now reliably show canonical license plates (`34 TN 1904`) alongside door numbers.
+
+#### 2. Fail-Fast Upstream Timeouts & Route Map Rendering (0.4.9.6)
+- **Fast Stop & Route Rendering**: In sync with `iett-middle` fail-fast SOAP timeouts (2.5s) and persistent route-stop caching, route maps and stop pages render immediately without hanging on upstream outages.
+
+#### 3. Client Protection & Security Headers (0.4.9.5)
+- **Client Suggestion Debounce**: Added 250ms debounce and `AbortController` cancellation to remote vehicle suggestions in `AracQueryPage` to avoid spamming the backend search endpoint during fast typing.
+- **Nginx Security Headers**: Added production security headers (`X-Content-Type-Options: nosniff`, `X-Frame-Options: SAMEORIGIN`, `Referrer-Policy: strict-origin-when-cross-origin`, and `Permissions-Policy: camera=(), microphone=(), payment=()`) across server and cached location blocks.
+
+#### 4. Satellite Map Styling & Dynamic Tile Remounting (0.4.9.4)
+- **Satellite Map Tile Darkening Fix**: Fixed dark theme tile darkening inadvertently affecting the satellite view; scoped base map tile filters to `.leaflet-tiles-base`, removed container-level pane filter, and applied `contrast(1.05)` strictly to the satellite layer with no brightness reduction.
+- **TileLayer Dynamic Re-mounting**: Added `key={currentUrl}` across all map-rendering pages (`StopPage`, `RoutePage`, `AracBusOverlayPage`, `NearbyPage`, `SettingsPage`) to ensure Leaflet properly cleans up and updates tile layer CSS classes on layer switches.
+
+#### 5. CI/CD Hardening, Quality & Test Guardrails (0.4.9.3)
+- **CI/CD Build Verification**: Added `npm run build` verification to `.github/workflows/ci.yml` and scoped concurrency with `cancel-in-progress: true`.
+- **Docker Multi-Arch Optimization**: Scoped Docker cancellation to `!startsWith(github.ref, 'refs/tags/')` so production tag releases are never aborted in flight; upgraded build caching from `mode=min` to `mode=max` across `amd64` and `arm64`.
+- **i18n & Locales Key Parity**: Protected `i18n.init` against duplicate initialization during HMR; added browser runtime safety against undeclared Node `process` globals; achieved 100% key parity between English and Turkish locale catalogs (11 missing keys added).
+- **Test Infrastructure & Coverage**: Expanded test suite to 50 test files and 277 passing tests (+30 new tests) with leak-free test suites for `AnnouncementsPage`, `AracQueryPage`, `ShareTargetPage` (100% covered), and `useLocationManager` (95.7% covered).
+
+#### 6. Offline Satellite Caching & Dialog Accessibility (0.4.9.2)
+- **Offline Esri Satellite Tile Caching**: Configured Workbox caching in `vite.config.ts` for Esri ArcGIS satellite tiles (`/ArcGIS/rest/services/World_Imagery/MapServer/tile/`) with opaque response caching support (`cacheableResponse: { statuses: [0, 200] }`), enabling offline map viewing.
+- **Backup & Settings Satellite Sync**: Synced satellite map preference across localStorage (`map-satellite` and `iett_satellite`) and included it in the `BackupDataV2` export/import schema.
+- **Dialog Accessibility (WCAG 2.1 AA)**: Upgraded `RouteInfoModal` and `StopInfoModal` with focus traps, escape key listeners, `aria-modal="true"`, accessible close buttons with localized `aria-label`s, and contrast-compliant borders.
+- **Unmounted Lifecycle Safety Guards**: Added `AbortController` and component mount guards across `useLocationManager`, `NearbyPage`, `AracQueryPage`, and `StopPage` to prevent memory leaks and unmounted `setState` warnings.
+
+#### 7. Core Capabilities Introduced in 0.4.9
+- **Official IETT Announcements UI**: Added official announcement cards with pagination, badge styling, and fallback handling.
+- **Canonical Turkish Plate Formatting**: Enhanced vehicle search and detail overlays with formatted Turkish license plates (`34 HO 1900`).
+- **ARAC Freshness & Server Time Indicator**: Displayed live server timestamp and cache freshness badge in vehicle query overlays.
+
+---
+
 ## [0.4.9.7] - 2026-10-22
 ### Version Sync
 - **Version Synchronized**: Bumped version to `0.4.9.7` in sync with `iett-middle` (dynamic NTCAPI plate enrichment and vehicle cache resilience).
