@@ -3,6 +3,14 @@
 All notable changes to iett-pwa are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [0.4.9.5] - 2026-10-22
+### Security & Performance
+- **Nginx Security Headers**: Added baseline security headers (`X-Content-Type-Options: nosniff`, `X-Frame-Options: SAMEORIGIN`, `Referrer-Policy: strict-origin-when-cross-origin`, and `Permissions-Policy: camera=(), microphone=(), payment=()`) across server and cached location blocks.
+- **Client Suggestion Debounce**: Added 250ms debounce and AbortController request cancellation to remote vehicle suggestions in `AracQueryPage` to avoid spamming the backend search endpoint.
+- **Version Synchronized**: Bumped version to `0.4.9.5` in sync with `iett-middle`.
+
+---
+
 ## [0.4.9.4] - 2026-10-19
 ### Fixed
 - **Satellite Map Styling**: Fixed dark theme tile darkening inadvertently affecting the satellite view; scoped base map tile filters to `.leaflet-tiles-base`, removed container-level pane filter, and applied `contrast(1.05)` strictly to the satellite layer with no brightness reduction.

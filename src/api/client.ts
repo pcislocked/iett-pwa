@@ -86,6 +86,9 @@ async function requestFull<T>(path: string, init?: RequestInit): Promise<{ data:
       const res = await fetch(url, requestInit)
       if (!res.ok) {
         const text = await res.text().catch(() => '')
+        if (res.status === 429) {
+          console.warn('[RateLimit] HTTP 429 Too Many Requests on ' + path + ':', text)
+        }
         throw new ApiHttpError(path, res.status, text)
       }
       return { data: await res.json() as T, headers: res.headers }

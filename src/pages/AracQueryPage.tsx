@@ -36,18 +36,21 @@ export default function AracQueryPage() {
     if (results.length > 0) {
       setSuggestions(results)
     } else {
-      // Fallback to remote if no local matches
+      // Fallback to remote if no local matches (debounced to avoid rate limit / spam)
       let active = true
       const controller = new AbortController()
-      api.arac.suggest(term, { signal: controller.signal }).then(remote => {
-        if (!active) return
-        setSuggestions(remote.map(r => ({ kapino: r.doorNumber, plate: r.plate, source: 'remote' })))
-      }).catch(e => {
-        if (e instanceof Error && e.name === 'AbortError') return
-        console.error(e)
-      })
+      const timer = setTimeout(() => {
+        api.arac.suggest(term, { signal: controller.signal }).then(remote => {
+          if (!active) return
+          setSuggestions(remote.map(r => ({ kapino: r.doorNumber, plate: r.plate, source: 'remote' })))
+        }).catch(e => {
+          if (e instanceof Error && e.name === 'AbortError') return
+          console.error(e)
+        })
+      }, 250)
       return () => {
         active = false
+        clearTimeout(timer)
         controller.abort()
       }
     }
