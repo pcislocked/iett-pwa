@@ -3,6 +3,12 @@
 All notable changes to iett-pwa are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [0.4.10.2] - 2026-10-22
+### Changed & Synchronized
+- **Version Synchronized**: Bumped version to `0.4.10.2` in sync with `iett-middle` (adaptive SOAP proxy pool, opportunistic background health checks, and resilient upstream routing).
+
+---
+
 ## [0.4.10.1] - 2026-10-22
 ### Fixed & Upstream Outage Relay
 - **Dedicated Outage Translation Keys**: Added `arac.iettServerDown` (`"İETT kaynaklı hata: \"{{msg}}\""`) and `arac.iettServerDownDefault` across all locales (`tr`, `en`, `ku`) to explicitly relay İETT server outages without hardcoding UI strings.
