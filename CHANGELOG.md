@@ -3,6 +3,12 @@
 All notable changes to iett-pwa are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [0.4.9.7] - 2026-10-22
+### Version Sync
+- **Version Synchronized**: Bumped version to `0.4.9.7` in sync with `iett-middle` (dynamic NTCAPI plate enrichment and vehicle cache resilience).
+
+---
+
 ## [0.4.9.6] - 2026-10-22
 ### Performance & Resilience
 - **Version Synchronized**: Bumped version to `0.4.9.6` in sync with `iett-middle` (resilient SOAP fail-fast connection timeouts and route map caching).
