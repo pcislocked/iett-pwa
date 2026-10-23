@@ -7,6 +7,7 @@ import { useInstallBanner } from '@/hooks/useInstallBanner'
 import Home from '@/pages/Home'
 import { BottomBarContext, useBottomBarState } from '@/hooks/useBottomBar'
 import { MAIN_PATHS } from '@/routes'
+import { syncServerTime } from '@/utils/timeSync'
 
 const SearchPage = lazy(() => import('@/pages/SearchPage'))
 const StopPage = lazy(() => import('@/pages/StopPage'))
@@ -265,6 +266,17 @@ export default function App() {
   useEffect(() => {
     document.documentElement.lang = i18n.language
   }, [i18n.language])
+
+  useEffect(() => {
+    syncServerTime()
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        syncServerTime()
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibility)
+    return () => document.removeEventListener('visibilitychange', handleVisibility)
+  }, [])
 
   useEffect(() => {
     function handleGlobalExternalLinks(e: MouseEvent) {

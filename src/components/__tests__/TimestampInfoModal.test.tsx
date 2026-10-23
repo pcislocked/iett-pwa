@@ -11,7 +11,7 @@ vi.mock('react-i18next', () => ({
         'stops.cardNowTitle': 'Şu An (Cihaz Saati)',
         'stops.cardServerNowTitle': 'Sunucu Saati',
         'stops.nowTimeDesc': 'Cihazınızın mevcut yerel saatidir.',
-        'stops.serverNtpDesc': "Sunucularımızda zaman senkronizasyonu için Tübitak Ulusal Metroloji Enstitüsü'nün zaman sunucusu kullanılmaktadır.",
+        'stops.serverNtpDesc': "Sunucularımızda zaman senkronizasyonu için TÜBİTAK Ulusal Metroloji Enstitüsü'nün zaman sunucusu kullanılmaktadır.",
         'stops.cardClientTitle': 'Uygulama',
         'stops.cardServerTitle': 'Sunucu Önbelleği',
         'stops.cardGpsTitle': 'Canlı GPS',
@@ -61,7 +61,7 @@ describe('TimestampInfoModal', () => {
     vi.useRealTimers()
   })
 
-  it('renders live clock and updates every second alongside relative times', () => {
+  it('renders live clock and updates every second alongside relative times', async () => {
     const onClose = vi.fn()
     const onForceRefresh = vi.fn()
 
@@ -70,28 +70,30 @@ describe('TimestampInfoModal', () => {
     const serverTs = new Date(baseTime - 8000).toISOString()
     const gpsTs = '12:00:02'
 
-    render(
-      <TimestampInfoModal
-        onClose={onClose}
-        onForceRefresh={onForceRefresh}
-        lastUpdated={clientTs}
-        iettUpdatedAt={serverTs}
-        maxGpsTime={gpsTs}
-        timestampMode="relative"
-      />
-    )
+    await act(async () => {
+      render(
+        <TimestampInfoModal
+          onClose={onClose}
+          onForceRefresh={onForceRefresh}
+          lastUpdated={clientTs}
+          iettUpdatedAt={serverTs}
+          maxGpsTime={gpsTs}
+          timestampMode="relative"
+        />
+      )
+    })
 
     expect(screen.getByText('Zaman Damgaları')).toBeInTheDocument()
     expect(screen.getByText('Şu An (Cihaz Saati)')).toBeInTheDocument()
     expect(screen.getByText('Sunucu Saati')).toBeInTheDocument()
-    expect(screen.getByText(/Tübitak Ulusal Metroloji Enstitüsü/)).toBeInTheDocument()
+    expect(screen.getByText(/TÜBİTAK Ulusal Metroloji Enstitüsü/)).toBeInTheDocument()
 
     // Assert initial time contains seconds
     const initialNowText = screen.getByText('Şu An (Cihaz Saati)').closest('div')?.querySelector('.font-mono')?.textContent
     expect(initialNowText).toBeDefined()
 
     // Advance by 1 second
-    act(() => {
+    await act(async () => {
       vi.advanceTimersByTime(1000)
     })
 
@@ -99,25 +101,31 @@ describe('TimestampInfoModal', () => {
     expect(tickedNowText).not.toBe(initialNowText)
   })
 
-  it('handles force refresh and close buttons', () => {
+  it('handles force refresh and close buttons', async () => {
     const onClose = vi.fn()
     const onForceRefresh = vi.fn()
 
-    render(
-      <TimestampInfoModal
-        onClose={onClose}
-        onForceRefresh={onForceRefresh}
-        lastUpdated={null}
-        iettUpdatedAt={null}
-        maxGpsTime={null}
-      />
-    )
+    await act(async () => {
+      render(
+        <TimestampInfoModal
+          onClose={onClose}
+          onForceRefresh={onForceRefresh}
+          lastUpdated={null}
+          iettUpdatedAt={null}
+          maxGpsTime={null}
+        />
+      )
+    })
 
-    fireEvent.click(screen.getByText('Zorla Yenile'))
+    await act(async () => {
+      fireEvent.click(screen.getByText('Zorla Yenile'))
+    })
     expect(onForceRefresh).toHaveBeenCalledTimes(1)
     expect(onClose).toHaveBeenCalledTimes(1)
 
-    fireEvent.click(screen.getByText('Kapat'))
+    await act(async () => {
+      fireEvent.click(screen.getByText('Kapat'))
+    })
     expect(onClose).toHaveBeenCalledTimes(2)
   })
 })

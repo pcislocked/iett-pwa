@@ -3,6 +3,16 @@
 All notable changes to iett-pwa are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [0.4.10.4] - 2026-10-23
+### Fixed
+- **Accurate Sub-Second SNTP Server Clock Synchronization (`timeSync.ts`):** Implemented Simple Network Time Protocol (SNTP) round-trip time (RTT) midpoint algorithm to calculate exact server clock offset. Eliminated millisecond stripping bug (`.setHours(..., 0)`) and network transit lag that caused server clock to artificially drift 1-2 seconds behind client device clock. Added periodic background sync (every 10s while modal is active) and auto-sync on app resume / tab visibility.
+- **TÜBİTAK Casing Standardized:** Capitalized all occurrences of TÜBİTAK across Turkish translations (`public/locales/tr.json`), modals (`TimestampInfoModal.tsx`), and tests.
+
+### Changed
+- **Version Synchronized:** Bumped version to `0.4.10.4` in sync with `iett-middle`.
+
+---
+
 ## [0.4.10.3] - 2026-10-22
 ### Fixed
 - **Location Consent Denied Stuck Bug Resolved:** Fixed state synchronization across multiple `useUserPrefs` hook instances using an in-memory listener registry (`prefsListeners`) and storage event listener. When location permission is denied and the mock location dialog is dismissed, `Home` and `useLocationManager` immediately transition to the mock location and fetch nearby stops without getting permanently stuck on "Konum alınıyor...".

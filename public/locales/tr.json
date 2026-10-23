@@ -72,7 +72,7 @@
     "cardNowTitle": "Şu An (Cihaz Saati)",
     "cardServerNowTitle": "Sunucu Saati",
     "nowTimeDesc": "Cihazınızın mevcut yerel saatidir. Canlı olarak saniyede bir güncellenir.",
-    "serverNtpDesc": "Sunucularımızda zaman senkronizasyonu için Tübitak Ulusal Metroloji Enstitüsü'nün zaman sunucusu kullanılmaktadır.",
+    "serverNtpDesc": "Sunucularımızda zaman senkronizasyonu için TÜBİTAK Ulusal Metroloji Enstitüsü'nün zaman sunucusu kullanılmaktadır.",
     "cardClientTitle": "Uygulama",
     "cardServerTitle": "Sunucu Önbelleği",
     "cardGpsTitle": "Canlı GPS",

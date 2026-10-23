@@ -345,6 +345,7 @@ export interface ServerTimeResponse {
   time: string
   date?: string
   timestamp: number
+  timestamp_ms?: number
   timezone: string
   source?: string
 }

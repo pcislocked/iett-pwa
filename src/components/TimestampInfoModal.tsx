@@ -4,7 +4,7 @@ import { motion } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
 import { formatGpsTimestamp } from '@/utils/dateUtils'
 import { useNowTicker } from '@/hooks/useNowTicker'
-import { api } from '@/api/client'
+import { syncServerTime, getServerOffsetMs } from '@/utils/timeSync'
 
 export interface TimestampInfoModalProps {
   onClose: () => void
@@ -34,48 +34,37 @@ export default function TimestampInfoModal({
   const btnRef = useRef<HTMLButtonElement>(null)
   const nowMs = useNowTicker(1000)
 
-  const [initialServerData, setInitialServerData] = useState<{
-    serverTimeStr: string
-    serverTimestampMs: number
-    fetchedAtClientMs: number
-  } | null>(null)
-  const [serverTimeLoading, setServerTimeLoading] = useState(true)
+  const [serverOffsetMs, setServerOffsetMs] = useState<number | null>(() => getServerOffsetMs())
+  const [serverTimeLoading, setServerTimeLoading] = useState(() => getServerOffsetMs() === null)
 
-  const fetchServerClock = useCallback(() => {
-    setServerTimeLoading(true)
-    api.system
-      ?.time()
-      .then((res) => {
-        const parts = res.time.split(':').map(Number)
-        const baseDate = new Date()
-        baseDate.setHours(parts[0] || 0, parts[1] || 0, parts[2] || 0, 0)
-        setInitialServerData({
-          serverTimeStr: res.time,
-          serverTimestampMs: baseDate.getTime(),
-          fetchedAtClientMs: Date.now(),
-        })
-      })
-      .catch((err) => {
-        console.warn('Failed to fetch server time:', err)
-      })
-      .finally(() => {
-        setServerTimeLoading(false)
-      })
+  const fetchServerClock = useCallback(async () => {
+    try {
+      const offset = await syncServerTime()
+      if (offset !== null) {
+        setServerOffsetMs(offset)
+      }
+    } catch (err) {
+      console.warn('Failed to fetch server time:', err)
+    } finally {
+      setServerTimeLoading(false)
+    }
   }, [])
 
   useEffect(() => {
     fetchServerClock()
+    // Periodic synchronization while modal is open (every 10 seconds)
+    const interval = setInterval(fetchServerClock, 10000)
+    return () => clearInterval(interval)
   }, [fetchServerClock])
 
   const liveServerTimeFormatted = useMemo(() => {
-    if (!initialServerData) {
+    if (serverOffsetMs === null) {
       return serverTimeLoading ? '...' : '--:--:--'
     }
-    const elapsedMs = Math.max(0, nowMs - initialServerData.fetchedAtClientMs)
-    const currentServerDate = new Date(initialServerData.serverTimestampMs + elapsedMs)
+    const currentServerDate = new Date(nowMs + serverOffsetMs)
     const pad = (n: number) => n.toString().padStart(2, '0')
     return `${pad(currentServerDate.getHours())}:${pad(currentServerDate.getMinutes())}:${pad(currentServerDate.getSeconds())}`
-  }, [initialServerData, serverTimeLoading, nowMs])
+  }, [serverOffsetMs, serverTimeLoading, nowMs])
 
   const currentTimeFormatted = useMemo(() => {
     const d = new Date(nowMs)
@@ -222,7 +211,7 @@ export default function TimestampInfoModal({
             </div>
 
             <p className="text-[11px] text-text-muted leading-relaxed pt-0.5">
-              {t('stops.serverNtpDesc', { defaultValue: "Sunucularımızda zaman senkronizasyonu için Tübitak Ulusal Metroloji Enstitüsü'nün zaman sunucusu kullanılmaktadır." })}
+              {t('stops.serverNtpDesc', { defaultValue: "Sunucularımızda zaman senkronizasyonu için TÜBİTAK Ulusal Metroloji Enstitüsü'nün zaman sunucusu kullanılmaktadır." })}
             </p>
           </div>
 
