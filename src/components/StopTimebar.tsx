@@ -2,6 +2,7 @@ import { memo, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { formatGpsTimestamp } from '@/utils/dateUtils'
 import { useNowTicker } from '@/hooks/useNowTicker'
+import { useHorizontalScroll } from '@/hooks/useHorizontalScroll'
 
 export interface StopTimebarProps {
   lastUpdated: Date | null
@@ -10,6 +11,7 @@ export interface StopTimebarProps {
   timestampMode: 'relative' | 'absolute' | 'both'
   timebarFormat: 'standard' | 'compact' | 'emoji'
   showCurrentTime: boolean
+  isKiosk?: boolean
   onShowInfo?: () => void
 }
 
@@ -20,16 +22,32 @@ export const StopTimebar = memo(function StopTimebar({
   timestampMode,
   timebarFormat,
   showCurrentTime,
+  isKiosk,
   onShowInfo,
 }: StopTimebarProps) {
   const { t } = useTranslation()
   const nowMs = useNowTicker(1000)
+  const timebarScrollRef = useHorizontalScroll<HTMLDivElement>()
 
   const currentTimeClock = useMemo(() => {
     const d = new Date(nowMs)
     const pad = (n: number) => n.toString().padStart(2, '0')
     return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
   }, [nowMs])
+
+  const kioskDate = useMemo(() => {
+    const d = new Date(nowMs)
+    const pad = (n: number) => n.toString().padStart(2, '0')
+    return `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()}`
+  }, [nowMs])
+
+  const kioskIettTime = useMemo(() => {
+    if (!iettUpdatedAt) return '--:--:--'
+    const d = new Date(iettUpdatedAt)
+    if (isNaN(d.getTime())) return iettUpdatedAt
+    const pad = (n: number) => n.toString().padStart(2, '0')
+    return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
+  }, [iettUpdatedAt])
 
   const serverTimeDisplay = useMemo(() => {
     if (!iettUpdatedAt) return '--:--:--'
@@ -58,8 +76,23 @@ export const StopTimebar = memo(function StopTimebar({
     return false
   }, [iettUpdatedAt, lastUpdated, nowMs])
 
+  if (isKiosk) {
+    return (
+      <div className="text-xs font-mono text-text-primary flex items-center justify-center gap-2 flex-1 py-1 font-semibold select-none">
+        <span>{kioskDate}</span>
+        <span className="text-text-muted">·</span>
+        <span className="text-brand-400 font-bold">{currentTimeClock}</span>
+        <span className="text-text-muted">·</span>
+        <span>Son Güncelleme: {kioskIettTime}</span>
+      </div>
+    )
+  }
+
   return (
-    <div className="text-[11px] text-text-muted flex items-center gap-2 overflow-x-auto no-scrollbar whitespace-nowrap flex-1 mask-linear-fade">
+    <div
+      ref={timebarScrollRef}
+      className="text-[11px] text-text-muted flex items-center gap-2 overflow-x-auto no-scrollbar whitespace-nowrap flex-1 mask-linear-fade cursor-grab"
+    >
       {showCurrentTime && (
         <span className="shrink-0 inline-flex items-center px-1.5 py-0.5 rounded font-mono font-bold text-[10px] bg-brand-900/40 text-brand-200 border border-brand-500/30">
           🕒 {currentTimeClock}

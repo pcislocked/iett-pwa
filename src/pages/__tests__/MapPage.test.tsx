@@ -16,20 +16,22 @@ vi.mock('react-leaflet', async () => {
     Polyline: () => <div data-testid="polyline" />,
     CircleMarker: () => <div data-testid="circle-marker" />,
     useMap: () => ({ setView: vi.fn(), getBounds: vi.fn(), fitBounds: vi.fn(), addLayer: vi.fn(), removeLayer: vi.fn() }),
-    useMapEvents: () => ({})
+    useMapEvents: () => ({}),
   }
 })
 
 describe('MapPage', () => {
-  it('renders correctly', () => {
+  it('renders correctly and displays zoom in prompt when zoom < 14', () => {
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } })
     render(
       <QueryClientProvider client={queryClient}>
         <MemoryRouter>
           <MapPage />
         </MemoryRouter>
-      </QueryClientProvider>
+      </QueryClientProvider>,
     )
     expect(screen.getByTestId('map-container')).toBeInTheDocument()
+    // At default zoom (11), pill should prompt to zoom in
+    expect(screen.getByText(/Durakları görmek için yakınlaşın/i)).toBeInTheDocument()
   })
 })

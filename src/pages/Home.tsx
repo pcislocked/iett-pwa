@@ -449,7 +449,7 @@ export default function Home() {
               className="text-[11px] metro-tilt"
               style={{ color: 'var(--wp-accent)' }}
             >
-              {t('home.searchAll', { defaultValue: 'Tümünü Ara →' })}
+              {t('home.searchAll', { defaultValue: 'Tüm Aramalar →' })}
             </button>
           </div>
           <div>

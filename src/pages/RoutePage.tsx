@@ -17,6 +17,7 @@ import { useMapTiles } from '@/hooks/useMapTiles'
 import MapTileToggle from '@/components/MapTileToggle'
 import { useUserPrefs } from '@/hooks/useUserPrefs'
 import { triggerHaptic } from '@/utils/haptics'
+import { useHorizontalScroll } from '@/hooks/useHorizontalScroll'
 
 const busIconG = L.divIcon({
   className: '',
@@ -331,6 +332,7 @@ type Tab = 'schedule' | 'map' | 'stops' | 'alerts'
 export default function RoutePage() {
   const { t } = useTranslation()
   const { prefs } = useUserPrefs()
+  const tabScrollRef = useHorizontalScroll<HTMLDivElement>()
   const { hatKodu } = useParams<{ hatKodu: string }>()
   const navigate = useNavigate()
   const [tab, setTab] = useState<Tab>('schedule')
@@ -513,7 +515,7 @@ export default function RoutePage() {
         </div>
 
         {/* Tab bar — Metro flat style */}
-        <div role="tablist" aria-label={t('routes.tabs', 'Sekmeler')} className="max-w-2xl mx-auto px-4 pb-0 flex gap-0 overflow-x-auto no-scrollbar">
+        <div ref={tabScrollRef} role="tablist" aria-label={t('routes.tabs', 'Sekmeler')} className="max-w-2xl mx-auto px-4 pb-0 flex gap-0 overflow-x-auto no-scrollbar cursor-grab">
           {tabs.map(({ id, label, badge }) => (
             <button
               role="tab"

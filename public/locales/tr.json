@@ -171,7 +171,11 @@
     "findMe": "Konumumu Bul",
     "hideFleet": "Filoyu Gizle",
     "noVehicles": "Araç yok",
-    "unifiedSearchPlaceholder": "Hat, durak veya araç ara..."
+    "unifiedSearchPlaceholder": "Hat, durak veya araç ara...",
+    "zoomInToSearchStops": "Durakları görmek için yakınlaşın",
+    "searchStopsHere": "Bu Bölgedeki Durakları Ara",
+    "searchingStops": "Duraklar aranıyor...",
+    "clearAreaStops": "Bölge duraklarını temizle"
   },
   "fleet": {
     "lastRoute": "Son: {{code}}",
@@ -278,7 +282,11 @@
     "waitingPermission": "İzin Bekleniyor...",
     "denyPermission": "İzin Verme",
     "mockLocationTitle": "Sahte Konum Kullanılacak",
-    "mockLocationDesc": "GPS izni vermediğiniz için uygulama varsayılan sahte bir konumla çalışacak. Bu sahte konumu daha sonra Ayarlar menüsünden harita üzerinden değiştirebilirsiniz."
+    "mockLocationDesc": "GPS izni vermediğiniz için uygulama varsayılan sahte bir konumla çalışacak. Bu sahte konumu daha sonra Ayarlar menüsünden harita üzerinden değiştirebilirsiniz.",
+    "resetToGps": "GPS Konumuna Dön",
+    "temporaryLocation": "Tek Seferlik Konum",
+    "closeModal": "Kapat",
+    "selectThisPoint": "Bu Noktayı Seç"
   },
   "search": {
     "placeholder": "Hat kodu, durak adı veya numara...",
@@ -380,7 +388,7 @@
     "retryArrow": "Tekrar dene →",
     "favorites": "Favoriler",
     "recentSearches": "Son Aramalar",
-    "searchAll": "Tümünü Ara →",
+    "searchAll": "Tüm Aramalar →",
     "quickAccess": "Hızlı Erişim",
     "nearbyStopsDesc": "Konuma yakın durakları gör",
     "managePinned": "Sabitlenmiş Durakları Yönet",
