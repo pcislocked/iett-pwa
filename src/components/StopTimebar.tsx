@@ -83,7 +83,7 @@ export const StopTimebar = memo(function StopTimebar({
         <span className="text-text-muted">·</span>
         <span className="text-brand-400 font-bold">{currentTimeClock}</span>
         <span className="text-text-muted">·</span>
-        <span>Son Güncelleme: {kioskIettTime}</span>
+        <span>{t('stop.kioskLastUpdate', { time: kioskIettTime, defaultValue: `Son Güncelleme: ${kioskIettTime}` })}</span>
       </div>
     )
   }

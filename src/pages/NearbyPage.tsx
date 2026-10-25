@@ -165,6 +165,14 @@ function NearbyLocationModal({
   const [picked, setPicked] = useState<[number, number]>([currentLat, currentLon])
   const { currentUrl, currentAttribution, mapClassName, tileClassName } = useMapTiles()
 
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [onClose])
+
   function MapClickHandler() {
     useMapEvents({
       click: (e) => {
@@ -176,13 +184,19 @@ function NearbyLocationModal({
 
   return (
     <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-      <div className="bg-surface-card border border-surface-border rounded-2xl max-w-lg w-full p-4 shadow-2xl flex flex-col gap-3 h-[460px]">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="nearby-modal-title"
+        className="bg-surface-card border border-surface-border rounded-2xl max-w-lg w-full p-4 shadow-2xl flex flex-col gap-3 h-[460px]"
+      >
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-bold text-text-primary">
+          <h2 id="nearby-modal-title" className="text-sm font-bold text-text-primary">
             📍 {t('nearby.pickFromMap', 'Haritadan Konum Seç')}
           </h2>
           <button
             onClick={onClose}
+            aria-label={t('common.close', 'Kapat')}
             className="text-text-muted hover:text-text-primary text-lg font-bold p-1 leading-none"
           >
             &times;

@@ -102,6 +102,11 @@ function GpsMarker({ location }: { location: [number, number] | null }) {
 
 function MapViewportTracker({ onUpdate }: { onUpdate: (zoom: number, center: L.LatLng) => void }) {
   const timerRef = useRef<number | null>(null)
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) window.clearTimeout(timerRef.current)
+    }
+  }, [])
   const map = useMapEvents({
     zoomend: () => {
       if (timerRef.current) window.clearTimeout(timerRef.current)
@@ -180,22 +185,38 @@ export default function MapPage() {
   const [mapZoom, setMapZoom] = useState(11)
   const [areaStops, setAreaStops] = useState<NearbyStop[]>([])
   const [areaStopsLoading, setAreaStopsLoading] = useState(false)
+  const areaAbortRef = useRef<AbortController | null>(null)
+
+  useEffect(() => {
+    return () => {
+      areaAbortRef.current?.abort()
+    }
+  }, [])
 
   const handleSearchAreaStops = useCallback(async () => {
     const map = mapRef.current
     if (!map || mapZoom < 14 || areaStopsLoading) return
+    areaAbortRef.current?.abort()
+    const controller = new AbortController()
+    areaAbortRef.current = controller
+
     setAreaStopsLoading(true)
     try {
       const center = map.getCenter()
       const bounds = map.getBounds()
       const viewportRadius = Math.round(center.distanceTo(bounds.getNorthEast()))
       const radius = Math.min(2500, Math.max(400, viewportRadius))
-      const stops = await api.stops.nearby(center.lat, center.lng, 1000, radius)
-      setAreaStops(stops)
-    } catch (err) {
+      const stops = await api.stops.nearby(center.lat, center.lng, 1000, radius, { signal: controller.signal })
+      if (!controller.signal.aborted) {
+        setAreaStops(stops)
+      }
+    } catch (err: unknown) {
+      if (err instanceof Error && err.name === 'AbortError') return
       console.error('Failed to fetch area stops', err)
     } finally {
-      setAreaStopsLoading(false)
+      if (!controller.signal.aborted) {
+        setAreaStopsLoading(false)
+      }
     }
   }, [mapZoom, areaStopsLoading])
 
@@ -357,7 +378,7 @@ export default function MapPage() {
       {/* ── Area Stop Search Floating Pill ── */}
       <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[1000] flex items-center gap-1.5 pointer-events-none">
         {mapZoom < 14 ? (
-          <div className="pointer-events-auto opacity-80 bg-surface-card/95 backdrop-blur text-text-muted border border-surface-border cursor-not-allowed px-4 py-2 rounded-full text-xs font-medium shadow-lg flex items-center gap-1.5 select-none">
+          <div role="status" className="pointer-events-auto opacity-80 bg-surface-card/95 backdrop-blur text-text-muted border border-surface-border cursor-not-allowed px-4 py-2 rounded-full text-xs font-medium shadow-lg flex items-center gap-1.5 select-none">
             <span>🔍</span>
             <span>{t('map.zoomInToSearchStops', 'Durakları görmek için yakınlaşın')}</span>
           </div>
@@ -385,6 +406,7 @@ export default function MapPage() {
           <button
             onClick={() => setAreaStops([])}
             title={t('map.clearAreaStops', 'Bölge duraklarını temizle')}
+            aria-label={t('map.clearAreaStops', 'Bölge duraklarını temizle')}
             className="pointer-events-auto bg-surface-card hover:bg-surface-muted active:scale-90 text-text-secondary w-8 h-8 rounded-full border border-surface-border shadow-lg flex items-center justify-center text-sm font-bold transition-all cursor-pointer"
           >
             &times;
