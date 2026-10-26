@@ -189,4 +189,36 @@ describe('StopPage Announcements', () => {
     const routeCode = screen.getByText('500T')
     expect(routeCode.closest('a')).toBeNull()
   })
+
+  it('renders sliding announcement card in kiosk mode with counter', async () => {
+    vi.mocked(api.stops.detail).mockResolvedValue({
+      dcode: '1234',
+      name: 'Kiosk Test Stop',
+      latitude: 41,
+      longitude: 29,
+    })
+    vi.mocked(api.stops.arrivals).mockResolvedValue({
+      data: [createMockArrival({ route_code: '500T', destination: 'Cevizlibağ' })],
+      headers: new Headers(),
+    })
+    vi.mocked(api.stops.announcements).mockResolvedValue([
+      { type: 'Duyuru', updated_at: '2026-10-26', message: '500T detour active', route_code: '500T', route_name: '' },
+      { type: 'Bilgi', updated_at: '2026-10-26', message: 'Winter schedule in effect', route_code: 'GENEL', route_name: '' },
+    ])
+
+    render(
+      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+        <MemoryRouter initialEntries={['/stops/1234?kiosk=1']}>
+          <Routes>
+            <Route path="/stops/:dcode" element={<StopPage />} />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>,
+    )
+
+    await waitFor(() => {
+      expect(screen.getByText(/Duyuru \(1\/2\)/i)).toBeInTheDocument()
+      expect(screen.getByText(/500T detour active/i)).toBeInTheDocument()
+    })
+  })
 })

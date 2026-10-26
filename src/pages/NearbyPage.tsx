@@ -163,6 +163,12 @@ function NearbyLocationModal({
 }) {
   const { t } = useTranslation()
   const [picked, setPicked] = useState<[number, number]>([currentLat, currentLon])
+  const pickedIcon = useMemo(() => L.divIcon({
+    className: '',
+    html: '<div style="background:#ef4444;border-radius:50%;width:20px;height:20px;border:3px solid #ffffff;box-shadow:0 2px 6px rgba(0,0,0,0.5)"></div>',
+    iconSize: [20, 20],
+    iconAnchor: [10, 10],
+  }), [])
   const { currentUrl, currentAttribution, mapClassName, tileClassName } = useMapTiles()
 
   useEffect(() => {
@@ -227,7 +233,7 @@ function NearbyLocationModal({
               updateWhenZooming={false}
             />
             <MapClickHandler />
-            <Marker position={picked} />
+            <Marker position={picked} icon={pickedIcon} />
           </MapContainer>
         </div>
 

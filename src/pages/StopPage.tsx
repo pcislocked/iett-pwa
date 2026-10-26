@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { MapContainer, TileLayer, CircleMarker, Popup, Marker, Polyline, useMap } from 'react-leaflet'
+import { MapContainer, TileLayer, Popup, Marker, Polyline, useMap } from 'react-leaflet'
 import * as L from 'leaflet'
 import { motion, AnimatePresence, useMotionValue, useTransform } from 'framer-motion'
 import { useArrivals } from '@/hooks/useArrivals'
@@ -555,6 +555,7 @@ export default function StopPage() {
   const navigate = useNavigate()
   const [activeRoutes, setActiveRoutes] = useState<Set<string>>(new Set())
   const [showAnnouncements, setShowAnnouncements] = useState(false)
+  const [announcementIndex, setAnnouncementIndex] = useState(0)
   const [selectedArrival, setSelectedArrival] = useState<Arrival | null>(null)
   const [activeTab, setActiveTab] = useState<'gelis' | 'hatlar' | 'bilgi'>('gelis')
   const [showInfo, setShowInfo] = useState(false)
@@ -785,6 +786,14 @@ export default function StopPage() {
     return m
   }, [arrivalRouteOrder, routes, orderedForColors])
 
+  // Official IETT bus stop marker icon (white 'D' on blue circle with white border and shadow)
+  const stopSignIcon = useMemo(() => L.divIcon({
+    className: '',
+    html: '<div style="display:flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#0284c7;color:#ffffff;font-size:12px;font-weight:800;font-family:system-ui,-apple-system,sans-serif;border:2px solid #ffffff;box-shadow:0 2px 5px rgba(0,0,0,0.45);line-height:1;user-select:none;">D</div>',
+    iconSize: [22, 22],
+    iconAnchor: [11, 11],
+  }), [])
+
   const { data: polledAnnouncements, isError: isAnnsError, isLoading: isAnnsLoading } = useQuery<RouteAnnouncement[]>({
     queryKey: ['stopAnnouncements', dcode],
     queryFn: async ({ signal }) => {
@@ -821,6 +830,22 @@ export default function StopPage() {
   }, [stopAnnouncements, activeRoutes])
 
   const hiddenAnnouncementsCount = stopAnnouncements.length - filteredAnnouncements.length
+
+  // Auto-advance sliding announcement card every 15s
+  useEffect(() => {
+    if (filteredAnnouncements.length <= 1) return
+    const timer = setInterval(() => {
+      setAnnouncementIndex((prev) => (prev + 1) % filteredAnnouncements.length)
+    }, 15000)
+    return () => clearInterval(timer)
+  }, [filteredAnnouncements.length])
+
+  // Reset index if filtered list shrinks below current index
+  useEffect(() => {
+    if (announcementIndex >= filteredAnnouncements.length && filteredAnnouncements.length > 0) {
+      setAnnouncementIndex(0)
+    }
+  }, [filteredAnnouncements.length, announcementIndex])
 
   const { isFavorite, toggle } = useFavorites()
   const stopName = stopDetail?.name ?? `${t('stops.title')} ${dcode}`
@@ -1063,7 +1088,7 @@ export default function StopPage() {
       <div ref={splitContainerRef} className="flex-1 flex flex-col overflow-hidden max-w-2xl w-full mx-auto min-h-0">
 
         {/* Map — dynamically sized via drag */}
-        <div className="shrink-0 border-b border-surface-muted relative" style={{ height: '50%' }} ref={(el) => { mapContainerRef.current = el; if (el) el.style.height = `${mapHeightPctRef.current}%` }}>
+        <div className={`shrink-0 border-b border-surface-muted relative ${isKiosk ? 'pointer-events-none select-none' : ''}`} style={{ height: '50%' }} ref={(el) => { mapContainerRef.current = el; if (el) el.style.height = `${mapHeightPctRef.current}%` }}>
           {stopDetail && stopDetail.latitude != null && stopDetail.longitude != null ? (
             <MapContainer
               center={[stopDetail.latitude, stopDetail.longitude]}
@@ -1075,6 +1100,13 @@ export default function StopPage() {
               style={{ height: '100%', width: '100%' }}
               key={dcode}
               className={mapClassName}
+              zoomControl={!isKiosk}
+              dragging={!isKiosk}
+              touchZoom={!isKiosk}
+              doubleClickZoom={!isKiosk}
+              scrollWheelZoom={!isKiosk}
+              boxZoom={!isKiosk}
+              keyboard={!isKiosk}
             >
               {/* MapResizer removed, relying on resize events */}
               <TileLayer
@@ -1092,11 +1124,11 @@ export default function StopPage() {
                 buses={filteredRouteBuses}
                 filterKey={Array.from(activeRoutes).join(',')}
               />
-              <CircleMarker
-                center={[stopDetail.latitude, stopDetail.longitude]}
-                radius={14}
+              <Marker
+                position={[stopDetail.latitude, stopDetail.longitude]}
+                icon={stopSignIcon}
                 interactive={!isKiosk}
-                pathOptions={{ color: 'var(--color-brand)', weight: 3, fillColor: 'var(--color-brand)', fillOpacity: 1 }}
+                zIndexOffset={500}
               >
                 {!isKiosk && (
                   <Popup minWidth={160}>
@@ -1109,7 +1141,7 @@ export default function StopPage() {
                     </div>
                   </Popup>
                 )}
-              </CircleMarker>
+              </Marker>
               {/* Live bus markers — clicking opens the rich BusDetailSheet */}
               {filteredRouteBuses.map((b) => {
                 const icon = (b.route_code ? routeIconMap.get(b.route_code) : undefined) ?? makeBusIcon('#6b7280')
@@ -1189,6 +1221,42 @@ export default function StopPage() {
               <div className="w-full card flex items-center justify-between text-sm text-text-muted font-medium cursor-default select-none opacity-80">
                 <span>ℹ️ {t('stops.noAnnouncements', 'Aktif duyuru yok')}</span>
               </div>
+            ) : isKiosk ? (
+              filteredAnnouncements.length > 0 ? (
+                <div className="w-full card border-amber-800/50 bg-amber-950/25 p-3 flex flex-col gap-1.5 select-none pointer-events-none">
+                  <div className="flex items-center justify-between gap-2 border-b border-amber-800/30 pb-1.5">
+                    <div className="flex items-center gap-1.5 text-xs font-bold text-amber-300">
+                      <span>⚠️</span>
+                      <span>
+                        Duyuru ({announcementIndex + 1}/{filteredAnnouncements.length})
+                      </span>
+                      {filteredAnnouncements[announcementIndex]?.route_code && filteredAnnouncements[announcementIndex].route_code !== 'GENEL' && (
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-200 border border-amber-500/40">
+                          {filteredAnnouncements[announcementIndex].route_code}
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-[10px] text-amber-400/80 font-medium">
+                      {filteredAnnouncements[announcementIndex]?.type}
+                    </span>
+                  </div>
+
+                  <AnimatePresence mode="wait">
+                    <motion.div
+                      key={`kiosk-ann-${announcementIndex}-${filteredAnnouncements[announcementIndex]?.route_code ?? ''}`}
+                      initial={{ opacity: 0, y: 4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -4 }}
+                      transition={{ duration: 0.25 }}
+                      className="text-left"
+                    >
+                      <p className="text-xs text-text-secondary leading-relaxed whitespace-pre-line line-clamp-3">
+                        {filteredAnnouncements[announcementIndex]?.message}
+                      </p>
+                    </motion.div>
+                  </AnimatePresence>
+                </div>
+              ) : null
             ) : (
               <>
                 <button
