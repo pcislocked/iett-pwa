@@ -1,5 +1,5 @@
-import { useState, useRef, useEffect, useMemo } from 'react'
-import { MapContainer, TileLayer, CircleMarker, Popup, useMap, Marker } from 'react-leaflet'
+import { useState, useRef, useEffect, useMemo, useCallback } from 'react'
+import { MapContainer, TileLayer, CircleMarker, Popup, useMap, Marker, useMapEvents } from 'react-leaflet'
 import * as L from 'leaflet'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
@@ -100,6 +100,26 @@ function GpsMarker({ location }: { location: [number, number] | null }) {
   )
 }
 
+function MapViewportTracker({ onUpdate }: { onUpdate: (zoom: number, center: L.LatLng) => void }) {
+  const timerRef = useRef<number | null>(null)
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) window.clearTimeout(timerRef.current)
+    }
+  }, [])
+  const map = useMapEvents({
+    zoomend: () => {
+      if (timerRef.current) window.clearTimeout(timerRef.current)
+      timerRef.current = window.setTimeout(() => onUpdate(map.getZoom(), map.getCenter()), 250)
+    },
+    moveend: () => {
+      if (timerRef.current) window.clearTimeout(timerRef.current)
+      timerRef.current = window.setTimeout(() => onUpdate(map.getZoom(), map.getCenter()), 250)
+    },
+  })
+  return null
+}
+
 // ── Main Page ────────────────────────────────────────────────────────────────
 interface AmenityItem {
   label: string
@@ -162,6 +182,43 @@ export default function MapPage() {
   const [pickerBuses, setPickerBuses] = useState<BusPosition[] | null>(null)
   const [nearbyStops, setNearbyStops] = useState<NearbyStop[]>([])
   const [stopPins, setStopPins] = useState<Record<string, { lat: number; lon: number }>>({})
+  const [mapZoom, setMapZoom] = useState(11)
+  const [areaStops, setAreaStops] = useState<NearbyStop[]>([])
+  const [areaStopsLoading, setAreaStopsLoading] = useState(false)
+  const areaAbortRef = useRef<AbortController | null>(null)
+
+  useEffect(() => {
+    return () => {
+      areaAbortRef.current?.abort()
+    }
+  }, [])
+
+  const handleSearchAreaStops = useCallback(async () => {
+    const map = mapRef.current
+    if (!map || mapZoom < 14 || areaStopsLoading) return
+    areaAbortRef.current?.abort()
+    const controller = new AbortController()
+    areaAbortRef.current = controller
+
+    setAreaStopsLoading(true)
+    try {
+      const center = map.getCenter()
+      const bounds = map.getBounds()
+      const viewportRadius = Math.round(center.distanceTo(bounds.getNorthEast()))
+      const radius = Math.min(2500, Math.max(400, viewportRadius))
+      const stops = await api.stops.nearby(center.lat, center.lng, 1000, radius, { signal: controller.signal })
+      if (!controller.signal.aborted) {
+        setAreaStops(stops)
+      }
+    } catch (err: unknown) {
+      if (err instanceof Error && err.name === 'AbortError') return
+      console.error('Failed to fetch area stops', err)
+    } finally {
+      if (!controller.signal.aborted) {
+        setAreaStopsLoading(false)
+      }
+    }
+  }, [mapZoom, areaStopsLoading])
 
   // Fetch Fleet (Lazy)
   const { data: fleet, error: fleetError } = useFleet({ enabled: fleetVisible })
@@ -318,6 +375,45 @@ export default function MapPage() {
   return (
     <div className="relative flex flex-col overflow-hidden h-full bg-[#1e1e1e]">
 
+      {/* ── Area Stop Search Floating Pill ── */}
+      <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[1000] flex items-center gap-1.5 pointer-events-none">
+        {mapZoom < 14 ? (
+          <div role="status" className="pointer-events-auto opacity-80 bg-surface-card/95 backdrop-blur text-text-muted border border-surface-border cursor-not-allowed px-4 py-2 rounded-full text-xs font-medium shadow-lg flex items-center gap-1.5 select-none">
+            <span>🔍</span>
+            <span>{t('map.zoomInToSearchStops', 'Durakları görmek için yakınlaşın')}</span>
+          </div>
+        ) : (
+          <button
+            onClick={handleSearchAreaStops}
+            disabled={areaStopsLoading}
+            className="pointer-events-auto bg-brand-600 hover:bg-brand-500 active:scale-95 text-white px-4 py-2 rounded-full text-xs font-semibold shadow-xl transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-75"
+          >
+            {areaStopsLoading ? (
+              <>
+                <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                <span>{t('map.searchingStops', 'Duraklar aranıyor...')}</span>
+              </>
+            ) : (
+              <>
+                <span>📍</span>
+                <span>{t('map.searchStopsHere', 'Bu Bölgedeki Durakları Ara')}</span>
+              </>
+            )}
+          </button>
+        )}
+
+        {areaStops.length > 0 && (
+          <button
+            onClick={() => setAreaStops([])}
+            title={t('map.clearAreaStops', 'Bölge duraklarını temizle')}
+            aria-label={t('map.clearAreaStops', 'Bölge duraklarını temizle')}
+            className="pointer-events-auto bg-surface-card hover:bg-surface-muted active:scale-90 text-text-secondary w-8 h-8 rounded-full border border-surface-border shadow-lg flex items-center justify-center text-sm font-bold transition-all cursor-pointer"
+          >
+            &times;
+          </button>
+        )}
+      </div>
+
       {/* ── IBB Error Modal ── */}
       {fleetError && fleetVisible && (
         <div className="absolute inset-0 z-[2000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
@@ -359,8 +455,34 @@ export default function MapPage() {
           updateWhenZooming={false}
         />
 
+        {/* Viewport Tracker */}
+        <MapViewportTracker onUpdate={(zoom) => setMapZoom(zoom)} />
+
         {/* User GPS Location */}
         <GpsMarker location={location} />
+
+        {/* Area Stops (Regional Search - Red Markers) */}
+        {areaStops.map(s => (
+          <CircleMarker
+            key={`area-${s.stop_code}`}
+            center={[s.latitude, s.longitude]}
+            radius={7}
+            pathOptions={{ color: '#ffffff', fillColor: '#ef4444', fillOpacity: 0.92, weight: 2 }}
+          >
+            <Popup>
+              <div className="text-sm font-bold mb-0.5">{s.stop_name}</div>
+              <div className="text-[11px] text-text-muted">
+                #{s.stop_code}{s.direction ? ` · → ${s.direction}` : ''}
+              </div>
+              <button
+                onClick={() => navigate(`/stops/${s.stop_code}`)}
+                className="text-brand-400 text-xs mt-2 font-bold block"
+              >
+                {t('map.arrivalTimes', 'Varış Saatleri')} &rarr;
+              </button>
+            </Popup>
+          </CircleMarker>
+        ))}
 
         {/* Selected Stops */}
         {selectedStops.map(s => {

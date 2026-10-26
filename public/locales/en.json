@@ -171,7 +171,11 @@
     "findMe": "Find Me",
     "hideFleet": "Hide Fleet",
     "noVehicles": "No vehicles",
-    "unifiedSearchPlaceholder": "Search route, stop or vehicle..."
+    "unifiedSearchPlaceholder": "Search route, stop or vehicle...",
+    "zoomInToSearchStops": "Zoom in to search stops",
+    "searchStopsHere": "Search Stops in this Area",
+    "searchingStops": "Searching stops...",
+    "clearAreaStops": "Clear area stops"
   },
   "fleet": {
     "lastRoute": "Last: {{code}}",
@@ -278,7 +282,11 @@
     "waitingPermission": "Waiting for permission...",
     "denyPermission": "Don't Allow",
     "mockLocationTitle": "Mock Location Will Be Used",
-    "mockLocationDesc": "Since GPS permission is not granted, the app will run with a default mock location. You can change this mock location later from the Settings menu on the map."
+    "mockLocationDesc": "Since GPS permission is not granted, the app will run with a default mock location. You can change this mock location later from the Settings menu on the map.",
+    "resetToGps": "Reset to GPS Location",
+    "temporaryLocation": "Temporary Location",
+    "closeModal": "Close",
+    "selectThisPoint": "Select this Location"
   },
   "search": {
     "placeholder": "Route code, stop name or number...",
@@ -380,7 +388,7 @@
     "retryArrow": "Retry →",
     "favorites": "Favorites",
     "recentSearches": "Recent Searches",
-    "searchAll": "Search All →",
+    "searchAll": "All Searches →",
     "quickAccess": "Quick Access",
     "nearbyStopsDesc": "See stops near you",
     "managePinned": "Manage Pinned Stops",

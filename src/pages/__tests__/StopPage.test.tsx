@@ -152,4 +152,41 @@ describe('StopPage Announcements', () => {
       expect(screen.getByText('Ana Sayfaya Dön')).toBeInTheDocument()
     })
   })
+
+  it('renders in kiosk mode without back button, refresh button or action buttons', async () => {
+    vi.mocked(api.stops.detail).mockResolvedValue({
+      dcode: '1234',
+      name: 'Kiosk Test Stop',
+      latitude: 41,
+      longitude: 29,
+    })
+    vi.mocked(api.stops.arrivals).mockResolvedValue({
+      data: [createMockArrival({ route_code: '500T', destination: 'Cevizlibağ' })],
+      headers: new Headers(),
+    })
+    vi.mocked(api.stops.announcements).mockResolvedValue([])
+
+    render(
+      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+        <MemoryRouter initialEntries={['/stops/1234?kiosk=1']}>
+          <Routes>
+            <Route path="/stops/:dcode" element={<StopPage />} />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>,
+    )
+
+    await waitFor(() => {
+      expect(screen.getByText('Kiosk Test Stop')).toBeInTheDocument()
+    })
+
+    // Back button and directions/info/pin buttons should not exist
+    expect(screen.queryByLabelText(/Yol Tarifi Al/i)).not.toBeInTheDocument()
+    expect(screen.queryByLabelText(/Durak Bilgisi/i)).not.toBeInTheDocument()
+    expect(screen.queryByText(/Yenile/i)).not.toBeInTheDocument()
+
+    // Arrival route 500T should be rendered as a non-link div
+    const routeCode = screen.getByText('500T')
+    expect(routeCode.closest('a')).toBeNull()
+  })
 })

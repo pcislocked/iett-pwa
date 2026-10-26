@@ -1,10 +1,10 @@
 # iett-pwa
 
-[![Tests](https://img.shields.io/badge/tests-277%20passed-brightgreen)](#geliştirme-development)
+[![Tests](https://img.shields.io/badge/tests-290%20passed-brightgreen)](#geliştirme-development)
 [![React](https://img.shields.io/badge/React-18-61DAFB?logo=react)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript)](https://www.typescriptlang.org/)
 [![PWA](https://img.shields.io/badge/PWA-installable-5A0FC8?logo=pwa)](https://web.dev/progressive-web-apps/)
-[![Version](https://img.shields.io/badge/version-0.4.10.4-orange)](https://github.com/pcislocked/iett-pwa/releases/tag/v0.4.10.4)
+[![Version](https://img.shields.io/badge/version-0.4.11-orange)](https://github.com/pcislocked/iett-pwa/releases)
 [![License](https://img.shields.io/badge/license-CC%20BY%204.0-blue)](https://data.ibb.gov.tr/license)
 
 [🇹🇷 Türkçe (Turkish)](#türkçe) | [🇬🇧 English](#english)
@@ -30,27 +30,30 @@ Bir otobüs önünüze gelirken durağı açıp *"Buna binmeli miyim, yoksa bekl
 
 ### 🌟 Öne Çıkan Tüm Özellikler
 
-- **📱 Yüklenebilir PWA & Web Share Target:** Sıfır mağaza yükü, anında açılma, çevrimdışı önbellekleme, mobil/masaüstü ana ekrana eklenebilirlik ve işletim sistemi paylaşım menüsünden (`iett.istanbul` linklerini) doğrudan uygulama içinde açabilme (`/share-target`).
-- **🚌 Araç Donanım & Özellik İkonları:** Araç detayında ve geliş listelerinde klima (❄️), USB şarj (🔌), Wi-Fi (🛜), bisiklet taşıma aparatı (🚲) ve engelli erişilebilirliği (♿) donanımlarını anlık görme.
+- **📱 Yüklenebilir PWA & Web Share Target:** Sıfır mağaza yükü, anında açılma, 30 günlük harita karo önbelleklemesi, mobil/masaüstü ana ekrana eklenebilirlik ve işletim sistemi paylaşım menüsünden (`iett.istanbul` linklerini) doğrudan uygulama içinde açabilme (`/share-target`).
+- **🚌 Araç Kapasite & Donanım İkonları:** Araç detayında ve geliş listelerinde klima (❄️), yolcu kapasitesi (👥) ve engelli erişilebilirliği (♿) donanımlarını anlık görme.
 - **📌 Sabitlenmiş Duraklar:** Sık kullandığınız durakları ana sayfaya sabitleme (📌) ve tek dokunuşla canlı geliş sürelerini inceleme.
 - **❤️ Favori Durak ve Hatlar:** Favori durak ve hatlarınızı favorilere ekleme (❤️) ve hızlı erişim panosu.
 - **🔍 Tek Karakter Hat Arama & Akıllı Debounce:** 1 karakterli hat kodlarını (`1`, `2`, `E`) dahil tüm hatları, durak adlarını, 4+ haneli durak numaralarını veya yapıştırılan `iett.istanbul` bağlantılarını adaptif gecikme (`700ms`/`300ms`/`150ms`) ve anında `Enter` desteğiyle arama.
 - **🔄 Ring Hat & Varyant Algılama:** Başlangıç ve bitiş durağı aynı olan dairesel (ring) hatları otomatik tespit ederek tepe durağıyla birlikte `🔄 Başlangıç > Tepe Noktası Ring` formatında anlaşılır gösterme.
 - **📢 Resmi İETT Duyuruları & Ücret Tarifesi:** İETT'nin kurumsal duyurularını, hat bazlı sefer uyarılarını ve güncel toplu ulaşım ücret tarifesini uygulama içinden (`/announcements`) inceleme.
 - **🗺️ Canlı Filo Haritası & Standart Plaka Arama:** Tüm İstanbul otobüs filosunu veya belirli bir hattın araçlarını harita katmanlarında canlı izleme; kapı kodu veya standart TR plaka (`34 HO 1900`) formatıyla boşluk/tire bağımsız araç bulma.
-- **⚙️ Özelleştirilebilir Ayarlar & Tam Yedekleme (Schema v2):** Tema (AMOLED/Koyu/Açık), dil (TR/EN/KU), ekranı açık tutma (Screen Wake Lock - 30 dk güvenlik zaman aşımı), dokunsal geri bildirim (Haptik) ve tüm uygulama verilerini (`BackupDataV2`) tek dosyada dışa/içe aktarma.
+- **📍 Haritada Bölgesel Durak Arama:** Harita ekranında (`/map`) yakınlaşınca beliren yüzen butonla ekrandaki tüm durakları tek tıkla arayıp kırmızı pinlerle haritada gösterme.
+- **🎯 Tek Seferlik Mock Konum Seçici:** Yakın Duraklar ekranında (`/nearby`) GPS izni beklenmeden haritaya dokunarak tek seferlik özel konum seçebilme ve tek tıkla GPS'e sıfırlayabilme.
+- **🖥️ Akıllı Durak Kiosk Modu (`?kiosk=1`):** `?kiosk=1` veya `?embed=1` parametresiyle durak ekranını alt barlar, butonlar ve tıklanabilir linklerden arındırılmış, ekran uykusunu engelleyen tam ekran bir kamu bilgilendirme panosuna dönüştürme.
+- **🖱️ Masaüstü Fareyle Tut-Sürükle & Tekerlek Kaydırması:** PC tarayıcılarında hat filtreleme şeritlerini ve zaman çubuklarını fareyle tut-sürükle ile kaydırabilme ve dikey tekerlek hareketini yatay kaydırmaya çevirme.
+- **⚙️ Özelleştirilebilir Ayarlar & Tam Yedekleme (Schema v2):** Tema (AMOLED/Koyu/Açık), dil (TR/EN), ekranı açık tutma (Screen Wake Lock - 30 dk güvenlik zaman aşımı), dokunsal geri bildirim (Haptik) ve tüm uygulama verilerini (`BackupDataV2`) tek dosyada dışa/içe aktarma.
 - **⏱️ Durak & ARAÇ Canlı Zaman Çubuğu (`StopTimebar`):** 20s otomatik yenilemeli canlı geliş panosu, hem durak hem de ARAÇ detay sayfasında (`DD-MM-YYYY` destekli) canlı saniye sayacı ve 3 kademeli zaman damgası bilgi penceresi (`TimestampInfoModal`).
 - **🔒 Araç Detay & Oturum Altyapısı (`arac.iett.gov.tr`):** Kapı kodu ile araca özel oturum oluşturma, otomatik OCR captcha çözümü / manuel captcha modalı, araç teknik profili (marka, model yılı, kapasite, garaj kodu, yazılım sürümü), geçmiş ve gelecek görev/sefer zaman çizelgesi.
-- **📍 Konum Gizliliği & Sahte Konum (Mock Location):** İsteğe bağlı GPS ile yakın durakları bulma; GPS izni verilmezse yerleşik sahte konum (mock location) veya haritaya dokunarak pin bırakarak konum belirleme.
 
 ---
 
 ### 🛠️ Teknoloji Yığını (Stack)
 
-- **Core:** React 18 + Vite 8 + TypeScript
+- **Core:** React 18 + Vite + TypeScript
 - **Styling:** Vanilla CSS + Tailwind CSS (özel tema token'ları)
-- **Maps:** Leaflet + react-leaflet + Stadia / CartoDB / ArcGIS Satellite Basemaps
-- **PWA:** `vite-plugin-pwa` (Service Worker, Web App Manifest, Web Share Target)
+- **Maps:** Leaflet + react-leaflet + CartoDB / Esri Basemaps
+- **PWA:** `vite-plugin-pwa` (Service Worker, Web App Manifest, Web Share Target, Workbox Tile Cache)
 - **Animations:** Framer Motion (Modal & Backdrop transition)
 - **API Client:** `iett-middle` REST API (Fetch + AbortController stabilization)
 
@@ -61,12 +64,19 @@ Bir otobüs önünüze gelirken durağı açıp *"Buna binmeli miyim, yoksa bekl
 | Rota | Açıklama |
 |---|---|
 | `/` | **Ana Sayfa** — Hızlı arama, sabitlenmiş duraklar, yakın duraklar, hızlı erişim ve son aramalar |
-| `/stops/:dcode` | **Durak Panosu** — Canlı tahmini gelişler, via filtresi, Screen Wake Lock, max GPS zaman damgası ve duyuru barı |
+| `/stops/:dcode` | **Durak Panosu** — Canlı tahmini gelişler, alt hat filtre ribbon'ı, Screen Wake Lock, max GPS zaman damgası ve duyuru barı |
 | `/routes/:hatKodu` | **Hat Sayfası** — Canlı otobüs konumu haritası, ring/varyant seçimi, sefer saatleri, aksama duyuruları ve sıralı duraklar |
+| `/nearby` | **Yakın Duraklar** — Koordinata en yakın durakları harita ve mesafe rozetleriyle listeleme, tek seferlik konum seçici |
+| `/favorites` | **Favoriler** — Hızlı erişim için kaydedilmiş favori durak ve hat listesi |
+| `/pinned` | **Sabitlenmiş Duraklar** — Ana ekranda canlı kart olarak gösterilecek durakları yönetme |
+| `/arac-sorgu` | **Araç Sorgulama** — Kapı kodu veya plaka ile araç arama ve filo filtreleme |
+| `/arac/bus/:kapino` | **Araç Detay Paneli** — Otobüsün teknik donanımları, güncel canlı konumu ve geçmiş/gelecek sefer çizelgesi |
 | `/announcements` | **Duyurular & Uyarılar** — Resmi `iett.istanbul` duyuruları, genel sefer uyarıları ve güncel ücret tarifesi |
 | `/share-target` | **Web Share Target** — Paylaşılan İETT bağlantılarını otomatik olarak ilgili hat veya durak sayfasına yönlendirir |
-| `/map` | **Filo Haritası** — Hat ve kapı kodu/plaka filtreli tam ekran canlı otobüs takibi |
+| `/map` | **Filo Haritası** — Hat/plaka filtreli tam ekran canlı otobüs takibi ve bölgesel durak arama kapsülü |
+| `/tile-demo` | **Harita Karoları Laboratuvarı** — Farklı karo sağlayıcılarını ve canlı veri (KB) tüketimini test etme ekranı |
 | `/settings` | **Ayarlar** — Tema, dil, zaman barı formatı, ekranı açık tutma, haptik geri bildirim, GPS/sahte konum ve v2 tam yedekleme |
+| `?kiosk=1` | **Akıllı Durak Kiosk Modu** — Herhangi bir durak sayfasını tam ekran, dokunulmaz bilgilendirme ekranına dönüştürür |
 
 ---
 
@@ -84,7 +94,7 @@ Vite geliştirme sunucusu, `/v1/*` isteklerini otomatik olarak iett-middle URL's
 ```bash
 npm run typecheck    # TypeScript tip kontrolü
 npm run lint         # ESLint kontrolü (--max-warnings 0)
-npm test             # Vitest birim testleri (242/242 green)
+npm test             # Vitest birim testleri (290/290 green)
 ```
 
 ---
@@ -101,8 +111,8 @@ npm run preview
 Statik dosyaları derlemek ve Nginx ile sunmak için çok aşamalı (multi-stage) Dockerfile kullanır:
 
 ```bash
-docker build -t iett-pwa:0.4.9.1 --build-arg VITE_API_BASE_URL=https://iettapi.pcislocked.net .
-docker run --rm -p 8080:80 iett-pwa:0.4.9.1
+docker build -t iett-pwa:latest --build-arg VITE_API_BASE_URL=https://iettapi.pcislocked.net .
+docker run --rm -p 8080:80 iett-pwa:latest
 ```
 
 ---
@@ -137,19 +147,21 @@ Frontend component of a three-repository stack:
 ---
 
 ### 🌟 Full Feature List
-- **📱 Installable PWA Experience:** Mobile/desktop home-screen installation, offline shell caching, zero store overhead (Standalone PWA).
-- **🚌 Vehicle Amenities:** View AC (❄️), USB charging (🔌), Wi-Fi (🛜), bicycle rack (🚲), and accessibility (♿) indicators live on vehicle sheets and arrival cards.
+- **📱 Installable PWA Experience & Web Share Target:** Mobile/desktop home-screen installation, 30-day offline map tile caching, zero store overhead, and OS-level link sharing support (`/share-target`).
+- **🚌 Vehicle Amenities & Capacity:** Live indicators for AC (❄️), passenger capacity (👥), and disability accessibility (♿) on vehicle detail sheets and arrival lists.
 - **📌 Pinned Stops:** Pin your daily stops for one-tap live arrival access right on the home page.
 - **❤️ Favorites:** Pin & manage your favorite routes and stops for fast access.
 - **🔍 Recent Searches & Smart Search:** Search by route code (e.g. `14M`), stop name, or 4+ digit stop code; automatically stores recent searches.
-- **🗺️ Live Fleet Map & Vehicle Search:** Track the entire Istanbul fleet or specific routes on CartoDB maps; search buses by door code or license plate.
-- **⚙️ Fully Customizable Settings:** Easily adjust themes (AMOLED/Dark/Light), languages, API base URL, refresh intervals, nearby stop search radius/limits, auto-location preferences, and mock location coordinates.
-- **⏱️ Arrivals Board & Max GPS Timestamp:** Live arrivals with max valid GPS timestamp detection (`maxGpsTime`), stale data warnings (>5 min), and 4 dynamic announcement banner states (Loading, Error, Empty, Active).
-- **🔒 Vehicle Profile & Captcha Engine (`arac.iett.gov.tr`):** Per-vehicle session creation, automated OCR captcha solving / manual captcha fallback, vehicle specs (brand, model year, seating/full capacity, garage code, software version), and past/upcoming mission timelines.
+- **🔄 Ring Route & Variant Detection:** Automatically identifies circular routes and formats them intuitively as `🔄 Start > Peak Turnaround Ring`.
+- **📢 Official Announcements & Fare Table:** Access municipal announcements, line disruptions, and official transit fares inside the app (`/announcements`).
+- **🗺️ Live Fleet Map & Regional Stop Search:** Track the fleet live or search stops in the current viewport with a floating pill button (`/map`).
+- **🎯 One-Time Location Picker:** Select custom coordinates on the map in Nearby Stops (`/nearby`) without waiting for GPS permissions.
+- **🖥️ Smart Display Kiosk Mode (`?kiosk=1`):** Convert any stop into a non-interactive, wake-locked municipal transit display board.
+- **🖱️ Desktop Mouse Drag & Wheel Horizontal Scroll:** Fluid click-and-drag and vertical wheel translation for ribbons and timebars on desktop browsers.
+- **⚙️ Fully Customizable Settings & Schema v2 Backup:** Easily adjust themes (AMOLED/Dark/Light), languages (TR/EN), refresh intervals, wake lock, haptics, and export/import all local settings via `BackupDataV2`.
+- **⏱️ Arrivals Board & Max GPS Timestamp:** Live arrivals with max valid GPS timestamp detection (`maxGpsTime`), stale data warnings (>5 min), and 4 dynamic announcement banner states.
+- **🔒 Vehicle Profile & Captcha Engine (`arac.iett.gov.tr`):** Per-vehicle session creation, automated OCR captcha solving / manual captcha fallback, vehicle specs, and past/upcoming mission timelines.
 - **📍 Location Privacy & Mock Location:** Optional GPS integration with built-in fallback to mock location or manual map pin placement if location access is denied.
-- **🎨 Multi-Theme Support:** AMOLED Black, Dark, and Light custom CSS themes matching CartoDB Dark Matter / Positron map tiles.
-- **🌐 Localization (i18n):** Turkish (`tr`) and English (`en`) localization.
-- **📱 Mobile Bottom Navigation:** Thumb-friendly bottom navigation bar for mobile devices.
 
 ---
 
@@ -162,11 +174,17 @@ npm run dev
 
 Requires a running `iett-middle` backend instance (default: `http://localhost:8000`).
 
+```bash
+npm run typecheck    # TypeScript type checks
+npm run lint         # ESLint checks
+npm test             # Vitest unit test suite (290/290 green)
+```
+
 ### 📦 Docker Deployment
 
 ```bash
-docker build -t iett-pwa:0.4.1 --build-arg VITE_API_BASE_URL=https://iettapi.pcislocked.net .
-docker run --rm -p 8080:80 iett-pwa:0.4.1
+docker build -t iett-pwa:latest --build-arg VITE_API_BASE_URL=https://iettapi.pcislocked.net .
+docker run --rm -p 8080:80 iett-pwa:latest
 ```
 
 ---

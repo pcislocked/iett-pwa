@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import {
   MapContainer,
@@ -7,6 +7,7 @@ import {
   Popup,
   Marker,
   useMap,
+  useMapEvents,
 } from 'react-leaflet'
 import { ISTANBUL_BOUNDS, MAP_MIN_ZOOM, MAP_MAX_ZOOM } from '@/utils/mapConstants'
 import * as L from 'leaflet'
@@ -91,10 +92,11 @@ function NearbyMapView({
           <MapTileToggle satellite={satellite} onToggle={toggleSatellite} />
         </div>
 
-      {/* Smoothly pan to selected stop */}
-      {selectedStop && (
-        <MapPanner lat={selectedStop.latitude} lon={selectedStop.longitude} />
-      )}
+      {/* Smoothly pan to selected stop or user location */}
+      <MapPanner
+        lat={selectedStop ? selectedStop.latitude : userLat}
+        lon={selectedStop ? selectedStop.longitude : userLon}
+      />
 
       {/* User position */}
       <Marker position={[userLat, userLon]} icon={userIcon}>
@@ -148,11 +150,128 @@ function NearbyMapView({
   )
 }
 
+function NearbyLocationModal({
+  currentLat,
+  currentLon,
+  onSelect,
+  onClose,
+}: {
+  currentLat: number
+  currentLon: number
+  onSelect: (lat: number, lon: number) => void
+  onClose: () => void
+}) {
+  const { t } = useTranslation()
+  const [picked, setPicked] = useState<[number, number]>([currentLat, currentLon])
+  const { currentUrl, currentAttribution, mapClassName, tileClassName } = useMapTiles()
+
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [onClose])
+
+  function MapClickHandler() {
+    useMapEvents({
+      click: (e) => {
+        setPicked([e.latlng.lat, e.latlng.lng])
+      },
+    })
+    return null
+  }
+
+  return (
+    <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="nearby-modal-title"
+        className="bg-surface-card border border-surface-border rounded-2xl max-w-lg w-full p-4 shadow-2xl flex flex-col gap-3 h-[460px]"
+      >
+        <div className="flex items-center justify-between">
+          <h2 id="nearby-modal-title" className="text-sm font-bold text-text-primary">
+            📍 {t('nearby.pickFromMap', 'Haritadan Konum Seç')}
+          </h2>
+          <button
+            onClick={onClose}
+            aria-label={t('common.close', 'Kapat')}
+            className="text-text-muted hover:text-text-primary text-lg font-bold p-1 leading-none"
+          >
+            &times;
+          </button>
+        </div>
+
+        <p className="text-[11px] text-text-muted">
+          {t('nearby.mapInstruction', 'Haritaya uzun bas veya tıkla → pin bırak, sonra aramayı başlat')}
+        </p>
+
+        <div className="flex-1 rounded-xl overflow-hidden border border-surface-border relative">
+          <MapContainer
+            center={picked}
+            zoom={14}
+            minZoom={MAP_MIN_ZOOM}
+            maxZoom={MAP_MAX_ZOOM}
+            maxBounds={ISTANBUL_BOUNDS}
+            style={{ height: '100%', width: '100%' }}
+            className={mapClassName}
+          >
+            <TileLayer
+              key={currentUrl}
+              className={tileClassName}
+              attribution={currentAttribution}
+              url={currentUrl}
+              keepBuffer={1}
+              updateWhenIdle={true}
+              updateWhenZooming={false}
+            />
+            <MapClickHandler />
+            <Marker position={picked} />
+          </MapContainer>
+        </div>
+
+        <div className="flex items-center justify-between pt-1">
+          <span className="text-[11px] font-mono text-text-muted">
+            {picked[0].toFixed(4)}, {picked[1].toFixed(4)}
+          </span>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={onClose}
+              className="px-3 py-1.5 text-xs text-text-secondary hover:text-text-primary rounded-lg border border-surface-border"
+            >
+              {t('nearby.closeModal', 'İptal')}
+            </button>
+            <button
+              onClick={() => {
+                onSelect(picked[0], picked[1])
+                onClose()
+              }}
+              className="px-4 py-1.5 text-xs font-bold text-white bg-brand-600 hover:bg-brand-500 rounded-lg shadow cursor-pointer"
+            >
+              {t('nearby.selectThisPoint', 'Bu Noktayı Seç')}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ─── Main page ─────────────────────────────────────────────────────────────────
 export default function NearbyPage() {
   const { t } = useTranslation()
   const { prefs } = useUserPrefs()
   const { location, loading: gpsLoading, requestLocation } = useLocationManager()
+
+  const [overrideLocation, setOverrideLocation] = useState<{ lat: number; lon: number } | null>(null)
+  const [showLocationModal, setShowLocationModal] = useState(false)
+  const effectiveLat = overrideLocation ? overrideLocation.lat : location ? location[0] : null
+  const effectiveLon = overrideLocation ? overrideLocation.lon : location ? location[1] : null
+  const effectiveLocation = useMemo<[number, number] | null>(
+    () => (effectiveLat != null && effectiveLon != null ? [effectiveLat, effectiveLon] : null),
+    [effectiveLat, effectiveLon],
+  )
 
   const [phase, setPhase] = useState<Phase>('idle')
   const [errorMsg, setErrorMsg] = useState('')
@@ -275,13 +394,13 @@ export default function NearbyPage() {
 
   // ── React to LocationManager ─────────────────────────────────────────────
   useEffect(() => {
-    if (!location) return
+    if (effectiveLat == null || effectiveLon == null) return
     const controller = new AbortController()
-    fetchNearby(location[0], location[1], controller.signal)
+    fetchNearby(effectiveLat, effectiveLon, controller.signal)
     return () => {
       controller.abort()
     }
-  }, [location, fetchNearby])
+  }, [effectiveLat, effectiveLon, fetchNearby])
 
 
   // ── Shared header ────────────────────────────────────────────────────────────
@@ -290,18 +409,46 @@ export default function NearbyPage() {
       <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
         <div>
           <h1 className="text-base font-bold text-text-primary">{t('home.nearbyStops', { defaultValue: 'Yakın Duraklar' })}</h1>
-          {location && (
-            <p className="text-[11px] text-text-muted">
-              {location[0].toFixed(4)}, {location[1].toFixed(4)}
+          {effectiveLocation && (
+            <p className="text-[11px] text-text-muted flex items-center gap-1.5 mt-0.5">
+              <span>{effectiveLocation[0].toFixed(4)}, {effectiveLocation[1].toFixed(4)}</span>
+              {overrideLocation && (
+                <span className="text-[9px] bg-brand-500/20 text-brand-300 font-bold px-1.5 py-0.5 rounded">
+                  {t('nearby.temporaryLocation', 'Tek Seferlik')}
+                </span>
+              )}
             </p>
           )}
+        </div>
+
+        <div className="flex items-center gap-1.5">
+          {overrideLocation && (
+            <button
+              onClick={() => setOverrideLocation(null)}
+              title={t('nearby.resetToGps', 'GPS Konumuna Dön')}
+              className="px-2 py-1 text-xs text-text-muted hover:text-text-primary bg-surface-muted hover:bg-surface-muted/80 rounded-lg flex items-center gap-1 transition-colors cursor-pointer"
+            >
+              <span className="font-bold">&times;</span>
+              <span className="text-[11px]">{t('common.reset', 'Sıfırla')}</span>
+            </button>
+          )}
+
+          <button
+            onClick={() => setShowLocationModal(true)}
+            title={t('nearby.pickFromMap', 'Haritadan Seç')}
+            className="px-2.5 py-1.5 rounded-lg text-text-secondary hover:text-text-primary hover:bg-surface-muted transition-colors flex items-center gap-1 border border-surface-border cursor-pointer"
+            aria-label={t('nearby.pickFromMap', 'Haritadan Seç')}
+          >
+            <span className="text-sm">📍</span>
+            <span className="text-xs font-semibold">{t('nearby.changeLocation', 'Konum Seç')}</span>
+          </button>
         </div>
       </div>
     </div>
   )
 
   // ── Loading phase ────────────────────────────────────────────────────────
-  if (gpsLoading || phase === 'loading' || !location) {
+  if ((gpsLoading && !overrideLocation) || phase === 'loading' || !effectiveLocation) {
     return (
       <div className="flex flex-col flex-1 min-h-0">
         {headerBar}
@@ -310,15 +457,23 @@ export default function NearbyPage() {
             <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
           </svg>
           <p className="text-text-secondary text-sm font-medium">
-            {gpsLoading ? t('common.locating', { defaultValue: 'Konum alınıyor...' }) : t('common.loading', { defaultValue: 'Yükleniyor...' })}
+            {gpsLoading && !overrideLocation ? t('common.locating', { defaultValue: 'Konum alınıyor...' }) : t('common.loading', { defaultValue: 'Yükleniyor...' })}
           </p>
         </div>
+        {showLocationModal && (
+          <NearbyLocationModal
+            currentLat={effectiveLocation ? effectiveLocation[0] : 41.015}
+            currentLon={effectiveLocation ? effectiveLocation[1] : 28.98}
+            onSelect={(lat, lon) => setOverrideLocation({ lat, lon })}
+            onClose={() => setShowLocationModal(false)}
+          />
+        )}
       </div>
     )
   }
 
   // ── Done phase — split layout (map on top, list below) ──────────────────────
-  if (phase === 'done' && location !== null) {
+  if (phase === 'done' && effectiveLocation !== null) {
     return (
       <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
         {headerBar}
@@ -329,8 +484,8 @@ export default function NearbyPage() {
           <div className="shrink-0 border-b border-surface-muted" style={{ height: '45%' }}>
             <NearbyMapView
               stops={allStops}
-              userLat={location[0]}
-              userLon={location[1]}
+              userLat={effectiveLocation[0]}
+              userLon={effectiveLocation[1]}
               selectedCode={selectedCode}
               onSelect={handleMapSelect}
             />
@@ -341,7 +496,11 @@ export default function NearbyPage() {
             innerRef={listRef}
             onScroll={handleListScroll}
             onRefresh={async () => {
-              requestLocation?.()
+              if (overrideLocation) {
+                await fetchNearby(overrideLocation.lat, overrideLocation.lon)
+              } else {
+                requestLocation?.()
+              }
               await new Promise(r => setTimeout(r, 600))
             }}
           >
@@ -436,6 +595,15 @@ export default function NearbyPage() {
             <div className="h-14" aria-hidden="true" />
           </PullToRefresh>
         </div>
+
+        {showLocationModal && (
+          <NearbyLocationModal
+            currentLat={effectiveLocation[0]}
+            currentLon={effectiveLocation[1]}
+            onSelect={(lat, lon) => setOverrideLocation({ lat, lon })}
+            onClose={() => setShowLocationModal(false)}
+          />
+        )}
       </div>
     )
   }
@@ -459,6 +627,15 @@ export default function NearbyPage() {
           </div>
         )}
       </div>
+
+      {showLocationModal && (
+        <NearbyLocationModal
+          currentLat={effectiveLocation ? effectiveLocation[0] : 41.015}
+          currentLon={effectiveLocation ? effectiveLocation[1] : 28.98}
+          onSelect={(lat, lon) => setOverrideLocation({ lat, lon })}
+          onClose={() => setShowLocationModal(false)}
+        />
+      )}
     </div>
   )
 }

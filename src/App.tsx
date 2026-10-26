@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import AppBar from '@/components/AppBar'
 import InstallBanner from '@/components/InstallBanner'
 import { useInstallBanner } from '@/hooks/useInstallBanner'
+import { useKioskMode } from '@/hooks/useKioskMode'
 import Home from '@/pages/Home'
 import { BottomBarContext, useBottomBarState } from '@/hooks/useBottomBar'
 import { MAIN_PATHS } from '@/routes'
@@ -21,6 +22,7 @@ const NearbyPage = lazy(() => import('@/pages/NearbyPage'))
 const PinnedManagePage = lazy(() => import('@/pages/PinnedManagePage'))
 const ShareTargetPage = lazy(() => import('@/pages/ShareTargetPage'))
 const AnnouncementsPage = lazy(() => import('@/pages/AnnouncementsPage'))
+const TileDemoPage = lazy(() => import('@/pages/TileDemoPage'))
 
 // Set by swipe commit before navigate() so useLayoutEffect skips CSS transition
 let _swipeNav = false
@@ -59,6 +61,7 @@ function MainRoutes({ loc }: { loc: ReturnType<typeof useLocation> | ReturnType<
       <Route path="/pinned"          element={<LazyRoute><PinnedManagePage /></LazyRoute>} />
       <Route path="/share-target"    element={<LazyRoute><ShareTargetPage /></LazyRoute>} />
       <Route path="/announcements"   element={<LazyRoute><AnnouncementsPage /></LazyRoute>} />
+      <Route path="/tile-demo"       element={<LazyRoute><TileDemoPage /></LazyRoute>} />
     </Routes>
   )
 }
@@ -259,6 +262,17 @@ function InstallBannerWrapper() {
   return <InstallBanner onDismiss={dismiss} onInstall={install} />
 }
 
+function AppShell() {
+  const isKiosk = useKioskMode()
+  return (
+    <div className="flex flex-col h-svh bg-[var(--color-bg)] overflow-hidden">
+      <AnimatedMain />
+      {!isKiosk && <InstallBannerWrapper />}
+      {!isKiosk && <AppBar />}
+    </div>
+  )
+}
+
 export default function App() {
   const bottomBarState = useBottomBarState()
   const { i18n } = useTranslation()
@@ -312,13 +326,8 @@ export default function App() {
   return (
     <BrowserRouter>
       <BottomBarContext.Provider value={bottomBarState}>
-        <div className="flex flex-col h-svh bg-[var(--color-bg)] overflow-hidden">
-          <AnimatedMain />
-          <InstallBannerWrapper />
-          <AppBar />
-        </div>
+        <AppShell />
       </BottomBarContext.Provider>
     </BrowserRouter>
   )
 }
-

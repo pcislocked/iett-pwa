@@ -24,6 +24,8 @@ import { StopTimebar } from '@/components/StopTimebar'
 import { formatPlate } from '@/utils/plateUtils'
 import { useWakeLock } from '@/hooks/useWakeLock'
 import { triggerHaptic } from '@/utils/haptics'
+import { useKioskMode } from '@/hooks/useKioskMode'
+import { useHorizontalScroll } from '@/hooks/useHorizontalScroll'
 
 
 /** Fixed palette for the first 3 routes at this stop */
@@ -377,8 +379,8 @@ function BusDetailSheet({
               </div>
             )}
             {mapReady && (
-              <MapContainer center={mapCenter} zoom={15} style={{ height: '100%', width: '100%' }} zoomControl={false} className={mapClassName}>
-                <TileLayer key={currentUrl} className={tileClassName} attribution={currentAttribution} url={currentUrl} />
+              <MapContainer center={mapCenter} zoom={15} minZoom={MAP_MIN_ZOOM} maxZoom={MAP_MAX_ZOOM} maxBounds={ISTANBUL_BOUNDS} style={{ height: '100%', width: '100%' }} zoomControl={false} className={mapClassName}>
+                <TileLayer key={currentUrl} className={tileClassName} attribution={currentAttribution} url={currentUrl} keepBuffer={1} updateWhenIdle={true} updateWhenZooming={false} />
                 {bounds && <FitBoundsEffect bounds={bounds} />}
                 <Polyline
                   positions={[[effectiveLat!, effectiveLon!], [stopLat, stopLon]]}
@@ -543,8 +545,10 @@ const globalRouteIconCache = new Map<string, L.DivIcon>()
 
 export default function StopPage() {
   const { t } = useTranslation()
+  const isKiosk = useKioskMode()
+  const routeRibbonRef = useHorizontalScroll<HTMLDivElement>()
   const { prefs, isPinned, pinStop, unpinStop } = useUserPrefs()
-  useWakeLock({ enabled: prefs.keepScreenAwake })
+  useWakeLock({ enabled: prefs.keepScreenAwake || isKiosk })
   
   const { currentUrl, currentAttribution, satellite, toggleSatellite, mapClassName, tileClassName } = useMapTiles()
   const { dcode } = useParams<{ dcode: string }>()
@@ -891,18 +895,20 @@ export default function StopPage() {
       {/* Header */}
       <div className="bg-surface-card border-b border-surface-muted shrink-0 sticky top-0 z-40">
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
-          <button
-            onClick={() => navigate(-1)}
-            className="text-text-secondary hover:text-text-primary p-1 -ml-1 rounded-lg transition-colors"
-          >
-            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
-            </svg>
-          </button>
+          {!isKiosk && (
+            <button
+              onClick={() => navigate(-1)}
+              className="text-text-secondary hover:text-text-primary p-1 -ml-1 rounded-lg transition-colors"
+            >
+              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+              </svg>
+            </button>
+          )}
 
-          <div className="flex-1 min-w-0">
-            <h1 className="text-base font-bold text-text-primary truncate">{stopName}</h1>
-            <div className="flex items-center gap-2 mt-0.5">
+          <div className={`flex-1 min-w-0 ${isKiosk ? 'flex flex-col items-center justify-center text-center w-full py-1' : ''}`}>
+            <h1 className={`${isKiosk ? 'text-lg sm:text-xl font-extrabold tracking-tight' : 'text-base font-bold'} text-text-primary truncate`}>{stopName}</h1>
+            <div className={`flex items-center gap-2 mt-0.5 ${isKiosk ? 'justify-center' : ''}`}>
               <span className="text-[10px] bg-surface-muted text-text-secondary px-1.5 py-0.5 rounded font-mono shrink-0">
                 #{dcode}
               </span>
@@ -913,73 +919,75 @@ export default function StopPage() {
             {stale && <p className="text-[11px] text-amber-400">{t('stops.staleWarning')}</p>}
           </div>
 
-          <div className="flex items-center gap-1 shrink-0">
-            <button
-              onClick={() => {
-                if (stopDetail?.latitude && stopDetail?.longitude) {
-                  window.open(`https://www.google.com/maps/dir/?api=1&destination=${stopDetail.latitude},${stopDetail.longitude}&travelmode=transit`, '_blank', 'noopener,noreferrer')
-                }
-              }}
-              disabled={!stopDetail?.latitude || !stopDetail?.longitude}
-              className="p-1.5 rounded-xl transition-colors text-text-muted hover:text-brand-500 disabled:opacity-40"
-              aria-label={t('stops.directions', { defaultValue: 'Yol Tarifi Al' })}
-            >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+          {!isKiosk && (
+            <div className="flex items-center gap-1 shrink-0">
+              <button
+                onClick={() => {
+                  if (stopDetail?.latitude && stopDetail?.longitude) {
+                    window.open(`https://www.google.com/maps/dir/?api=1&destination=${stopDetail.latitude},${stopDetail.longitude}&travelmode=transit`, '_blank', 'noopener,noreferrer')
+                  }
+                }}
+                disabled={!stopDetail?.latitude || !stopDetail?.longitude}
+                className="p-1.5 rounded-xl transition-colors text-text-muted hover:text-brand-500 disabled:opacity-40"
+                aria-label={t('stops.directions', { defaultValue: 'Yol Tarifi Al' })}
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                </svg>
+              </button>
+              <button
+                onClick={() => setStopInfoModalOpen(true)}
+                className="p-1.5 rounded-xl transition-colors text-text-muted hover:text-text-secondary"
+                aria-label={t('stops.info', { defaultValue: 'Durak Bilgisi' })}
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </button>
+              <button
+                onClick={() => {
+                  triggerHaptic('medium', prefs.hapticFeedback)
+                  toggle(favItem)
+                }}
+                className={`p-1.5 rounded-xl transition-colors ${
+                  favorited ? 'text-rose-400' : 'text-text-muted hover:text-text-secondary'
+                }`}
+              >
+              <svg className="w-5 h-5" fill={favorited ? 'currentColor' : 'none'} viewBox="0 0 24 24"
+                   stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round"
+                      d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
               </svg>
             </button>
-            <button
-              onClick={() => setStopInfoModalOpen(true)}
-              className="p-1.5 rounded-xl transition-colors text-text-muted hover:text-text-secondary"
-              aria-label={t('stops.info', { defaultValue: 'Durak Bilgisi' })}
-            >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </button>
+
             <button
               onClick={() => {
+                if (!dcode) return
+                if (pinAtLimit) return
                 triggerHaptic('medium', prefs.hapticFeedback)
-                toggle(favItem)
+                if (pinned) unpinStop(dcode)
+                else pinStop(dcode, stopName)
               }}
-              className={`p-1.5 rounded-xl transition-colors ${
-                favorited ? 'text-rose-400' : 'text-text-muted hover:text-text-secondary'
+              disabled={!dcode || pinAtLimit}
+              aria-label={
+                pinAtLimit
+                  ? t('stops.pinAtLimit', { max: PINNED_STOPS_MAX })
+                  : pinned ? t('stops.unpinStop') : t('stops.pinStop')
+              }
+              aria-pressed={pinned}
+              title={
+                pinAtLimit
+                  ? t('stops.pinLimit', { max: PINNED_STOPS_MAX })
+                  : pinned ? t('stops.unpinStop') : t('stops.pinStop')
+              }
+              className={`p-1.5 rounded-xl transition-colors shrink-0 disabled:opacity-40 ${
+                pinned ? 'text-amber-400' : 'text-text-muted hover:text-text-secondary'
               }`}
             >
-            <svg className="w-5 h-5" fill={favorited ? 'currentColor' : 'none'} viewBox="0 0 24 24"
-                 stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round"
-                    d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
-            </svg>
-          </button>
-
-          <button
-            onClick={() => {
-              if (!dcode) return
-              if (pinAtLimit) return
-              triggerHaptic('medium', prefs.hapticFeedback)
-              if (pinned) unpinStop(dcode)
-              else pinStop(dcode, stopName)
-            }}
-            disabled={!dcode || pinAtLimit}
-            aria-label={
-              pinAtLimit
-                ? t('stops.pinAtLimit', { max: PINNED_STOPS_MAX })
-                : pinned ? t('stops.unpinStop') : t('stops.pinStop')
-            }
-            aria-pressed={pinned}
-            title={
-              pinAtLimit
-                ? t('stops.pinLimit', { max: PINNED_STOPS_MAX })
-                : pinned ? t('stops.unpinStop') : t('stops.pinStop')
-            }
-            className={`p-1.5 rounded-xl transition-colors shrink-0 disabled:opacity-40 ${
-              pinned ? 'text-amber-400' : 'text-text-muted hover:text-text-secondary'
-            }`}
-          >
-            <span className="text-base leading-none">{pinned ? '📌' : '📍'}</span>
-          </button>
-          </div>
+              <span className="text-base leading-none">{pinned ? '📌' : '📍'}</span>
+            </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -1060,8 +1068,8 @@ export default function StopPage() {
             <MapContainer
               center={[stopDetail.latitude, stopDetail.longitude]}
               zoom={16}
-              minZoom={MAP_MIN_ZOOM}
-              maxZoom={MAP_MAX_ZOOM}
+              minZoom={isKiosk ? 12 : MAP_MIN_ZOOM}
+              maxZoom={isKiosk ? 16 : MAP_MAX_ZOOM}
               maxBounds={ISTANBUL_BOUNDS}
               maxBoundsViscosity={1.0}
               style={{ height: '100%', width: '100%' }}
@@ -1069,7 +1077,15 @@ export default function StopPage() {
               className={mapClassName}
             >
               {/* MapResizer removed, relying on resize events */}
-              <TileLayer key={currentUrl} className={tileClassName} attribution={currentAttribution} url={currentUrl} />
+              <TileLayer
+                key={currentUrl}
+                className={tileClassName}
+                attribution={isKiosk ? currentAttribution.replace(/<a\b[^>]*>(.*?)<\/a>/gi, '$1') : currentAttribution}
+                url={currentUrl}
+                keepBuffer={1}
+                updateWhenIdle={true}
+                updateWhenZooming={false}
+              />
               <AutoFitBuses
                 stopLat={stopDetail.latitude}
                 stopLon={stopDetail.longitude}
@@ -1079,17 +1095,20 @@ export default function StopPage() {
               <CircleMarker
                 center={[stopDetail.latitude, stopDetail.longitude]}
                 radius={14}
+                interactive={!isKiosk}
                 pathOptions={{ color: 'var(--color-brand)', weight: 3, fillColor: 'var(--color-brand)', fillOpacity: 1 }}
               >
-                <Popup minWidth={160}>
-                  <div className="popup-card">
-                    <p className="popup-stop-name">{stopName}</p>
-                    {stopDetail.direction && (
-                      <span className="popup-direction-badge">&#8594; {stopDetail.direction}</span>
-                    )}
-                    <p className="popup-label">#{dcode}</p>
-                  </div>
-                </Popup>
+                {!isKiosk && (
+                  <Popup minWidth={160}>
+                    <div className="popup-card">
+                      <p className="popup-stop-name">{stopName}</p>
+                      {stopDetail.direction && (
+                        <span className="popup-direction-badge">&#8594; {stopDetail.direction}</span>
+                      )}
+                      <p className="popup-label">#{dcode}</p>
+                    </div>
+                  </Popup>
+                )}
               </CircleMarker>
               {/* Live bus markers — clicking opens the rich BusDetailSheet */}
               {filteredRouteBuses.map((b) => {
@@ -1099,7 +1118,8 @@ export default function StopPage() {
                     key={`${b.kapino}-${b.route_code ?? ''}`}
                     position={[b.latitude, b.longitude]}
                     icon={icon}
-                    eventHandlers={{
+                    interactive={!isKiosk}
+                    eventHandlers={isKiosk ? undefined : {
                       click: () => {
                         const matched = arrivalByKapino.get(b.kapino) ?? null
                         if (matched) setSelectedArrival(matched)
@@ -1108,9 +1128,11 @@ export default function StopPage() {
                   />
                 )
               })}
-              <div className="absolute bottom-4 left-4 z-[1000] pointer-events-auto">
-                <MapTileToggle satellite={satellite} onToggle={toggleSatellite} />
-              </div>
+              {!isKiosk && (
+                <div className="absolute bottom-4 left-4 z-[1000] pointer-events-auto">
+                  <MapTileToggle satellite={satellite} onToggle={toggleSatellite} />
+                </div>
+              )}
             </MapContainer>
           ) : (
             <div className="h-full flex flex-col items-center justify-center text-text-muted">
@@ -1127,7 +1149,8 @@ export default function StopPage() {
         </div>
 
         {/* ── Drag handle ──────────────────────────────────────────────── */}
-        <div
+        {!isKiosk && (
+          <div
             ref={dragHandleRef}
             role="separator"
             aria-valuenow={40}
@@ -1142,17 +1165,14 @@ export default function StopPage() {
             onPointerCancel={onHandlePointerUp}
             onKeyDown={onHandleKeyDown}
           >
-          <div className="w-10 h-1 rounded-full bg-slate-600" />
-        </div>
+            <div className="w-10 h-1 rounded-full bg-slate-600" />
+          </div>
+        )}
 
-        {/* Arrivals — scrollable, items must not shrink */}
-        <PullToRefresh
-          onRefresh={async () => {
-            refreshArrivals()
-            await new Promise(r => setTimeout(r, 600))
-          }}
-        >
-          <div className="px-4 pt-2 pb-4">
+        {/* Arrivals — scrollable or frozen in kiosk */}
+        {(() => {
+          const arrivalsContent = (
+            <div className="px-4 pt-2 pb-4">
           {/* Announcements Section */}
           <div className="mb-2">
             {isAnnsLoading && polledAnnouncements === undefined ? (
@@ -1271,64 +1291,117 @@ export default function StopPage() {
                   className="mb-2 shrink-0 card flex items-stretch gap-0 py-0 overflow-hidden hover:border-slate-500 transition-colors"
                 >
                   {/* LEFT half — navigate to route page */}
-                  <Link
-                    to={`/routes/${a.route_code}`}
-                    className="flex items-center gap-3 flex-1 min-w-0 py-2 px-3"
-                  >
-                    <div
-                      style={{ backgroundColor: routeColor }}
-                      className="text-white font-mono font-bold text-xs rounded-xl px-2.5 py-1.5 min-w-[50px] text-center shrink-0 leading-tight"
-                    >
-                      {a.route_code}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-1.5">
-                        <p className="text-xs text-text-primary truncate leading-snug">{a.destination}</p>
-                        {isGpsStale(a.last_seen_ts) && (
-                          <span
-                            title={t('arac.staleDataWarning')}
-                            aria-label={t('arac.staleDataWarning')}
-                            className="text-xs shrink-0 cursor-help"
-                          >
-                            ⚠️
-                          </span>
+                  {isKiosk ? (
+                    <div className="flex items-center gap-3 flex-1 min-w-0 py-2 px-3">
+                      <div
+                        style={{ backgroundColor: routeColor }}
+                        className="text-white font-mono font-bold text-xs rounded-xl px-2.5 py-1.5 min-w-[50px] text-center shrink-0 leading-tight"
+                      >
+                        {a.route_code}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <p className="text-xs text-text-primary truncate leading-snug">{a.destination}</p>
+                          {isGpsStale(a.last_seen_ts) && (
+                            <span
+                              title={t('arac.staleDataWarning')}
+                              aria-label={t('arac.staleDataWarning')}
+                              className="text-xs shrink-0 cursor-help"
+                            >
+                              ⚠️
+                            </span>
+                          )}
+                        </div>
+                        {hasVehicle && (
+                          <p className="text-xs text-text-secondary mt-0.5 font-mono tracking-wide">
+                            {[formatPlate(a.plate), a.kapino].filter(Boolean).join('  ·  ')}
+                          </p>
                         )}
                       </div>
-                      {hasVehicle && (
-                        <p className="text-xs text-text-secondary mt-0.5 font-mono tracking-wide">
-                          {[formatPlate(a.plate), a.kapino].filter(Boolean).join('  ·  ')}
-                        </p>
-                      )}
                     </div>
-                  </Link>
+                  ) : (
+                    <Link
+                      to={`/routes/${a.route_code}`}
+                      className="flex items-center gap-3 flex-1 min-w-0 py-2 px-3"
+                    >
+                      <div
+                        style={{ backgroundColor: routeColor }}
+                        className="text-white font-mono font-bold text-xs rounded-xl px-2.5 py-1.5 min-w-[50px] text-center shrink-0 leading-tight"
+                      >
+                        {a.route_code}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <p className="text-xs text-text-primary truncate leading-snug">{a.destination}</p>
+                          {isGpsStale(a.last_seen_ts) && (
+                            <span
+                              title={t('arac.staleDataWarning')}
+                              aria-label={t('arac.staleDataWarning')}
+                              className="text-xs shrink-0 cursor-help"
+                            >
+                              ⚠️
+                            </span>
+                          )}
+                        </div>
+                        {hasVehicle && (
+                          <p className="text-xs text-text-secondary mt-0.5 font-mono tracking-wide">
+                            {[formatPlate(a.plate), a.kapino].filter(Boolean).join('  ·  ')}
+                          </p>
+                        )}
+                      </div>
+                    </Link>
+                  )}
 
                   {/* Divider */}
                   <div className="w-px bg-surface-muted shrink-0 my-2" />
 
                   {/* RIGHT half — open single-bus sheet */}
-                  <button
-                    onClick={() => {
-                      triggerHaptic('light', prefs.hapticFeedback)
-                      setSelectedArrival(a)
-                    }}
-                    className="shrink-0 flex flex-col items-center justify-center gap-1 px-3 py-2 hover:bg-surface-muted/50 transition-colors"
-                  >
-                    <EtaChip
-                      minutes={a.eta_minutes}
-                      raw={a.eta_raw}
-                      isMismatch={stopDetail?.latitude != null && stopDetail?.longitude != null ? checkMathMismatch(a, busByKapino.get(a.kapino || '') || null, stopDetail.latitude, stopDetail.longitude) : false}
-                    />
-                    <svg className="w-3 h-3 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 6.75V15m6-6v8.25m.503 3.498l4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 00-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0z" />
-                    </svg>
-                  </button>
+                  {isKiosk ? (
+                    <div className="shrink-0 flex items-center justify-center px-3 py-2">
+                      <EtaChip
+                        minutes={a.eta_minutes}
+                        raw={a.eta_raw}
+                        isMismatch={stopDetail?.latitude != null && stopDetail?.longitude != null ? checkMathMismatch(a, busByKapino.get(a.kapino || '') || null, stopDetail.latitude, stopDetail.longitude) : false}
+                      />
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        triggerHaptic('light', prefs.hapticFeedback)
+                        setSelectedArrival(a)
+                      }}
+                      className="shrink-0 flex items-center justify-center px-3 py-2 hover:bg-surface-muted/50 transition-colors"
+                    >
+                      <EtaChip
+                        minutes={a.eta_minutes}
+                        raw={a.eta_raw}
+                        isMismatch={stopDetail?.latitude != null && stopDetail?.longitude != null ? checkMathMismatch(a, busByKapino.get(a.kapino || '') || null, stopDetail.latitude, stopDetail.longitude) : false}
+                      />
+                    </button>
+                  )}
                 </motion.div>
               )
             })}
           </AnimatePresence>
 
           </div>
-        </PullToRefresh>
+          )
+
+          return isKiosk ? (
+            <div className="flex-1 overflow-hidden select-none">
+              {arrivalsContent}
+            </div>
+          ) : (
+            <PullToRefresh
+              onRefresh={async () => {
+                refreshArrivals()
+                await new Promise(r => setTimeout(r, 600))
+              }}
+            >
+              {arrivalsContent}
+            </PullToRefresh>
+          )
+        })()}
 
         {/* ── Bottom strip: last updated + refresh + route filter chips ────── */}
         <div className="shrink-0 border-t border-surface-muted bg-surface-card pb-2">
@@ -1341,21 +1414,24 @@ export default function StopPage() {
               timestampMode={prefs.timestampMode}
               timebarFormat={prefs.timebarFormat}
               showCurrentTime={prefs.showCurrentTime}
+              isKiosk={isKiosk}
               onShowInfo={(iettUpdatedAt || (arrivals && arrivals.length > 0)) ? () => setShowInfo(true) : undefined}
             />
-            <button
-              onClick={() => refreshArrivals()}
-              className="shrink-0 flex items-center gap-1 text-[11px] text-text-secondary hover:text-text-primary transition-colors active:scale-95"
-            >
-              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
-              </svg>
-              {t('common.refresh')}
-            </button>
+            {!isKiosk && (
+              <button
+                onClick={() => refreshArrivals()}
+                className="shrink-0 flex items-center gap-1 text-[11px] text-text-secondary hover:text-text-primary transition-colors active:scale-95"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+                </svg>
+                {t('common.refresh')}
+              </button>
+            )}
           </div>
 
-          {(routes ?? []).length > 0 && (
-            <div className="px-4 py-2 flex gap-2 overflow-x-auto no-scrollbar">
+          {!isKiosk && (routes ?? []).length > 0 && (
+            <div ref={routeRibbonRef} className="px-4 py-2 flex gap-2 overflow-x-auto no-scrollbar cursor-grab">
               <button
                 onClick={() => setActiveRoutes(new Set())}
                 className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-bold transition-colors ${
