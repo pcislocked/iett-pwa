@@ -32,6 +32,11 @@ export default function CanvasFleetLayer({
   const markersRef = useRef<L.CircleMarker[]>([])
   const trailsRef = useRef<L.Polyline[]>([])
   const timerRef = useRef<number | null>(null)
+  const selectedKapinoRef = useRef<string | null>(selectedKapino)
+
+  useEffect(() => {
+    selectedKapinoRef.current = selectedKapino
+  }, [selectedKapino])
 
   useEffect(() => {
     rendererRef.current = L.canvas({ padding: 0.5 })
@@ -101,6 +106,7 @@ export default function CanvasFleetLayer({
       })
 
       marker.addTo(layer)
+      ;(marker as unknown as { _kapino: string })._kapino = bus.kapino
       markersRef.current.push(marker)
 
       // Trail çizgileri — sadece seçili araç için
@@ -135,7 +141,10 @@ export default function CanvasFleetLayer({
       timerRef.current = window.setTimeout(() => {
         const zoom = map.getZoom()
         const radius = zoom < 12 ? 2 : zoom < 14 ? 4 : 6
-        markersRef.current.forEach(m => m.setRadius(radius))
+        markersRef.current.forEach((m) => {
+          const isSelected = (m as unknown as { _kapino?: string })._kapino === selectedKapinoRef.current
+          m.setRadius(isSelected ? radius * 1.5 : radius)
+        })
 
         // Note: Full re-render for trails isn't strictly necessary for radius changes,
         // but if we wanted to toggle trails on/off dynamically based on zoom,

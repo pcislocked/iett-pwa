@@ -27,7 +27,9 @@
     "update": "Update",
     "all": "All",
     "outdated": "Outdated",
-    "new": "New"
+    "new": "New",
+    "live": "Live",
+    "select": "Select"
   },
   "nav": {
     "map": "Map",
@@ -182,7 +184,8 @@
     "busesAndStopsAtPoint": "Buses and stops at this point",
     "openStop": "Open Stop",
     "upcomingBuses": "Upcoming Buses",
-    "noUpcomingBuses": "No upcoming buses right now"
+    "noUpcomingBuses": "No upcoming buses right now",
+    "stopPreview": "Stop Preview"
   },
   "fleet": {
     "lastRoute": "Last: {{code}}",

@@ -26,7 +26,9 @@
     "iett": "\u2800",
     "update": "\u2800",
     "all": "\u2800",
-    "new": "\u2800"
+    "new": "\u2800",
+    "live": "\u2800",
+    "select": "\u2800"
   },
   "nav": {
     "map": "\u2800",
@@ -164,7 +166,8 @@
     "busesAndStopsAtPoint": "\u2800",
     "openStop": "\u2800",
     "upcomingBuses": "\u2800",
-    "noUpcomingBuses": "\u2800"
+    "noUpcomingBuses": "\u2800",
+    "stopPreview": "\u2800"
   },
   "fleet": {
     "lastRoute": "\u2800",

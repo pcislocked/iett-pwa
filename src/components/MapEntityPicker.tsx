@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import type { BusPosition, NearbyStop } from '@/api/client'
 import { useTranslation } from 'react-i18next'
 import { formatPlate } from '@/utils/plateUtils'
@@ -17,6 +17,16 @@ export default function MapEntityPicker({ buses, stops, onSelectBus, onSelectSto
   const { t } = useTranslation()
   const [filter, setFilter] = useState<EntityFilter>('all')
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose()
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [onClose])
+
   const totalCount = buses.length + stops.length
 
   const title =
@@ -30,7 +40,12 @@ export default function MapEntityPicker({ buses, stops, onSelectBus, onSelectSto
   const showBuses = filter === 'all' || filter === 'buses'
 
   return (
-    <div className="absolute bottom-24 left-4 right-4 z-[1100]">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label={title}
+      className="absolute bottom-24 left-4 right-4 z-[1100]"
+    >
       <div className="bg-surface-card border border-surface-border rounded-2xl shadow-2xl overflow-hidden max-h-[380px] flex flex-col">
         
         {/* Header with Title, Close, and Filter Pills (Variation 2) */}
@@ -46,7 +61,7 @@ export default function MapEntityPicker({ buses, stops, onSelectBus, onSelectSto
             </div>
             <button
               onClick={onClose}
-              className="text-text-muted hover:text-text-primary p-1 -mr-1 transition-colors"
+              className="min-w-[44px] min-h-[44px] flex items-center justify-center text-text-muted hover:text-text-primary p-2 -mr-2 transition-colors cursor-pointer"
               aria-label={t('common.close', 'Kapat')}
             >
               ✕
@@ -124,7 +139,7 @@ export default function MapEntityPicker({ buses, stops, onSelectBus, onSelectSto
                   </div>
                 </div>
                 <span className="text-xs text-brand-400 font-semibold shrink-0 ml-2">
-                  {t('map.openStop', 'Seç')} &rarr;
+                  {t('common.select', 'Seç')} &rarr;
                 </span>
               </button>
             ))}
@@ -164,7 +179,7 @@ export default function MapEntityPicker({ buses, stops, onSelectBus, onSelectSto
                   </div>
                 </div>
                 <span className="text-xs text-brand-400 font-semibold shrink-0 ml-2">
-                  {t('map.openRoute', 'Seç')} &rarr;
+                  {t('common.select', 'Seç')} &rarr;
                 </span>
               </button>
             ))}

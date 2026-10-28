@@ -104,11 +104,6 @@ function GpsMarker({ location }: { location: [number, number] | null }) {
 
 function MapViewportTracker({ onUpdate }: { onUpdate: (zoom: number, center: L.LatLng) => void }) {
   const timerRef = useRef<number | null>(null)
-  useEffect(() => {
-    return () => {
-      if (timerRef.current) window.clearTimeout(timerRef.current)
-    }
-  }, [])
   const map = useMapEvents({
     zoomend: () => {
       if (timerRef.current) window.clearTimeout(timerRef.current)
@@ -119,6 +114,14 @@ function MapViewportTracker({ onUpdate }: { onUpdate: (zoom: number, center: L.L
       timerRef.current = window.setTimeout(() => onUpdate(map.getZoom(), map.getCenter()), 100)
     },
   })
+
+  useEffect(() => {
+    onUpdate(map.getZoom(), map.getCenter())
+    return () => {
+      if (timerRef.current) window.clearTimeout(timerRef.current)
+    }
+  }, [map, onUpdate])
+
   return null
 }
 
@@ -377,6 +380,18 @@ export default function MapPage() {
     }
   }, [])
 
+  const handleBusClick = useCallback((kapino: string) => {
+    setSelectedStop(null)
+    setPickerEntities(null)
+    setSelectedKapino(kapino)
+  }, [])
+
+  const handleMultiBusClick = useCallback((bs: BusPosition[]) => {
+    setSelectedStop(null)
+    setSelectedKapino(null)
+    setPickerEntities({ buses: bs, stops: [] })
+  }, [])
+
   const handleMapClick = useCallback((latlng: L.LatLng) => {
     if (!mapRef.current) return
     const clickPt = mapRef.current.latLngToContainerPoint(latlng)
@@ -569,15 +584,8 @@ export default function MapPage() {
             stops={unifiedStops}
             selectedRoutes={selectedRoutes}
             selectedKapino={selectedKapino}
-            onBusClick={(kapino) => {
-              setSelectedStop(null)
-              setSelectedKapino(kapino)
-            }}
-            onMultiBusClick={(bs) => {
-              setSelectedStop(null)
-              setSelectedKapino(null)
-              setPickerEntities({ buses: bs, stops: [] })
-            }}
+            onBusClick={handleBusClick}
+            onMultiBusClick={handleMultiBusClick}
             onEntityHit={handleEntityHit}
           />
         )}
@@ -762,10 +770,12 @@ export default function MapPage() {
                 onClick={() => {
                   setAreaStops([])
                   setLastSearchedCenter(null)
+                  setSelectedStop(null)
+                  setPickerEntities(null)
                 }}
                 title={t('map.clearAreaStops', 'Bölge duraklarını temizle')}
                 aria-label={t('map.clearAreaStops', 'Bölge duraklarını temizle')}
-                className="bg-surface-card hover:bg-surface-muted active:scale-90 text-text-secondary w-8 h-8 rounded-full border border-surface-border shadow-lg flex items-center justify-center text-sm font-bold transition-all cursor-pointer shrink-0"
+                className="bg-surface-card hover:bg-surface-muted active:scale-90 text-text-secondary w-9 h-9 min-w-[36px] min-h-[36px] rounded-full border border-surface-border shadow-lg flex items-center justify-center text-sm font-bold transition-all cursor-pointer shrink-0"
               >
                 &times;
               </button>

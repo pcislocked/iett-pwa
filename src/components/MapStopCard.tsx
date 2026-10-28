@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useArrivals } from '@/hooks/useArrivals'
 import { etaTextClass } from '@/utils/etaColor'
@@ -20,10 +21,24 @@ export default function MapStopCard({ stop, onClose, onOpenStop }: MapStopCardPr
   const { t } = useTranslation()
   const { data: arrivals, loading } = useArrivals(stop.stop_code)
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose()
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [onClose])
+
   const topArrivals = arrivals?.slice(0, 6) ?? []
 
   return (
-    <div className="absolute bottom-[160px] left-0 right-0 z-[1001] pointer-events-none flex justify-center pb-2 px-2">
+    <div
+      role="region"
+      aria-label={t('map.stopPreview', 'Durak Önizleme')}
+      className="absolute bottom-[160px] left-0 right-0 z-[1001] pointer-events-none flex justify-center pb-2 px-2"
+    >
       <div className="pointer-events-auto w-full max-w-2xl bg-surface-card border border-surface-border rounded-2xl p-3.5 shadow-2xl backdrop-blur-md">
         
         {/* Top Row: Stop info & close */}
@@ -51,7 +66,7 @@ export default function MapStopCard({ stop, onClose, onOpenStop }: MapStopCardPr
           </div>
           <button
             onClick={onClose}
-            className="text-text-muted hover:text-text-primary p-1 -mr-1 transition-colors"
+            className="min-w-[44px] min-h-[44px] flex items-center justify-center text-text-muted hover:text-text-primary p-2 -mr-2 transition-colors cursor-pointer"
             aria-label={t('common.close', 'Kapat')}
           >
             ✕
@@ -63,7 +78,7 @@ export default function MapStopCard({ stop, onClose, onOpenStop }: MapStopCardPr
           <div className="text-[10px] uppercase font-bold text-text-muted tracking-wider mb-1 flex items-center justify-between">
             <span>{t('map.upcomingBuses', 'Yaklaşan Araçlar')}</span>
             <span className="text-[9px] text-emerald-400 font-medium flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> Canlı
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> {t('common.live', 'Canlı')}
             </span>
           </div>
 

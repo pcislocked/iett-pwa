@@ -147,4 +147,23 @@ describe('MapEntityPicker (Variation 2 - Filter Pills)', () => {
 
     expect(onSelectBus).toHaveBeenCalledWith('B-2144')
   })
+
+  it('calls onClose when Escape key is pressed', () => {
+    const onSelectBus = vi.fn()
+    const onSelectStop = vi.fn()
+    const onClose = vi.fn()
+
+    render(
+      <MapEntityPicker
+        buses={mockBuses}
+        stops={mockStops}
+        onSelectBus={onSelectBus}
+        onSelectStop={onSelectStop}
+        onClose={onClose}
+      />,
+    )
+
+    fireEvent.keyDown(window, { key: 'Escape' })
+    expect(onClose).toHaveBeenCalledTimes(1)
+  })
 })

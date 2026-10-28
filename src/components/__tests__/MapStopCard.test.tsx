@@ -126,4 +126,21 @@ describe('MapStopCard (Variation A)', () => {
 
     expect(screen.getByText(/yaklaşan araç görünmüyor/i)).toBeInTheDocument()
   })
+
+  it('triggers onClose when Escape key is pressed', () => {
+    vi.spyOn(useArrivalsModule, 'useArrivals').mockReturnValue({
+      data: [],
+      loading: false,
+      error: null,
+      refresh: vi.fn(),
+      stale: false,
+      lastUpdated: null,
+      iettUpdatedAt: null,
+    })
+
+    render(<MapStopCard stop={defaultStop} onClose={onClose} onOpenStop={onOpenStop} />)
+
+    fireEvent.keyDown(window, { key: 'Escape' })
+    expect(onClose).toHaveBeenCalledTimes(1)
+  })
 })

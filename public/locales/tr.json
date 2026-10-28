@@ -27,7 +27,9 @@
     "update": "Güncelleme",
     "all": "Tümü",
     "outdated": "Güncel değil",
-    "new": "Yeni"
+    "new": "Yeni",
+    "live": "Canlı",
+    "select": "Seç"
   },
   "nav": {
     "map": "Harita",
@@ -182,7 +184,8 @@
     "busesAndStopsAtPoint": "Bu noktada araç ve duraklar var",
     "openStop": "Durağı Aç",
     "upcomingBuses": "Yaklaşan Araçlar",
-    "noUpcomingBuses": "Şu an yaklaşan araç görünmüyor"
+    "noUpcomingBuses": "Şu an yaklaşan araç görünmüyor",
+    "stopPreview": "Durak Önizleme"
   },
   "fleet": {
     "lastRoute": "Son: {{code}}",
