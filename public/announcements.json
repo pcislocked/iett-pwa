@@ -1,0 +1,14 @@
+{
+  "announcements": [
+    {
+      "id": 1,
+      "date": "2026-10-28",
+      "startDate": "2026-10-28T00:00:00.000Z",
+      "endDate": "2026-11-04T23:59:59.000Z",
+      "title": "İETT PWA v0.4.12 Yayında! 🚀",
+      "isIgnorable": true,
+      "isSingleShow": false,
+      "content": "Yeni sürüm ile birlikte harita ekranında **canlı durak ve hat seçici**, 10m liste modu ve performans optimizasyonları kullanıma sunuldu. Detaylar için [Yenilikler sayfasını](/changelog) inceleyebilirsiniz."
+    }
+  ]
+}
