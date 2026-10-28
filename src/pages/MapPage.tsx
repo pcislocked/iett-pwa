@@ -315,10 +315,10 @@ export default function MapPage() {
 
   // Fetch Bus detail when kapino selected
   useEffect(() => {
+    setSelectedDetail(null)
+    setSelectedRouteMeta(null)
+    setSelectedFirstStop(null)
     if (!selectedKapino) {
-      setSelectedDetail(null)
-      setSelectedRouteMeta(null)
-      setSelectedFirstStop(null)
       return
     }
     let alive = true
