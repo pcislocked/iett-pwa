@@ -75,6 +75,17 @@ describe('useVersionBanner and storage helpers', () => {
       expect(localStorage.getItem(LAST_SEEN_VERSION_KEY)).toBeTruthy()
     })
 
+    it('first visit on v0.4.12.1: shows banner so existing users discover changelog', async () => {
+      const appUpdate = await import('../../utils/appUpdate')
+      vi.spyOn(appUpdate, 'getCurrentAppVersion').mockReturnValue('0.4.12.1')
+
+      const { result } = renderHook(() => useVersionBanner(true))
+
+      expect(result.current.isVisible).toBe(true)
+      expect(result.current.transition?.oldVersion).toBe('0.4.12')
+      expect(result.current.transition?.newVersion).toBe('0.4.12.1')
+    })
+
     it('same version: does not show banner', () => {
       renderHook(() => useVersionBanner(true))
       const currentStored = localStorage.getItem(LAST_SEEN_VERSION_KEY)

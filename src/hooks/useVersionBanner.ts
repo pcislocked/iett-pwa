@@ -82,7 +82,15 @@ export function useVersionBanner(showUpdateBannerPref: boolean) {
     }
 
     // 2) First visit (no version stored yet) -> store current version silently & do NOT show banner
+    // Special exception for v0.4.12.1: show banner once so all users discover the changelog feature
     if (storedVersion === null) {
+      if (currentVersion === '0.4.12.1' && showUpdateBannerPref) {
+        setTransition({
+          oldVersion: '0.4.12',
+          newVersion: '0.4.12.1',
+        })
+        return
+      }
       writeStoredVersionSafe(currentVersion)
       setTransition(null)
       return
