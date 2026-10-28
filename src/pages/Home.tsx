@@ -16,10 +16,12 @@ import { useRouteTickerData } from '@/hooks/useRouteTickerData'
 import PullToRefresh from '@/components/PullToRefresh'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
-import { isTodayAnnouncement, isRecentAnnouncement } from '@/utils/dateUtils'
+import { isRecentAnnouncement } from '@/utils/dateUtils'
 import { useKioskMode } from '@/hooks/useKioskMode'
 import { useVersionBanner } from '@/hooks/useVersionBanner'
 import UpdateBanner from '@/components/UpdateBanner'
+import { usePwaAnnouncements } from '@/hooks/usePwaAnnouncements'
+import PwaAnnouncementBanner from '@/components/PwaAnnouncementBanner'
 import pkg from '../../package.json'
 
 // ── Quick-access item ──────────────────────────────────────────────────────────
@@ -201,6 +203,10 @@ export default function Home() {
     isVisible: isUpdateBannerVisible,
     dismissBanner: dismissUpdateBanner,
   } = useVersionBanner(prefs.showUpdateBanner)
+  const {
+    announcements: pwaAnnouncements,
+    dismissAnnouncement: dismissPwaAnnouncement,
+  } = usePwaAnnouncements()
   const { pinnedStops } = prefs
   const { favorites } = useFavorites()
 
@@ -271,6 +277,15 @@ export default function Home() {
         />
       )}
 
+      {/* ── PWA Remote Admin Announcements Banner ── */}
+      {!isKiosk && pwaAnnouncements.length > 0 && (
+        <PwaAnnouncementBanner
+          announcements={pwaAnnouncements}
+          onDismiss={dismissPwaAnnouncement}
+          hapticFeedback={prefs.hapticFeedback}
+        />
+      )}
+
       {/* ── Global Notices & Today's Announcements Banner ─────────────────────── */}
       {((globalNotices && globalNotices.length > 0) || todayAnnouncements.length > 0) && (
         <div className="px-4 py-3 border-b border-surface-border bg-amber-950/10">
@@ -306,9 +321,7 @@ export default function Home() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5 mb-1 flex-wrap">
                         <span className="text-[10px] font-bold uppercase tracking-wider bg-amber-500/20 text-amber-400 px-1.5 py-0.5 rounded">
-                          {isTodayAnnouncement(ann.date)
-                            ? t('common.today', { defaultValue: 'Bugün' })
-                            : t('common.new', { defaultValue: 'Yeni' })}
+                          {t('common.iettBadge', { defaultValue: 'İETT' })}
                         </span>
                         <span className="text-[11px] text-text-muted">{ann.date}</span>
                       </div>

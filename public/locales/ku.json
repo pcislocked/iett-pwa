@@ -28,7 +28,8 @@
     "all": "\u2800",
     "new": "\u2800",
     "live": "\u2800",
-    "select": "\u2800"
+    "select": "\u2800",
+    "iettBadge": "\u2800"
   },
   "nav": {
     "map": "\u2800",
@@ -378,6 +379,9 @@
   "updateBanner": {
     "message": "\u2800",
     "dismiss": "\u2800"
+  },
+  "announcements": {
+    "pwaSectionTitle": "\u2800"
   },
   "changelog": {
     "title": "\u2800",

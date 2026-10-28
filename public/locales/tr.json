@@ -29,7 +29,8 @@
     "outdated": "Güncel değil",
     "new": "Yeni",
     "live": "Canlı",
-    "select": "Seç"
+    "select": "Seç",
+    "iettBadge": "İETT"
   },
   "nav": {
     "map": "Harita",
@@ -432,7 +433,8 @@
     "systemEmpty": "Aktif bir sefer uyarısı bulunmuyor.",
     "alert": "Uyarı",
     "fareTariffTitle": "Toplu Ulaşım Ücret Tarifesi",
-    "fareTariffDesc": "Güncel bilet, abonman ve aktarma ücretleri"
+    "fareTariffDesc": "Güncel bilet, abonman ve aktarma ücretleri",
+    "pwaSectionTitle": "İETT PWA Duyuruları"
   },
   "pinned": {
     "remove": "Kaldır",

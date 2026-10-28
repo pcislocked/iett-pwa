@@ -60,7 +60,7 @@ describe('Home', () => {
     expect(screen.getByText('Sabitlenmiş Duraklar')).toBeInTheDocument()
   })
 
-  it('renders multiple active official announcements with Bugün and Yeni badges within 72h window', async () => {
+  it('renders multiple active official announcements with İETT badge within 72h window', async () => {
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } })
     render(
       <QueryClientProvider client={queryClient}>
@@ -74,8 +74,8 @@ describe('Home', () => {
     expect(await screen.findByText('E59 Numaralı Hattımız Hakkında')).toBeInTheDocument()
     expect(await screen.findByText('29 Ekim Cumhuriyet Bayramında İETT Seferleri')).toBeInTheDocument()
 
-    // Today's announcement has "Bugün", yesterday's has "Yeni"
-    expect(screen.getByText('Bugün')).toBeInTheDocument()
-    expect(screen.getByText('Yeni')).toBeInTheDocument()
+    // Both announcements display the "İETT" badge
+    const badges = screen.getAllByText('İETT')
+    expect(badges.length).toBeGreaterThanOrEqual(2)
   })
 })

@@ -29,7 +29,8 @@
     "outdated": "Outdated",
     "new": "New",
     "live": "Live",
-    "select": "Select"
+    "select": "Select",
+    "iettBadge": "İETT"
   },
   "nav": {
     "map": "Map",
@@ -432,7 +433,8 @@
     "systemEmpty": "No active service alerts.",
     "alert": "Alert",
     "fareTariffTitle": "Public Transit Fare Tariff",
-    "fareTariffDesc": "Current single-ticket, subscription and transfer fares"
+    "fareTariffDesc": "Current single-ticket, subscription and transfer fares",
+    "pwaSectionTitle": "İETT PWA Announcements"
   },
   "pinned": {
     "remove": "Remove",
