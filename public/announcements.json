@@ -1,6 +1,16 @@
 {
   "announcements": [
     {
+      "id": 2,
+      "date": "2026-10-29",
+      "startDate": "2026-10-28T00:00:00.000Z",
+      "endDate": "2026-11-15T23:59:59.000Z",
+      "title": "Apple'da refresh spam yapıyosa ana ekrandan silip tekrar ekleyin",
+      "isIgnorable": true,
+      "isSingleShow": false,
+      "content": "iOS Safari / PWA önbellek çakışması nedeniyle sayfa sürekli yenileniyorsa (refresh spam), uygulamayı ana ekrandan tamamen silip Safari üzerinden tekrar **\"Ana Ekrana Ekle\"** yapın. Kalıcı güncelleme üzerinde çalışıyoruz."
+    },
+    {
       "id": 1,
       "date": "2026-10-28",
       "startDate": "2026-10-28T00:00:00.000Z",
