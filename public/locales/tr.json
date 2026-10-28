@@ -176,7 +176,13 @@
     "zoomInToSearchStops": "Durakları görmek için yakınlaşın",
     "searchStopsHere": "Bu Bölgedeki Durakları Ara",
     "searchingStops": "Duraklar aranıyor...",
-    "clearAreaStops": "Bölge duraklarını temizle"
+    "clearAreaStops": "Bölge duraklarını temizle",
+    "showAsList": "Liste Olarak Göster",
+    "stopsAtPoint": "Bu noktada {{count}} durak var",
+    "busesAndStopsAtPoint": "Bu noktada araç ve duraklar var",
+    "openStop": "Durağı Aç",
+    "upcomingBuses": "Yaklaşan Araçlar",
+    "noUpcomingBuses": "Şu an yaklaşan araç görünmüyor"
   },
   "fleet": {
     "lastRoute": "Son: {{code}}",

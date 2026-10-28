@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import {
   MapContainer,
   TileLayer,
@@ -270,7 +270,16 @@ export default function NearbyPage() {
   const { prefs } = useUserPrefs()
   const { location, loading: gpsLoading, requestLocation } = useLocationManager()
 
-  const [overrideLocation, setOverrideLocation] = useState<{ lat: number; lon: number } | null>(null)
+  const [searchParams] = useSearchParams()
+
+  const [overrideLocation, setOverrideLocation] = useState<{ lat: number; lon: number } | null>(() => {
+    const latParam = Number(searchParams.get('lat'))
+    const lonParam = Number(searchParams.get('lon'))
+    if (Number.isFinite(latParam) && Number.isFinite(lonParam) && latParam !== 0 && lonParam !== 0) {
+      return { lat: latParam, lon: lonParam }
+    }
+    return null
+  })
   const [showLocationModal, setShowLocationModal] = useState(false)
   const effectiveLat = overrideLocation ? overrideLocation.lat : location ? location[0] : null
   const effectiveLon = overrideLocation ? overrideLocation.lon : location ? location[1] : null

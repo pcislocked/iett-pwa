@@ -158,7 +158,13 @@
     "secondsAgo": "\u2800",
     "minutesAgo": "\u2800",
     "hoursAgo": "\u2800",
-    "ibbNotice": "\u2800"
+    "ibbNotice": "\u2800",
+    "showAsList": "\u2800",
+    "stopsAtPoint": "\u2800",
+    "busesAndStopsAtPoint": "\u2800",
+    "openStop": "\u2800",
+    "upcomingBuses": "\u2800",
+    "noUpcomingBuses": "\u2800"
   },
   "fleet": {
     "lastRoute": "\u2800",

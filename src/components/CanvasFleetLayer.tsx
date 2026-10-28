@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { useMap } from 'react-leaflet'
 import * as L from 'leaflet'
-import type { BusPosition } from '@/api/client'
+import type { BusPosition, NearbyStop } from '@/api/client'
 
 // Renk paleti — seçili hatlar farklı renk alır
 const PALETTE = ['#f97316','#3b82f6','#a855f7','#ef4444', '#eab308']
@@ -9,13 +9,23 @@ const DEFAULT_COLOR = '#3b82f6'
 
 interface Props {
   buses: BusPosition[]
+  stops?: NearbyStop[]
   selectedRoutes: string[]
   selectedKapino: string | null
   onBusClick: (kapino: string) => void
   onMultiBusClick: (buses: BusPosition[]) => void
+  onEntityHit?: (result: { buses: BusPosition[]; stops: NearbyStop[] }) => void
 }
 
-export default function CanvasFleetLayer({ buses, selectedRoutes, selectedKapino, onBusClick, onMultiBusClick }: Props) {
+export default function CanvasFleetLayer({
+  buses,
+  stops,
+  selectedRoutes,
+  selectedKapino,
+  onBusClick,
+  onMultiBusClick,
+  onEntityHit,
+}: Props) {
   const map = useMap()
   const layerRef = useRef<L.LayerGroup | null>(null)
   const rendererRef = useRef<L.Canvas | null>(null)
@@ -68,15 +78,23 @@ export default function CanvasFleetLayer({ buses, selectedRoutes, selectedKapino
       })
 
       marker.on('click', () => {
-        // 20px threshold içindeki tüm araçları bul
+        // 24px threshold icindeki tum arac ve duraklari bul (Unified Hit-Test)
         const clickPt = map.latLngToContainerPoint(marker.getLatLng())
-        const nearby = buses.filter(b => {
+        const nearbyBuses = buses.filter(b => {
           if (!Number.isFinite(b.latitude) || !Number.isFinite(b.longitude)) return false
           const pt = map.latLngToContainerPoint([b.latitude, b.longitude])
-          return clickPt.distanceTo(pt) < 20
+          return clickPt.distanceTo(pt) <= 24
         })
-        if (nearby.length > 1) {
-          onMultiBusClick(nearby)
+        const nearbyStops = (stops || []).filter(s => {
+          if (!Number.isFinite(s.latitude) || !Number.isFinite(s.longitude)) return false
+          const pt = map.latLngToContainerPoint([s.latitude, s.longitude])
+          return clickPt.distanceTo(pt) <= 24
+        })
+
+        if (onEntityHit) {
+          onEntityHit({ buses: nearbyBuses, stops: nearbyStops })
+        } else if (nearbyStops.length > 0 || nearbyBuses.length > 1) {
+          onMultiBusClick(nearbyBuses)
         } else {
           onBusClick(bus.kapino)
         }

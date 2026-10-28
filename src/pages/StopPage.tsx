@@ -918,7 +918,7 @@ export default function StopPage() {
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="bg-surface-card border-b border-surface-muted shrink-0 sticky top-0 z-40">
+      <div className="bg-surface-card border-b border-surface-muted shrink-0 sticky top-0 z-40 ios-top-safe">
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
           {!isKiosk && (
             <button

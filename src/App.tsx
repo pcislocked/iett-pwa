@@ -9,6 +9,7 @@ import Home from '@/pages/Home'
 import { BottomBarContext, useBottomBarState } from '@/hooks/useBottomBar'
 import { MAIN_PATHS } from '@/routes'
 import { syncServerTime } from '@/utils/timeSync'
+import { isIOSDevice } from '@/utils/platform'
 
 const SearchPage = lazy(() => import('@/pages/SearchPage'))
 const StopPage = lazy(() => import('@/pages/StopPage'))
@@ -264,8 +265,16 @@ function InstallBannerWrapper() {
 
 function AppShell() {
   const isKiosk = useKioskMode()
+  const isIOS = isIOSDevice()
   return (
     <div className="flex flex-col h-svh bg-[var(--color-bg)] overflow-hidden">
+      {isIOS && (
+        <div
+          aria-hidden="true"
+          className="fixed top-0 inset-x-0 z-[9999] bg-surface-card pointer-events-none"
+          style={{ height: 'max(env(safe-area-inset-top, 0px), 20px)' }}
+        />
+      )}
       <AnimatedMain />
       {!isKiosk && <InstallBannerWrapper />}
       {!isKiosk && <AppBar />}
@@ -276,6 +285,12 @@ function AppShell() {
 export default function App() {
   const bottomBarState = useBottomBarState()
   const { i18n } = useTranslation()
+
+  useEffect(() => {
+    if (isIOSDevice()) {
+      document.documentElement.setAttribute('data-ios', 'true')
+    }
+  }, [])
 
   useEffect(() => {
     document.documentElement.lang = i18n.language

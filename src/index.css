@@ -174,5 +174,14 @@
   }
 }
 
+.safe-area-pt {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+html[data-ios="true"] .ios-top-safe {
+  padding-top: max(env(safe-area-inset-top, 0px), 20px);
+}
+
+
 
 

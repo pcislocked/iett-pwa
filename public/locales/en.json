@@ -176,7 +176,13 @@
     "zoomInToSearchStops": "Zoom in to search stops",
     "searchStopsHere": "Search Stops in this Area",
     "searchingStops": "Searching stops...",
-    "clearAreaStops": "Clear area stops"
+    "clearAreaStops": "Clear area stops",
+    "showAsList": "Show as List",
+    "stopsAtPoint": "{{count}} stops at this point",
+    "busesAndStopsAtPoint": "Buses and stops at this point",
+    "openStop": "Open Stop",
+    "upcomingBuses": "Upcoming Buses",
+    "noUpcomingBuses": "No upcoming buses right now"
   },
   "fleet": {
     "lastRoute": "Last: {{code}}",
