@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest'
 import i18n from '@/i18n'
 import en from '../../public/locales/en.json'
 import tr from '../../public/locales/tr.json'
+import ku from '../../public/locales/ku.json'
 
 describe('i18n configuration', () => {
   beforeEach(async () => {
@@ -47,6 +48,12 @@ describe('i18n configuration', () => {
     // Verify all TR keys exist in EN
     for (const key of trKeys) {
       expect(enKeys).toContain(key)
+    }
+
+    const kuKeys = getKeys(ku)
+    // Verify all TR keys exist in KU (Braille placeholder parity)
+    for (const key of trKeys) {
+      expect(kuKeys).toContain(key)
     }
   })
 })
