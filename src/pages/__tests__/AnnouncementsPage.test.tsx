@@ -36,7 +36,7 @@ describe('AnnouncementsPage Component', () => {
     )
   }
 
-  it('renders all announcements by default with four tabs', async () => {
+  it('renders all announcements by default with four tabs: Tümü, Genel, Sefer, Geliştiriciden', async () => {
     vi.mocked(api.notices.official).mockResolvedValue({
       page: 0,
       total_items: 2,
@@ -70,10 +70,14 @@ describe('AnnouncementsPage Component', () => {
 
     renderPage()
 
-    // 4 tabs exist
+    // 4 tabs exist with user-friendly names
     const tabs = screen.getAllByRole('tab')
     expect(tabs).toHaveLength(4)
     expect(tabs[0]).toHaveAttribute('aria-selected', 'true')
+    expect(tabs[0].textContent).toContain('Tümü')
+    expect(tabs[1].textContent).toContain('Genel')
+    expect(tabs[2].textContent).toContain('Sefer')
+    expect(tabs[3].textContent).toContain('Geliştiriciden')
 
     await waitFor(() => {
       expect(screen.getByText('500T Güzergah Değişikliği')).toBeInTheDocument()
@@ -84,9 +88,13 @@ describe('AnnouncementsPage Component', () => {
     // "Tüm Duyurular (İETT)" external link exists in place of pagination
     const allOfficialLink = screen.getByText('Tüm Duyurular (İETT)').closest('a')
     expect(allOfficialLink).toHaveAttribute('href', 'https://iett.istanbul/announcement/Index')
+
+    // Changelog link exists
+    const changelogLink = screen.getByText(/sürüm geçmişi/i).closest('a')
+    expect(changelogLink).toHaveAttribute('href', '/changelog')
   })
 
-  it('switches to official (İETT) tab', async () => {
+  it('switches to official (Genel) tab', async () => {
     vi.mocked(api.notices.official).mockResolvedValue({
       page: 0,
       total_items: 1,
@@ -115,17 +123,17 @@ describe('AnnouncementsPage Component', () => {
     renderPage()
 
     const tabs = screen.getAllByRole('tab')
-    const iettTab = tabs[1] // İETT tab
-    fireEvent.click(iettTab)
+    const genelTab = tabs[1] // Genel tab
+    fireEvent.click(genelTab)
 
-    expect(iettTab).toHaveAttribute('aria-selected', 'true')
+    expect(genelTab).toHaveAttribute('aria-selected', 'true')
     await waitFor(() => {
       expect(screen.getByText('500T Güzergah Değişikliği')).toBeInTheDocument()
       expect(screen.queryByText('Sistem Bakımı')).not.toBeInTheDocument()
     })
   })
 
-  it('switches to system (NTC) tab and shows global notices', async () => {
+  it('switches to system (Sefer) tab and shows global notices', async () => {
     vi.mocked(api.notices.official).mockResolvedValue({ page: 0, total_items: 0, items: [] })
     vi.mocked(api.notices.global).mockResolvedValue([
       {
@@ -143,25 +151,26 @@ describe('AnnouncementsPage Component', () => {
     renderPage()
 
     const tabs = screen.getAllByRole('tab')
-    const ntcTab = tabs[2] // NTC tab
-    fireEvent.click(ntcTab)
+    const seferTab = tabs[2] // Sefer tab
+    fireEvent.click(seferTab)
 
-    expect(ntcTab).toHaveAttribute('aria-selected', 'true')
+    expect(seferTab).toHaveAttribute('aria-selected', 'true')
     await waitFor(() => {
       expect(screen.getByText(/Sistem Bakımı/i)).toBeInTheDocument()
     })
   })
 
-  it('switches to developer (PWA) tab', async () => {
+  it('switches to developer (Geliştiriciden) tab and displays changelog card', async () => {
     vi.mocked(api.notices.official).mockResolvedValue({ page: 0, total_items: 0, items: [] })
     vi.mocked(api.notices.global).mockResolvedValue([])
 
     renderPage()
 
     const tabs = screen.getAllByRole('tab')
-    const pwaTab = tabs[3] // PWA tab
+    const pwaTab = tabs[3] // Geliştiriciden tab
     fireEvent.click(pwaTab)
 
     expect(pwaTab).toHaveAttribute('aria-selected', 'true')
+    expect(screen.getByText(/sürüm geçmişi/i).closest('a')).toHaveAttribute('href', '/changelog')
   })
 })

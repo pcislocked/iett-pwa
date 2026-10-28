@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { api, type OfficialAnnouncementItem } from '@/api/client'
@@ -146,6 +146,38 @@ export default function AnnouncementsPage() {
     </div>
   )
 
+  const renderChangelogLink = () => (
+    <div className="mt-4 pt-3 border-t border-surface-muted/60">
+      <Link
+        to="/changelog"
+        className="flex items-center justify-between p-4 bg-gradient-to-r from-surface-card to-surface-muted/40 border border-surface-muted hover:border-brand-500/50 rounded-2xl transition-all shadow-sm group"
+      >
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="w-10 h-10 rounded-xl bg-brand-500/10 text-brand-500 flex items-center justify-center shrink-0 text-xl">
+            📋
+          </div>
+          <div className="min-w-0">
+            <h4 className="text-sm font-bold text-text-primary group-hover:text-brand-400 transition-colors">
+              {t('announcements.changelogTitle', { defaultValue: 'Sürüm Geçmişi & Yenilikler' })}
+            </h4>
+            <p className="text-xs text-text-secondary truncate">
+              {t('announcements.changelogDesc', { defaultValue: 'Uygulama güncellemeleri ve sürüm notları' })}
+            </p>
+          </div>
+        </div>
+        <svg
+          className="w-5 h-5 text-text-muted group-hover:text-brand-400 transition-colors shrink-0 ml-2"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={2}
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+        </svg>
+      </Link>
+    </div>
+  )
+
   return (
     <div className="flex-1 flex flex-col min-h-0 bg-surface-base text-text-primary">
       {/* Top Header */}
@@ -167,18 +199,6 @@ export default function AnnouncementsPage() {
             {t('announcements.subtitle', { defaultValue: 'Resmi duyurular, güzergah ve tarife bilgileri' })}
           </p>
         </div>
-        <a
-          href="https://iett.istanbul/announcement/Index"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="p-2 rounded-xl text-brand-400 hover:bg-brand-500/10 transition-colors text-xs font-medium flex items-center gap-1"
-          title={t('announcements.openOfficialWeb', { defaultValue: 'Web Sitesinde Aç' })}
-        >
-          <span>iett.istanbul</span>
-          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-          </svg>
-        </a>
       </div>
 
       {/* Tabs */}
@@ -210,7 +230,7 @@ export default function AnnouncementsPage() {
               : 'bg-surface-card text-text-secondary hover:bg-surface-muted'
           }`}
         >
-          {t('announcements.officialTab', { defaultValue: 'İETT' })}
+          {t('announcements.officialTab', { defaultValue: 'Genel' })}
           {officialCount > 0 ? ` (${officialCount})` : ''}
         </button>
         <button
@@ -223,7 +243,7 @@ export default function AnnouncementsPage() {
               : 'bg-surface-card text-text-secondary hover:bg-surface-muted'
           }`}
         >
-          {t('announcements.systemTab', { defaultValue: 'NTC' })}
+          {t('announcements.systemTab', { defaultValue: 'Sefer' })}
           {globalCount > 0 ? ` (${globalCount})` : ''}
         </button>
         <button
@@ -236,7 +256,7 @@ export default function AnnouncementsPage() {
               : 'bg-surface-card text-text-secondary hover:bg-surface-muted'
           }`}
         >
-          {t('announcements.pwaTab', { defaultValue: 'PWA' })}
+          {t('announcements.pwaTab', { defaultValue: 'Geliştiriciden' })}
           {pwaCount > 0 ? ` (${pwaCount})` : ''}
         </button>
       </div>
@@ -259,6 +279,7 @@ export default function AnnouncementsPage() {
             {isOfficialLoading ? renderSkeleton(3) : renderOfficialList()}
             {renderOfficialLink()}
             {renderFareTariff()}
+            {renderChangelogLink()}
           </>
         )}
 
@@ -332,6 +353,7 @@ export default function AnnouncementsPage() {
             )}
 
             {renderPwaList()}
+            {renderChangelogLink()}
           </>
         )}
       </div>

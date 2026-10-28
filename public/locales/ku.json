@@ -459,7 +459,9 @@
     "pwaReadMore": "⠀",
     "pwaReadLess": "⠀",
     "pwaTab": "⠀",
-    "pwaEmpty": "⠀"
+    "pwaEmpty": "⠀",
+    "changelogTitle": "⠀",
+    "changelogDesc": "⠀"
   },
   "changelog": {
     "title": "⠀",

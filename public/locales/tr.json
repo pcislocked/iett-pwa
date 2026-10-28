@@ -427,8 +427,8 @@
     "title": "İETT Duyuruları & Uyarılar",
     "subtitle": "Resmi duyurular, güzergah ve tarife bilgileri",
     "openOfficialWeb": "Web Sitesinde Aç",
-    "officialTab": "İETT",
-    "systemTab": "NTC",
+    "officialTab": "Genel",
+    "systemTab": "Sefer",
     "allTab": "Tümü",
     "allOfficialLink": "Tüm Duyurular (İETT)",
     "allEmpty": "Aktif bir duyuru bulunmuyor.",
@@ -444,8 +444,10 @@
     "pwaSectionTitle": "İETT PWA Duyuruları",
     "pwaReadMore": "Devamını oku",
     "pwaReadLess": "Daha az göster",
-    "pwaTab": "PWA",
-    "pwaEmpty": "Aktif bir bildirim bulunmuyor."
+    "pwaTab": "Geliştiriciden",
+    "pwaEmpty": "Aktif bir bildirim bulunmuyor.",
+    "changelogTitle": "Sürüm Geçmişi & Yenilikler",
+    "changelogDesc": "Uygulama güncellemeleri ve sürüm notları"
   },
   "pinned": {
     "remove": "Kaldır",
