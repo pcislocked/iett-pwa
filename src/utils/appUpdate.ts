@@ -128,3 +128,11 @@ export function setupAppUpdateChecks(): void {
     void checkForUpdate()
   }, VERSION_CHECK_INTERVAL_MS)
 }
+
+
+export function getCurrentAppVersion(): string {
+  if (typeof __APP_VERSION__ !== 'undefined') {
+    return __APP_VERSION__
+  }
+  return '0.4.11.1'
+}

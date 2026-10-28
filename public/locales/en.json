@@ -254,7 +254,10 @@
     "keepScreenAwakeNotSupported": "Your device or browser does not support Screen Wake Lock.",
     "hapticFeedback": "Haptic Feedback",
     "hapticFeedbackDesc": "Provides subtle vibration feedback on key buttons and tab switches.",
-    "hapticFeedbackNotSupported": "Your device or browser does not support haptic feedback."
+    "hapticFeedbackNotSupported": "Your device or browser does not support haptic feedback.",
+    "changelog": "Changelog",
+    "showUpdateBanner": "App Update Banner",
+    "showUpdateBannerDesc": "Show a notification banner on the home screen when a new version is installed"
   },
   "embed": {
     "poweredBy": "iett-pwa",
@@ -426,5 +429,17 @@
     "emptyTitle": "No pinned stops",
     "emptyDesc": "You can pin a stop by tapping the 📌 button on the stop page",
     "addStop": "Add Stop"
+  },
+  "updateBanner": {
+    "message": "✨ App updated (v{{old}} > v{{new}})",
+    "dismiss": "Dismiss notification"
+  },
+  "changelog": {
+    "title": "Changelog",
+    "subtitle": "Application updates and release notes",
+    "currentBadge": "Current",
+    "viewOnGithub": "View on GitHub",
+    "allReleasesOnGithub": "Browse all releases on GitHub Releases",
+    "empty": "No release notes found."
   }
 }

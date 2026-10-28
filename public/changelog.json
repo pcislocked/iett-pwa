@@ -1,0 +1,70 @@
+{
+  "updatedAt": "2026-10-28",
+  "releases": [
+    {
+      "version": "0.4.11.1",
+      "date": "2026-10-26",
+      "title": {
+        "tr": "Kiosk Duyuru Kartları, Harita İyileştirmeleri ve Sürüm Geçmişi",
+        "en": "Kiosk Announcement Cards, Map Fixes & Changelog"
+      },
+      "changes": {
+        "tr": [
+          "Kiosk modunda duyurular 15 saniyede bir otomatik kayan kartlar haline getirildi.",
+          "Haritada durak ikonlarının 404 vermesi ve tıklanabilirlik sorunları düzeltildi.",
+          "Dikey ekran kilidi (Portrait Lock) ve mobil yatay mod uyarı katmanı eklendi.",
+          "Sürüm geçmişi sayfası ve tek satır pembe güncelleme bildirim çubuğu eklendi."
+        ],
+        "en": [
+          "Kiosk mode announcements now cycle automatically every 15 seconds as sliding cards.",
+          "Fixed stop marker icon 404 and unexpected map click interactions.",
+          "Added portrait orientation lock and mobile landscape rotation guard overlay.",
+          "Added changelog subpage and one-line pink update notification banner."
+        ]
+      },
+      "url": "https://github.com/pcislocked/iett-pwa/releases/tag/v0.4.11.1"
+    },
+    {
+      "version": "0.4.11",
+      "date": "2026-10-25",
+      "title": {
+        "tr": "Canlı Takip, Rota Önbelleği ve Performans Güncellemesi",
+        "en": "Live Tracking, Route Caching & Performance Update"
+      },
+      "changes": {
+        "tr": [
+          "Son 20 dakikada güncellenmeyen bayat araç konumlarının haritada kalması önlendi.",
+          "Canlı veri yenileme sıklığı ve harita karo önbelleği optimize edildi.",
+          "Ayarlar altına önbellek ve veri sıfırlama araçları eklendi."
+        ],
+        "en": [
+          "Filtered out stale vehicle positions older than 20 minutes from map display.",
+          "Optimized live data refresh rates and map tile caching.",
+          "Added cache cleaning and factory data reset tools in Settings."
+        ]
+      },
+      "url": "https://github.com/pcislocked/iett-pwa/releases/tag/v0.4.11"
+    },
+    {
+      "version": "0.4.10",
+      "date": "2026-10-18",
+      "title": {
+        "tr": "AMOLED Siyah Tema, Hızlı Arama ve Durak Sabitleme",
+        "en": "AMOLED Black Theme, Quick Search & Pinned Stops"
+      },
+      "changes": {
+        "tr": [
+          "Saf siyah pikselli pil dostu AMOLED tema desteği eklendi.",
+          "Sık kullanılan durakları ana ekrana sabitleme ve sürükle-bırak sıralama desteği eklendi.",
+          "Hızlı hat ve durak arama performansı artırıldı."
+        ],
+        "en": [
+          "Added battery-friendly pure black AMOLED theme support.",
+          "Added pinning frequently used stops to home screen with drag-and-drop reordering.",
+          "Enhanced quick route and stop search performance."
+        ]
+      },
+      "url": "https://github.com/pcislocked/iett-pwa/releases/tag/v0.4.10"
+    }
+  ]
+}

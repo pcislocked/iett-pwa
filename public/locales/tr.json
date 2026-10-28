@@ -254,7 +254,10 @@
     "keepScreenAwakeNotSupported": "Cihazınız veya tarayıcınız ekran kilidi desteği sunmuyor.",
     "hapticFeedback": "Dokunsal Geri Bildirim (Haptik)",
     "hapticFeedbackDesc": "Önemli butonlara ve seçimlere dokunulduğunda hafif titreşim verir.",
-    "hapticFeedbackNotSupported": "Cihazınız dokunsal geri bildirimi desteklemiyor."
+    "hapticFeedbackNotSupported": "Cihazınız dokunsal geri bildirimi desteklemiyor.",
+    "changelog": "Sürüm Geçmişi",
+    "showUpdateBanner": "Güncelleme Bildirimi Çubuğu",
+    "showUpdateBannerDesc": "Uygulama yeni bir sürüme güncellendiğinde ana sayfada bilgi çubuğu göster"
   },
   "embed": {
     "poweredBy": "iett-pwa",
@@ -426,5 +429,17 @@
     "emptyTitle": "Sabitlenmiş durak yok",
     "emptyDesc": "Durak sayfasındaki 📌 butonuna dokunarak sabitleyebilirsin",
     "addStop": "Durak Ekle"
+  },
+  "updateBanner": {
+    "message": "✨ Uygulama güncellendi (v{{old}} > v{{new}})",
+    "dismiss": "Bildirimi kapat"
+  },
+  "changelog": {
+    "title": "Sürüm Geçmişi",
+    "subtitle": "Uygulama güncellemeleri ve yenilikler",
+    "currentBadge": "Aktif Sürüm",
+    "viewOnGithub": "GitHub üzerinde incele",
+    "allReleasesOnGithub": "Tüm sürümleri GitHub Releases sayfasında incele",
+    "empty": "Henüz sürüm kaydı bulunamadı."
   }
 }

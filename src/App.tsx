@@ -22,6 +22,7 @@ const NearbyPage = lazy(() => import('@/pages/NearbyPage'))
 const PinnedManagePage = lazy(() => import('@/pages/PinnedManagePage'))
 const ShareTargetPage = lazy(() => import('@/pages/ShareTargetPage'))
 const AnnouncementsPage = lazy(() => import('@/pages/AnnouncementsPage'))
+const ChangelogPage = lazy(() => import('@/pages/ChangelogPage'))
 const TileDemoPage = lazy(() => import('@/pages/TileDemoPage'))
 
 // Set by swipe commit before navigate() so useLayoutEffect skips CSS transition
@@ -61,6 +62,7 @@ function MainRoutes({ loc }: { loc: ReturnType<typeof useLocation> | ReturnType<
       <Route path="/pinned"          element={<LazyRoute><PinnedManagePage /></LazyRoute>} />
       <Route path="/share-target"    element={<LazyRoute><ShareTargetPage /></LazyRoute>} />
       <Route path="/announcements"   element={<LazyRoute><AnnouncementsPage /></LazyRoute>} />
+      <Route path="/changelog"       element={<LazyRoute><ChangelogPage /></LazyRoute>} />
       <Route path="/tile-demo"       element={<LazyRoute><TileDemoPage /></LazyRoute>} />
     </Routes>
   )

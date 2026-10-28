@@ -33,6 +33,7 @@ export interface UserPrefs {
   timebarFormat: 'standard' | 'compact' | 'emoji'
   showCurrentTime: boolean
   keepScreenAwake: boolean
+  showUpdateBanner: boolean
   hapticFeedback: boolean
   exportedAt?: string
 }
@@ -52,6 +53,7 @@ export const DEFAULT_PREFS: UserPrefs = {
   timebarFormat: 'standard',
   showCurrentTime: false,
   keepScreenAwake: false,
+  showUpdateBanner: true,
   hapticFeedback: true,
 }
 
@@ -140,6 +142,7 @@ export function coercePrefs(raw: unknown): UserPrefs {
       : 'standard',
     showCurrentTime: typeof r.showCurrentTime === 'boolean' ? r.showCurrentTime : false,
     keepScreenAwake: typeof r.keepScreenAwake === 'boolean' ? r.keepScreenAwake : false,
+    showUpdateBanner: typeof r.showUpdateBanner === 'boolean' ? r.showUpdateBanner : true,
     hapticFeedback: typeof r.hapticFeedback === 'boolean' ? r.hapticFeedback : true,
     exportedAt: typeof r.exportedAt === 'string' ? r.exportedAt : undefined,
   }
@@ -298,6 +301,10 @@ export function useUserPrefs() {
 
   const setKeepScreenAwake = useCallback((awake: boolean) => {
     patch((p) => ({ ...p, keepScreenAwake: awake }))
+  }, [])
+
+  const setShowUpdateBanner = useCallback((show: boolean) => {
+    patch((p) => ({ ...p, showUpdateBanner: show }))
   }, [])
 
   const setHapticFeedback = useCallback((enabled: boolean) => {
@@ -546,6 +553,7 @@ export function useUserPrefs() {
     setTimebarFormat,
     setShowCurrentTime,
     setKeepScreenAwake,
+    setShowUpdateBanner,
     setHapticFeedback,
     resetConsent,
   }

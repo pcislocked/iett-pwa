@@ -17,6 +17,9 @@ import PullToRefresh from '@/components/PullToRefresh'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { isTodayAnnouncement } from '@/utils/dateUtils'
+import { useKioskMode } from '@/hooks/useKioskMode'
+import { useVersionBanner } from '@/hooks/useVersionBanner'
+import UpdateBanner from '@/components/UpdateBanner'
 import pkg from '../../package.json'
 
 // ── Quick-access item ──────────────────────────────────────────────────────────
@@ -191,7 +194,13 @@ export default function Home() {
   }, [officialAnnouncements])
 
   const navigate = useNavigate()
+  const isKiosk = useKioskMode()
   const { prefs, setGpsConsent } = useUserPrefs()
+  const {
+    transition: versionTransition,
+    isVisible: isUpdateBannerVisible,
+    dismissBanner: dismissUpdateBanner,
+  } = useVersionBanner(prefs.showUpdateBanner)
   const { pinnedStops } = prefs
   const { favorites } = useFavorites()
 
@@ -251,6 +260,16 @@ export default function Home() {
           <span className="text-text-muted font-mono text-xs">v{pkg.version}</span>
         </div>
       </div>
+
+      {/* ── App Update Banner ─────────────────────────────────────────────────── */}
+      {!isKiosk && isUpdateBannerVisible && versionTransition && (
+        <UpdateBanner
+          oldVersion={versionTransition.oldVersion}
+          newVersion={versionTransition.newVersion}
+          onDismiss={dismissUpdateBanner}
+          hapticFeedback={prefs.hapticFeedback}
+        />
+      )}
 
       {/* ── Global Notices & Today's Announcements Banner ─────────────────────── */}
       {((globalNotices && globalNotices.length > 0) || todayAnnouncements.length > 0) && (

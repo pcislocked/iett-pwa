@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
+import { Link } from 'react-router-dom'
+import { ensureCurrentVersionStored } from '@/hooks/useVersionBanner'
 import { type Settings, loadSettings, saveSettings } from '@/utils/settings'
 import { useUserPrefs } from '@/hooks/useUserPrefs'
 import { useTranslation } from 'react-i18next'
@@ -113,6 +115,7 @@ export default function SettingsPage() {
     setTimebarFormat,
     setShowCurrentTime,
     setKeepScreenAwake,
+    setShowUpdateBanner,
     setHapticFeedback,
   } = useUserPrefs()
   const fileRef = useRef<HTMLInputElement>(null)
@@ -129,6 +132,7 @@ export default function SettingsPage() {
 
   // Clean up timers on unmount so stale updates don't fire after navigation
   useEffect(() => {
+    ensureCurrentVersionStored()
     isMounted.current = true
     return () => {
       isMounted.current = false
@@ -412,6 +416,35 @@ export default function SettingsPage() {
               />
             </button>
           </div>
+
+          <div className="flex items-center justify-between">
+            <div>
+              <p id="showUpdateBanner-label" className="text-sm text-text-secondary font-medium">
+                {t('settings.showUpdateBanner', { defaultValue: 'Güncelleme Bildirimi Çubuğu' })}
+              </p>
+              <p className="text-xs text-text-muted mt-0.5">
+                {t('settings.showUpdateBannerDesc', { defaultValue: 'Uygulama yeni bir sürüme güncellendiğinde ana sayfada bilgi çubuğu göster' })}
+              </p>
+            </div>
+            <button
+              role="switch"
+              aria-checked={prefs.showUpdateBanner}
+              aria-labelledby="showUpdateBanner-label"
+              onClick={() => {
+                triggerHaptic('medium', prefs.hapticFeedback)
+                setShowUpdateBanner(!prefs.showUpdateBanner)
+              }}
+              className={`relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 ${
+                prefs.showUpdateBanner ? 'bg-brand-600' : 'bg-surface-muted'
+              }`}
+            >
+              <span
+                className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow ring-0 transition-transform ${
+                  prefs.showUpdateBanner ? 'translate-x-5' : 'translate-x-0'
+                }`}
+              />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -553,6 +586,13 @@ export default function SettingsPage() {
             </svg>
             GitHub
           </a>
+          <Link
+            to="/changelog"
+            data-testid="settings-changelog-link"
+            className="flex items-center gap-1.5 text-brand-400 hover:text-brand-300 transition-colors w-fit"
+          >
+            📋 {t('settings.changelog', { defaultValue: 'Sürüm Geçmişi' })}
+          </Link>
         </div>
       </div>
     </div>
