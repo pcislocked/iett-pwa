@@ -4,6 +4,8 @@ import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { api, type OfficialAnnouncementItem } from '@/api/client'
 import { useGlobalNotices } from '@/hooks/useGlobalNotices'
+import { usePwaAnnouncements } from '@/hooks/usePwaAnnouncements'
+import AnnouncementCard from '@/components/AnnouncementCard'
 
 export default function AnnouncementsPage() {
   const navigate = useNavigate()
@@ -32,6 +34,9 @@ export default function AnnouncementsPage() {
     refetch: refetchGlobal,
   } = useGlobalNotices()
 
+  // PWA Admin Announcements
+  const { announcements: pwaAnnouncements } = usePwaAnnouncements()
+
   const filteredOfficial = useMemo(() => {
     if (!officialData?.items) return []
     const q = filterText.trim().toLowerCase()
@@ -40,6 +45,18 @@ export default function AnnouncementsPage() {
       item.title.toLowerCase().includes(q) || item.date.toLowerCase().includes(q)
     )
   }, [officialData, filterText])
+
+  const filteredPwa = useMemo(() => {
+    if (!pwaAnnouncements) return []
+    const q = filterText.trim().toLowerCase()
+    if (!q) return pwaAnnouncements
+    return pwaAnnouncements.filter(
+      (p) =>
+        p.title.toLowerCase().includes(q) ||
+        p.content.toLowerCase().includes(q) ||
+        p.date.toLowerCase().includes(q)
+    )
+  }, [pwaAnnouncements, filterText])
 
   const filteredGlobal = useMemo(() => {
     if (!globalNotices) return []
@@ -111,7 +128,9 @@ export default function AnnouncementsPage() {
           }`}
         >
           ⚠️ {t('announcements.systemTab', { defaultValue: 'Sefer Uyarıları' })}
-          {globalNotices?.length ? ` (${globalNotices.length})` : ''}
+          {(globalNotices?.length || filteredPwa.length)
+            ? ` (${(globalNotices?.length || 0) + filteredPwa.length})`
+            : ''}
         </button>
       </div>
 
@@ -176,25 +195,15 @@ export default function AnnouncementsPage() {
                 ? item.url
                 : 'https://iett.istanbul/announcement/Index'
               return (
-              <a
-                key={item.id}
-                href={safeHref}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block p-4 bg-surface-card border border-surface-muted hover:border-brand-500/40 rounded-2xl transition-all shadow-sm group"
-              >
-                <div className="flex items-center justify-between gap-2 mb-1.5">
-                  <span className="text-[11px] font-medium text-brand-400 bg-brand-500/10 px-2 py-0.5 rounded-md">
-                    📅 {item.date}
-                  </span>
-                  <span className="text-xs text-text-muted group-hover:text-brand-400 transition-colors flex items-center gap-0.5">
-                    {t('announcements.readMore', { defaultValue: 'Detay' })} ↗
-                  </span>
-                </div>
-                <h3 className="text-sm font-semibold text-text-primary group-hover:text-brand-300 transition-colors leading-snug">
-                  {item.title}
-                </h3>
-              </a>
+                <AnnouncementCard
+                  key={item.id}
+                  testId={`official-announcement-${item.id}`}
+                  badge={t('common.iettBadge', { defaultValue: 'İETT' })}
+                  badgeVariant="official"
+                  date={item.date}
+                  title={item.title}
+                  href={safeHref}
+                />
               )
             })}
 
@@ -248,29 +257,41 @@ export default function AnnouncementsPage() {
               </div>
             )}
 
-            {!isGlobalLoading && filteredGlobal.length === 0 && !isGlobalError && (
-              <div className="py-12 text-center text-text-muted text-sm">
-                {t('announcements.systemEmpty', { defaultValue: 'Aktif bir sefer uyarısı bulunmuyor.' })}
-              </div>
-            )}
-
-            {filteredGlobal.map((notice) => (
-              <div
-                key={notice.notice_noticeid}
-                className="p-4 bg-surface-card border border-surface-muted rounded-2xl shadow-sm"
-              >
-                <div className="flex items-center gap-2 mb-1.5">
-                  <span className="text-xs font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-md">
-                    ⚠️ {notice.page_name || t('announcements.alert', { defaultValue: 'Uyarı' })}
-                  </span>
+            {!isGlobalLoading &&
+              filteredGlobal.length === 0 &&
+              filteredPwa.length === 0 &&
+              !isGlobalError && (
+                <div className="py-12 text-center text-text-muted text-sm">
+                  {t('announcements.systemEmpty', { defaultValue: 'Aktif bir sefer uyarısı bulunmuyor.' })}
                 </div>
-                <h3 className="text-sm font-semibold text-text-primary mb-1">
-                  {notice.notice_title}
-                </h3>
-                <p className="text-xs text-text-secondary whitespace-pre-line leading-relaxed">
-                  {notice.notice_body}
-                </p>
-              </div>
+              )}
+
+            {/* PWA Announcements */}
+            {filteredPwa.map((pwa) => (
+              <AnnouncementCard
+                key={`pwa-${pwa.id}`}
+                testId={`pwa-announcement-${pwa.id}`}
+                toggleTestId={`pwa-announcement-toggle-${pwa.id}`}
+                badge="iett-pwa"
+                badgeVariant="pwa"
+                date={pwa.date}
+                title={pwa.title}
+                content={pwa.content}
+                isMarkdown={true}
+              />
+            ))}
+
+            {/* Global Notices */}
+            {filteredGlobal.map((notice) => (
+              <AnnouncementCard
+                key={notice.notice_noticeid}
+                testId={`global-notice-${notice.notice_noticeid}`}
+                badge={notice.page_name || t('announcements.alert', { defaultValue: 'Sefer Uyarısı' })}
+                badgeVariant="alert"
+                title={notice.notice_title}
+                content={notice.notice_body}
+                isMarkdown={false}
+              />
             ))}
           </>
         )}

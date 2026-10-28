@@ -21,7 +21,7 @@ import { useKioskMode } from '@/hooks/useKioskMode'
 import { useVersionBanner } from '@/hooks/useVersionBanner'
 import UpdateBanner from '@/components/UpdateBanner'
 import { usePwaAnnouncements } from '@/hooks/usePwaAnnouncements'
-import PwaAnnouncementBanner from '@/components/PwaAnnouncementBanner'
+import AnnouncementCard from '@/components/AnnouncementCard'
 import pkg from '../../package.json'
 
 // ── Quick-access item ──────────────────────────────────────────────────────────
@@ -277,82 +277,96 @@ export default function Home() {
         />
       )}
 
-      {/* ── PWA Remote Admin Announcements Banner ── */}
-      {!isKiosk && pwaAnnouncements.length > 0 && (
-        <PwaAnnouncementBanner
-          announcements={pwaAnnouncements}
-          onDismiss={dismissPwaAnnouncement}
-          hapticFeedback={prefs.hapticFeedback}
-        />
-      )}
+      {/* ── Unified Announcements Section (PWA + NTCAPI + Official İETT) ────────── */}
+      {!isKiosk &&
+        (pwaAnnouncements.length > 0 ||
+          (globalNotices && globalNotices.length > 0) ||
+          todayAnnouncements.length > 0) && (
+          <div
+            role="region"
+            aria-label={t('announcements.pwaSectionTitle', { defaultValue: 'Duyurular ve Bildirimler' })}
+            className="px-4 py-3 border-b border-surface-border bg-surface-muted/20"
+          >
+            <div className="flex flex-col gap-2.5">
+              {/* 1. PWA Remote Announcements */}
+              {pwaAnnouncements.map((ann) => (
+                <AnnouncementCard
+                  key={`pwa-${ann.id}`}
+                  testId={`pwa-announcement-${ann.id}`}
+                  toggleTestId={`pwa-announcement-toggle-${ann.id}`}
+                  closeTestId={ann.isIgnorable ? `pwa-announcement-close-${ann.id}` : undefined}
+                  badge="iett-pwa"
+                  badgeVariant="pwa"
+                  date={ann.date}
+                  title={ann.title}
+                  content={ann.content}
+                  isMarkdown={true}
+                  onDismiss={ann.isIgnorable ? () => dismissPwaAnnouncement(ann.id) : undefined}
+                  hapticFeedback={prefs.hapticFeedback}
+                />
+              ))}
 
-      {/* ── Global Notices & Today's Announcements Banner ─────────────────────── */}
-      {((globalNotices && globalNotices.length > 0) || todayAnnouncements.length > 0) && (
-        <div className="px-4 py-3 border-b border-surface-border bg-amber-950/10">
-          <div className="flex flex-col gap-2">
-            {/* System / Global Notices */}
-            {globalNotices?.map((notice) => (
-              <div key={notice.notice_noticeid} className="card border-amber-500/30 dark:border-amber-800/40 bg-amber-500/10 dark:bg-amber-900/10 p-3">
-                <div className="flex items-start gap-2">
-                  <span className="text-amber-600 dark:text-amber-400 mt-0.5">⚠️</span>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="text-[13px] font-bold text-amber-900 dark:text-amber-400 leading-tight mb-1">{notice.notice_title}</h3>
-                    <p className="text-xs text-text-secondary whitespace-pre-wrap leading-relaxed">{notice.notice_body}</p>
-                  </div>
-                </div>
-              </div>
-            ))}
+              {/* 2. System / NTCAPI Global Notices */}
+              {globalNotices?.map((notice) => (
+                <AnnouncementCard
+                  key={`notice-${notice.notice_noticeid}`}
+                  testId={`global-notice-${notice.notice_noticeid}`}
+                  badge={notice.page_name || t('announcements.alert', { defaultValue: 'Sefer Uyarısı' })}
+                  badgeVariant="alert"
+                  title={notice.notice_title}
+                  content={notice.notice_body}
+                  isMarkdown={false}
+                  hapticFeedback={prefs.hapticFeedback}
+                />
+              ))}
 
-            {/* Today's Official Announcements */}
-            {todayAnnouncements.map((ann: OfficialAnnouncementItem) => {
-              const safeHref = /^https?:\/\//i.test(ann.url)
-                ? ann.url
-                : 'https://iett.istanbul/announcement/Index'
-              return (
+              {/* 3. Today's Official İETT Announcements */}
+              {todayAnnouncements.map((ann: OfficialAnnouncementItem) => {
+                const safeHref = /^https?:\/\//i.test(ann.url)
+                  ? ann.url
+                  : 'https://iett.istanbul/announcement/Index'
+                return (
+                  <AnnouncementCard
+                    key={`official-${ann.id}`}
+                    testId={`official-announcement-${ann.id}`}
+                    badge={t('common.iettBadge', { defaultValue: 'İETT' })}
+                    badgeVariant="official"
+                    date={ann.date}
+                    title={ann.title}
+                    href={safeHref}
+                    hapticFeedback={prefs.hapticFeedback}
+                  />
+                )
+              })}
+
+              {/* View All Announcements Link */}
+              <div className="flex justify-end pt-0.5">
                 <a
-                  key={ann.id}
-                  href={safeHref}
+                  href="https://iett.istanbul/announcement/Index"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="card border-amber-500/30 dark:border-amber-800/40 bg-amber-500/10 dark:bg-amber-900/10 p-3 hover:border-amber-500/50 dark:hover:border-amber-600/60 transition-colors block group"
+                  className="text-xs font-semibold text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 transition-colors inline-flex items-center gap-1"
                 >
-                  <div className="flex items-start gap-2">
-                    <span className="text-amber-600 dark:text-amber-400 mt-0.5">📢</span>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-1.5 mb-1 flex-wrap">
-                        <span className="text-[10px] font-bold uppercase tracking-wider bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded">
-                          {t('common.iettBadge', { defaultValue: 'İETT' })}
-                        </span>
-                        <span className="text-[11px] text-text-muted">{ann.date}</span>
-                      </div>
-                      <h3 className="text-[13px] font-bold text-amber-900 dark:text-amber-400 leading-tight group-hover:text-amber-700 dark:group-hover:text-amber-300 transition-colors">
-                        {ann.title}
-                      </h3>
-                    </div>
-                    <svg className="w-4 h-4 text-amber-700/70 dark:text-amber-500/70 group-hover:text-amber-900 dark:group-hover:text-amber-400 shrink-0 mt-0.5" aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                    </svg>
-                  </div>
+                  <span>{t('home.allAnnouncements', { defaultValue: 'Tüm İETT Duyuruları' })}</span>
+                  <svg
+                    className="w-3.5 h-3.5"
+                    aria-hidden="true"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                    />
+                  </svg>
                 </a>
-              )
-            })}
-
-            <div className="flex justify-end pt-1">
-              <a
-                href="https://iett.istanbul/announcement/Index"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-xs font-semibold text-amber-700 dark:text-amber-500 hover:text-amber-900 dark:hover:text-amber-400 transition-colors inline-flex items-center gap-1"
-              >
-                <span>{t('home.allAnnouncements', { defaultValue: 'Tüm İETT Duyuruları' })}</span>
-                <svg className="w-3.5 h-3.5" aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                </svg>
-              </a>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
       {/* ── Pinned stops ─────────────────────────────────────────────────────── */}
       <section className="mb-4">
