@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { getCurrentAppVersion } from '../utils/appUpdate'
 
 export const LAST_SEEN_VERSION_KEY = 'iett:last-seen-version'
+export const PREVIOUS_VERSION_KEY = 'iett:previous-version'
 
 export interface VersionTransition {
   oldVersion: string
@@ -51,6 +52,19 @@ export function writeStoredVersionSafe(version: string): boolean {
   }
 }
 
+export function resetVersionBannerStorage(): void {
+  if (typeof window === 'undefined') return
+  try {
+    const current = normalizeVersion(getCurrentAppVersion())
+    const prev = window.localStorage.getItem(PREVIOUS_VERSION_KEY)
+    const old = prev && prev !== current ? prev : '0.4.12'
+    localStorage.setItem(LAST_SEEN_VERSION_KEY, old)
+    window.dispatchEvent(new CustomEvent('iett:version-banner-reset'))
+  } catch {
+    // ignore
+  }
+}
+
 /**
  * Ensures current version is stored in localStorage if not already present.
  * Never throws; safe to call from SettingsPage or App initialization.
@@ -67,7 +81,7 @@ export function ensureCurrentVersionStored(): void {
 export function useVersionBanner(showUpdateBannerPref: boolean) {
   const [transition, setTransition] = useState<VersionTransition | null>(null)
 
-  useEffect(() => {
+  const checkVersion = useCallback(() => {
     const currentVersion = normalizeVersion(getCurrentAppVersion())
     if (!currentVersion || currentVersion === '0.0.0') {
       return
@@ -98,6 +112,13 @@ export function useVersionBanner(showUpdateBannerPref: boolean) {
 
     // 3) Version changed (vOLD !== vNEW)
     if (storedVersion !== currentVersion) {
+      if (storedVersion) {
+        try {
+          window.localStorage.setItem(PREVIOUS_VERSION_KEY, storedVersion)
+        } catch {
+          // ignore
+        }
+      }
       if (!showUpdateBannerPref) {
         // User disabled update banners in settings: silently advance stored version
         writeStoredVersionSafe(currentVersion)
@@ -112,6 +133,18 @@ export function useVersionBanner(showUpdateBannerPref: boolean) {
       setTransition(null)
     }
   }, [showUpdateBannerPref])
+
+  useEffect(() => {
+    checkVersion()
+  }, [checkVersion])
+
+  useEffect(() => {
+    const handleReset = () => {
+      checkVersion()
+    }
+    window.addEventListener('iett:version-banner-reset', handleReset)
+    return () => window.removeEventListener('iett:version-banner-reset', handleReset)
+  }, [checkVersion])
 
   const dismissBanner = useCallback(() => {
     const currentVersion = normalizeVersion(getCurrentAppVersion())

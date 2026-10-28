@@ -3,6 +3,9 @@ import { applyTheme, type Theme } from '@/hooks/useTheme'
 import i18n from '@/i18n'
 import { loadSettings, saveSettings, type Settings } from '@/utils/settings'
 import { getRecent, type RecentSearch } from '@/hooks/useRecentSearches'
+import { DISMISSED_STORAGE_KEY, SEEN_SINGLE_STORAGE_KEY } from '@/hooks/usePwaAnnouncements'
+import { LAST_SEEN_VERSION_KEY } from '@/hooks/useVersionBanner'
+import type { Favorite } from '@/hooks/useFavorites'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -57,6 +60,12 @@ export const DEFAULT_PREFS: UserPrefs = {
   hapticFeedback: true,
 }
 
+export interface BackupAnnouncementsData {
+  dismissedIds: number[]
+  seenSingleIds: number[]
+  lastSeenVersion?: string | null
+}
+
 export interface BackupDataV2 {
   _schemaVersion: 2
   _app: 'iett-pwa'
@@ -67,6 +76,8 @@ export interface BackupDataV2 {
   }
   preferences: UserPrefs
   searchHistory: RecentSearch[]
+  favorites?: Favorite[]
+  announcements?: BackupAnnouncementsData
   ui: {
     theme: string | null
     language: string | null
@@ -360,6 +371,45 @@ export function useUserPrefs() {
     const satellite = typeof localStorage !== 'undefined' && (localStorage.getItem('map-satellite') === '1' || localStorage.getItem('iett_satellite') === 'true')
     const settings = loadSettings()
 
+    let favorites: Favorite[] = []
+    let dismissedIds: number[] = []
+    let seenSingleIds: number[] = []
+    let lastSeenVersion: string | null = null
+
+    if (typeof localStorage !== 'undefined') {
+      try {
+        const rawFavs = localStorage.getItem('iett_favorites')
+        if (rawFavs) {
+          const parsed = JSON.parse(rawFavs)
+          if (Array.isArray(parsed)) favorites = parsed
+        }
+      } catch { /* ignore */ }
+
+      try {
+        const rawDismissed = localStorage.getItem(DISMISSED_STORAGE_KEY)
+        if (rawDismissed) {
+          const parsed = JSON.parse(rawDismissed)
+          if (Array.isArray(parsed)) {
+            dismissedIds = parsed.filter((x): x is number => typeof x === 'number')
+          }
+        }
+      } catch { /* ignore */ }
+
+      try {
+        const rawSeen = localStorage.getItem(SEEN_SINGLE_STORAGE_KEY)
+        if (rawSeen) {
+          const parsed = JSON.parse(rawSeen)
+          if (Array.isArray(parsed)) {
+            seenSingleIds = parsed.filter((x): x is number => typeof x === 'number')
+          }
+        }
+      } catch { /* ignore */ }
+
+      try {
+        lastSeenVersion = localStorage.getItem(LAST_SEEN_VERSION_KEY)
+      } catch { /* ignore */ }
+    }
+
     const backup: BackupDataV2 = {
       _schemaVersion: 2,
       _app: 'iett-pwa',
@@ -370,6 +420,12 @@ export function useUserPrefs() {
       },
       preferences: { ...prefs, exportedAt: new Date().toISOString() },
       searchHistory: recents,
+      favorites,
+      announcements: {
+        dismissedIds,
+        seenSingleIds,
+        lastSeenVersion,
+      },
       ui: {
         theme,
         language,
@@ -453,6 +509,51 @@ export function useUserPrefs() {
           } catch { /* storage blocked */ }
         }
 
+        // Restore Favorites
+        if (Array.isArray(v2.favorites)) {
+          const validFavorites = v2.favorites.filter(
+            (f): f is Favorite =>
+              f != null &&
+              typeof f === 'object' &&
+              (f.kind === 'stop' || f.kind === 'route') &&
+              typeof f.name === 'string'
+          )
+          try {
+            localStorage.setItem('iett_favorites', JSON.stringify(validFavorites))
+          } catch { /* storage blocked */ }
+        } else if (coerced.favStops.length > 0 || coerced.favRoutes.length > 0) {
+          const converted: Favorite[] = [
+            ...coerced.favStops.map((s) => ({ kind: 'stop' as const, dcode: s.dcode, name: s.name })),
+            ...coerced.favRoutes.map((r) => ({ kind: 'route' as const, hat_kodu: r, name: r })),
+          ]
+          try {
+            localStorage.setItem('iett_favorites', JSON.stringify(converted))
+          } catch { /* storage blocked */ }
+        }
+
+        // Restore Announcements State
+        if (v2.announcements && typeof v2.announcements === 'object') {
+          try {
+            if (Array.isArray(v2.announcements.dismissedIds)) {
+              localStorage.setItem(
+                DISMISSED_STORAGE_KEY,
+                JSON.stringify(v2.announcements.dismissedIds.filter((x): x is number => typeof x === 'number'))
+              )
+            }
+            if (Array.isArray(v2.announcements.seenSingleIds)) {
+              localStorage.setItem(
+                SEEN_SINGLE_STORAGE_KEY,
+                JSON.stringify(v2.announcements.seenSingleIds.filter((x): x is number => typeof x === 'number'))
+              )
+            }
+            if (typeof v2.announcements.lastSeenVersion === 'string') {
+              localStorage.setItem(LAST_SEEN_VERSION_KEY, v2.announcements.lastSeenVersion)
+            }
+            window.dispatchEvent(new CustomEvent('iett:announcements-reset'))
+            window.dispatchEvent(new CustomEvent('iett:version-banner-reset'))
+          } catch { /* storage blocked */ }
+        }
+
         // Restore Settings
         if (v2.settings && typeof v2.settings === 'object') {
           const s = v2.settings as Partial<Settings>
@@ -502,6 +603,16 @@ export function useUserPrefs() {
       if ('pinnedStops' in parsed || 'favStops' in parsed || 'favRoutes' in parsed) {
         const coerced = coercePrefs(parsed)
         patch(() => coerced)
+        // Synthesize iett_favorites from v1 favStops/favRoutes
+        if (coerced.favStops.length > 0 || coerced.favRoutes.length > 0) {
+          const converted: Favorite[] = [
+            ...coerced.favStops.map((s) => ({ kind: 'stop' as const, dcode: s.dcode, name: s.name })),
+            ...coerced.favRoutes.map((r) => ({ kind: 'route' as const, hat_kodu: r, name: r })),
+          ]
+          try {
+            localStorage.setItem('iett_favorites', JSON.stringify(converted))
+          } catch { /* storage blocked */ }
+        }
         return {
           success: true,
           versionNotice: 'Eski sürüm (v1) yedeği başarıyla içe aktarıldı. Arama geçmişi ve tema tercihleri korundu.',

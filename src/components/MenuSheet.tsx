@@ -84,11 +84,8 @@ export default function MenuSheet({ onClose }: MenuSheetProps) {
           <MenuRow icon="🗺"  label={t('nav.fleetMap', { defaultValue: 'Filo Haritası' })} onPress={() => go('/map')} />
           <MenuRow
             icon="📢"
-            label={`${t('nav.announcements', { defaultValue: 'Duyurular & Uyarılar' })} ↗`}
-            onPress={() => {
-              window.open('https://iett.istanbul/announcement/Index', '_blank', 'noopener,noreferrer')
-              onClose()
-            }}
+            label={t('nav.announcements', { defaultValue: 'Duyurular & Uyarılar' })}
+            onPress={() => go('/announcements')}
           />
           <MenuRow
             icon="💳"

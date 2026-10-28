@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
-import { ensureCurrentVersionStored } from '@/hooks/useVersionBanner'
+import { ensureCurrentVersionStored, resetVersionBannerStorage } from '@/hooks/useVersionBanner'
+import { resetDismissedPwaAnnouncements } from '@/hooks/usePwaAnnouncements'
 import { type Settings, loadSettings, saveSettings } from '@/utils/settings'
 import { useUserPrefs } from '@/hooks/useUserPrefs'
 import { useTranslation } from 'react-i18next'
@@ -122,8 +123,27 @@ export default function SettingsPage() {
   const [importStatus, setImportStatus] = useState<'idle' | 'ok' | 'err'>('idle')
   const [importNotice, setImportNotice] = useState<string | null>(null)
   const [showConsentModal, setShowConsentModal] = useState(false)
+  const [resetAnnouncementsOk, setResetAnnouncementsOk] = useState(false)
+  const resetAnnouncementsTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const reloadTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const statusTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (resetAnnouncementsTimer.current) clearTimeout(resetAnnouncementsTimer.current)
+    }
+  }, [])
+
+  const handleResetHiddenAnnouncements = () => {
+    triggerHaptic('success', prefs.hapticFeedback)
+    resetDismissedPwaAnnouncements()
+    resetVersionBannerStorage()
+    setResetAnnouncementsOk(true)
+    if (resetAnnouncementsTimer.current) clearTimeout(resetAnnouncementsTimer.current)
+    resetAnnouncementsTimer.current = setTimeout(() => {
+      setResetAnnouncementsOk(false)
+    }, 2500)
+  }
 
   const isWakeLockSupported = typeof navigator !== 'undefined' && 'wakeLock' in navigator
   const isHapticsSupported = typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function'
@@ -541,6 +561,35 @@ export default function SettingsPage() {
           </p>
         )}
         <input ref={fileRef} type="file" accept="application/json" className="hidden" onChange={handleImport} />
+      </div>
+
+      {/* Announcements & Notifications Reset */}
+      <div className="card flex flex-col gap-3">
+        <p className="text-sm font-semibold text-text-secondary">
+          {t('settings.announcementsSection', { defaultValue: 'Duyurular ve Bildirimler' })}
+        </p>
+        <p className="text-xs text-text-muted leading-relaxed">
+          {t('settings.resetHiddenAnnouncementsDesc', {
+            defaultValue: 'Kapatılan uygulama duyurularını ve sürüm güncelleme bildirimini yeniden görünür yapar.',
+          })}
+        </p>
+        <button
+          type="button"
+          onClick={handleResetHiddenAnnouncements}
+          data-testid="reset-hidden-announcements-btn"
+          className="flex items-center justify-between py-2.5 px-3 bg-surface-muted hover:bg-surface-border
+                     rounded-xl text-sm text-text-primary transition-colors w-full cursor-pointer"
+        >
+          <span className="flex items-center gap-3">
+            <span className="text-base" aria-hidden="true">&#x1F514;</span>
+            <span>{t('settings.resetHiddenAnnouncements', { defaultValue: 'Gizlenen Duyuruları Sıfırla' })}</span>
+          </span>
+          {resetAnnouncementsOk && (
+            <span className="text-xs font-semibold text-emerald-400">
+              {t('settings.resetOk', { defaultValue: '✓ Sıfırlandı' })}
+            </span>
+          )}
+        </button>
       </div>
 
       <div className="card text-xs text-text-muted flex flex-col gap-3">

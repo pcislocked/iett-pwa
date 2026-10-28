@@ -27,6 +27,7 @@ describe('useTheme hook', () => {
 
     expect(result.current.theme).toBe('light')
     expect(document.documentElement.getAttribute('data-theme')).toBe('light')
+    expect(document.documentElement.classList.contains('dark')).toBe(false)
     expect(localStorage.getItem('iett-pwa-theme')).toBe('light')
 
     act(() => {
@@ -35,6 +36,7 @@ describe('useTheme hook', () => {
 
     expect(result.current.theme).toBe('amoled')
     expect(document.documentElement.getAttribute('data-theme')).toBe('amoled')
+    expect(document.documentElement.classList.contains('dark')).toBe(true)
   })
 
   it('syncs theme across windows on storage event', () => {

@@ -35,7 +35,7 @@ function parseInlineTokens(text: string): ReactNode[] {
           <Link
             key={idx}
             to={rawUrl}
-            className="underline font-semibold text-pink-700 dark:text-pink-300 hover:text-pink-900 dark:hover:text-pink-100 transition-colors"
+            className="underline font-semibold text-pink-700 dark:text-pink-300 hover:text-pink-900 dark:hover:text-white transition-colors underline-offset-2"
           >
             {linkText}
           </Link>
@@ -47,7 +47,7 @@ function parseInlineTokens(text: string): ReactNode[] {
             href={rawUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="underline font-semibold text-pink-700 dark:text-pink-300 hover:text-pink-900 dark:hover:text-pink-100 transition-colors inline-flex items-center gap-0.5"
+            className="underline font-semibold text-pink-700 dark:text-pink-300 hover:text-pink-900 dark:hover:text-white transition-colors underline-offset-2 inline-flex items-center gap-0.5"
           >
             <span>{linkText}</span>
             <span aria-hidden="true" className="text-[10px]">&#8599;</span>
@@ -65,7 +65,7 @@ function parseInlineTokens(text: string): ReactNode[] {
       result.push(
         <code
           key={idx}
-          className="px-1 py-0.5 rounded bg-pink-900/10 dark:bg-pink-900/30 font-mono text-[11px] text-pink-800 dark:text-pink-200 border border-pink-500/20"
+          className="px-1 py-0.5 rounded bg-pink-500/15 dark:bg-pink-900/40 font-mono text-[11px] text-pink-950 dark:text-pink-100 border border-pink-500/30"
         >
           {codeMatch[1]}
         </code>

@@ -276,6 +276,42 @@ describe('useUserPrefs', () => {
       expect(localStorage.getItem('map-satellite')).toBe('0')
       expect(localStorage.getItem('iett_satellite')).toBe('false')
     })
+
+    it('exports and restores favorites and announcements state correctly', async () => {
+      // Setup initial state in localStorage
+      localStorage.setItem(
+        'iett_favorites',
+        JSON.stringify([{ kind: 'stop', dcode: '220602', name: 'Levent' }])
+      )
+      localStorage.setItem('iett_dismissed_pwa_announcements', JSON.stringify([1, 2]))
+      localStorage.setItem('iett_seen_single_pwa_announcements', JSON.stringify([3]))
+      localStorage.setItem('iett:last-seen-version', '0.4.12.1')
+
+      const { result } = renderHook(() => useUserPrefs())
+      let backup: BackupDataV2 | undefined
+      act(() => {
+        backup = result.current.exportAllData()
+      })
+
+      expect(backup?.favorites).toEqual([{ kind: 'stop', dcode: '220602', name: 'Levent' }])
+      expect(backup?.announcements?.dismissedIds).toEqual([1, 2])
+      expect(backup?.announcements?.seenSingleIds).toEqual([3])
+      expect(backup?.announcements?.lastSeenVersion).toBe('0.4.12.1')
+
+      // Clear storage to simulate import on a new device
+      localStorage.clear()
+
+      await act(async () => {
+        await result.current.importAllData(JSON.stringify(backup))
+      })
+
+      expect(JSON.parse(localStorage.getItem('iett_favorites') || '[]')).toEqual([
+        { kind: 'stop', dcode: '220602', name: 'Levent' },
+      ])
+      expect(JSON.parse(localStorage.getItem('iett_dismissed_pwa_announcements') || '[]')).toEqual([1, 2])
+      expect(JSON.parse(localStorage.getItem('iett_seen_single_pwa_announcements') || '[]')).toEqual([3])
+      expect(localStorage.getItem('iett:last-seen-version')).toBe('0.4.12.1')
+    })
   })
 
   describe('cross-hook instance synchronization', () => {

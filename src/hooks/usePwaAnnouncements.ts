@@ -6,8 +6,19 @@ export const REMOTE_ANNOUNCEMENTS_URL =
   'https://raw.githubusercontent.com/pcislocked/iett-pwa/master/public/announcements.json'
 export const FALLBACK_ANNOUNCEMENTS_URL = '/announcements.json'
 
-const DISMISSED_STORAGE_KEY = 'iett_dismissed_pwa_announcements'
-const SEEN_SINGLE_STORAGE_KEY = 'iett_seen_single_pwa_announcements'
+export const DISMISSED_STORAGE_KEY = 'iett_dismissed_pwa_announcements'
+export const SEEN_SINGLE_STORAGE_KEY = 'iett_seen_single_pwa_announcements'
+
+export function resetDismissedPwaAnnouncements(): void {
+  if (typeof window === 'undefined') return
+  try {
+    localStorage.removeItem(DISMISSED_STORAGE_KEY)
+    localStorage.removeItem(SEEN_SINGLE_STORAGE_KEY)
+    window.dispatchEvent(new CustomEvent('iett:announcements-reset'))
+  } catch {
+    // ignore
+  }
+}
 
 function readStorageIds(key: string): number[] {
   if (typeof window === 'undefined') return []
@@ -49,17 +60,31 @@ async function fetchRemoteAnnouncements(signal?: AbortSignal): Promise<PwaAnnoun
   }
 }
 
-export function usePwaAnnouncements() {
+export interface UsePwaAnnouncementsOptions {
+  includeAll?: boolean
+}
+
+export function usePwaAnnouncements(options?: UsePwaAnnouncementsOptions) {
+  const includeAll = options?.includeAll ?? false
   const [dismissedIds, setDismissedIds] = useState<number[]>(() =>
     readStorageIds(DISMISSED_STORAGE_KEY)
   )
   // Track IDs that were already seen before this page session started.
   // Single-show announcements stay visible for the current session,
   // but will be suppressed in subsequent visits once recorded in localStorage.
-  const [initialSeenSingleIds] = useState<number[]>(() =>
+  const [initialSeenSingleIds, setInitialSeenSingleIds] = useState<number[]>(() =>
     readStorageIds(SEEN_SINGLE_STORAGE_KEY)
   )
   const [currentTimestamp, setCurrentTimestamp] = useState<number>(() => Date.now())
+
+  useEffect(() => {
+    const handleReset = () => {
+      setDismissedIds([])
+      setInitialSeenSingleIds([])
+    }
+    window.addEventListener('iett:announcements-reset', handleReset)
+    return () => window.removeEventListener('iett:announcements-reset', handleReset)
+  }, [])
 
   useEffect(() => {
     // Refresh timestamp every minute or on data fetch
@@ -82,36 +107,45 @@ export function usePwaAnnouncements() {
     if (!data?.announcements || !Array.isArray(data.announcements)) return []
     const now = currentTimestamp
 
-    return data.announcements.filter((item) => {
+    const items = data.announcements.filter((item) => {
       if (!item || typeof item.id !== 'number') return false
 
-      // 1. Check if user dismissed it
-      if (item.isIgnorable && dismissedIds.includes(item.id)) {
-        return false
-      }
+      if (!includeAll) {
+        // 1. Check if user dismissed it
+        if (item.isIgnorable && dismissedIds.includes(item.id)) {
+          return false
+        }
 
-      // 2. Check if single-show was already seen in a previous session
-      if (item.isSingleShow && initialSeenSingleIds.includes(item.id)) {
-        return false
-      }
+        // 2. Check if single-show was already seen in a previous session
+        if (item.isSingleShow && initialSeenSingleIds.includes(item.id)) {
+          return false
+        }
 
-      // 3. Date window check (ISO strings)
-      try {
-        const start = new Date(item.startDate).getTime()
-        const end = new Date(item.endDate).getTime()
-        if (Number.isFinite(start) && now < start) return false
-        if (Number.isFinite(end) && now > end) return false
-      } catch {
-        return false
+        // 3. Date window check (ISO strings)
+        try {
+          const start = new Date(item.startDate).getTime()
+          const end = new Date(item.endDate).getTime()
+          if (Number.isFinite(start) && now < start) return false
+          if (Number.isFinite(end) && now > end) return false
+        } catch {
+          return false
+        }
       }
 
       return true
     })
-  }, [data, dismissedIds, initialSeenSingleIds, currentTimestamp])
+
+    // Sort newest first by startDate or date
+    return [...items].sort((a, b) => {
+      const timeA = new Date(a.startDate || a.date).getTime() || 0
+      const timeB = new Date(b.startDate || b.date).getTime() || 0
+      return timeB - timeA
+    })
+  }, [data, dismissedIds, initialSeenSingleIds, currentTimestamp, includeAll])
 
   // Automatically record single-show announcements into localStorage so next session they won't appear
   useEffect(() => {
-    if (activeAnnouncements.length === 0) return
+    if (includeAll || activeAnnouncements.length === 0) return
 
     const singleShowItems = activeAnnouncements.filter((a) => a.isSingleShow)
     if (singleShowItems.length === 0) return
@@ -121,7 +155,7 @@ export function usePwaAnnouncements() {
     if (newSeen.length !== existing.length) {
       writeStorageIds(SEEN_SINGLE_STORAGE_KEY, newSeen)
     }
-  }, [activeAnnouncements])
+  }, [activeAnnouncements, includeAll])
 
   const dismissAnnouncement = useCallback((id: number) => {
     setDismissedIds((prev) => {
