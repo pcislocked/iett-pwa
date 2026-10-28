@@ -283,16 +283,6 @@ export default function App() {
     document.documentElement.lang = i18n.language
   }, [i18n.language])
 
-  /* orientation lock */
-  useEffect(() => {
-    // Attempt hardware orientation lock to portrait on supported PWA environments
-    if (typeof window !== 'undefined' && 'screen' in window && screen.orientation && 'lock' in screen.orientation) {
-      (screen.orientation.lock as (orientation: string) => Promise<void>)('portrait-primary').catch(() => {
-        // Silently ignored if browser does not permit orientation lock
-      })
-    }
-  }, [])
-
   useEffect(() => {
     syncServerTime()
     const handleVisibility = () => {

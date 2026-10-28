@@ -179,10 +179,14 @@
 
 
 /* ── Orientation Guard (Portrait Lock for Mobile Phones) ────────── */
+.orientation-guard-overlay {
+  display: none;
+}
+
 @media screen and (orientation: landscape) and (max-height: 520px) and (pointer: coarse),
        screen and (orientation: landscape) and (max-height: 520px) and (hover: none) {
   .orientation-guard-overlay {
-    display: flex !important;
+    display: flex;
   }
 }
 
