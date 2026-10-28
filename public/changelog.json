@@ -2,6 +2,31 @@
   "updatedAt": "2026-10-28",
   "releases": [
     {
+      "version": "0.4.12",
+      "date": "2026-10-28",
+      "title": {
+        "tr": "Harita Ekranı Yenilemesi, Türkçe Hat Desteği ve 72 Saatlik Duyurular",
+        "en": "Map Screen Refresh, Turkish Route Support & 72-Hour Announcements"
+      },
+      "changes": {
+        "tr": [
+          "Haritada durak ve araç yoğunluğu için Birleşik Varlık Seçici (Entity Picker) ve durak önizleme kartı eklendi.",
+          "Bölgedeki durakları arama butonu merkez alt konuma taşındı ve 10m hareket algılama ile liste moduna geçiş eklendi.",
+          "iOS cihazlarda Safari adres çubuğu şeffaflığı ve renk sızmasını önleyen güvenli alan kalkanı eklendi.",
+          "Türkçe karakter içeren hat kodları (15ŞN, 15KÇ vb.) desteklendi ve yön tabelası hat adı zenginleştirildi.",
+          "Ana sayfadaki resmi İETT duyuruları son 72 saate genişletildi."
+        ],
+        "en": [
+          "Added Unified Entity Picker and stop preview card for dense vehicle and stop clusters on the map.",
+          "Moved search stops in area button to bottom-center with 10m movement detection and list mode transition.",
+          "Added iOS safe area blur shield preventing Safari top address bar background bleed.",
+          "Supported route codes with Turkish characters (e.g. 15ŞN) and enriched signboard route names.",
+          "Extended home page official İETT announcements filter window to the last 72 hours."
+        ]
+      },
+      "url": "https://github.com/pcislocked/iett-pwa/releases/tag/v0.4.12"
+    },
+    {
       "version": "0.4.11.1",
       "date": "2026-10-26",
       "title": {

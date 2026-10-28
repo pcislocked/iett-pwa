@@ -4,7 +4,7 @@
 [![React](https://img.shields.io/badge/React-18-61DAFB?logo=react)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript)](https://www.typescriptlang.org/)
 [![PWA](https://img.shields.io/badge/PWA-installable-5A0FC8?logo=pwa)](https://web.dev/progressive-web-apps/)
-[![Version](https://img.shields.io/badge/version-0.4.11.1-orange)](https://github.com/pcislocked/iett-pwa/releases)
+[![Version](https://img.shields.io/badge/version-0.4.12-orange)](https://github.com/pcislocked/iett-pwa/releases)
 [![License](https://img.shields.io/badge/license-CC%20BY%204.0-blue)](https://data.ibb.gov.tr/license)
 
 [🇹🇷 Türkçe (Turkish)](#türkçe) | [🇬🇧 English](#english)

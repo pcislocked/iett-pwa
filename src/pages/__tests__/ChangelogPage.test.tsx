@@ -50,7 +50,7 @@ describe('ChangelogPage Component', () => {
     )
 
     await waitFor(() => {
-      expect(localStorage.getItem(LAST_SEEN_VERSION_KEY)).toBe('0.4.11.1')
+      expect(localStorage.getItem(LAST_SEEN_VERSION_KEY)).toBe('0.4.12')
     })
   })
 

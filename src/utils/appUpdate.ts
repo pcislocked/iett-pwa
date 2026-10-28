@@ -136,5 +136,5 @@ export function getCurrentAppVersion(): string {
   if (typeof __APP_VERSION__ !== 'undefined') {
     return __APP_VERSION__
   }
-  return pkg.version || '0.4.11.1'
+  return pkg.version || '0.4.12'
 }
