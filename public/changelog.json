@@ -2,6 +2,29 @@
   "updatedAt": "2026-10-28",
   "releases": [
     {
+      "version": "0.4.12.1",
+      "date": "2026-10-28",
+      "title": {
+        "tr": "Harita Geçiş Düzeltmesi ve Uzaktan Yönetilebilir PWA Duyuru Sistemi",
+        "en": "Map Transition Fix & Remote PWA Announcements System"
+      },
+      "changes": {
+        "tr": [
+          "Harita ekranından çıkışı engelleyen sonsuz render döngüsü ve React Router geçiş tıkanıklığı düzeltildi.",
+          "GitHub üzerinden container rebuild gerektirmeden anında yayınlanabilen uzaktan PWA duyuru sistemi ([iett-pwa]) eklendi.",
+          "Ana ekrandaki resmi duyuru rozetleri standart 'İETT' etiketi olarak sadeleştirildi.",
+          "Changelog güncelleme bildiriminin ilk ziyarette de keşfedilebilmesini sağlayan logic eklendi."
+        ],
+        "en": [
+          "Fixed viewport tracker infinite re-render loop that starved page navigations away from the map screen.",
+          "Added remote PWA announcement banner system ([iett-pwa]) pulled live from GitHub without container rebuilds.",
+          "Standardized official announcement badges on home screen to a clean 'İETT' tag.",
+          "Added banner discovery logic so first-time visitors can explore the new changelog feature."
+        ]
+      },
+      "url": "https://github.com/pcislocked/iett-pwa/releases/tag/v0.4.12.1"
+    },
+    {
       "version": "0.4.12",
       "date": "2026-10-28",
       "title": {

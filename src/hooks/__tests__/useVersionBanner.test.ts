@@ -65,20 +65,18 @@ describe('useVersionBanner and storage helpers', () => {
   })
 
   describe('useVersionBanner hook', () => {
-    it('first visit: stores current version and does NOT show banner', () => {
-      expect(localStorage.getItem(LAST_SEEN_VERSION_KEY)).toBeNull()
+    it('first visit on general versions: stores current version and does NOT show banner', async () => {
+      const appUpdate = await import('../../utils/appUpdate')
+      vi.spyOn(appUpdate, 'getCurrentAppVersion').mockReturnValue('0.4.13')
 
       const { result } = renderHook(() => useVersionBanner(true))
 
       expect(result.current.isVisible).toBe(false)
       expect(result.current.transition).toBeNull()
-      expect(localStorage.getItem(LAST_SEEN_VERSION_KEY)).toBeTruthy()
+      expect(localStorage.getItem(LAST_SEEN_VERSION_KEY)).toBe('0.4.13')
     })
 
-    it('first visit on v0.4.12.1: shows banner so existing users discover changelog', async () => {
-      const appUpdate = await import('../../utils/appUpdate')
-      vi.spyOn(appUpdate, 'getCurrentAppVersion').mockReturnValue('0.4.12.1')
-
+    it('first visit on v0.4.12.1: shows banner so existing users discover changelog', () => {
       const { result } = renderHook(() => useVersionBanner(true))
 
       expect(result.current.isVisible).toBe(true)
@@ -87,13 +85,11 @@ describe('useVersionBanner and storage helpers', () => {
     })
 
     it('same version: does not show banner', () => {
-      renderHook(() => useVersionBanner(true))
-      const currentStored = localStorage.getItem(LAST_SEEN_VERSION_KEY)
-      expect(currentStored).toBeTruthy()
+      localStorage.setItem(LAST_SEEN_VERSION_KEY, '0.4.12.1')
 
-      const { result: secondResult } = renderHook(() => useVersionBanner(true))
-      expect(secondResult.current.isVisible).toBe(false)
-      expect(secondResult.current.transition).toBeNull()
+      const { result } = renderHook(() => useVersionBanner(true))
+      expect(result.current.isVisible).toBe(false)
+      expect(result.current.transition).toBeNull()
     })
 
     it('version updated: shows banner with old and new versions', () => {
