@@ -13,12 +13,13 @@
       (function() {
         try {
           var saved = localStorage.getItem('iett-pwa-theme');
-          if (saved === 'dark' || saved === 'amoled' || saved === 'light') {
-            document.documentElement.setAttribute('data-theme', saved);
-          } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
-            document.documentElement.setAttribute('data-theme', 'light');
+          var isLight = saved === 'light' || (!saved && window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches);
+          var theme = isLight ? 'light' : (saved === 'dark' ? 'dark' : 'amoled');
+          document.documentElement.setAttribute('data-theme', theme);
+          if (theme === 'light') {
+            document.documentElement.classList.remove('dark');
           } else {
-            document.documentElement.setAttribute('data-theme', 'amoled');
+            document.documentElement.classList.add('dark');
           }
         } catch (e) {}
         try {

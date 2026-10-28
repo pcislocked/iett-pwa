@@ -22,27 +22,24 @@ export interface AnnouncementCardProps {
 
 const BADGE_STYLES: Record<
   AnnouncementBadgeVariant,
-  { badge: string; card: string; close: string; fade: string }
+  { badge: string; card: string; close: string }
 > = {
   pwa: {
     badge: 'bg-pink-500/15 text-pink-700 dark:text-pink-300 border-pink-500/30',
     card: 'border-pink-500/30 dark:border-pink-500/20 bg-pink-500/5 dark:bg-pink-950/20',
     close:
       'text-pink-700 dark:text-pink-200 hover:bg-pink-500/20 hover:text-pink-900 dark:hover:text-white',
-    fade: 'from-pink-50/95 dark:from-[#1b0812]',
   },
   alert: {
     badge: 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border-amber-500/30',
     card: 'border-amber-500/30 dark:border-amber-500/20 bg-amber-500/5 dark:bg-amber-950/20',
     close:
       'text-amber-800 dark:text-amber-300 hover:bg-amber-500/20 hover:text-amber-950 dark:hover:text-white',
-    fade: 'from-amber-50/95 dark:from-[#1b1508]',
   },
   official: {
     badge: 'bg-blue-500/15 text-blue-800 dark:text-blue-300 border-blue-500/30',
     card: 'border-surface-border hover:border-surface-muted bg-surface-card/70 dark:bg-surface-elevated/40',
     close: 'text-text-muted hover:text-text-primary hover:bg-surface-muted',
-    fade: 'from-[var(--color-surface,#fff)] dark:from-[var(--color-surface,#0a0a0a)]',
   },
 }
 
@@ -167,9 +164,19 @@ export const AnnouncementCard: React.FC<AnnouncementCardProps> = ({
       {content && (
         <div className="flex flex-col gap-1 mt-0.5">
           <div
-            className={`relative ${
+            className={`relative transition-[max-height] duration-200 ${
               isCollapsible && !isExpanded ? 'max-h-20 overflow-hidden' : ''
             }`}
+            style={
+              isCollapsible && !isExpanded
+                ? {
+                    maskImage:
+                      'linear-gradient(to bottom, rgba(0,0,0,1) 45%, rgba(0,0,0,0) 100%)',
+                    WebkitMaskImage:
+                      'linear-gradient(to bottom, rgba(0,0,0,1) 45%, rgba(0,0,0,0) 100%)',
+                  }
+                : undefined
+            }
           >
             {isMarkdown ? (
               <SafeMarkdown
@@ -180,13 +187,6 @@ export const AnnouncementCard: React.FC<AnnouncementCardProps> = ({
               <p className="text-xs text-text-secondary whitespace-pre-wrap leading-relaxed">
                 {content}
               </p>
-            )}
-            {isCollapsible && !isExpanded && (
-              <div
-                className={`absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t ${
-                  styleConfig.fade
-                } to-transparent pointer-events-none opacity-95`}
-              />
             )}
           </div>
 

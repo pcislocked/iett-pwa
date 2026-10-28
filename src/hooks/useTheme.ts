@@ -7,6 +7,11 @@ const listeners = new Set<(t: Theme) => void>()
 
 export function applyTheme(theme: Theme): void {
   document.documentElement.setAttribute('data-theme', theme)
+  if (theme === 'light') {
+    document.documentElement.classList.remove('dark')
+  } else {
+    document.documentElement.classList.add('dark')
+  }
   try { localStorage.setItem(STORAGE_KEY, theme) } catch { /* storage blocked */ }
   listeners.forEach(l => l(theme))
 }
@@ -24,6 +29,13 @@ export function useTheme() {
   const [theme, setThemeState] = useState<Theme>(getInitialTheme)
 
   useEffect(() => {
+    // Ensure initial classList matches current data-theme
+    if (theme === 'light') {
+      document.documentElement.classList.remove('dark')
+    } else {
+      document.documentElement.classList.add('dark')
+    }
+
     const onChange = (t: Theme) => setThemeState(t)
     listeners.add(onChange)
 
@@ -33,6 +45,11 @@ export function useTheme() {
         if (val === 'dark' || val === 'amoled' || val === 'light') {
           setThemeState(val)
           document.documentElement.setAttribute('data-theme', val)
+          if (val === 'light') {
+            document.documentElement.classList.remove('dark')
+          } else {
+            document.documentElement.classList.add('dark')
+          }
         }
       }
     }
