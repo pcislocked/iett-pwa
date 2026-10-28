@@ -209,3 +209,75 @@ export function isTodayAnnouncement(dateStr?: string | null, now: Date = new Dat
 
   return false
 }
+
+/**
+ * Parses an IETT announcement date string ("27 Ekim 2026", "27.10.2026", "2026-10-27")
+ * into a local Date object (at 00:00:00). Returns null if unparseable.
+ */
+export function parseAnnouncementDate(dateStr?: string | null, refYear: number = new Date().getFullYear()): Date | null {
+  if (!dateStr || typeof dateStr !== 'string') return null
+  const raw = dateStr.trim().toLocaleLowerCase('tr-TR')
+  if (!raw) return null
+
+  // 1. ISO YYYY-MM-DD
+  const isoMatch = raw.match(/\b(20\d{2})-(\d{2})-(\d{2})\b/)
+  if (isoMatch) {
+    const y = parseInt(isoMatch[1], 10)
+    const m = parseInt(isoMatch[2], 10) - 1
+    const d = parseInt(isoMatch[3], 10)
+    const dt = new Date(y, m, d, 0, 0, 0, 0)
+    if (!isNaN(dt.getTime())) return dt
+  }
+
+  // 2. Turkish textual date: e.g. "27 ekim 2026" or "27 ekim"
+  for (let i = 0; i < TURKISH_MONTHS.length; i++) {
+    const mName = TURKISH_MONTHS[i]
+    if (raw.includes(mName)) {
+      const dayMatch = raw.match(new RegExp(`(^|\\D)0?(\\d{1,2})\\s+${mName}`))
+      if (dayMatch) {
+        const d = parseInt(dayMatch[2], 10)
+        const yearMatch = raw.match(/\b(20\d{2})\b/)
+        const y = yearMatch ? parseInt(yearMatch[1], 10) : refYear
+        const dt = new Date(y, i, d, 0, 0, 0, 0)
+        if (!isNaN(dt.getTime())) return dt
+      }
+    }
+  }
+
+  // 3. Numeric date: DD.MM.YYYY, DD/MM/YYYY, DD-MM-YYYY (single date, not range)
+  if (!/[-–—]\s*\d{1,2}[./-]\d{1,2}/.test(raw)) {
+    const numericMatch = raw.match(/(^|\D)0?(\d{1,2})[./-]0?(\d{1,2})(?:[./-](\d{4}))?(\D|$)/)
+    if (numericMatch) {
+      const d = parseInt(numericMatch[2], 10)
+      const m = parseInt(numericMatch[3], 10) - 1
+      const y = numericMatch[4] ? parseInt(numericMatch[4], 10) : refYear
+      const dt = new Date(y, m, d, 0, 0, 0, 0)
+      if (!isNaN(dt.getTime())) return dt
+    }
+  }
+
+  return null
+}
+
+/**
+ * Checks whether an announcement falls within the last `maxHours` (default 72h / 3 calendar days).
+ * Example: An announcement published on Oct 27 remains visible through Oct 27, Oct 28, and until Oct 29 23:59:59.
+ */
+export function isRecentAnnouncement(
+  dateStr?: string | null,
+  now: Date = new Date(),
+  maxHours: number = 72,
+): boolean {
+  if (!dateStr || typeof dateStr !== 'string') return false
+  if (isTodayAnnouncement(dateStr, now)) return true
+
+  const parsed = parseAnnouncementDate(dateStr, now.getFullYear())
+  if (!parsed) return false
+
+  const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999)
+  // 72 hours = 3 calendar days (Today, Yesterday, 2 days ago) -> start of (today - 2 days)
+  const daysBack = Math.max(0, Math.ceil(maxHours / 24) - 1)
+  const windowStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - daysBack, 0, 0, 0, 0)
+
+  return parsed.getTime() >= windowStart.getTime() && parsed.getTime() <= todayEnd.getTime()
+}

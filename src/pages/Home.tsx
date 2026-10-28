@@ -16,7 +16,7 @@ import { useRouteTickerData } from '@/hooks/useRouteTickerData'
 import PullToRefresh from '@/components/PullToRefresh'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
-import { isTodayAnnouncement } from '@/utils/dateUtils'
+import { isTodayAnnouncement, isRecentAnnouncement } from '@/utils/dateUtils'
 import { useKioskMode } from '@/hooks/useKioskMode'
 import { useVersionBanner } from '@/hooks/useVersionBanner'
 import UpdateBanner from '@/components/UpdateBanner'
@@ -190,7 +190,7 @@ export default function Home() {
 
   const todayAnnouncements = useMemo(() => {
     if (!officialAnnouncements?.items) return [] as OfficialAnnouncementItem[]
-    return officialAnnouncements.items.filter((item: OfficialAnnouncementItem) => isTodayAnnouncement(item.date))
+    return officialAnnouncements.items.filter((item: OfficialAnnouncementItem) => isRecentAnnouncement(item.date))
   }, [officialAnnouncements])
 
   const navigate = useNavigate()
@@ -306,7 +306,9 @@ export default function Home() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5 mb-1 flex-wrap">
                         <span className="text-[10px] font-bold uppercase tracking-wider bg-amber-500/20 text-amber-400 px-1.5 py-0.5 rounded">
-                          {t('common.today', { defaultValue: 'Bugün' })}
+                          {isTodayAnnouncement(ann.date)
+                            ? t('common.today', { defaultValue: 'Bugün' })
+                            : t('common.new', { defaultValue: 'Yeni' })}
                         </span>
                         <span className="text-[11px] text-text-muted">{ann.date}</span>
                       </div>
@@ -314,7 +316,7 @@ export default function Home() {
                         {ann.title}
                       </h3>
                     </div>
-                    <svg className="w-4 h-4 text-amber-500/70 group-hover:text-amber-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <svg className="w-4 h-4 text-amber-500/70 group-hover:text-amber-400 shrink-0 mt-0.5" aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                     </svg>
                   </div>
@@ -330,7 +332,7 @@ export default function Home() {
                 className="text-xs font-semibold text-amber-500 hover:text-amber-400 transition-colors inline-flex items-center gap-1"
               >
                 <span>{t('home.allAnnouncements', { defaultValue: 'Tüm İETT Duyuruları' })}</span>
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <svg className="w-3.5 h-3.5" aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                 </svg>
               </a>

@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 
 
-import { api, type BusDetail, type BusPosition, type NearbyStop } from '@/api/client'
+import { api, type BusDetail, type BusPosition, type NearbyStop, type RouteMetadata } from '@/api/client'
 import { useFleet } from '@/hooks/useFleet'
 import { useLocationManager } from '@/hooks/useLocationManager'
 
@@ -18,6 +18,7 @@ import { formatGpsTimestamp } from '@/utils/dateUtils'
 import { useUserPrefs } from '@/hooks/useUserPrefs'
 import { useMapTiles } from '@/hooks/useMapTiles'
 import { formatPlate } from '@/utils/plateUtils'
+import { formatBusDirectionLabel } from '@/utils/busDirectionLabel'
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 function parseIsoDate(value: string | null | undefined): Date | null {
@@ -308,12 +309,16 @@ export default function MapPage() {
 
   // Selected Bus Detail Fetch
   const [selectedDetail, setSelectedDetail] = useState<BusDetail | null>(null)
+  const [selectedRouteMeta, setSelectedRouteMeta] = useState<RouteMetadata[] | null>(null)
+  const [selectedFirstStop, setSelectedFirstStop] = useState<string | null>(null)
   const [detailLoading, setDetailLoading] = useState(false)
 
   // Fetch Bus detail when kapino selected
   useEffect(() => {
+    setSelectedDetail(null)
+    setSelectedRouteMeta(null)
+    setSelectedFirstStop(null)
     if (!selectedKapino) {
-      setSelectedDetail(null)
       return
     }
     let alive = true
@@ -322,20 +327,39 @@ export default function MapPage() {
       .then(async (res) => {
         if (!alive) return
         let enriched = { ...res }
+        let activeFirstStop: string | null = null
         try {
           const aracData = await api.arac.autoDetail(selectedKapino)
           if (aracData && aracData.profile) {
             enriched = { ...enriched, ...aracData.profile }
-            if (!enriched.resolved_route_code && aracData.missions?.missions?.length > 0) {
-              const activeMission = aracData.missions.missions[0]
-              enriched.resolved_route_code = activeMission.line_code || null
-              enriched.direction = activeMission.first_stop || null
+            if (aracData.missions?.missions?.length > 0) {
+              const activeMission =
+                aracData.missions.missions.find(m => m.state === 'B') ??
+                aracData.missions.missions[0]
+              if (!enriched.resolved_route_code && activeMission.line_code) {
+                enriched.resolved_route_code = activeMission.line_code
+              }
+              activeFirstStop = activeMission.first_stop || null
+              if (!enriched.direction && activeMission.first_stop) {
+                enriched.direction = activeMission.first_stop
+              }
             }
           }
         } catch(e) { console.error(e) }
+
+        let routeMeta: RouteMetadata[] | null = null
+        if (enriched.resolved_route_code) {
+          try {
+            routeMeta = await api.routes.metadata(enriched.resolved_route_code)
+          } catch {
+            routeMeta = null
+          }
+        }
         
         if (alive) {
           setSelectedDetail(enriched as unknown as BusDetail)
+          setSelectedFirstStop(activeFirstStop)
+          setSelectedRouteMeta(routeMeta)
           setDetailLoading(false)
           if (res.latitude && res.longitude) {
             mapRef.current?.flyTo([res.latitude, res.longitude], 15, { duration: 0.5 })
@@ -368,7 +392,7 @@ export default function MapPage() {
 
   const mergedDetail = useMemo(() => {
     const position = displayBuses.find(b => b.kapino === selectedKapino)
-    if (!selectedDetail) return position ? { ...position, plate: undefined, resolved_route_code: position.route_code, route_is_live: false } : null
+    if (!selectedDetail) return position ? { ...position, plate: undefined, resolved_route_code: position.route_code, route_is_live: false, route_stops: [] } : null
     return { ...position, ...selectedDetail }
   }, [selectedDetail, selectedKapino, displayBuses])
 
@@ -543,7 +567,17 @@ export default function MapPage() {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-0.5">
                   <p className="text-sm font-semibold text-text-primary truncate">
-                    {mergedDetail?.direction ? `\u2192 ${mergedDetail.direction}` : t('map.noDirectionInfo', 'Yön Bilgisi Yok')}
+                    {formatBusDirectionLabel(
+                      {
+                        direction: mergedDetail?.direction,
+                        direction_letter: mergedDetail?.direction_letter,
+                        route_name: mergedDetail?.route_name,
+                        first_stop: selectedFirstStop,
+                        metadata: selectedRouteMeta,
+                        route_stops: mergedDetail?.route_stops,
+                      },
+                      t('map.noDirectionInfo', 'Yön Bilgisi Yok'),
+                    )}
                   </p>
                   {detailLoading && <span className="text-[10px] text-brand-500 animate-pulse">{t('common.loading', 'yükleniyor...')}</span>}
                 </div>
