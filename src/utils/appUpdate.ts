@@ -1,3 +1,5 @@
+import pkg from '../../package.json'
+
 const VERSION_ENDPOINT = `${import.meta.env.BASE_URL}version.json`
 const VERSION_CHECK_INTERVAL_MS = 60_000
 const VERSION_RELOAD_FLAG_KEY = 'iett:update-reloaded-version'
@@ -127,4 +129,12 @@ export function setupAppUpdateChecks(): void {
   window.setInterval(() => {
     void checkForUpdate()
   }, VERSION_CHECK_INTERVAL_MS)
+}
+
+
+export function getCurrentAppVersion(): string {
+  if (typeof __APP_VERSION__ !== 'undefined') {
+    return __APP_VERSION__
+  }
+  return pkg.version || '0.4.11.1'
 }

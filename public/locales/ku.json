@@ -221,7 +221,10 @@
     "timestampMode": "\u2800",
     "timestampBoth": "\u2800",
     "timestampRelative": "\u2800",
-    "timestampAbsolute": "\u2800"
+    "timestampAbsolute": "\u2800",
+    "changelog": "\u2800",
+    "showUpdateBanner": "\u2800",
+    "showUpdateBannerDesc": "\u2800"
   },
   "embed": {
     "poweredBy": "\u2800",
@@ -357,5 +360,21 @@
     "emptyTitle": "\u2800",
     "emptyDesc": "\u2800",
     "addStop": "\u2800"
+  },
+  "orientation": {
+    "title": "\u2800",
+    "desc": "\u2800"
+  },
+  "updateBanner": {
+    "message": "\u2800",
+    "dismiss": "\u2800"
+  },
+  "changelog": {
+    "title": "\u2800",
+    "subtitle": "\u2800",
+    "currentBadge": "\u2800",
+    "viewOnGithub": "\u2800",
+    "allReleasesOnGithub": "\u2800",
+    "empty": "\u2800"
   }
 }
