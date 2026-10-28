@@ -32,8 +32,8 @@ export default function AnnouncementsPage() {
     refetch: refetchGlobal,
   } = useGlobalNotices()
 
-  // PWA Admin Announcements
-  const { announcements: pwaAnnouncements } = usePwaAnnouncements()
+  // PWA Admin Announcements (all announcements shown in history)
+  const { announcements: pwaAnnouncements } = usePwaAnnouncements({ includeAll: true })
 
   const officialItems = officialData?.items || []
   const globalItems = globalNotices || []

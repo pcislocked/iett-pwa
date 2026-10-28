@@ -124,4 +124,19 @@ describe('usePwaAnnouncements', () => {
     const seenStored = JSON.parse(localStorage.getItem('iett_seen_single_pwa_announcements') || '[]')
     expect(seenStored).toContain(4)
   })
+
+  it('shows all announcements including expired and dismissed when includeAll is true', async () => {
+    localStorage.setItem('iett_dismissed_pwa_announcements', JSON.stringify([1]))
+    const { result } = renderHook(() => usePwaAnnouncements({ includeAll: true }), { wrapper })
+
+    await waitFor(() => {
+      expect(result.current.announcements.length).toBe(4)
+    })
+
+    const ids = result.current.announcements.map((a) => a.id)
+    expect(ids).toContain(1)
+    expect(ids).toContain(2)
+    expect(ids).toContain(3)
+    expect(ids).toContain(4)
+  })
 })
