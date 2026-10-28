@@ -3,6 +3,20 @@
 All notable changes to iett-pwa are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [0.4.12.2] - 2026-10-28
+### Added
+- **AnnouncementCard Component (`AnnouncementCard.tsx`):** Unified card architecture across official scraped İETT notices, NTCAPI service alerts, and remote PWA notices with consistent pill badges, typography, and actions.
+- **Collapsible Read More / Read Less:** Added progressive disclosure toggle with theme-adaptive bottom fade gradient for long announcement texts (>180 characters or multi-line).
+- **Settings Reset Hidden Announcements Button:** Added button in Settings allowing users to un-hide dismissed announcements and restore update banner state with instant CustomEvent broadcast.
+- **Full Backup Export / Import Integration (`BackupDataV2`):** Added active favorites (`iett_favorites`) and dismissed announcement state tracking (`dismissedIds`, `seenSingleIds`, `lastSeenVersion`) to backup export and import, with automatic synthesis fallback for legacy v1 backups.
+- **Extended Tailwind Brand Palette:** Added full 200, 300, 400, 700, 800 shades to `tailwind.config.ts`, fixing dark theme accessibility styling.
+
+### Fixed
+- **Inconsistent Close Buttons:** Unified `UpdateBanner` and `AnnouncementCard` close buttons with identical touch targets (`w-6 h-6`) and SVG vector geometry (`w-3.5 h-3.5`, `strokeWidth={2.2}`).
+- **Light Theme Contrast:** Fixed low-contrast amber text in light theme to WCAG AAA compliant `text-text-primary`.
+
+---
+
 ## [0.4.10.4] - 2026-10-23
 ### Fixed
 - **Accurate Sub-Second SNTP Server Clock Synchronization (`timeSync.ts`):** Implemented Simple Network Time Protocol (SNTP) round-trip time (RTT) midpoint algorithm to calculate exact server clock offset. Eliminated millisecond stripping bug (`.setHours(..., 0)`) and network transit lag that caused server clock to artificially drift 1-2 seconds behind client device clock. Added periodic background sync (every 10s while modal is active) and auto-sync on app resume / tab visibility.

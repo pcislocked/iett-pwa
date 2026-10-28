@@ -3,6 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import ChangelogPage from '../ChangelogPage'
 import { LAST_SEEN_VERSION_KEY } from '@/hooks/useVersionBanner'
+import { getCurrentAppVersion } from '@/utils/appUpdate'
 
 describe('ChangelogPage Component', () => {
   beforeEach(() => {
@@ -50,7 +51,7 @@ describe('ChangelogPage Component', () => {
     )
 
     await waitFor(() => {
-      expect(localStorage.getItem(LAST_SEEN_VERSION_KEY)).toBe('0.4.12.1')
+      expect(localStorage.getItem(LAST_SEEN_VERSION_KEY)).toBe(getCurrentAppVersion())
     })
   })
 

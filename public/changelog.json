@@ -2,6 +2,33 @@
   "updatedAt": "2026-10-28",
   "releases": [
     {
+      "version": "0.4.12.2",
+      "date": "2026-10-28",
+      "title": {
+        "tr": "Duyuru Sistemleri Standardizasyonu, Erişilebilir Renkler ve Yedekleme Entegrasyonu",
+        "en": "Announcement Systems Standardization, Accessible Colors & Full Backup Integration"
+      },
+      "changes": {
+        "tr": [
+          "Tüm duyuru sistemleri (İETT anasayfa, NTCAPI sefer uyarıları ve PWA bildirimleri) AnnouncementCard bileşeni altında standardize edildi.",
+          "Light ve Dark temalarda WCAG AAA uyumlu yüksek kontrastlı tipografi ve kapatma '✕' butonları eşitlendi.",
+          "Uzun duyurular için pürüzsüz arka plan geçişli ve haptik destekli 'Devamını oku / Daha az göster' özelliği eklendi.",
+          "Ayarlar sayfasına kapatılan duyuruları ve sürüm banner'ını yeniden görünür yapan 'Gizlenen Duyuruları Sıfırla' butonu eklendi.",
+          "Ayarlar dışa/içe aktarma (BackupDataV2) sistemine favoriler ve kapatılan duyuru/versiyon durumları eksiksiz entegre edildi.",
+          "Tailwind konfigürasyonuna tam brand renk skalası (200, 300, 400, 700, 800) eklenerek dark mode a11y sınıfları düzeltildi."
+        ],
+        "en": [
+          "Standardized all announcement sources (official İETT homepage, NTCAPI service alerts, and remote PWA notices) under AnnouncementCard.",
+          "Unified dismiss '✕' buttons and ensured WCAG AAA high-contrast typography across light and dark themes.",
+          "Added collapsible 'Read More / Read Less' toggle with theme-adaptive fade gradient and haptic feedback for long texts.",
+          "Added 'Reset Hidden Announcements' button in Settings to un-hide dismissed announcements and restore update banner state.",
+          "Fully integrated favorites and dismissed announcement/version tracking into BackupDataV2 import/export.",
+          "Extended Tailwind brand palette with 200, 300, 400, 700, 800 shades, fixing dark mode accessibility contrast classes."
+        ]
+      },
+      "url": "https://github.com/pcislocked/iett-pwa/releases/tag/v0.4.12.2"
+    },
+    {
       "version": "0.4.12.1",
       "date": "2026-10-28",
       "title": {
