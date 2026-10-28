@@ -51,6 +51,18 @@ export function writeStoredVersionSafe(version: string): boolean {
   }
 }
 
+export function resetVersionBannerStorage(): void {
+  if (typeof window === 'undefined') return
+  try {
+    const current = normalizeVersion(getCurrentAppVersion())
+    const old = current === '0.4.12.1' ? '0.4.12' : current.replace(/\.\d+$/, '') || '0.4.12'
+    localStorage.setItem(LAST_SEEN_VERSION_KEY, old)
+    window.dispatchEvent(new CustomEvent('iett:version-banner-reset'))
+  } catch {
+    // ignore
+  }
+}
+
 /**
  * Ensures current version is stored in localStorage if not already present.
  * Never throws; safe to call from SettingsPage or App initialization.
@@ -67,7 +79,7 @@ export function ensureCurrentVersionStored(): void {
 export function useVersionBanner(showUpdateBannerPref: boolean) {
   const [transition, setTransition] = useState<VersionTransition | null>(null)
 
-  useEffect(() => {
+  const checkVersion = useCallback(() => {
     const currentVersion = normalizeVersion(getCurrentAppVersion())
     if (!currentVersion || currentVersion === '0.0.0') {
       return
@@ -112,6 +124,18 @@ export function useVersionBanner(showUpdateBannerPref: boolean) {
       setTransition(null)
     }
   }, [showUpdateBannerPref])
+
+  useEffect(() => {
+    checkVersion()
+  }, [checkVersion])
+
+  useEffect(() => {
+    const handleReset = () => {
+      checkVersion()
+    }
+    window.addEventListener('iett:version-banner-reset', handleReset)
+    return () => window.removeEventListener('iett:version-banner-reset', handleReset)
+  }, [checkVersion])
 
   const dismissBanner = useCallback(() => {
     const currentVersion = normalizeVersion(getCurrentAppVersion())

@@ -228,6 +228,10 @@
     "locationHidden": "Nearby Stops is hidden on home page",
     "locationRevoke": "Revoke Location",
     "locationEnable": "Enable Location",
+    "announcementsSection": "Announcements & Notifications",
+    "resetHiddenAnnouncements": "Reset Hidden Announcements",
+    "resetHiddenAnnouncementsDesc": "Restores dismissed app announcements and the version update banner.",
+    "resetOk": "✓ Reset",
     "dataBackup": "Data Backup",
     "exportData": "Export Settings",
     "importOk": "✓ Settings imported",
@@ -434,7 +438,9 @@
     "alert": "Alert",
     "fareTariffTitle": "Public Transit Fare Tariff",
     "fareTariffDesc": "Current single-ticket, subscription and transfer fares",
-    "pwaSectionTitle": "İETT PWA Announcements"
+    "pwaSectionTitle": "İETT PWA Announcements",
+    "pwaReadMore": "Read more",
+    "pwaReadLess": "Read less"
   },
   "pinned": {
     "remove": "Remove",

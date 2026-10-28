@@ -228,6 +228,10 @@
     "locationHidden": "⠀",
     "locationRevoke": "⠀",
     "locationEnable": "⠀",
+    "announcementsSection": "⠀",
+    "resetHiddenAnnouncements": "⠀",
+    "resetHiddenAnnouncementsDesc": "⠀",
+    "resetOk": "⠀",
     "dataBackup": "⠀",
     "exportData": "⠀",
     "importOk": "⠀",
@@ -448,7 +452,9 @@
     "systemEmpty": "⠀",
     "alert": "⠀",
     "fareTariffTitle": "⠀",
-    "fareTariffDesc": "⠀"
+    "fareTariffDesc": "⠀",
+    "pwaReadMore": "⠀",
+    "pwaReadLess": "⠀"
   },
   "changelog": {
     "title": "⠀",

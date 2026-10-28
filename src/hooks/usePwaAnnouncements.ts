@@ -6,8 +6,19 @@ export const REMOTE_ANNOUNCEMENTS_URL =
   'https://raw.githubusercontent.com/pcislocked/iett-pwa/master/public/announcements.json'
 export const FALLBACK_ANNOUNCEMENTS_URL = '/announcements.json'
 
-const DISMISSED_STORAGE_KEY = 'iett_dismissed_pwa_announcements'
-const SEEN_SINGLE_STORAGE_KEY = 'iett_seen_single_pwa_announcements'
+export const DISMISSED_STORAGE_KEY = 'iett_dismissed_pwa_announcements'
+export const SEEN_SINGLE_STORAGE_KEY = 'iett_seen_single_pwa_announcements'
+
+export function resetDismissedPwaAnnouncements(): void {
+  if (typeof window === 'undefined') return
+  try {
+    localStorage.removeItem(DISMISSED_STORAGE_KEY)
+    localStorage.removeItem(SEEN_SINGLE_STORAGE_KEY)
+    window.dispatchEvent(new CustomEvent('iett:announcements-reset'))
+  } catch {
+    // ignore
+  }
+}
 
 function readStorageIds(key: string): number[] {
   if (typeof window === 'undefined') return []
@@ -56,10 +67,19 @@ export function usePwaAnnouncements() {
   // Track IDs that were already seen before this page session started.
   // Single-show announcements stay visible for the current session,
   // but will be suppressed in subsequent visits once recorded in localStorage.
-  const [initialSeenSingleIds] = useState<number[]>(() =>
+  const [initialSeenSingleIds, setInitialSeenSingleIds] = useState<number[]>(() =>
     readStorageIds(SEEN_SINGLE_STORAGE_KEY)
   )
   const [currentTimestamp, setCurrentTimestamp] = useState<number>(() => Date.now())
+
+  useEffect(() => {
+    const handleReset = () => {
+      setDismissedIds([])
+      setInitialSeenSingleIds([])
+    }
+    window.addEventListener('iett:announcements-reset', handleReset)
+    return () => window.removeEventListener('iett:announcements-reset', handleReset)
+  }, [])
 
   useEffect(() => {
     // Refresh timestamp every minute or on data fetch

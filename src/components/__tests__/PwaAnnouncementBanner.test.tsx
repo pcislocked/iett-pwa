@@ -75,4 +75,37 @@ describe('PwaAnnouncementBanner', () => {
     fireEvent.click(closeButtons[0])
     expect(onDismiss).toHaveBeenCalledWith(1)
   })
+
+  it('renders read more / read less toggle for long content and toggles expansion', () => {
+    const longAnnouncement: PwaAnnouncement = {
+      id: 5,
+      date: '2026-10-28',
+      startDate: '2026-10-27T00:00:00.000Z',
+      endDate: '2026-10-29T23:59:59.000Z',
+      title: 'Çok Uzun Duyuru',
+      isIgnorable: true,
+      isSingleShow: false,
+      content:
+        'Paragraf 1: Bu çok uzun bir duyurudur ve ekranda fazla yer kaplamaması için daraltılmalıdır.\n\nParagraf 2: Detaylar burada yer almaktadır. Kullanıcı devamını oku butonuna bastığında bu kısım görünür.\n\nParagraf 3: Ek geri bildirim ve açıklamalar.',
+    }
+
+    render(
+      <MemoryRouter>
+        <PwaAnnouncementBanner announcements={[longAnnouncement]} onDismiss={vi.fn()} />
+      </MemoryRouter>
+    )
+
+    // Toggle button should be present
+    const toggleBtn = screen.getByTestId('pwa-announcement-toggle-5')
+    expect(toggleBtn).toBeInTheDocument()
+    expect(toggleBtn).toHaveTextContent('Devamını oku')
+
+    // Click to expand
+    fireEvent.click(toggleBtn)
+    expect(toggleBtn).toHaveTextContent('Daha az göster')
+
+    // Click to collapse
+    fireEvent.click(toggleBtn)
+    expect(toggleBtn).toHaveTextContent('Devamını oku')
+  })
 })

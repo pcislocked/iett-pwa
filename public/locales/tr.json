@@ -228,6 +228,10 @@
     "locationHidden": "Yakın Duraklar ana sayfada gizlenir",
     "locationRevoke": "Konumu İptal Et",
     "locationEnable": "Konumu Etkinleştir",
+    "announcementsSection": "Duyurular ve Bildirimler",
+    "resetHiddenAnnouncements": "Gizlenen Duyuruları Sıfırla",
+    "resetHiddenAnnouncementsDesc": "Kapatılan uygulama duyurularını ve sürüm güncelleme bildirimini yeniden görünür yapar.",
+    "resetOk": "✓ Sıfırlandı",
     "dataBackup": "Veri Yedekleme",
     "exportData": "Ayarları Dışa Aktar",
     "importOk": "✓ İçe aktarıldı",
@@ -434,7 +438,9 @@
     "alert": "Uyarı",
     "fareTariffTitle": "Toplu Ulaşım Ücret Tarifesi",
     "fareTariffDesc": "Güncel bilet, abonman ve aktarma ücretleri",
-    "pwaSectionTitle": "İETT PWA Duyuruları"
+    "pwaSectionTitle": "İETT PWA Duyuruları",
+    "pwaReadMore": "Devamını oku",
+    "pwaReadLess": "Daha az göster"
   },
   "pinned": {
     "remove": "Kaldır",

@@ -41,13 +41,13 @@ export const UpdateBanner: React.FC<UpdateBannerProps> = ({
       role="status"
       aria-live="polite"
       data-testid="app-update-banner"
-      className="h-7 max-h-7 px-4 flex items-center justify-between gap-2 bg-pink-500/15 border-b border-pink-500/30 text-pink-700 dark:text-pink-200 whitespace-nowrap overflow-hidden select-none"
+      className="h-7 max-h-7 px-4 flex items-center justify-between gap-2 bg-pink-500/10 dark:bg-pink-950/40 border-b border-pink-500/30 text-pink-900 dark:text-pink-100 whitespace-nowrap overflow-hidden select-none"
     >
       <Link
         to="/changelog"
         onClick={handleNavigate}
         title={message}
-        className="flex-1 min-w-0 truncate text-[11px] font-medium leading-none tracking-tight hover:underline focus:outline-none focus-visible:ring-1 focus-visible:ring-pink-500 rounded"
+        className="flex-1 min-w-0 truncate text-[11px] font-medium leading-none tracking-tight hover:underline text-pink-900 dark:text-pink-100 hover:text-pink-950 dark:hover:text-white focus:outline-none focus-visible:ring-1 focus-visible:ring-pink-500 rounded"
       >
         {message}
       </Link>
@@ -57,11 +57,11 @@ export const UpdateBanner: React.FC<UpdateBannerProps> = ({
         onClick={handleClose}
         aria-label={t('updateBanner.dismiss', { defaultValue: 'Bildirimi kapat' })}
         data-testid="app-update-banner-close"
-        className="shrink-0 w-7 h-7 min-w-[28px] min-h-[28px] flex items-center justify-center p-1 rounded text-pink-600 dark:text-pink-300 hover:bg-pink-500/25 focus:outline-none focus-visible:ring-1 focus-visible:ring-pink-500 active:scale-95 transition cursor-pointer"
+        className="shrink-0 w-6 h-6 flex items-center justify-center rounded text-pink-700 dark:text-pink-200 hover:bg-pink-500/20 hover:text-pink-900 dark:hover:text-white focus:outline-none focus-visible:ring-1 focus-visible:ring-pink-500 active:scale-95 transition cursor-pointer"
       >
-        <span className="text-xs leading-none font-bold" aria-hidden="true">
-          ×
-        </span>
+        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2} aria-hidden="true">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+        </svg>
       </button>
     </div>
   )
