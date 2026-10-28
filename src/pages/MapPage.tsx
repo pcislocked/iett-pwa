@@ -104,23 +104,28 @@ function GpsMarker({ location }: { location: [number, number] | null }) {
 
 function MapViewportTracker({ onUpdate }: { onUpdate: (zoom: number, center: L.LatLng) => void }) {
   const timerRef = useRef<number | null>(null)
+  const onUpdateRef = useRef(onUpdate)
+  useEffect(() => { onUpdateRef.current = onUpdate }, [onUpdate])
   const map = useMapEvents({
     zoomend: () => {
       if (timerRef.current) window.clearTimeout(timerRef.current)
-      timerRef.current = window.setTimeout(() => onUpdate(map.getZoom(), map.getCenter()), 100)
+      timerRef.current = window.setTimeout(() => onUpdateRef.current(map.getZoom(), map.getCenter()), 100)
     },
     moveend: () => {
       if (timerRef.current) window.clearTimeout(timerRef.current)
-      timerRef.current = window.setTimeout(() => onUpdate(map.getZoom(), map.getCenter()), 100)
+      timerRef.current = window.setTimeout(() => onUpdateRef.current(map.getZoom(), map.getCenter()), 100)
     },
   })
 
+  // Initial sync runs once per map instance. Depending on `onUpdate` here caused an
+  // infinite render loop (inline callback + new LatLng each call) that starved
+  // React Router v7's startTransition navigations — URL changed but page never did.
   useEffect(() => {
-    onUpdate(map.getZoom(), map.getCenter())
+    onUpdateRef.current(map.getZoom(), map.getCenter())
     return () => {
       if (timerRef.current) window.clearTimeout(timerRef.current)
     }
-  }, [map, onUpdate])
+  }, [map])
 
   return null
 }
@@ -392,6 +397,11 @@ export default function MapPage() {
     setPickerEntities({ buses: bs, stops: [] })
   }, [])
 
+  const handleViewportUpdate = useCallback((zoom: number, center: L.LatLng) => {
+    setMapZoom(zoom)
+    setMapCenter(prev => (prev && prev.lat === center.lat && prev.lng === center.lng ? prev : center))
+  }, [])
+
   const handleMapClick = useCallback((latlng: L.LatLng) => {
     if (!mapRef.current) return
     const clickPt = mapRef.current.latLngToContainerPoint(latlng)
@@ -542,7 +552,7 @@ export default function MapPage() {
         />
 
         {/* Viewport Tracker & Map Click Handler */}
-        <MapViewportTracker onUpdate={(zoom, center) => { setMapZoom(zoom); setMapCenter(center) }} />
+        <MapViewportTracker onUpdate={handleViewportUpdate} />
         <MapClickHandler onClick={handleMapClick} />
 
         {/* User GPS Location */}
