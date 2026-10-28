@@ -390,4 +390,27 @@ describe('api.system.time', () => {
     const result = await api.system.time()
     expect(result).toEqual(payload)
   })
+
+  it('correctly percent-encodes Turkish characters in route code URLs (e.g. 15ŞN)', async () => {
+    mockFetch([])
+    await api.routes.metadata('15ŞN')
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      '/v1/routes/15%C5%9EN',
+      expect.objectContaining({ signal: expect.any(AbortSignal) }),
+    )
+
+    mockFetch([])
+    await api.routes.stops('15ŞN')
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      '/v1/routes/15%C5%9EN/stops',
+      expect.objectContaining({ signal: expect.any(AbortSignal) }),
+    )
+
+    mockFetch([])
+    await api.routes.schedule('15ŞN')
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      '/v1/routes/15%C5%9EN/schedule',
+      expect.objectContaining({ signal: expect.any(AbortSignal) }),
+    )
+  })
 })

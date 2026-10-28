@@ -157,3 +157,48 @@ describe('isTodayAnnouncement', () => {
   })
 })
 
+describe('isRecentAnnouncement (72h / 3 days)', () => {
+  // Reference date: 29 Ekim 2026 15:30
+  const now = new Date(2026, 9, 29, 15, 30, 0)
+
+  it('accepts announcements published today, yesterday, and 2 days ago (72h window)', async () => {
+    const { isRecentAnnouncement } = await import('../dateUtils')
+    // Today: 29 Ekim 2026
+    expect(isRecentAnnouncement('29 Ekim 2026', now, 72)).toBe(true)
+    expect(isRecentAnnouncement('29.10.2026', now, 72)).toBe(true)
+
+    // Yesterday: 28 Ekim 2026
+    expect(isRecentAnnouncement('28 Ekim 2026', now, 72)).toBe(true)
+    expect(isRecentAnnouncement('28.10.2026', now, 72)).toBe(true)
+
+    // 2 days ago: 27 Ekim 2026 (e.g. holiday notice published on Oct 27)
+    expect(isRecentAnnouncement('27 Ekim 2026', now, 72)).toBe(true)
+    expect(isRecentAnnouncement('27.10.2026', now, 72)).toBe(true)
+  })
+
+  it('rejects announcements older than 72 hours (3 calendar days)', async () => {
+    const { isRecentAnnouncement } = await import('../dateUtils')
+    // 3 days ago: 26 Ekim 2026
+    expect(isRecentAnnouncement('26 Ekim 2026', now, 72)).toBe(false)
+    expect(isRecentAnnouncement('26.10.2026', now, 72)).toBe(false)
+
+    // Older
+    expect(isRecentAnnouncement('23 Ekim 2026', now, 72)).toBe(false)
+    expect(isRecentAnnouncement('20.10.2026', now, 72)).toBe(false)
+    expect(isRecentAnnouncement('15 Eylül 2026', now, 72)).toBe(false)
+  })
+
+  it('rejects future dates beyond today', async () => {
+    const { isRecentAnnouncement } = await import('../dateUtils')
+    expect(isRecentAnnouncement('30 Ekim 2026', now, 72)).toBe(false)
+  })
+
+  it('safely handles null, undefined, and unparseable strings', async () => {
+    const { isRecentAnnouncement } = await import('../dateUtils')
+    expect(isRecentAnnouncement(null, now, 72)).toBe(false)
+    expect(isRecentAnnouncement(undefined, now, 72)).toBe(false)
+    expect(isRecentAnnouncement('', now, 72)).toBe(false)
+    expect(isRecentAnnouncement('gecersiz tarih', now, 72)).toBe(false)
+  })
+})
+

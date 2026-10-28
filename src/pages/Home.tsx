@@ -16,7 +16,7 @@ import { useRouteTickerData } from '@/hooks/useRouteTickerData'
 import PullToRefresh from '@/components/PullToRefresh'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
-import { isTodayAnnouncement } from '@/utils/dateUtils'
+import { isTodayAnnouncement, isRecentAnnouncement } from '@/utils/dateUtils'
 import pkg from '../../package.json'
 
 // ── Quick-access item ──────────────────────────────────────────────────────────
@@ -187,7 +187,7 @@ export default function Home() {
 
   const todayAnnouncements = useMemo(() => {
     if (!officialAnnouncements?.items) return [] as OfficialAnnouncementItem[]
-    return officialAnnouncements.items.filter((item: OfficialAnnouncementItem) => isTodayAnnouncement(item.date))
+    return officialAnnouncements.items.filter((item: OfficialAnnouncementItem) => isRecentAnnouncement(item.date))
   }, [officialAnnouncements])
 
   const navigate = useNavigate()
@@ -287,7 +287,9 @@ export default function Home() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5 mb-1 flex-wrap">
                         <span className="text-[10px] font-bold uppercase tracking-wider bg-amber-500/20 text-amber-400 px-1.5 py-0.5 rounded">
-                          {t('common.today', { defaultValue: 'Bugün' })}
+                          {isTodayAnnouncement(ann.date)
+                            ? t('common.today', { defaultValue: 'Bugün' })
+                            : t('common.new', { defaultValue: 'Yeni' })}
                         </span>
                         <span className="text-[11px] text-text-muted">{ann.date}</span>
                       </div>

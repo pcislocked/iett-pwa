@@ -26,7 +26,8 @@
     "iett": "IETT",
     "update": "Update",
     "all": "All",
-    "outdated": "Outdated"
+    "outdated": "Outdated",
+    "new": "New"
   },
   "nav": {
     "map": "Map",
