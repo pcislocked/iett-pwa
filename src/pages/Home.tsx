@@ -261,7 +261,7 @@ export default function Home() {
         <span className="text-xl font-bold text-text-primary tracking-tight">iett-pwa</span>
         <div className="flex items-center gap-2">
           {pkg.version.startsWith('0.') && (
-            <span className="bg-amber-500/20 text-amber-500 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider">Beta</span>
+            <span className="bg-amber-500/20 text-amber-800 dark:text-amber-400 border border-amber-500/30 dark:border-transparent text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider">Beta</span>
           )}
           <span className="text-text-muted font-mono text-xs">v{pkg.version}</span>
         </div>
@@ -292,11 +292,11 @@ export default function Home() {
           <div className="flex flex-col gap-2">
             {/* System / Global Notices */}
             {globalNotices?.map((notice) => (
-              <div key={notice.notice_noticeid} className="card border-amber-800/40 bg-amber-900/10 p-3">
+              <div key={notice.notice_noticeid} className="card border-amber-500/30 dark:border-amber-800/40 bg-amber-500/10 dark:bg-amber-900/10 p-3">
                 <div className="flex items-start gap-2">
-                  <span className="text-amber-500 mt-0.5">⚠️</span>
+                  <span className="text-amber-600 dark:text-amber-400 mt-0.5">⚠️</span>
                   <div className="flex-1 min-w-0">
-                    <h3 className="text-[13px] font-bold text-amber-500 leading-tight mb-1">{notice.notice_title}</h3>
+                    <h3 className="text-[13px] font-bold text-amber-900 dark:text-amber-400 leading-tight mb-1">{notice.notice_title}</h3>
                     <p className="text-xs text-text-secondary whitespace-pre-wrap leading-relaxed">{notice.notice_body}</p>
                   </div>
                 </div>
@@ -314,22 +314,22 @@ export default function Home() {
                   href={safeHref}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="card border-amber-800/40 bg-amber-900/10 p-3 hover:border-amber-600/60 transition-colors block group"
+                  className="card border-amber-500/30 dark:border-amber-800/40 bg-amber-500/10 dark:bg-amber-900/10 p-3 hover:border-amber-500/50 dark:hover:border-amber-600/60 transition-colors block group"
                 >
                   <div className="flex items-start gap-2">
-                    <span className="text-amber-500 mt-0.5">📢</span>
+                    <span className="text-amber-600 dark:text-amber-400 mt-0.5">📢</span>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5 mb-1 flex-wrap">
-                        <span className="text-[10px] font-bold uppercase tracking-wider bg-amber-500/20 text-amber-400 px-1.5 py-0.5 rounded">
+                        <span className="text-[10px] font-bold uppercase tracking-wider bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded">
                           {t('common.iettBadge', { defaultValue: 'İETT' })}
                         </span>
                         <span className="text-[11px] text-text-muted">{ann.date}</span>
                       </div>
-                      <h3 className="text-[13px] font-bold text-amber-500 leading-tight group-hover:text-amber-400 transition-colors">
+                      <h3 className="text-[13px] font-bold text-amber-900 dark:text-amber-400 leading-tight group-hover:text-amber-700 dark:group-hover:text-amber-300 transition-colors">
                         {ann.title}
                       </h3>
                     </div>
-                    <svg className="w-4 h-4 text-amber-500/70 group-hover:text-amber-400 shrink-0 mt-0.5" aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <svg className="w-4 h-4 text-amber-700/70 dark:text-amber-500/70 group-hover:text-amber-900 dark:group-hover:text-amber-400 shrink-0 mt-0.5" aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                     </svg>
                   </div>
@@ -342,7 +342,7 @@ export default function Home() {
                 href="https://iett.istanbul/announcement/Index"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-xs font-semibold text-amber-500 hover:text-amber-400 transition-colors inline-flex items-center gap-1"
+                className="text-xs font-semibold text-amber-700 dark:text-amber-500 hover:text-amber-900 dark:hover:text-amber-400 transition-colors inline-flex items-center gap-1"
               >
                 <span>{t('home.allAnnouncements', { defaultValue: 'Tüm İETT Duyuruları' })}</span>
                 <svg className="w-3.5 h-3.5" aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
