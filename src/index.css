@@ -176,3 +176,38 @@
 
 
 
+
+
+/* ── Orientation Guard (Portrait Lock for Mobile Phones) ────────── */
+.orientation-guard-overlay {
+  display: none;
+}
+
+@media screen and (orientation: landscape) and (max-height: 520px) and (pointer: coarse),
+       screen and (orientation: landscape) and (max-height: 520px) and (hover: none) {
+  .orientation-guard-overlay {
+    display: flex;
+  }
+}
+
+@keyframes phoneRotate {
+  0%, 15% {
+    transform: rotate(90deg);
+  }
+  50%, 85% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(90deg);
+  }
+}
+
+.animate-phone-rotate {
+  animation: phoneRotate 2.5s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-phone-rotate {
+    animation: none !important;
+  }
+}
