@@ -8,7 +8,7 @@
       "title": "Apple'da refresh spam yapıyosa ana ekrandan silip tekrar ekleyin",
       "isIgnorable": true,
       "isSingleShow": false,
-      "content": "iOS Safari / PWA önbellek çakışması nedeniyle sayfa sürekli yenileniyorsa (refresh spam), uygulamayı ana ekrandan tamamen silip Safari üzerinden tekrar **\"Ana Ekrana Ekle\"** yapın. Kalıcı güncelleme üzerinde çalışıyoruz."
+      "content": "iOS Safari / PWA önbellek çakışması nedeniyle sayfa sürekli yenileniyorsa (refresh spam), uygulamayı ana ekrandan tamamen silip Safari üzerinden tekrar **\"Ana Ekrana Ekle\"** yapın. Bir sonraki minör güncellemede kalıcı olarak çözülecektir."
     },
     {
       "id": 1,
