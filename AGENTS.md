@@ -134,7 +134,7 @@ Run the full verification suite for every modified repository:
 ### 4.1 Discovering the Current Version
 Never guess or rely on hardcoded version numbers. Always inspect the live files first:
 - `git describe --tags --abbrev=0`
-- `iett-pwa/package.json` (`"version"`)
+- `iett-pwa/package.json` (`"version"`) & `iett-pwa/public/changelog.json`
 - `iett-middle/app/config.py` (`app_version`)
 - `iett-hacs/custom_components/iett/manifest.json` (`"version"`)
 
@@ -145,7 +145,9 @@ GitHub Actions Docker build workflows (`docker.yml`) are configured to trigger *
 
 ### 4.3 Step-by-Step Release Execution (After Approval)
 1. **Merge Approved PR:** Merge the approved PR into `master` (`gh pr merge --merge` or `--squash` as appropriate) and pull `master` locally (`git checkout master && git pull origin master`).
-2. **Bump Version Files:** Update the version strings across the target repository's manifest files (and README version badges if applicable, using native file editing tools).
+2. **Bump Version Files & Update Changelog:**
+   - Update the version strings across the target repository's manifest files (and README version badges if applicable, using native `edit_file`).
+   - **`iett-pwa` Changelog Rule:** When bumping version for `iett-pwa`, you MUST prepend the new version release notes into `public/changelog.json` (`version`, `date` in `YYYY-MM-DD`, bilingual titles `title.tr`/`title.en`, bullet items `changes.tr`/`changes.en`, and `url` to GitHub release tag).
 3. **Commit & Tag:**
    ```bash
    git add <updated-version-files>
