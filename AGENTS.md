@@ -7,19 +7,52 @@ This document is the permanent operational constitution for any AI agent working
 ## 0. Absolute Red Lines (Zero-Tolerance Rules)
 
 ### Rule 0.1: Mandatory Timestamped Approval Gate (`onaylıyorum, dd/mm/yyyy hh:mm`)
-1. **No Autonomous Releases or Merges:** You are strictly forbidden from bumping versions, creating git tags, publishing GitHub releases, or merging Pull Requests on your own initiative.
-2. **All Work Goes Into a PR:** All implementation work for a task cycle must be committed to a dedicated branch and submitted as a Pull Request (PR) at the end.
+1. **No Autonomous Releases, Merges, or Direct Master Changes:** You are strictly forbidden from bumping versions, creating git tags, publishing GitHub releases, merging Pull Requests, or committing/merging/pushing anything directly to `master`/`main` on your own initiative.
+2. **All Work Goes Into a PR:** All implementation work for a task cycle must be committed to a dedicated feature/fix branch and submitted as a Pull Request (PR). Direct modifications to `master`/`main` are strictly forbidden.
 3. **Critical Operations Requiring Explicit Timestamped Approval:**
-   You MUST NOT execute any of the following operations unless the user explicitly replies in the format **`onaylıyorum, dd/mm/yyyy hh:mm`** (or `dd.mm.yyyy hh:mm`):
-   - Cutting a new version, creating/pushing a git tag (`git tag`, `git push --tags`), or creating a GitHub release (`gh release create`).
-   - Merging any Pull Request (`gh pr merge`, `git merge` into `master`/`main`).
-   - Deleting a large number of files, deleting branches/tags, running `git reset --hard` / `git push --force`, or wiping databases (`data/*.db`).
-   - Stopping, restarting, or redeploying production Docker containers.
-4. **Strict Validation Algorithm (How to Check User Approval):**
-   - Check the user's latest message and compare it against the current local timestamp.
-   - The message **MUST** contain both the word `onaylıyorum` AND the current date and time formatted as `dd/mm/yyyy hh:mm` or `dd.mm.yyyy hh:mm` (e.g., `onaylıyorum, 26/10/2026 16:35`).
-   - **IF THE TIMESTAMP IS MISSING OR STALE:** Even if the user writes `"onaylıyorum"`, `"evet"`, `"merge et"`, `"sürüm çık"`, or `"onaylıyorum"` without the current date and time, you MUST **REFUSE** to execute the action and reply:
-     > `"Bu kritik işlemi gerçekleştirebilmem için güncel tarih ve saat ile 'onaylıyorum, dd/mm/yyyy hh:mm' formatında onay vermeniz gerekiyor."`
+   You MUST NOT execute ANY of the following operations without explicit user confirmation in the format **`onaylıyorum, dd/mm/yyyy hh:mm`** (or `dd.mm.yyyy hh:mm`):
+   - **ANYTHING Touching `master` / `main`:**
+     - Direct merge to `master` / `main` (`git merge`, `git cherry-pick`, `git rebase`).
+     - Direct commit or file edit on `master` / `main`.
+     - Merging any Pull Request into `master` / `main` (`gh pr merge`).
+     - Pushing any commit or ref directly to `origin/master` or `origin/main` (`git push origin master`).
+   - **Release, Tagging & Versioning:**
+     - Cutting a new release or bumping versions for release.
+     - Creating or pushing git tags (`git tag`, `git push origin <tag>`, `git push --tags`).
+     - Publishing a GitHub release (`gh release create`).
+   - **Destructive Operations:**
+     - Running `git reset --hard` or force-pushing (`git push --force`).
+     - Deleting branches or tags (`git tag -d`, `git push origin --delete <tag/branch>`).
+     - Deleting databases (`data/*.db`) or deleting files en masse.
+   - **Production Infrastructure & Containers:**
+     - Stopping, restarting, pulling, or redeploying production Docker containers.
+4. **Mandatory Strict Temporal Validation Algorithm (Zero-Tolerance Clock Verification):**
+   The timestamp check is a **security gate**, NOT a regex pattern match. The agent must parse and mathematically verify the exact time against the live system clock.
+   - **Step 1 - Obtain True System Time via Tool Call (Mandatory OS Clock Query):**
+     Do NOT rely on prompt metadata, conversation transcripts, or static timestamps (which can lag, cache, or desynchronize). You **MUST explicitly execute a tool call** to read the live host system clock:
+     ```powershell
+     Get-Date -Format "dd.MM.yyyy HH:mm:ss"
+     ```
+     Parse `(D_system, M_system, Y_system, H_system, Min_system)` directly from the live tool call output.
+   - **Step 2 - Parse User's Time Input:** Extract the day, month, year, hour, and minute from the user's message.
+   - **Step 3 - Date Parity Check:** Verify `D_user == D_system`, `M_user == M_system`, and `Y_user == Y_system`. If the user submits a date from yesterday, tomorrow, or any other date, the approval is **IMMEDIATELY VOID**.
+   - **Step 4 - Exact Time Delta Calculation:** Calculate the absolute time difference in minutes:
+     $$\Delta t = |(H_{user} \times 60 + Min_{user}) - (H_{system} \times 60 + Min_{system})|$$
+     The time delta $\Delta t$ MUST be **$\le 5$ minutes** ($\pm 5$ minutes tolerance max).
+   - **Step 5 - Immediate Rejection of Stale/Forged/Mismatched Timestamps:**
+     If $\Delta t > 5$ (e.g., the user sends a past hour like `18:22` when it is `22:02`, or an arbitrary future/past time):
+     - The approval is **UNCONDITIONALLY REJECTED**.
+     - You MUST explicitly refuse and state the exact time discrepancy using the live tool call clock:
+       > `"Verdiğiniz saat ({H_user}:{Min_user}), sistem saati ({H_system}:{Min_system}) ile uyuşmuyor (zaman farkı: {fark} dakika). Güvenlik kuralı gereği onay zamanı güncel saat ile en fazla ±5 dakika farklı olabilir. Lütfen güncel saati belirterek tekrar onay veriniz."`
+     - You MUST NOT execute the release, tag, merge, or deployment under ANY circumstance.
+   - **Step 6 - Immediate Rejection of Conversational or Timestamp-Free Prompts:**
+     If the user writes `"onaylıyorum"`, `"evet"`, `"merge et"`, `"sürüm çık"`, `"hadi çık release"`, or `"tmm. sürüm çık bugünlük işimiz bitsin"` without providing the current valid timestamp:
+     - You MUST **REFUSE** to execute the action and reply:
+       > `"Bu kritik işlemi gerçekleştirebilmem için güncel tarih ve saat ile 'onaylıyorum, dd/mm/yyyy hh:mm' formatında onay vermeniz gerekiyor."`
+       > `"Bu kritik işlemi gerçekleştirebilmem için güncel tarih ve saat ile 'onaylıyorum, dd/mm/yyyy hh:mm' formatında onay vermeniz gerekiyor."`
+5. **No Autonomous Panic Actions / Rollbacks:**
+   - If you realize an unapproved git action or mistake occurred, you are strictly forbidden from attempting autonomous rollbacks, `git reset --hard`, force pushes (`git push --force`), or branch deletions on your own initiative.
+   - Stop immediately, freeze all modifications, report the exact state honestly to the user, and wait for explicit instructions.
 
 ### Rule 0.2: Documentation Editing Protocol (Never Use Code or Scripts)
 1. **No Scripted Doc Manipulation:** You are strictly forbidden from using Python (`python -c`, `.py` scripts), Node.js, PowerShell (`Set-Content`, `Out-File`, `-replace`), Bash (`sed`, `awk`, `cat <<EOF`, `>`), or any other programmatic method to create, modify, format, or overwrite documentation files (`.md`, `.txt`, `README.md`, `aidocs/*`, or Wiki files). Scripted edits frequently corrupt UTF-8/Turkish characters, strip sections, or break line endings.
@@ -37,6 +70,11 @@ This document is the permanent operational constitution for any AI agent working
 ### Rule 0.3: Anti-Hallucination & Scope Discipline
 1. **Never Invent Unrequested Features:** Implement **only** what the user explicitly asked for. Do not add "helpful" extra UI widgets, preset buttons/chips, extra settings toggles, or speculative abstractions unless requested.
 2. **Server vs. Client Placement:** Before designing any caching, storage, or data-processing feature, verify whether it belongs on the backend (`iett-middle`) or the frontend (`iett-pwa`). Shared/global data (e.g., fleet state, plate mappings, persistent stop caches) belongs on the **server (`iett-middle`)**, not in individual users' browsers, unless explicitly specified otherwise.
+
+### Rule 0.4: i18n Locale Parity & ku.json Braille Rule
+1. **100% Key Parity:** Every translation key in `public/locales/tr.json` MUST exist in `public/locales/en.json` and `public/locales/ku.json`.
+2. **Kurdish Braille Placeholder:** In `public/locales/ku.json`, the value for every key MUST be the Braille blank pattern (`"\u2800"` / `"⠀"`).
+3. **Mandatory Test Verification:** `src/__tests__/i18n.test.ts` MUST enforce key parity for all three languages (`tr`, `en`, `ku`). If any key is missing in `ku.json`, the test suite MUST fail.
 
 ---
 
