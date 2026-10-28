@@ -47,7 +47,7 @@ describe('SettingsPage', () => {
 
     expect(localStorage.getItem(DISMISSED_STORAGE_KEY)).toBeNull()
     expect(localStorage.getItem(SEEN_SINGLE_STORAGE_KEY)).toBeNull()
-    expect(localStorage.getItem(LAST_SEEN_VERSION_KEY)).toBe('1.0')
+    expect(localStorage.getItem(LAST_SEEN_VERSION_KEY)).toBe('0.4.12')
     expect(screen.getByText('✓ Sıfırlandı')).toBeInTheDocument()
 
     vi.unstubAllGlobals()

@@ -59,11 +59,26 @@ export const AnnouncementCard: React.FC<AnnouncementCardProps> = ({
 }) => {
   const { t } = useTranslation()
   const [isExpanded, setIsExpanded] = useState(false)
+  const contentRef = React.useRef<HTMLDivElement>(null)
+  const [hasOverflow, setHasOverflow] = useState(false)
 
-  const isCollapsible = Boolean(
-    content &&
-      (content.length > 180 || content.includes('\n\n') || content.split('\n').length > 3)
-  )
+  React.useEffect(() => {
+    if (!contentRef.current) return
+    const sh = contentRef.current.scrollHeight
+    if (sh === 0) {
+      setHasOverflow(
+        Boolean(
+          content &&
+            (content.length > 180 || content.includes('\n\n') || content.split('\n').length > 3)
+        )
+      )
+    } else {
+      setHasOverflow(sh > 80)
+    }
+  }, [content, isMarkdown])
+
+  const isCollapsible = Boolean(content && hasOverflow)
+  const contentId = testId ? `${testId}-content` : undefined
 
   const handleToggleExpand = (e: React.MouseEvent) => {
     e.preventDefault()
@@ -164,6 +179,13 @@ export const AnnouncementCard: React.FC<AnnouncementCardProps> = ({
       {content && (
         <div className="flex flex-col gap-1 mt-0.5">
           <div
+            id={contentId}
+            ref={contentRef}
+            onFocusCapture={() => {
+              if (isCollapsible && !isExpanded) {
+                setIsExpanded(true)
+              }
+            }}
             className={`relative transition-[max-height] duration-200 ${
               isCollapsible && !isExpanded ? 'max-h-20 overflow-hidden' : ''
             }`}
@@ -195,6 +217,8 @@ export const AnnouncementCard: React.FC<AnnouncementCardProps> = ({
             <button
               type="button"
               onClick={handleToggleExpand}
+              aria-expanded={isExpanded}
+              aria-controls={contentId}
               data-testid={toggleTestId || (testId ? `${testId}-toggle` : undefined)}
               className="self-start text-[11px] font-semibold text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 hover:underline flex items-center gap-1 cursor-pointer transition-colors pt-0.5"
             >

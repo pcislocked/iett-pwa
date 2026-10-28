@@ -577,7 +577,7 @@ export default function SettingsPage() {
           type="button"
           onClick={handleResetHiddenAnnouncements}
           data-testid="reset-hidden-announcements-btn"
-          className="flex items-center justify-between py-2.5 px-3 bg-surface-muted hover:bg-slate-700
+          className="flex items-center justify-between py-2.5 px-3 bg-surface-muted hover:bg-surface-border
                      rounded-xl text-sm text-text-primary transition-colors w-full cursor-pointer"
         >
           <span className="flex items-center gap-3">

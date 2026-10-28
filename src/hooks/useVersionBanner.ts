@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { getCurrentAppVersion } from '../utils/appUpdate'
 
 export const LAST_SEEN_VERSION_KEY = 'iett:last-seen-version'
+export const PREVIOUS_VERSION_KEY = 'iett:previous-version'
 
 export interface VersionTransition {
   oldVersion: string
@@ -55,7 +56,8 @@ export function resetVersionBannerStorage(): void {
   if (typeof window === 'undefined') return
   try {
     const current = normalizeVersion(getCurrentAppVersion())
-    const old = current === '0.4.12.1' ? '0.4.12' : current.replace(/\.\d+$/, '') || '0.4.12'
+    const prev = window.localStorage.getItem(PREVIOUS_VERSION_KEY)
+    const old = prev && prev !== current ? prev : '0.4.12'
     localStorage.setItem(LAST_SEEN_VERSION_KEY, old)
     window.dispatchEvent(new CustomEvent('iett:version-banner-reset'))
   } catch {
@@ -110,6 +112,13 @@ export function useVersionBanner(showUpdateBannerPref: boolean) {
 
     // 3) Version changed (vOLD !== vNEW)
     if (storedVersion !== currentVersion) {
+      if (storedVersion) {
+        try {
+          window.localStorage.setItem(PREVIOUS_VERSION_KEY, storedVersion)
+        } catch {
+          // ignore
+        }
+      }
       if (!showUpdateBannerPref) {
         // User disabled update banners in settings: silently advance stored version
         writeStoredVersionSafe(currentVersion)
