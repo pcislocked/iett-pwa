@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, useNavigate, useLocation, useNavigationType } from 'react-router-dom'
 import { Suspense, lazy, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
+import OrientationGuard from '@/components/OrientationGuard'
 import AppBar from '@/components/AppBar'
 import InstallBanner from '@/components/InstallBanner'
 import { useInstallBanner } from '@/hooks/useInstallBanner'
@@ -266,6 +267,7 @@ function AppShell() {
   const isKiosk = useKioskMode()
   return (
     <div className="flex flex-col h-svh bg-[var(--color-bg)] overflow-hidden">
+      <OrientationGuard />
       <AnimatedMain />
       {!isKiosk && <InstallBannerWrapper />}
       {!isKiosk && <AppBar />}
@@ -280,6 +282,16 @@ export default function App() {
   useEffect(() => {
     document.documentElement.lang = i18n.language
   }, [i18n.language])
+
+  /* orientation lock */
+  useEffect(() => {
+    // Attempt hardware orientation lock to portrait on supported PWA environments
+    if (typeof window !== 'undefined' && 'screen' in window && screen.orientation && 'lock' in screen.orientation) {
+      (screen.orientation.lock as (orientation: string) => Promise<void>)('portrait-primary').catch(() => {
+        // Silently ignored if browser does not permit orientation lock
+      })
+    }
+  }, [])
 
   useEffect(() => {
     syncServerTime()

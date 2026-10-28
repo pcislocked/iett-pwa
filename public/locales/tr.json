@@ -426,5 +426,9 @@
     "emptyTitle": "Sabitlenmiş durak yok",
     "emptyDesc": "Durak sayfasındaki 📌 butonuna dokunarak sabitleyebilirsin",
     "addStop": "Durak Ekle"
+  },
+  "orientation": {
+    "title": "Lütfen Cihazınızı Dikey Konuma Getirin",
+    "desc": "Bu uygulama yalnızca dikey kullanım için optimize edilmiştir."
   }
 }

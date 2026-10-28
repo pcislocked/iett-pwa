@@ -426,5 +426,9 @@
     "emptyTitle": "No pinned stops",
     "emptyDesc": "You can pin a stop by tapping the 📌 button on the stop page",
     "addStop": "Add Stop"
+  },
+  "orientation": {
+    "title": "Please Rotate to Portrait",
+    "desc": "iett-pwa is optimized for portrait mode only."
   }
 }
