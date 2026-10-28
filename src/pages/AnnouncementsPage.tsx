@@ -1,14 +1,14 @@
 import { useState } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { api, type OfficialAnnouncementItem } from '@/api/client'
 import { useGlobalNotices } from '@/hooks/useGlobalNotices'
 import { usePwaAnnouncements } from '@/hooks/usePwaAnnouncements'
 import AnnouncementCard from '@/components/AnnouncementCard'
+import PullToRefresh from '@/components/PullToRefresh'
 
 export default function AnnouncementsPage() {
-  const navigate = useNavigate()
   const { t } = useTranslation()
   const [activeTab, setActiveTab] = useState<'all' | 'official' | 'system' | 'pwa'>('all')
 
@@ -34,6 +34,11 @@ export default function AnnouncementsPage() {
 
   // PWA Admin Announcements (all announcements shown in history)
   const { announcements: pwaAnnouncements } = usePwaAnnouncements({ includeAll: true })
+
+  const handleRefresh = async () => {
+    await Promise.allSettled([refetchOfficial(), refetchGlobal()])
+    await new Promise((r) => setTimeout(r, 600))
+  }
 
   const officialItems = officialData?.items || []
   const globalItems = globalNotices || []
@@ -181,31 +186,121 @@ export default function AnnouncementsPage() {
   return (
     <div className="flex-1 flex flex-col min-h-0 bg-surface-base text-text-primary">
       {/* Top Header */}
-      <div className="sticky top-0 z-20 bg-surface-card/90 backdrop-blur border-b border-surface-muted px-4 py-3 flex items-center gap-3">
-        <button
-          onClick={() => navigate(-1)}
-          className="p-2 -ml-2 rounded-xl text-text-secondary hover:text-text-primary hover:bg-surface-muted/60 transition-colors"
-          aria-label={t('common.back', { defaultValue: 'Geri' })}
-        >
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-          </svg>
-        </button>
-        <div className="flex-1 min-w-0">
-          <h1 className="text-base font-bold truncate">
-            {t('announcements.title', { defaultValue: 'İETT Duyuruları & Uyarılar' })}
-          </h1>
-          <p className="text-xs text-text-muted truncate">
-            {t('announcements.subtitle', { defaultValue: 'Resmi duyurular, güzergah ve tarife bilgileri' })}
-          </p>
-        </div>
+      <div className="shrink-0 bg-surface-card/90 backdrop-blur border-b border-surface-muted px-4 py-3">
+        <h1 className="text-base font-bold truncate">
+          {t('announcements.title', { defaultValue: 'İETT Duyuruları & Uyarılar' })}
+        </h1>
+        <p className="text-xs text-text-muted truncate">
+          {t('announcements.subtitle', { defaultValue: 'Resmi duyurular, güzergah ve tarife bilgileri' })}
+        </p>
       </div>
 
-      {/* Tabs */}
+      {/* Content Area with PullToRefresh */}
+      <div className="flex-1 min-h-0 flex flex-col">
+        <PullToRefresh onRefresh={handleRefresh}>
+          <div className="px-4 py-3 space-y-3 pb-8">
+            {/* All Announcements Tab */}
+            {activeTab === 'all' && (
+              <>
+                {isOfficialLoading && isGlobalLoading && pwaCount === 0 && renderSkeleton(4)}
+
+                {!isOfficialLoading && !isGlobalLoading && totalCount === 0 && (
+                  <div className="py-12 text-center text-text-muted text-sm">
+                    {t('announcements.allEmpty', { defaultValue: 'Aktif bir duyuru bulunmuyor.' })}
+                  </div>
+                )}
+
+                {renderPwaList()}
+                {isGlobalLoading ? renderSkeleton(2) : renderGlobalList()}
+                {isOfficialLoading ? renderSkeleton(3) : renderOfficialList()}
+                {renderOfficialLink()}
+                {renderFareTariff()}
+                {renderChangelogLink()}
+              </>
+            )}
+
+            {/* Official Announcements Tab */}
+            {activeTab === 'official' && (
+              <>
+                {isOfficialLoading && renderSkeleton(4)}
+
+                {isOfficialError && (
+                  <div className="p-6 text-center bg-surface-card rounded-2xl border border-surface-muted my-4">
+                    <p className="text-sm text-text-secondary mb-3">
+                      {t('announcements.loadError', { defaultValue: 'Resmi duyurular yüklenemedi.' })}
+                    </p>
+                    <button
+                      onClick={() => refetchOfficial()}
+                      className="px-4 py-2 bg-brand-600 text-white text-xs font-semibold rounded-xl hover:bg-brand-500 transition-colors"
+                    >
+                      {t('common.retry', { defaultValue: 'Tekrar Dene' })}
+                    </button>
+                  </div>
+                )}
+
+                {!isOfficialLoading && officialCount === 0 && !isOfficialError && (
+                  <div className="py-12 text-center text-text-muted text-sm">
+                    {t('announcements.empty', { defaultValue: 'Duyuru bulunamadı.' })}
+                  </div>
+                )}
+
+                {renderOfficialList()}
+                {renderOfficialLink()}
+                {renderFareTariff()}
+              </>
+            )}
+
+            {/* System / NTC Notices Tab */}
+            {activeTab === 'system' && (
+              <>
+                {isGlobalLoading && renderSkeleton(4)}
+
+                {isGlobalError && (
+                  <div className="p-6 text-center bg-surface-card rounded-2xl border border-surface-muted my-4">
+                    <p className="text-sm text-text-secondary mb-3">
+                      {t('announcements.systemLoadError', { defaultValue: 'Sefer uyarıları yüklenemedi.' })}
+                    </p>
+                    <button
+                      onClick={() => refetchGlobal()}
+                      className="px-4 py-2 bg-brand-600 text-white text-xs font-semibold rounded-xl hover:bg-brand-500 transition-colors"
+                    >
+                      {t('common.retry', { defaultValue: 'Tekrar Dene' })}
+                    </button>
+                  </div>
+                )}
+
+                {!isGlobalLoading && globalCount === 0 && !isGlobalError && (
+                  <div className="py-12 text-center text-text-muted text-sm">
+                    {t('announcements.systemEmpty', { defaultValue: 'Aktif bir sefer uyarısı bulunmuyor.' })}
+                  </div>
+                )}
+
+                {renderGlobalList()}
+              </>
+            )}
+
+            {/* Developer / PWA Announcements Tab */}
+            {activeTab === 'pwa' && (
+              <>
+                {pwaCount === 0 && (
+                  <div className="py-12 text-center text-text-muted text-sm">
+                    {t('announcements.pwaEmpty', { defaultValue: 'Aktif bir bildirim bulunmuyor.' })}
+                  </div>
+                )}
+
+                {renderPwaList()}
+                {renderChangelogLink()}
+              </>
+            )}
+          </div>
+        </PullToRefresh>
+      </div>
+
+      {/* Bottom Tabs (Üst Content, Alt Tuşlar) */}
       <div
         role="tablist"
         aria-label={t('announcements.tabsLabel', { defaultValue: 'Duyuru sekmeleri' })}
-        className="px-4 pt-3 pb-2 grid grid-cols-4 gap-1.5 border-b border-surface-muted/40"
+        className="shrink-0 bg-surface-card border-t border-surface-muted px-4 py-2.5 grid grid-cols-4 gap-1.5"
       >
         <button
           role="tab"
@@ -214,7 +309,7 @@ export default function AnnouncementsPage() {
           className={`py-2 px-1 text-[11px] sm:text-xs font-semibold rounded-xl transition-all text-center truncate ${
             activeTab === 'all'
               ? 'bg-brand-600 text-white shadow-sm'
-              : 'bg-surface-card text-text-secondary hover:bg-surface-muted'
+              : 'bg-surface-base text-text-secondary hover:bg-surface-muted'
           }`}
         >
           {t('announcements.allTab', { defaultValue: 'Tümü' })}
@@ -227,7 +322,7 @@ export default function AnnouncementsPage() {
           className={`py-2 px-1 text-[11px] sm:text-xs font-semibold rounded-xl transition-all text-center truncate ${
             activeTab === 'official'
               ? 'bg-brand-600 text-white shadow-sm'
-              : 'bg-surface-card text-text-secondary hover:bg-surface-muted'
+              : 'bg-surface-base text-text-secondary hover:bg-surface-muted'
           }`}
         >
           {t('announcements.officialTab', { defaultValue: 'Genel' })}
@@ -240,7 +335,7 @@ export default function AnnouncementsPage() {
           className={`py-2 px-1 text-[11px] sm:text-xs font-semibold rounded-xl transition-all text-center truncate ${
             activeTab === 'system'
               ? 'bg-brand-600 text-white shadow-sm'
-              : 'bg-surface-card text-text-secondary hover:bg-surface-muted'
+              : 'bg-surface-base text-text-secondary hover:bg-surface-muted'
           }`}
         >
           {t('announcements.systemTab', { defaultValue: 'Sefer' })}
@@ -253,109 +348,12 @@ export default function AnnouncementsPage() {
           className={`py-2 px-1 text-[11px] sm:text-xs font-semibold rounded-xl transition-all text-center truncate ${
             activeTab === 'pwa'
               ? 'bg-brand-600 text-white shadow-sm'
-              : 'bg-surface-card text-text-secondary hover:bg-surface-muted'
+              : 'bg-surface-base text-text-secondary hover:bg-surface-muted'
           }`}
         >
           {t('announcements.pwaTab', { defaultValue: 'Geliştiriciden' })}
           {pwaCount > 0 ? ` (${pwaCount})` : ''}
         </button>
-      </div>
-
-      {/* Content Area */}
-      <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3 pb-8">
-        {/* All Announcements Tab */}
-        {activeTab === 'all' && (
-          <>
-            {isOfficialLoading && isGlobalLoading && pwaCount === 0 && renderSkeleton(4)}
-
-            {!isOfficialLoading && !isGlobalLoading && totalCount === 0 && (
-              <div className="py-12 text-center text-text-muted text-sm">
-                {t('announcements.allEmpty', { defaultValue: 'Aktif bir duyuru bulunmuyor.' })}
-              </div>
-            )}
-
-            {renderPwaList()}
-            {isGlobalLoading ? renderSkeleton(2) : renderGlobalList()}
-            {isOfficialLoading ? renderSkeleton(3) : renderOfficialList()}
-            {renderOfficialLink()}
-            {renderFareTariff()}
-            {renderChangelogLink()}
-          </>
-        )}
-
-        {/* Official Announcements Tab */}
-        {activeTab === 'official' && (
-          <>
-            {isOfficialLoading && renderSkeleton(4)}
-
-            {isOfficialError && (
-              <div className="p-6 text-center bg-surface-card rounded-2xl border border-surface-muted my-4">
-                <p className="text-sm text-text-secondary mb-3">
-                  {t('announcements.loadError', { defaultValue: 'Resmi duyurular yüklenemedi.' })}
-                </p>
-                <button
-                  onClick={() => refetchOfficial()}
-                  className="px-4 py-2 bg-brand-600 text-white text-xs font-semibold rounded-xl hover:bg-brand-500 transition-colors"
-                >
-                  {t('common.retry', { defaultValue: 'Tekrar Dene' })}
-                </button>
-              </div>
-            )}
-
-            {!isOfficialLoading && officialCount === 0 && !isOfficialError && (
-              <div className="py-12 text-center text-text-muted text-sm">
-                {t('announcements.empty', { defaultValue: 'Duyuru bulunamadı.' })}
-              </div>
-            )}
-
-            {renderOfficialList()}
-            {renderOfficialLink()}
-            {renderFareTariff()}
-          </>
-        )}
-
-        {/* System / NTC Notices Tab */}
-        {activeTab === 'system' && (
-          <>
-            {isGlobalLoading && renderSkeleton(4)}
-
-            {isGlobalError && (
-              <div className="p-6 text-center bg-surface-card rounded-2xl border border-surface-muted my-4">
-                <p className="text-sm text-text-secondary mb-3">
-                  {t('announcements.systemLoadError', { defaultValue: 'Sefer uyarıları yüklenemedi.' })}
-                </p>
-                <button
-                  onClick={() => refetchGlobal()}
-                  className="px-4 py-2 bg-brand-600 text-white text-xs font-semibold rounded-xl hover:bg-brand-500 transition-colors"
-                >
-                  {t('common.retry', { defaultValue: 'Tekrar Dene' })}
-                </button>
-              </div>
-            )}
-
-            {!isGlobalLoading && globalCount === 0 && !isGlobalError && (
-              <div className="py-12 text-center text-text-muted text-sm">
-                {t('announcements.systemEmpty', { defaultValue: 'Aktif bir sefer uyarısı bulunmuyor.' })}
-              </div>
-            )}
-
-            {renderGlobalList()}
-          </>
-        )}
-
-        {/* Developer / PWA Announcements Tab */}
-        {activeTab === 'pwa' && (
-          <>
-            {pwaCount === 0 && (
-              <div className="py-12 text-center text-text-muted text-sm">
-                {t('announcements.pwaEmpty', { defaultValue: 'Aktif bir bildirim bulunmuyor.' })}
-              </div>
-            )}
-
-            {renderPwaList()}
-            {renderChangelogLink()}
-          </>
-        )}
       </div>
     </div>
   )
