@@ -123,7 +123,7 @@ export default function CanvasFleetLayer({
         }
       }
     }
-  }, [buses, selectedRoutes, selectedKapino, map, onBusClick, onMultiBusClick])
+  }, [buses, stops, selectedRoutes, selectedKapino, map, onBusClick, onMultiBusClick, onEntityHit])
 
   // Zoom değişince marker boyutlarını güncelle
   useEffect(() => {
