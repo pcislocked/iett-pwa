@@ -47,7 +47,7 @@ export const UpdateBanner: React.FC<UpdateBannerProps> = ({
         to="/changelog"
         onClick={handleNavigate}
         title={message}
-        className="flex-1 min-w-0 truncate text-[11px] font-medium leading-none tracking-tight hover:underline focus:outline-none"
+        className="flex-1 min-w-0 truncate text-[11px] font-medium leading-none tracking-tight hover:underline focus:outline-none focus-visible:ring-1 focus-visible:ring-pink-500 rounded"
       >
         {message}
       </Link>
@@ -57,7 +57,7 @@ export const UpdateBanner: React.FC<UpdateBannerProps> = ({
         onClick={handleClose}
         aria-label={t('updateBanner.dismiss', { defaultValue: 'Bildirimi kapat' })}
         data-testid="app-update-banner-close"
-        className="shrink-0 w-5 h-5 flex items-center justify-center rounded text-pink-600 dark:text-pink-300 hover:bg-pink-500/25 active:scale-95 transition"
+        className="shrink-0 w-7 h-7 min-w-[28px] min-h-[28px] flex items-center justify-center p-1 rounded text-pink-600 dark:text-pink-300 hover:bg-pink-500/25 focus:outline-none focus-visible:ring-1 focus-visible:ring-pink-500 active:scale-95 transition cursor-pointer"
       >
         <span className="text-xs leading-none font-bold" aria-hidden="true">
           ×

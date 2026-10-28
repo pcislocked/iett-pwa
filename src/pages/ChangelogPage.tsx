@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { getCurrentAppVersion } from '@/utils/appUpdate'
-import { ensureCurrentVersionStored, normalizeVersion } from '@/hooks/useVersionBanner'
+import { writeStoredVersionSafe, normalizeVersion } from '@/hooks/useVersionBanner'
 
 export interface ChangelogItem {
   version: string
@@ -89,25 +89,29 @@ export function ChangelogPage() {
 
   useEffect(() => {
     // When user visits changelog, mark current version as seen so the update banner doesn't persist
-    ensureCurrentVersionStored()
-  }, [])
+    if (currentVersion) {
+      writeStoredVersionSafe(currentVersion)
+    }
+  }, [currentVersion])
 
   useEffect(() => {
-    let active = true
+    const controller = new AbortController()
+    const { signal } = controller
 
     async function loadChangelog() {
       try {
-        const res = await fetch(`${import.meta.env.BASE_URL}changelog.json?t=${Date.now()}`)
+        const res = await fetch(`${import.meta.env.BASE_URL}changelog.json?t=${Date.now()}`, { signal })
         if (res.ok) {
           const data = (await res.json()) as ChangelogPayload
-          if (active && Array.isArray(data.releases) && data.releases.length > 0) {
+          if (!signal.aborted && Array.isArray(data?.releases) && data.releases.length > 0) {
             setReleases(data.releases)
           }
         }
-      } catch {
+      } catch (err: unknown) {
+        if ((err as Error)?.name === 'AbortError') return
         // Silently use static fallback releases on fetch failure or offline mode
       } finally {
-        if (active) setLoading(false)
+        if (!signal.aborted) setLoading(false)
       }
 
       // Optional: Enrich with GitHub releases in the background (cached in sessionStorage)
@@ -116,7 +120,7 @@ export function ChangelogPage() {
         const cached = sessionStorage.getItem(cacheKey)
         if (cached) {
           const parsed = JSON.parse(cached) as ChangelogItem[]
-          if (active && Array.isArray(parsed) && parsed.length > 0) {
+          if (!signal.aborted && Array.isArray(parsed) && parsed.length > 0) {
             mergeGitHubReleases(parsed)
           }
           return
@@ -124,7 +128,10 @@ export function ChangelogPage() {
 
         const ghRes = await fetch(
           'https://api.github.com/repos/pcislocked/iett-pwa/releases?per_page=10',
-          { headers: { Accept: 'application/vnd.github+json' } },
+          {
+            signal,
+            headers: { Accept: 'application/vnd.github+json' },
+          },
         )
         if (ghRes.ok) {
           const items = (await ghRes.json()) as Array<{
@@ -166,11 +173,12 @@ export function ChangelogPage() {
             // Ignore quota errors
           }
 
-          if (active && parsedList.length > 0) {
+          if (!signal.aborted && parsedList.length > 0) {
             mergeGitHubReleases(parsedList)
           }
         }
-      } catch {
+      } catch (err: unknown) {
+        if ((err as Error)?.name === 'AbortError') return
         // Silently ignore GitHub API failures (offline, rate limit, CORS)
       }
     }
@@ -180,13 +188,13 @@ export function ChangelogPage() {
         const existingVersions = new Set(prev.map((r) => normalizeVersion(r.version)))
         const newOnes = incoming.filter((r) => !existingVersions.has(normalizeVersion(r.version)))
         if (newOnes.length === 0) return prev
-        return [...prev, ...newOnes]
+        return [...prev, ...newOnes].sort((a, b) => (b.date || '').localeCompare(a.date || ''))
       })
     }
 
     void loadChangelog()
     return () => {
-      active = false
+      controller.abort()
     }
   }, [])
 
@@ -215,7 +223,8 @@ export function ChangelogPage() {
             const relVersion = normalizeVersion(rel.version)
             const isCurrent = relVersion === currentVersion
             const title = rel.title?.[lang] || rel.title?.tr || `v${relVersion}`
-            const changes = rel.changes?.[lang] || rel.changes?.tr || []
+            const rawChanges = rel.changes?.[lang] || rel.changes?.tr
+            const changes = Array.isArray(rawChanges) ? rawChanges : []
 
             return (
               <article

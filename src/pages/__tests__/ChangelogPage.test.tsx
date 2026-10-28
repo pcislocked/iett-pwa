@@ -39,4 +39,64 @@ describe('ChangelogPage Component', () => {
       expect(localStorage.getItem(LAST_SEEN_VERSION_KEY)).toBeTruthy()
     })
   })
+
+  it('updates localStorage to current version when visited with an older version present', async () => {
+    localStorage.setItem(LAST_SEEN_VERSION_KEY, '0.4.11')
+
+    render(
+      <MemoryRouter>
+        <ChangelogPage />
+      </MemoryRouter>
+    )
+
+    await waitFor(() => {
+      expect(localStorage.getItem(LAST_SEEN_VERSION_KEY)).toBe('0.4.11.1')
+    })
+  })
+
+  it('fetches and renders releases from changelog.json', async () => {
+    const mockPayload = {
+      releases: [
+        {
+          version: '0.4.12',
+          date: '2026-10-29',
+          title: { tr: 'Özel Test Sürümü', en: 'Custom Test Release' },
+          changes: { tr: ['Yenilik 1', 'Düzeltme 2'], en: ['Feature 1', 'Fix 2'] },
+        },
+      ],
+    }
+
+    vi.spyOn(globalThis, 'fetch').mockImplementation((input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url.includes('changelog.json')) {
+        return Promise.resolve(new Response(JSON.stringify(mockPayload), { status: 200 }))
+      }
+      return Promise.reject(new Error('Network error'))
+    })
+
+    render(
+      <MemoryRouter>
+        <ChangelogPage />
+      </MemoryRouter>
+    )
+
+    await waitFor(() => {
+      expect(screen.getByTestId('changelog-item-0.4.12')).toBeInTheDocument()
+      expect(screen.getByText('Özel Test Sürümü')).toBeInTheDocument()
+    })
+  })
+
+  it('handles fetch failure and offline mode gracefully with fallback data', async () => {
+    vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('Failed to fetch'))
+
+    render(
+      <MemoryRouter>
+        <ChangelogPage />
+      </MemoryRouter>
+    )
+
+    await waitFor(() => {
+      expect(screen.getByTestId('changelog-item-0.4.11')).toBeInTheDocument()
+    })
+  })
 })

@@ -422,7 +422,7 @@ export default function SettingsPage() {
               <p id="showUpdateBanner-label" className="text-sm text-text-secondary font-medium">
                 {t('settings.showUpdateBanner', { defaultValue: 'Güncelleme Bildirimi Çubuğu' })}
               </p>
-              <p className="text-xs text-text-muted mt-0.5">
+              <p id="showUpdateBanner-desc" className="text-xs text-text-muted mt-0.5">
                 {t('settings.showUpdateBannerDesc', { defaultValue: 'Uygulama yeni bir sürüme güncellendiğinde ana sayfada bilgi çubuğu göster' })}
               </p>
             </div>
@@ -430,6 +430,7 @@ export default function SettingsPage() {
               role="switch"
               aria-checked={prefs.showUpdateBanner}
               aria-labelledby="showUpdateBanner-label"
+              aria-describedby="showUpdateBanner-desc"
               onClick={() => {
                 triggerHaptic('medium', prefs.hapticFeedback)
                 setShowUpdateBanner(!prefs.showUpdateBanner)
