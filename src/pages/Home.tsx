@@ -341,13 +341,11 @@ export default function Home() {
 
               {/* View All Announcements Link */}
               <div className="flex justify-end pt-0.5">
-                <a
-                  href="https://iett.istanbul/announcement/Index"
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <Link
+                  to="/announcements"
                   className="text-xs font-semibold text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 transition-colors inline-flex items-center gap-1"
                 >
-                  <span>{t('home.allAnnouncements', { defaultValue: 'Tüm İETT Duyuruları' })}</span>
+                  <span>{t('home.allAnnouncements', { defaultValue: 'Tüm Duyurular & Uyarılar' })}</span>
                   <svg
                     className="w-3.5 h-3.5"
                     aria-hidden="true"
@@ -359,10 +357,10 @@ export default function Home() {
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
-                      d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                      d="M9 5l7 7-7 7"
                     />
                   </svg>
-                </a>
+                </Link>
               </div>
             </div>
           </div>
@@ -593,8 +591,7 @@ export default function Home() {
             }
           />
           <QuickRow
-            href="https://iett.istanbul/announcement/Index"
-            external
+            to="/announcements"
             label={t('home.announcements', { defaultValue: 'Duyurular & Uyarılar' })}
             sub={t('home.announcementsDesc', { defaultValue: 'Resmi duyurular, güzergah ve tarife bilgileri' })}
             icon={

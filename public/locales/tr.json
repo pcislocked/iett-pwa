@@ -427,8 +427,11 @@
     "title": "İETT Duyuruları & Uyarılar",
     "subtitle": "Resmi duyurular, güzergah ve tarife bilgileri",
     "openOfficialWeb": "Web Sitesinde Aç",
-    "officialTab": "Resmi Duyurular",
-    "systemTab": "Sefer Uyarıları",
+    "officialTab": "İETT",
+    "systemTab": "NTC",
+    "allTab": "Tümü",
+    "allOfficialLink": "Tüm Duyurular (İETT)",
+    "allEmpty": "Aktif bir duyuru bulunmuyor.",
     "filterPlaceholder": "Duyurularda ara...",
     "loadError": "Resmi duyurular yüklenemedi.",
     "empty": "Duyuru bulunamadı.",
@@ -440,7 +443,9 @@
     "fareTariffDesc": "Güncel bilet, abonman ve aktarma ücretleri",
     "pwaSectionTitle": "İETT PWA Duyuruları",
     "pwaReadMore": "Devamını oku",
-    "pwaReadLess": "Daha az göster"
+    "pwaReadLess": "Daha az göster",
+    "pwaTab": "PWA",
+    "pwaEmpty": "Aktif bir bildirim bulunmuyor."
   },
   "pinned": {
     "remove": "Kaldır",

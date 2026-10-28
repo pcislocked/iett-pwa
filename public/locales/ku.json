@@ -444,6 +444,9 @@
     "openOfficialWeb": "⠀",
     "officialTab": "⠀",
     "systemTab": "⠀",
+    "allTab": "⠀",
+    "allOfficialLink": "⠀",
+    "allEmpty": "⠀",
     "filterPlaceholder": "⠀",
     "loadError": "⠀",
     "empty": "⠀",
@@ -454,7 +457,9 @@
     "fareTariffTitle": "⠀",
     "fareTariffDesc": "⠀",
     "pwaReadMore": "⠀",
-    "pwaReadLess": "⠀"
+    "pwaReadLess": "⠀",
+    "pwaTab": "⠀",
+    "pwaEmpty": "⠀"
   },
   "changelog": {
     "title": "⠀",
