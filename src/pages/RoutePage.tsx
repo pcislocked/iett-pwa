@@ -471,7 +471,7 @@ export default function RoutePage() {
   return (
     <div className="flex flex-col min-h-screen">
       {/* Header */}
-      <div className="sticky top-0 z-[10000] bg-surface-card border-b border-surface-muted">
+      <div className="sticky top-0 z-[10000] bg-surface-card border-b border-surface-muted ios-top-safe">
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">

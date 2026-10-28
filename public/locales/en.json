@@ -27,7 +27,9 @@
     "update": "Update",
     "all": "All",
     "outdated": "Outdated",
-    "new": "New"
+    "new": "New",
+    "live": "Live",
+    "select": "Select"
   },
   "nav": {
     "map": "Map",
@@ -176,7 +178,14 @@
     "zoomInToSearchStops": "Zoom in to search stops",
     "searchStopsHere": "Search Stops in this Area",
     "searchingStops": "Searching stops...",
-    "clearAreaStops": "Clear area stops"
+    "clearAreaStops": "Clear area stops",
+    "showAsList": "Show as List",
+    "stopsAtPoint": "{{count}} stops at this point",
+    "busesAndStopsAtPoint": "Buses and stops at this point",
+    "openStop": "Open Stop",
+    "upcomingBuses": "Upcoming Buses",
+    "noUpcomingBuses": "No upcoming buses right now",
+    "stopPreview": "Stop Preview"
   },
   "fleet": {
     "lastRoute": "Last: {{code}}",

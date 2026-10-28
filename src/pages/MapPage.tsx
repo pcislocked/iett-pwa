@@ -13,7 +13,8 @@ import CanvasFleetLayer from '@/components/CanvasFleetLayer'
 import MapSearchPanel from '@/components/MapSearchPanel'
 import MapTileToggle from '@/components/MapTileToggle'
 import { ISTANBUL_BOUNDS, MAP_MIN_ZOOM, MAP_MAX_ZOOM } from '@/utils/mapConstants'
-import MapBusPicker from '@/components/MapBusPicker'
+import MapStopCard from '@/components/MapStopCard'
+import MapEntityPicker from '@/components/MapEntityPicker'
 import { formatGpsTimestamp } from '@/utils/dateUtils'
 import { useUserPrefs } from '@/hooks/useUserPrefs'
 import { useMapTiles } from '@/hooks/useMapTiles'
@@ -103,20 +104,30 @@ function GpsMarker({ location }: { location: [number, number] | null }) {
 
 function MapViewportTracker({ onUpdate }: { onUpdate: (zoom: number, center: L.LatLng) => void }) {
   const timerRef = useRef<number | null>(null)
-  useEffect(() => {
-    return () => {
-      if (timerRef.current) window.clearTimeout(timerRef.current)
-    }
-  }, [])
   const map = useMapEvents({
     zoomend: () => {
       if (timerRef.current) window.clearTimeout(timerRef.current)
-      timerRef.current = window.setTimeout(() => onUpdate(map.getZoom(), map.getCenter()), 250)
+      timerRef.current = window.setTimeout(() => onUpdate(map.getZoom(), map.getCenter()), 100)
     },
     moveend: () => {
       if (timerRef.current) window.clearTimeout(timerRef.current)
-      timerRef.current = window.setTimeout(() => onUpdate(map.getZoom(), map.getCenter()), 250)
+      timerRef.current = window.setTimeout(() => onUpdate(map.getZoom(), map.getCenter()), 100)
     },
+  })
+
+  useEffect(() => {
+    onUpdate(map.getZoom(), map.getCenter())
+    return () => {
+      if (timerRef.current) window.clearTimeout(timerRef.current)
+    }
+  }, [map, onUpdate])
+
+  return null
+}
+
+function MapClickHandler({ onClick }: { onClick: (latlng: L.LatLng) => void }) {
+  useMapEvents({
+    click: (e) => onClick(e.latlng),
   })
   return null
 }
@@ -165,6 +176,13 @@ const pulseIcon = L.divIcon({
   iconAnchor: [16, 16],
 })
 
+const pulseStopIcon = L.divIcon({
+  className: 'relative',
+  html: '<div class="w-8 h-8 bg-sky-500/40 rounded-full animate-ping border border-sky-400/50"></div><div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3.5 h-3.5 bg-sky-500 rounded-full border-2 border-white shadow-lg"></div>',
+  iconSize: [32, 32],
+  iconAnchor: [16, 16],
+})
+
 export default function MapPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
@@ -180,10 +198,13 @@ export default function MapPage() {
   const [selectedStops, setSelectedStops] = useState<{ dcode: string; name: string }[]>([])
 
   const [selectedKapino, setSelectedKapino] = useState<string | null>(null)
-  const [pickerBuses, setPickerBuses] = useState<BusPosition[] | null>(null)
+  const [selectedStop, setSelectedStop] = useState<NearbyStop | null>(null)
+  const [pickerEntities, setPickerEntities] = useState<{ buses: BusPosition[]; stops: NearbyStop[] } | null>(null)
   const [nearbyStops, setNearbyStops] = useState<NearbyStop[]>([])
   const [stopPins, setStopPins] = useState<Record<string, { lat: number; lon: number }>>({})
   const [mapZoom, setMapZoom] = useState(11)
+  const [mapCenter, setMapCenter] = useState<L.LatLng | null>(null)
+  const [lastSearchedCenter, setLastSearchedCenter] = useState<{ lat: number; lon: number } | null>(null)
   const [areaStops, setAreaStops] = useState<NearbyStop[]>([])
   const [areaStopsLoading, setAreaStopsLoading] = useState(false)
   const areaAbortRef = useRef<AbortController | null>(null)
@@ -210,6 +231,7 @@ export default function MapPage() {
       const stops = await api.stops.nearby(center.lat, center.lng, 1000, radius, { signal: controller.signal })
       if (!controller.signal.aborted) {
         setAreaStops(stops)
+        setLastSearchedCenter({ lat: center.lat, lon: center.lng })
       }
     } catch (err: unknown) {
       if (err instanceof Error && err.name === 'AbortError') return
@@ -220,6 +242,13 @@ export default function MapPage() {
       }
     }
   }, [mapZoom, areaStopsLoading])
+
+  const distanceFromLastSearchM = useMemo(() => {
+    if (!lastSearchedCenter || !mapCenter) return Infinity
+    return mapCenter.distanceTo([lastSearchedCenter.lat, lastSearchedCenter.lon])
+  }, [lastSearchedCenter, mapCenter])
+
+  const showAsListMode = lastSearchedCenter !== null && areaStops.length > 0 && distanceFromLastSearchM <= 10
 
   // Fetch Fleet (Lazy)
   const { data: fleet, error: fleetError } = useFleet({ enabled: fleetVisible })
@@ -306,6 +335,78 @@ export default function MapPage() {
     }
     return Array.from(map.values())
   }, [fleet, fleetVisible, routeBusMap])
+
+  // Unified stops combining nearbyStops, areaStops, and selectedStops
+  const unifiedStops = useMemo<NearbyStop[]>(() => {
+    const stopMap = new Map<string, NearbyStop>()
+    for (const s of nearbyStops) stopMap.set(s.stop_code, s)
+    for (const s of areaStops) stopMap.set(s.stop_code, s)
+    for (const s of selectedStops) {
+      const pin = stopPins[s.dcode]
+      if (pin && !stopMap.has(s.dcode)) {
+        stopMap.set(s.dcode, {
+          stop_code: s.dcode,
+          stop_name: s.name,
+          latitude: pin.lat,
+          longitude: pin.lon,
+          direction: null,
+          district: null,
+          distance_m: 0,
+        })
+      }
+    }
+    return Array.from(stopMap.values())
+  }, [nearbyStops, areaStops, selectedStops, stopPins])
+
+  // Unified Hit-Test Callback for 24px Radius Touch Conflicts
+  const handleEntityHit = useCallback((result: { buses: BusPosition[]; stops: NearbyStop[] }) => {
+    const total = result.buses.length + result.stops.length
+    if (total === 0) {
+      setSelectedKapino(null)
+      setSelectedStop(null)
+      setPickerEntities(null)
+    } else if (result.stops.length === 1 && result.buses.length === 0) {
+      setSelectedKapino(null)
+      setPickerEntities(null)
+      setSelectedStop(result.stops[0])
+    } else if (result.buses.length === 1 && result.stops.length === 0) {
+      setSelectedStop(null)
+      setPickerEntities(null)
+      setSelectedKapino(result.buses[0].kapino)
+    } else {
+      setSelectedKapino(null)
+      setSelectedStop(null)
+      setPickerEntities(result)
+    }
+  }, [])
+
+  const handleBusClick = useCallback((kapino: string) => {
+    setSelectedStop(null)
+    setPickerEntities(null)
+    setSelectedKapino(kapino)
+  }, [])
+
+  const handleMultiBusClick = useCallback((bs: BusPosition[]) => {
+    setSelectedStop(null)
+    setSelectedKapino(null)
+    setPickerEntities({ buses: bs, stops: [] })
+  }, [])
+
+  const handleMapClick = useCallback((latlng: L.LatLng) => {
+    if (!mapRef.current) return
+    const clickPt = mapRef.current.latLngToContainerPoint(latlng)
+    const nearbyBuses = displayBuses.filter(b => {
+      if (!Number.isFinite(b.latitude) || !Number.isFinite(b.longitude)) return false
+      const pt = mapRef.current!.latLngToContainerPoint([b.latitude, b.longitude])
+      return clickPt.distanceTo(pt) <= 24
+    })
+    const nearbyS = unifiedStops.filter(st => {
+      if (!Number.isFinite(st.latitude) || !Number.isFinite(st.longitude)) return false
+      const pt = mapRef.current!.latLngToContainerPoint([st.latitude, st.longitude])
+      return clickPt.distanceTo(pt) <= 24
+    })
+    handleEntityHit({ buses: nearbyBuses, stops: nearbyS })
+  }, [displayBuses, unifiedStops, handleEntityHit])
 
   // Selected Bus Detail Fetch
   const [selectedDetail, setSelectedDetail] = useState<BusDetail | null>(null)
@@ -399,45 +500,6 @@ export default function MapPage() {
   return (
     <div className="relative flex flex-col overflow-hidden h-full bg-[#1e1e1e]">
 
-      {/* ── Area Stop Search Floating Pill ── */}
-      <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[1000] flex items-center gap-1.5 pointer-events-none">
-        {mapZoom < 14 ? (
-          <div role="status" className="pointer-events-auto opacity-80 bg-surface-card/95 backdrop-blur text-text-muted border border-surface-border cursor-not-allowed px-4 py-2 rounded-full text-xs font-medium shadow-lg flex items-center gap-1.5 select-none">
-            <span>🔍</span>
-            <span>{t('map.zoomInToSearchStops', 'Durakları görmek için yakınlaşın')}</span>
-          </div>
-        ) : (
-          <button
-            onClick={handleSearchAreaStops}
-            disabled={areaStopsLoading}
-            className="pointer-events-auto bg-brand-600 hover:bg-brand-500 active:scale-95 text-white px-4 py-2 rounded-full text-xs font-semibold shadow-xl transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-75"
-          >
-            {areaStopsLoading ? (
-              <>
-                <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                <span>{t('map.searchingStops', 'Duraklar aranıyor...')}</span>
-              </>
-            ) : (
-              <>
-                <span>📍</span>
-                <span>{t('map.searchStopsHere', 'Bu Bölgedeki Durakları Ara')}</span>
-              </>
-            )}
-          </button>
-        )}
-
-        {areaStops.length > 0 && (
-          <button
-            onClick={() => setAreaStops([])}
-            title={t('map.clearAreaStops', 'Bölge duraklarını temizle')}
-            aria-label={t('map.clearAreaStops', 'Bölge duraklarını temizle')}
-            className="pointer-events-auto bg-surface-card hover:bg-surface-muted active:scale-90 text-text-secondary w-8 h-8 rounded-full border border-surface-border shadow-lg flex items-center justify-center text-sm font-bold transition-all cursor-pointer"
-          >
-            &times;
-          </button>
-        )}
-      </div>
-
       {/* ── IBB Error Modal ── */}
       {fleetError && fleetVisible && (
         <div className="absolute inset-0 z-[2000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
@@ -479,69 +541,52 @@ export default function MapPage() {
           updateWhenZooming={false}
         />
 
-        {/* Viewport Tracker */}
-        <MapViewportTracker onUpdate={(zoom) => setMapZoom(zoom)} />
+        {/* Viewport Tracker & Map Click Handler */}
+        <MapViewportTracker onUpdate={(zoom, center) => { setMapZoom(zoom); setMapCenter(center) }} />
+        <MapClickHandler onClick={handleMapClick} />
 
         {/* User GPS Location */}
         <GpsMarker location={location} />
 
-        {/* Area Stops (Regional Search - Red Markers) */}
-        {areaStops.map(s => (
-          <CircleMarker
-            key={`area-${s.stop_code}`}
-            center={[s.latitude, s.longitude]}
-            radius={7}
-            pathOptions={{ color: '#ffffff', fillColor: '#ef4444', fillOpacity: 0.92, weight: 2 }}
-          >
-            <Popup>
-              <div className="text-sm font-bold mb-0.5">{s.stop_name}</div>
-              <div className="text-[11px] text-text-muted">
-                #{s.stop_code}{s.direction ? ` · → ${s.direction}` : ''}
-              </div>
-              <button
-                onClick={() => navigate(`/stops/${s.stop_code}`)}
-                className="text-brand-400 text-xs mt-2 font-bold block"
-              >
-                {t('map.arrivalTimes', 'Varış Saatleri')} &rarr;
-              </button>
-            </Popup>
-          </CircleMarker>
-        ))}
-
-        {/* Selected Stops */}
-        {selectedStops.map(s => {
-          const pin = stopPins[s.dcode]
-          if (!pin) return null
+        {/* Unified Stop Markers (24px Unified Hit-Test, No Popups) */}
+        {unifiedStops.map(s => {
+          const isSelected = selectedStop?.stop_code === s.stop_code
           return (
-            <CircleMarker key={`sel-${s.dcode}`} center={[pin.lat, pin.lon]} radius={10} pathOptions={{ color: '#ef4444', fillColor: '#ef4444', fillOpacity: 0.9, weight: 2 }}>
-              <Popup>
-                <div className="text-sm font-bold mb-1">{s.name}</div>
-                <div className="text-[10px] text-text-muted">#{s.dcode}</div>
-                <button onClick={() => navigate(`/stops/${s.dcode}`)} className="text-brand-400 text-xs mt-2 font-bold">{t('map.arrivalTimes', 'Varış Saatleri')} &rarr;</button>
-              </Popup>
-            </CircleMarker>
+            <CircleMarker
+              key={`stop-${s.stop_code}`}
+              center={[s.latitude, s.longitude]}
+              radius={isSelected ? 9 : (mapZoom >= 15 ? 7 : 6)}
+              pathOptions={{
+                color: isSelected ? '#38bdf8' : '#ffffff',
+                fillColor: isSelected ? '#0284c7' : '#ef4444',
+                fillOpacity: 0.95,
+                weight: isSelected ? 3 : 2.5,
+              }}
+              eventHandlers={{
+                click: (e) => {
+                  L.DomEvent.stopPropagation(e)
+                  handleMapClick(e.latlng)
+                }
+              }}
+            />
           )
         })}
 
-        {/* Nearby Stops */}
-        {nearbyStops.map(s => (
-          <CircleMarker key={`near-${s.stop_code}`} center={[s.latitude, s.longitude]} radius={6} pathOptions={{ color: '#22c55e', fillColor: '#22c55e', fillOpacity: 0.7, weight: 1.5 }}>
-            <Popup>
-              <div className="text-sm font-bold mb-1">{s.stop_name}</div>
-              <div className="text-[10px] text-text-muted">#{s.stop_code} · {s.distance_m}m</div>
-              <button onClick={() => navigate(`/stops/${s.stop_code}`)} className="text-brand-400 text-xs mt-2 font-bold">{t('map.arrivalTimes', 'Varış Saatleri')} &rarr;</button>
-            </Popup>
-          </CircleMarker>
-        ))}
+        {/* Selected Stop Pulse Overlay */}
+        {selectedStop && Number.isFinite(selectedStop.latitude) && Number.isFinite(selectedStop.longitude) && (
+          <Marker position={[selectedStop.latitude, selectedStop.longitude]} icon={pulseStopIcon} zIndexOffset={999} />
+        )}
 
         {/* Buses */}
         {displayBuses.length > 0 && (
           <CanvasFleetLayer
             buses={displayBuses}
+            stops={unifiedStops}
             selectedRoutes={selectedRoutes}
             selectedKapino={selectedKapino}
-            onBusClick={setSelectedKapino}
-            onMultiBusClick={setPickerBuses}
+            onBusClick={handleBusClick}
+            onMultiBusClick={handleMultiBusClick}
+            onEntityHit={handleEntityHit}
           />
         )}
 
@@ -642,23 +687,102 @@ export default function MapPage() {
         </div>
       )}
 
-      {/* ── Multi-Bus Picker ── */}
-      {pickerBuses && (
-        <MapBusPicker
-          buses={pickerBuses}
-          onSelect={setSelectedKapino}
-          onClose={() => setPickerBuses(null)}
+      {/* ── Stop Detail Card (Variation A) ── */}
+      {selectedStop && (
+        <MapStopCard
+          stop={selectedStop}
+          onClose={() => setSelectedStop(null)}
+          onOpenStop={(code) => navigate(`/stops/${code}`)}
+        />
+      )}
+
+      {/* ── Multi-Entity Picker (Buses & Stops - Variation 2) ── */}
+      {pickerEntities && (
+        <MapEntityPicker
+          buses={pickerEntities.buses}
+          stops={pickerEntities.stops}
+          onSelectBus={(kapino) => {
+            setPickerEntities(null)
+            setSelectedStop(null)
+            setSelectedKapino(kapino)
+          }}
+          onSelectStop={(stop) => {
+            setPickerEntities(null)
+            setSelectedKapino(null)
+            setSelectedStop(stop)
+          }}
+          onClose={() => setPickerEntities(null)}
         />
       )}
 
       {/* ── Bottom Controls Overlay ── */}
       <div className="absolute bottom-4 left-4 right-4 z-[1000] flex flex-col gap-2 pointer-events-none">
-        {/* Floating Controls Row (GPS & Tile Toggle) */}
-        <div className="flex justify-between items-end w-full">
-          <div className="pointer-events-auto">
+        {/* Floating Controls Row (GPS, Center Action Button, & Tile Toggle) */}
+        <div className="flex justify-between items-center w-full gap-2">
+          <div className="pointer-events-auto shrink-0">
             <GpsButton onClick={handleGpsClick} loading={gpsLoading} consent={prefs.gpsConsent} />
           </div>
-          <div className="pointer-events-auto">
+
+          {/* ── Area Stop Search / List Button in Bottom Center ── */}
+          <div className="pointer-events-auto flex items-center justify-center gap-1.5 min-w-0">
+            {mapZoom < 14 ? (
+              <div
+                role="status"
+                className="opacity-80 bg-surface-card/95 backdrop-blur text-text-muted border border-surface-border cursor-not-allowed px-3 py-2 rounded-full text-xs font-medium shadow-lg flex items-center gap-1.5 select-none"
+              >
+                <span>🔍</span>
+                <span className="truncate">{t('map.zoomInToSearchStops', 'Durakları görmek için yakınlaşın')}</span>
+              </div>
+            ) : showAsListMode ? (
+              <button
+                onClick={() => {
+                  if (lastSearchedCenter) {
+                    navigate(`/nearby?lat=${lastSearchedCenter.lat}&lon=${lastSearchedCenter.lon}`)
+                  }
+                }}
+                className="bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white px-3.5 py-2 rounded-full text-xs font-bold shadow-xl transition-all flex items-center gap-1.5 cursor-pointer"
+              >
+                <span>📋</span>
+                <span className="truncate">{t('map.showAsList', 'Liste Olarak Göster')}</span>
+              </button>
+            ) : (
+              <button
+                onClick={handleSearchAreaStops}
+                disabled={areaStopsLoading}
+                className="bg-brand-600 hover:bg-brand-500 active:scale-95 text-white px-3.5 py-2 rounded-full text-xs font-semibold shadow-xl transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-75"
+              >
+                {areaStopsLoading ? (
+                  <>
+                    <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <span className="truncate">{t('map.searchingStops', 'Duraklar aranıyor...')}</span>
+                  </>
+                ) : (
+                  <>
+                    <span>📍</span>
+                    <span className="truncate">{t('map.searchStopsHere', 'Bu Bölgedeki Durakları Ara')}</span>
+                  </>
+                )}
+              </button>
+            )}
+
+            {areaStops.length > 0 && (
+              <button
+                onClick={() => {
+                  setAreaStops([])
+                  setLastSearchedCenter(null)
+                  setSelectedStop(null)
+                  setPickerEntities(null)
+                }}
+                title={t('map.clearAreaStops', 'Bölge duraklarını temizle')}
+                aria-label={t('map.clearAreaStops', 'Bölge duraklarını temizle')}
+                className="bg-surface-card hover:bg-surface-muted active:scale-90 text-text-secondary w-9 h-9 min-w-[36px] min-h-[36px] rounded-full border border-surface-border shadow-lg flex items-center justify-center text-sm font-bold transition-all cursor-pointer shrink-0"
+              >
+                &times;
+              </button>
+            )}
+          </div>
+
+          <div className="pointer-events-auto shrink-0">
             <MapTileToggle
               satellite={satellite}
               onToggle={toggleSatellite}

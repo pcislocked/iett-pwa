@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { useMap } from 'react-leaflet'
 import * as L from 'leaflet'
-import type { BusPosition } from '@/api/client'
+import type { BusPosition, NearbyStop } from '@/api/client'
 
 // Renk paleti — seçili hatlar farklı renk alır
 const PALETTE = ['#f97316','#3b82f6','#a855f7','#ef4444', '#eab308']
@@ -9,19 +9,34 @@ const DEFAULT_COLOR = '#3b82f6'
 
 interface Props {
   buses: BusPosition[]
+  stops?: NearbyStop[]
   selectedRoutes: string[]
   selectedKapino: string | null
   onBusClick: (kapino: string) => void
   onMultiBusClick: (buses: BusPosition[]) => void
+  onEntityHit?: (result: { buses: BusPosition[]; stops: NearbyStop[] }) => void
 }
 
-export default function CanvasFleetLayer({ buses, selectedRoutes, selectedKapino, onBusClick, onMultiBusClick }: Props) {
+export default function CanvasFleetLayer({
+  buses,
+  stops,
+  selectedRoutes,
+  selectedKapino,
+  onBusClick,
+  onMultiBusClick,
+  onEntityHit,
+}: Props) {
   const map = useMap()
   const layerRef = useRef<L.LayerGroup | null>(null)
   const rendererRef = useRef<L.Canvas | null>(null)
   const markersRef = useRef<L.CircleMarker[]>([])
   const trailsRef = useRef<L.Polyline[]>([])
   const timerRef = useRef<number | null>(null)
+  const selectedKapinoRef = useRef<string | null>(selectedKapino)
+
+  useEffect(() => {
+    selectedKapinoRef.current = selectedKapino
+  }, [selectedKapino])
 
   useEffect(() => {
     rendererRef.current = L.canvas({ padding: 0.5 })
@@ -68,21 +83,30 @@ export default function CanvasFleetLayer({ buses, selectedRoutes, selectedKapino
       })
 
       marker.on('click', () => {
-        // 20px threshold içindeki tüm araçları bul
+        // 24px threshold icindeki tum arac ve duraklari bul (Unified Hit-Test)
         const clickPt = map.latLngToContainerPoint(marker.getLatLng())
-        const nearby = buses.filter(b => {
+        const nearbyBuses = buses.filter(b => {
           if (!Number.isFinite(b.latitude) || !Number.isFinite(b.longitude)) return false
           const pt = map.latLngToContainerPoint([b.latitude, b.longitude])
-          return clickPt.distanceTo(pt) < 20
+          return clickPt.distanceTo(pt) <= 24
         })
-        if (nearby.length > 1) {
-          onMultiBusClick(nearby)
+        const nearbyStops = (stops || []).filter(s => {
+          if (!Number.isFinite(s.latitude) || !Number.isFinite(s.longitude)) return false
+          const pt = map.latLngToContainerPoint([s.latitude, s.longitude])
+          return clickPt.distanceTo(pt) <= 24
+        })
+
+        if (onEntityHit) {
+          onEntityHit({ buses: nearbyBuses, stops: nearbyStops })
+        } else if (nearbyStops.length > 0 || nearbyBuses.length > 1) {
+          onMultiBusClick(nearbyBuses)
         } else {
           onBusClick(bus.kapino)
         }
       })
 
       marker.addTo(layer)
+      ;(marker as unknown as { _kapino: string })._kapino = bus.kapino
       markersRef.current.push(marker)
 
       // Trail çizgileri — sadece seçili araç için
@@ -105,7 +129,7 @@ export default function CanvasFleetLayer({ buses, selectedRoutes, selectedKapino
         }
       }
     }
-  }, [buses, selectedRoutes, selectedKapino, map, onBusClick, onMultiBusClick])
+  }, [buses, stops, selectedRoutes, selectedKapino, map, onBusClick, onMultiBusClick, onEntityHit])
 
   // Zoom değişince marker boyutlarını güncelle
   useEffect(() => {
@@ -117,7 +141,10 @@ export default function CanvasFleetLayer({ buses, selectedRoutes, selectedKapino
       timerRef.current = window.setTimeout(() => {
         const zoom = map.getZoom()
         const radius = zoom < 12 ? 2 : zoom < 14 ? 4 : 6
-        markersRef.current.forEach(m => m.setRadius(radius))
+        markersRef.current.forEach((m) => {
+          const isSelected = (m as unknown as { _kapino?: string })._kapino === selectedKapinoRef.current
+          m.setRadius(isSelected ? radius * 1.5 : radius)
+        })
 
         // Note: Full re-render for trails isn't strictly necessary for radius changes,
         // but if we wanted to toggle trails on/off dynamically based on zoom,

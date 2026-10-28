@@ -58,4 +58,28 @@ describe('NearbyPage', () => {
     fireEvent.click(resetBtn)
     expect(screen.queryByText(/Tek Seferlik/i)).not.toBeInTheDocument()
   })
+
+  it('initializes overrideLocation from lat and lon search params', async () => {
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } })
+    const { api } = await import('@/api/client')
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={['/nearby?lat=41.05&lon=29.02']}>
+          <NearbyPage />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    )
+
+    await waitFor(() => {
+      expect(api.stops.nearby).toHaveBeenCalledWith(
+        41.05,
+        29.02,
+        expect.any(Number),
+        expect.any(Number),
+        expect.anything(),
+      )
+    })
+    expect(screen.getByText(/Tek Seferlik/i)).toBeInTheDocument()
+  })
 })

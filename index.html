@@ -21,6 +21,12 @@
             document.documentElement.setAttribute('data-theme', 'amoled');
           }
         } catch (e) {}
+        try {
+          var ua = navigator.userAgent || '';
+          if (/iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) {
+            document.documentElement.setAttribute('data-ios', 'true');
+          }
+        } catch (e) {}
       })();
     </script>
   </head>
