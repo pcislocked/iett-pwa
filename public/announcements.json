@@ -5,10 +5,10 @@
       "date": "2026-10-29",
       "startDate": "2026-10-28T00:00:00.000Z",
       "endDate": "2026-11-15T23:59:59.000Z",
-      "title": "Apple'da refresh spam yapıyosa ana ekrandan silip tekrar ekleyin",
+      "title": "Apple'da refresh spam sorunu çözüldü",
       "isIgnorable": true,
       "isSingleShow": false,
-      "content": "iOS Safari / PWA önbellek çakışması nedeniyle sayfa sürekli yenileniyorsa (refresh spam), uygulamayı ana ekrandan tamamen silip Safari üzerinden tekrar **\"Ana Ekrana Ekle\"** yapın. Bir sonraki minör güncellemede kalıcı olarak çözülecektir."
+      "content": "iOS Safari / PWA önbellek çakışmasından kaynaklanan refresh spam sorunu v0.4.12.3 ile çözülmüştür. Sorun halen devam ediyorsa lütfen Telegram [@pit10lympos](https://t.me/pit10lympos) üzerinden direkt mesaj atın."
     },
     {
       "id": 1,

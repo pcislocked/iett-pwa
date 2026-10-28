@@ -1,6 +1,27 @@
 {
-  "updatedAt": "2026-10-28",
+  "updatedAt": "2026-10-29",
   "releases": [
+    {
+      "version": "0.4.12.3",
+      "date": "2026-10-29",
+      "title": {
+        "tr": "iOS Refresh Spam Düzeltmesi ve İstek Limiti İyileştirmesi",
+        "en": "iOS Refresh Spam Fix & Rate Limit Adjustment"
+      },
+      "changes": {
+        "tr": [
+          "iOS WebKit standalone PWA modunda yaşanan sonsuz sayfa yenileme döngüsü (refresh spam) localStorage cooldown kilidi ve Nginx no-cache başlıklarıyla kalıcı olarak çözüldü.",
+          "Resmi İETT duyuruları uç noktasındaki rate limit dakikada 30 isteğe yükseltildi.",
+          "Uzak PWA duyuru yükleme mekanizması doğrudan GitHub üzerinden anlık cache-busting ile güncellendi."
+        ],
+        "en": [
+          "Permanently resolved iOS WebKit standalone PWA infinite reload loop with localStorage cooldown lock and Nginx no-cache headers.",
+          "Increased official İETT announcements endpoint rate limit to 30 requests per minute.",
+          "Updated remote PWA announcement loader with real-time cache-busting directly from GitHub."
+        ]
+      },
+      "url": "https://github.com/pcislocked/iett-pwa/releases/tag/v0.4.12.3"
+    },
     {
       "version": "0.4.12.2",
       "date": "2026-10-28",

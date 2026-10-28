@@ -3,6 +3,13 @@
 All notable changes to iett-pwa are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [0.4.12.3] - 2026-10-29
+### Fixed
+- **iOS Standalone PWA Refresh Loop:** Permanently resolved infinite reload cycle on iOS WebKit standalone PWAs by adding a 60-second cooldown lock via `localStorage` in `forceReloadForNewVersion` and adding `Cache-Control: no-cache, no-store, must-revalidate` to SPA fallback paths in `nginx.conf`.
+- **Direct Real-Time GitHub Announcement Loading:** Removed bundled local fallback from remote PWA announcements and added URL timestamp cache-busting (`?t=...`) to bypass CDN caching.
+
+---
+
 ## [0.4.12.2] - 2026-10-28
 ### Added
 - **AnnouncementCard Component (`AnnouncementCard.tsx`):** Unified card architecture across official scraped İETT notices, NTCAPI service alerts, and remote PWA notices with consistent pill badges, typography, and actions.
@@ -20,6 +27,46 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Dark Theme Variant Sync:** Synchronized `.dark` html class with `data-theme` attribute for Tailwind dark variant support.
 - **Version Reset Transition Preservation:** Preserved actual version upgrade source string in localStorage without regex string manipulation.
 - **Duplicate Header Back Button:** Removed redundant top back button in `/announcements` in favor of the persistent bottom application bar (`AppBar`).
+
+---
+
+## [0.4.12.1] - 2026-10-28
+### Fixed
+- **Map Transition Loop Resolved:** Fixed viewport tracker infinite re-render loop that starved page navigations away from the map screen.
+
+### Added
+- **Remote PWA Announcement System:** Added live remote admin announcement banners pulled dynamically from GitHub.
+- **Unified İETT Badges:** Standardized official announcement badges on Home screen.
+- **Changelog First-Time Discovery:** Enhanced update notification banner discovery for first-time visitors.
+
+---
+
+## [0.4.12] - 2026-10-28
+### Added
+- **Unified Entity Picker:** Added map cluster selector and stop preview card for dense bus/stop areas.
+- **Bottom-Center Area Stop Search:** Repositioned area stop discovery button with 10m movement detection and list transition.
+- **iOS Safe Area Shield:** Added top status bar blur shield to prevent Safari header color bleed.
+- **Turkish Route Code Character Support:** Full support for route codes with Turkish characters (`15ŞN`, `15KÇ`) and enriched destination labels.
+- **72-Hour Official Announcements:** Extended official announcement visibility window on Home.
+
+---
+
+## [0.4.11.1] - 2026-10-26
+### Added
+- **Kiosk Mode Sliding Cards:** Kiosk mode announcements cycle automatically every 15 seconds.
+- **Orientation Lock & Rotation Guard:** Added portrait orientation lock and landscape guard overlay for mobile devices.
+- **Changelog Subpage & Banner:** Added dedicated `/changelog` route and single-line update notification bar.
+
+### Fixed
+- **Stop Marker 404 & Map Interaction:** Fixed stop icon 404s and erratic map click behavior.
+
+---
+
+## [0.4.11] - 2026-10-25
+### Changed & Optimized
+- **Stale Vehicle Position Filtering:** Automatically removed bus locations older than 20 minutes from live map tracking.
+- **Tile Caching & Live Data Frequency:** Optimized tile caching strategies and dynamic arrival polling intervals.
+- **Settings Maintenance Tools:** Added cache cleanup and factory reset controls in Settings.
 
 ---
 

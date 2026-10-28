@@ -4,7 +4,6 @@ import type { PwaAnnouncementsData } from '@/types/announcements'
 
 export const REMOTE_ANNOUNCEMENTS_URL =
   'https://raw.githubusercontent.com/pcislocked/iett-pwa/master/public/announcements.json'
-export const FALLBACK_ANNOUNCEMENTS_URL = '/announcements.json'
 
 export const DISMISSED_STORAGE_KEY = 'iett_dismissed_pwa_announcements'
 export const SEEN_SINGLE_STORAGE_KEY = 'iett_seen_single_pwa_announcements'
@@ -43,20 +42,14 @@ function writeStorageIds(key: string, ids: number[]) {
 
 async function fetchRemoteAnnouncements(signal?: AbortSignal): Promise<PwaAnnouncementsData> {
   try {
-    const res = await fetch(REMOTE_ANNOUNCEMENTS_URL, {
+    const res = await fetch(`${REMOTE_ANNOUNCEMENTS_URL}?t=${Date.now()}`, {
       signal,
       cache: 'no-cache',
     })
     if (!res.ok) throw new Error(`HTTP ${res.status}`)
     return (await res.json()) as PwaAnnouncementsData
   } catch {
-    // Fallback to local file bundled with PWA
-    const fallbackRes = await fetch(FALLBACK_ANNOUNCEMENTS_URL, {
-      signal,
-      cache: 'no-cache',
-    })
-    if (!fallbackRes.ok) throw new Error(`Fallback HTTP ${fallbackRes.status}`)
-    return (await fallbackRes.json()) as PwaAnnouncementsData
+    return { announcements: [] }
   }
 }
 

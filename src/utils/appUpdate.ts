@@ -3,6 +3,8 @@ import pkg from '../../package.json'
 const VERSION_ENDPOINT = `${import.meta.env.BASE_URL}version.json`
 const VERSION_CHECK_INTERVAL_MS = 60_000
 const VERSION_RELOAD_FLAG_KEY = 'iett:update-reloaded-version'
+const VERSION_RELOAD_TIMESTAMP_KEY = 'iett:update-reloaded-timestamp'
+const MIN_RELOAD_INTERVAL_MS = 60_000
 const VERSION_CHECK_FAILURE_BASE_DELAY_MS = 15_000
 const VERSION_CHECK_FAILURE_MAX_DELAY_MS = 5 * 60_000
 
@@ -64,17 +66,30 @@ async function refreshServiceWorkers(options?: { activateWaiting?: boolean }): P
 }
 
 async function forceReloadForNewVersion(nextVersion: string): Promise<void> {
-  const reloadedVersion = sessionStorage.getItem(VERSION_RELOAD_FLAG_KEY)
-  if (reloadedVersion === nextVersion) return
+  const now = Date.now()
+  try {
+    const lastVersion = localStorage.getItem(VERSION_RELOAD_FLAG_KEY)
+    const lastTime = Number(localStorage.getItem(VERSION_RELOAD_TIMESTAMP_KEY)) || 0
 
-  sessionStorage.setItem(VERSION_RELOAD_FLAG_KEY, nextVersion)
+    // Prevent loop: do not reload if already reloaded for this version within cooldown window
+    if (lastVersion === nextVersion && now - lastTime < MIN_RELOAD_INTERVAL_MS) {
+      return
+    }
+
+    localStorage.setItem(VERSION_RELOAD_FLAG_KEY, nextVersion)
+    localStorage.setItem(VERSION_RELOAD_TIMESTAMP_KEY, String(now))
+  } catch {
+    const reloadedVersion = sessionStorage.getItem(VERSION_RELOAD_FLAG_KEY)
+    if (reloadedVersion === nextVersion) return
+    sessionStorage.setItem(VERSION_RELOAD_FLAG_KEY, nextVersion)
+  }
 
   await refreshServiceWorkers({ activateWaiting: true })
   await clearOriginCaches()
 
   const nextUrl = new URL(window.location.href)
   nextUrl.searchParams.set('v', nextVersion)
-  nextUrl.searchParams.set('reload', String(Date.now()))
+  nextUrl.searchParams.set('reload', String(now))
   window.location.replace(nextUrl.toString())
 }
 

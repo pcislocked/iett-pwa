@@ -12,7 +12,7 @@ COPY package*.json ./
 RUN npm ci --include=optional --no-audit --no-fund
 
 COPY . .
-RUN npm run build
+RUN npm run build && rm -f dist/announcements.json
 
 # ── Stage 2: serve ───────────────────────────────────────────────────────────
 FROM nginx:1.27-alpine AS serve
