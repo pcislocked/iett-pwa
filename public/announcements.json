@@ -4,11 +4,11 @@
       "id": 1,
       "date": "2026-10-28",
       "startDate": "2026-10-28T00:00:00.000Z",
-      "endDate": "2026-11-04T23:59:59.000Z",
-      "title": "İETT PWA v0.4.12 Yayında! 🚀",
+      "endDate": "2027-10-28T23:59:59.000Z",
+      "title": "Geri bildirimlerinize muhtacız",
       "isIgnorable": true,
       "isSingleShow": false,
-      "content": "Yeni sürüm ile birlikte harita ekranında **canlı durak ve hat seçici**, 10m liste modu ve performans optimizasyonları kullanıma sunuldu. Detaylar için [Yenilikler sayfasını](/changelog) inceleyebilirsiniz."
+      "content": "Selam. Bu mesaj ai ile yazılmamıştır. Bu uygulamayı kullanan 3-5 arkadaşım ve birkaç daha yabancı olduğunu biliyorum. Daha fazlasını bilmiyorum çünkü app içinde bir analytics falan koymadım, takip edemiyorum; sadece trafik miktarından farklı IP adreslerini sayabiliyorum o kadar.\n\nYatay zekaya yaptırılan bu sikko app'in bile \"Otobüsüm Nerede\"den daha iyi olduğu konusunda iddiam hala geçerlidir ama bozuk veya daha iyi yapılabilecek şeyler konusunda alabileceğim tek girdi direkt sizsiniz. Ben kendim kullandığım için zaten yaptım ve sürekli bir şeyleri çözüyorum ama her hattı veya her özelliği kullanmıyorum. Dolayısıyla bozuk gördüğünüz şeyler vb. için sizin ekran görüntüsü veya ekran kaydı alıp 2 dakikanızı ayırarak açıklama yazmanız ve bana atmanız lazım.\n\nİsterseniz [sa@pcislocked.net](mailto:sa@pcislocked.net)'e mail atabilirsiniz, Telegram [@pit10lympos](https://t.me/pit10lympos)'tan yazabilirsiniz veya [GitHub'da issue](https://github.com/pcislocked/iett-pwa/issues) açarsanız direkt ilgilenirim.\n\nÇok uzun mesaj evet özür dilerim, köşeden çarpıya basınca bir daha önünüze çıkmayacak. Yani yapay zeka kodu doğru yazdıysa.\n\nBu app'i kullandığınız için teşekkürler.\nAta\n\n**Dipnot:** HALKIN otobüsünün verisini bize zar zor vermeyen İETT'deki davar memurlar, açık veri portalındaki taleplerimize cevap vermediği ve Hollanda'daki IP bloğumuzu da banladığı için tüm request'leri Türkiye'deki vekil sunucularımıza yönlendirmek zorunda kaldık. Bazı kısımlarda yavaşlıklar hissederseniz sebebi budur, gidin onlara sövün."
     }
   ]
 }

@@ -42,6 +42,18 @@ describe('SafeMarkdown', () => {
     expect(link.getAttribute('rel')).toBe('noopener noreferrer')
   })
 
+  it('renders mailto links cleanly', () => {
+    render(
+      <MemoryRouter>
+        <SafeMarkdown content="İletişim: [Bize Yazın](mailto:sa@pcislocked.net)" />
+      </MemoryRouter>
+    )
+
+    const link = screen.getByRole('link', { name: /Bize Yazın/ })
+    expect(link).toBeInTheDocument()
+    expect(link.getAttribute('href')).toBe('mailto:sa@pcislocked.net')
+  })
+
   it('neutralizes insecure links like javascript:', () => {
     render(
       <MemoryRouter>
