@@ -4,11 +4,11 @@
       "id": 2,
       "date": "2026-10-29",
       "startDate": "2026-10-28T00:00:00.000Z",
-      "endDate": "2026-11-15T23:59:59.000Z",
-      "title": "Apple'da refresh spam sorunu çözüldü",
+      "endDate": "2026-11-2T23:59:59.000Z",
+      "title": "Apple'da refresh spam sorunu çözüldü... mü?",
       "isIgnorable": true,
       "isSingleShow": false,
-      "content": "iOS Safari / PWA önbellek çakışmasından kaynaklanan refresh spam sorunu v0.4.12.3 ile çözülmüştür. Sorun halen devam ediyorsa lütfen Telegram [@pit10lympos](https://t.me/pit10lympos) üzerinden direkt mesaj atın."
+      "content": "iOS'taki refresh spam sorununun v0.4.12.3 ile çözülmüş olması lazım. Sorun halen devam ediyorsa ana ekrandan iett-pwa'yı silip tekrar eklemeyi deneyin. Yine devam ederse Telegram [@pit10lympos](https://t.me/pit10lympos)'dan yazın pls"
     },
     {
       "id": 1,
