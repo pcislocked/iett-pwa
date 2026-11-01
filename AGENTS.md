@@ -81,6 +81,11 @@ This document is the permanent operational constitution for any AI agent working
 2. **Kurdish Braille Placeholder:** In `public/locales/ku.json`, the value for every key MUST be the Braille blank pattern (`"\u2800"` / `"⠀"`).
 3. **Mandatory Test Verification:** `src/__tests__/i18n.test.ts` MUST enforce key parity for all three languages (`tr`, `en`, `ku`). If any key is missing in `ku.json`, the test suite MUST fail.
 
+### Rule 0.5: Absolute Rule on GitHub Release Titles (Version ONLY)
+1. **Release Title Must Strictly Be the Version Tag:** In both `iett-pwa` and `iett-middle` (and any other ecosystem repo), the GitHub Release title/name (the `-t` or `--title` argument in `gh release create`) MUST ONLY be the version tag itself (e.g., `v0.4.12.4`). Sürüm dışında hiçbir şey asla olamaz.
+2. **Zero Suffixes or Descriptions in Title:** You are strictly, permanently forbidden from adding any description, feature summary, changelog subtitle, or suffix to the release title (e.g., NEVER `v0.4.12.4 - Güvenlik ve hız iyileştirmeleri` or `v0.4.12.4 (Hotfix)`). The release name MUST be purely `v<VERSION>`.
+3. **Release Notes Belong in Body Only:** Any release descriptions, changelog bullets, or notes belong exclusively in the release body (`-n` / `--notes`).
+
 ---
 
 ## 1. Multi-Repo Architecture & Component Roles
