@@ -15,7 +15,14 @@ export const DEFAULT_SETTINGS: Settings = {
 export function loadSettings(): Settings {
   try {
     const raw = localStorage.getItem(SETTINGS_KEY)
-    if (raw) return { ...DEFAULT_SETTINGS, ...(JSON.parse(raw) as Partial<Settings>) }
+    if (raw) {
+      const parsed = JSON.parse(raw) as Partial<Settings>
+      return {
+        ...DEFAULT_SETTINGS,
+        ...parsed,
+        apiBase: sanitizeApiBase(parsed.apiBase ?? ''),
+      }
+    }
   } catch { /* ignore */ }
   return { ...DEFAULT_SETTINGS }
 }
@@ -27,8 +34,19 @@ export function sanitizeApiBase(url: string): string {
   if (trimmed.startsWith('/') && !trimmed.startsWith('//')) return trimmed
   try {
     const parsed = new URL(trimmed)
+    if (parsed.username || parsed.password) return ''
+    const isLocalhost =
+      parsed.hostname === 'localhost' ||
+      parsed.hostname === '127.0.0.1' ||
+      parsed.hostname === '[::1]'
+    const isHttpsPage =
+      typeof window !== 'undefined' && window.location?.protocol === 'https:'
+    // Block insecure http:// on https:// pages unless targeting localhost
+    if (isHttpsPage && parsed.protocol === 'http:' && !isLocalhost) {
+      return ''
+    }
     if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
-      return trimmed
+      return `${parsed.origin}${parsed.pathname}`.replace(/\/+$/, '')
     }
   } catch { /* invalid URL */ }
   return ''

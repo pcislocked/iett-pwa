@@ -269,7 +269,7 @@ export default function MapPage() {
     const lastAppliedSeq = new Map<string, number>()
 
     const fetchBuses = () => {
-      if (!isMounted) return
+      if (!isMounted || document.visibilityState === 'hidden') return
       const currentSeq = ++requestSeq
 
       for (const route of selectedRoutes) {
