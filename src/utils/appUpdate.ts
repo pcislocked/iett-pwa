@@ -31,13 +31,32 @@ async function fetchDeployedVersion(): Promise<string | null> {
   }
 }
 
-async function clearOriginCaches(): Promise<void> {
+export async function clearOriginCaches(): Promise<void> {
   if (!('caches' in window)) return
   try {
     const keys = await caches.keys()
-    await Promise.all(keys.map((key) => caches.delete(key)))
+    await Promise.all(
+      keys
+        .filter((key) => !key.startsWith('workbox-precache'))
+        .map((key) => caches.delete(key)),
+    )
   } catch {
     // Ignore cache API failures and still attempt reload.
+  }
+}
+
+export function cleanupReloadQueryParams(): void {
+  if (typeof window === 'undefined' || !window.history?.replaceState) return
+  try {
+    const url = new URL(window.location.href)
+    if (url.searchParams.has('v') || url.searchParams.has('reload')) {
+      url.searchParams.delete('v')
+      url.searchParams.delete('reload')
+      const clean = url.pathname + (url.search ? url.search : '') + url.hash
+      window.history.replaceState(window.history.state, '', clean)
+    }
+  } catch {
+    // Ignore URL parsing errors
   }
 }
 
@@ -84,8 +103,8 @@ async function forceReloadForNewVersion(nextVersion: string): Promise<void> {
     sessionStorage.setItem(VERSION_RELOAD_FLAG_KEY, nextVersion)
   }
 
-  await refreshServiceWorkers({ activateWaiting: true })
   await clearOriginCaches()
+  await refreshServiceWorkers({ activateWaiting: true })
 
   const nextUrl = new URL(window.location.href)
   nextUrl.searchParams.set('v', nextVersion)
@@ -99,6 +118,7 @@ async function forceReloadForNewVersion(nextVersion: string): Promise<void> {
  * the page is force-reloaded with a cache-busting URL.
  */
 export function setupAppUpdateChecks(): void {
+  cleanupReloadQueryParams()
   const currentVersion = __APP_VERSION__
   let checking = false
   let consecutiveFailures = 0
@@ -139,9 +159,15 @@ export function setupAppUpdateChecks(): void {
     }
   }
 
+  const onPageShow = () => {
+    void checkForUpdate()
+  }
+
   window.addEventListener('focus', onVisible)
+  window.addEventListener('pageshow', onPageShow)
   document.addEventListener('visibilitychange', onVisible)
   window.setInterval(() => {
+    if (document.visibilityState === 'hidden') return
     void checkForUpdate()
   }, VERSION_CHECK_INTERVAL_MS)
 }

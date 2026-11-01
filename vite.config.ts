@@ -45,8 +45,8 @@ export default defineConfig({
       injectRegister: false,
       registerType: 'autoUpdate',
       manifest: {
-        name: 'iett-pwa',
-        short_name: 'iett-pwa',
+        name: 'İETT Canlı',
+        short_name: 'İETT',
         description: 'İstanbul otobüslerini gerçek zamanlı takip et',
         theme_color: '#000000',
         background_color: '#000000',
@@ -89,10 +89,12 @@ export default defineConfig({
             handler: 'NetworkOnly',
           },
           {
-            urlPattern: /\/v1\//,
+            urlPattern: ({ url }) =>
+              url.pathname.startsWith('/v1/') && !url.pathname.startsWith('/v1/arac/'),
             handler: 'NetworkFirst',
             options: {
               cacheName: 'iett-api',
+              networkTimeoutSeconds: 4,
               expiration: { maxEntries: 100, maxAgeSeconds: 20 },
             },
           },

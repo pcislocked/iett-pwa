@@ -270,13 +270,14 @@ export function ChangelogPage() {
                   </ul>
                 )}
 
-                {rel.url && (
+                {rel.url && /^https?:\/\//i.test(rel.url) && (
                   <div className="mt-3 pt-2.5 border-t border-surface-border/50 text-right">
                     <a
                       href={rel.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-xs text-brand hover:underline font-medium inline-flex items-center gap-1"
+                      aria-label={`${t('changelog.viewOnGithub', { defaultValue: 'GitHub üzerinde incele' })} (opens in new tab)`}
+                      className="text-xs text-brand hover:underline font-medium inline-flex items-center gap-1 py-1"
                     >
                       {t('changelog.viewOnGithub', { defaultValue: 'GitHub üzerinde incele' })} →
                     </a>

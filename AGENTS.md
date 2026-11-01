@@ -6,6 +6,12 @@ This document is the permanent operational constitution for any AI agent working
 
 ## 0. Absolute Red Lines (Zero-Tolerance Rules)
 
+### Rule 0.0: Absolute Ban on Server Intervention & Remote Host Access (Never Touch the Server)
+1. **Zero Server Access Authority (With One Single Exception):** You are strictly, unconditionally, and permanently forbidden from connecting to, executing commands on, SSHing into (`ssh`), inspecting, modifying, stopping, restarting, or touching ANY remote or production server, VPS, host machine, or production container runtime (including `100.96.2.1` or any other IP, domain, or host).
+2. **The Sole Permitted Exception (`docker pull` ONLY):** The **ONLY** permitted server-side operation is running `docker pull <image>` via SSH to fetch pre-built images from the registry, and ONLY when explicitly requested or confirmed by the user. 
+3. **Absolute Prohibition on Container / Compose / Stack Operations:** You are strictly forbidden from running `docker run`, `docker compose`, `docker stop`, `docker rm`, `docker restart`, or touching any Portainer stacks, container configurations, or host files. Container orchestration, service restarts, and stack deployments belong exclusively to the user (managed via Portainer or manual host commands).
+4. **Execution Boundary Strictly Ends at GitHub:** Apart from the single exception of `docker pull`, your operational boundary strictly stops after GitHub repository operations (local development, test suites, branch/PR creation, git tagging, GitHub release creation, and monitoring GitHub Actions CI/Docker build workflows via `gh run list` on GitHub). Everything beyond GitHub Actions (the live server, host filesystem, running containers) is completely off-limits.
+
 ### Rule 0.1: Mandatory Timestamped Approval Gate (`onaylıyorum, dd/mm/yyyy hh:mm`)
 1. **No Autonomous Releases, Merges, or Direct Master Changes:** You are strictly forbidden from bumping versions, creating git tags, publishing GitHub releases, merging Pull Requests, or committing/merging/pushing anything directly to `master`/`main` on your own initiative.
 2. **All Work Goes Into a PR:** All implementation work for a task cycle must be committed to a dedicated feature/fix branch and submitted as a Pull Request (PR). Direct modifications to `master`/`main` are strictly forbidden.
@@ -24,8 +30,7 @@ This document is the permanent operational constitution for any AI agent working
      - Running `git reset --hard` or force-pushing (`git push --force`).
      - Deleting branches or tags (`git tag -d`, `git push origin --delete <tag/branch>`).
      - Deleting databases (`data/*.db`) or deleting files en masse.
-   - **Production Infrastructure & Containers:**
-     - Stopping, restarting, pulling, or redeploying production Docker containers.
+   *(Note: Production server and container operations are unconditionally prohibited under Rule 0.0 and cannot be authorized by approval.)*
 4. **Mandatory Strict Temporal Validation Algorithm (Zero-Tolerance Clock Verification):**
    The timestamp check is a **security gate**, NOT a regex pattern match. The agent must parse and mathematically verify the exact time against the live system clock.
    - **Step 1 - Obtain True System Time via Tool Call (Mandatory OS Clock Query):**
