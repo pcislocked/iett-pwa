@@ -31,7 +31,7 @@ async function fetchDeployedVersion(): Promise<string | null> {
   }
 }
 
-async function clearOriginCaches(): Promise<void> {
+export async function clearOriginCaches(): Promise<void> {
   if (!('caches' in window)) return
   try {
     const keys = await caches.keys()

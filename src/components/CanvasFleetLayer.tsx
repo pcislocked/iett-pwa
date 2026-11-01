@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useLayoutEffect, useRef } from 'react'
 import { useMap } from 'react-leaflet'
 import * as L from 'leaflet'
 import type { BusPosition, NearbyStop } from '@/api/client'
@@ -35,7 +35,7 @@ export default function CanvasFleetLayer({
   const selectedKapinoRef = useRef<string | null>(selectedKapino)
   const latestRef = useRef({ buses, stops, onBusClick, onMultiBusClick, onEntityHit })
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     selectedKapinoRef.current = selectedKapino
     latestRef.current = { buses, stops, onBusClick, onMultiBusClick, onEntityHit }
   }, [buses, stops, selectedKapino, onBusClick, onMultiBusClick, onEntityHit])
@@ -45,7 +45,9 @@ export default function CanvasFleetLayer({
     layerRef.current = L.layerGroup().addTo(map)
     const markersMap = markersMapRef.current
     return () => {
+      markersMap.forEach((m) => m.remove())
       markersMap.clear()
+      layerRef.current?.clearLayers()
       layerRef.current?.remove()
       layerRef.current = null
       rendererRef.current = null

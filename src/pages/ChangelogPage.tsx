@@ -276,7 +276,8 @@ export function ChangelogPage() {
                       href={rel.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-xs text-brand hover:underline font-medium inline-flex items-center gap-1"
+                      aria-label={`${t('changelog.viewOnGithub', { defaultValue: 'GitHub üzerinde incele' })} (opens in new tab)`}
+                      className="text-xs text-brand hover:underline font-medium inline-flex items-center gap-1 py-1"
                     >
                       {t('changelog.viewOnGithub', { defaultValue: 'GitHub üzerinde incele' })} →
                     </a>

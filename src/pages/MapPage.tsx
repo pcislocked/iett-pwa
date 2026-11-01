@@ -286,12 +286,20 @@ export default function MapPage() {
       }
     }
 
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        fetchBuses()
+      }
+    }
+
     fetchBuses()
     const interval = setInterval(fetchBuses, 15_000)
+    document.addEventListener('visibilitychange', onVisibilityChange)
 
     return () => {
       isMounted = false
       clearInterval(interval)
+      document.removeEventListener('visibilitychange', onVisibilityChange)
       controller.abort()
     }
   }, [selectedRoutes])
