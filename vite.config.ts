@@ -45,8 +45,8 @@ export default defineConfig({
       injectRegister: false,
       registerType: 'autoUpdate',
       manifest: {
-        name: 'İETT Canlı',
-        short_name: 'İETT',
+        name: 'iett-pwa',
+        short_name: 'iett-pwa',
         description: 'İstanbul otobüslerini gerçek zamanlı takip et',
         theme_color: '#000000',
         background_color: '#000000',
