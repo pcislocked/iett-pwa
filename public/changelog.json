@@ -1,6 +1,23 @@
 {
-  "updatedAt": "2026-11-01",
+  "updatedAt": "2026-11-03",
   "releases": [
+    {
+      "version": "0.4.12.5",
+      "date": "2026-11-03",
+      "title": {
+        "tr": "PWA Manifest Düzeltmesi",
+        "en": "PWA Manifest Fix"
+      },
+      "changes": {
+        "tr": [
+          "PWA manifest adı ve kısa adı orijinal 'iett-pwa' değerine geri çekildi."
+        ],
+        "en": [
+          "Reverted PWA manifest name and short_name back to original 'iett-pwa'."
+        ]
+      },
+      "url": "https://github.com/pcislocked/iett-pwa/releases/tag/v0.4.12.5"
+    },
     {
       "version": "0.4.12.4",
       "date": "2026-11-01",
