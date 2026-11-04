@@ -1,6 +1,16 @@
 {
   "announcements": [
     {
+      "id": 3,
+      "date": "2026-11-04",
+      "startDate": "2026-11-04T00:00:00.000Z",
+      "endDate": "2026-11-04T19:00:00.000Z",
+      "title": "Metrobüste kaza var",
+      "isIgnorable": true,
+      "isSingleShow": false,
+      "content": "Haramidere Sanayi'de iki metrobüs kafa kafaya girmiş, metrobüs kilit. Bulaşmayın, alternatif tercih edin."
+    },
+    {
       "id": 2,
       "date": "2026-10-29",
       "startDate": "2026-10-28T00:00:00.000Z",
