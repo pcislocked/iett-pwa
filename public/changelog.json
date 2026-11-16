@@ -1,6 +1,23 @@
 {
-  "updatedAt": "2026-11-03",
+  "updatedAt": "2026-11-16",
   "releases": [
+    {
+      "version": "0.4.12.6",
+      "date": "2026-11-16",
+      "title": {
+        "tr": "Sürüm Senkronizasyonu ve Kararlılık İyileştirmeleri",
+        "en": "Version Sync and Stability Improvements"
+      },
+      "changes": {
+        "tr": [
+          "Arka uç bağlantı kararlılığı ve yedek servis iyileştirmeleri ile sürüm senkronizasyonu."
+        ],
+        "en": [
+          "Version synchronization with backend stability and fallback improvements."
+        ]
+      },
+      "url": "https://github.com/pcislocked/iett-pwa/releases/tag/v0.4.12.6"
+    },
     {
       "version": "0.4.12.5",
       "date": "2026-11-03",
