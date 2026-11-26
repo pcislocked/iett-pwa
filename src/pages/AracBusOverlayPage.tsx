@@ -144,6 +144,9 @@ export default function AracBusOverlayPage() {
     return () => {
       aliveRef.current = false
       abortControllerRef.current?.abort()
+      // Reset flow-start guards on unmount so React StrictMode remounts restart cleanly.
+      hasStartedFlowRef.current = false
+      lastKapinoRef.current = undefined
     }
   }, [])
 
@@ -333,6 +336,19 @@ export default function AracBusOverlayPage() {
     }
   }, [captchaId, manualAnswer, fetchBusData, fetchCaptcha, kapino, t])
 
+  const handleManualRefreshCaptcha = useCallback(async () => {
+    abortControllerRef.current?.abort()
+    const controller = new AbortController()
+    abortControllerRef.current = controller
+    setInlineWarning(null)
+    try {
+      await fetchCaptcha(controller.signal)
+    } catch (error) {
+      if (!aliveRef.current || controller.signal.aborted || (error instanceof Error && error.name === 'AbortError')) return
+      setInlineWarning(errorText(error, t))
+    }
+  }, [fetchCaptcha, t])
+
   const amenities = useMemo(() => {
     if (!profile) return []
     return [
@@ -449,7 +465,7 @@ export default function AracBusOverlayPage() {
                 {t('arac.login', { defaultValue: 'Oturumu Aç' })}
               </button>
               <button
-                onClick={() => { void fetchCaptcha() }}
+                onClick={() => { void handleManualRefreshCaptcha() }}
                 className="metro-tilt px-3 py-2 border border-surface-border text-text-primary text-sm"
               >
                 {t('arac.newCaptcha', { defaultValue: 'Yenile' })}

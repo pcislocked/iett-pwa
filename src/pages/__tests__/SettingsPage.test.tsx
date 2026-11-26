@@ -52,4 +52,27 @@ describe('SettingsPage', () => {
 
     vi.unstubAllGlobals()
   })
+
+  it('allows clearing refreshInterval input without snapping back and clamps on blur', () => {
+    vi.stubGlobal('__APP_VERSION__', '1.0.0')
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } })
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter>
+          <SettingsPage />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    )
+
+    const input = screen.getByDisplayValue('20') as HTMLInputElement
+    fireEvent.change(input, { target: { value: '' } })
+    expect(input.value).toBe('')
+
+    fireEvent.change(input, { target: { value: '2' } })
+    expect(input.value).toBe('2')
+    fireEvent.blur(input)
+    expect(input.value).toBe('5')
+    expect(JSON.parse(localStorage.getItem('iett_settings') || '{}').refreshInterval).toBe(5)
+    vi.unstubAllGlobals()
+  })
 })

@@ -14,8 +14,9 @@ import { tryGuardedChunkReload } from '@/utils/lazyWithRetry'
 applyTheme(getInitialTheme())
 
 window.addEventListener('vite:preloadError', (event) => {
-  event.preventDefault()
-  tryGuardedChunkReload()
+  if (tryGuardedChunkReload()) {
+    event.preventDefault()
+  }
 })
 
 // When the service worker updates and takes control, reload so the new

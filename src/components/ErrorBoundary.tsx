@@ -10,7 +10,7 @@ interface ErrorBoundaryState {
   hasError: boolean
 }
 
-function ErrorFallbackUI({ onReset }: { onReset: () => void }) {
+function ErrorFallbackUI() {
   const { t } = useTranslation()
 
   return (
@@ -43,7 +43,6 @@ function ErrorFallbackUI({ onReset }: { onReset: () => void }) {
           <button
             type="button"
             onClick={() => {
-              onReset()
               window.location.assign('/')
             }}
             className="w-full py-2.5 px-4 rounded-xl bg-surface-muted text-text-primary text-sm font-medium transition-colors"
@@ -73,13 +72,9 @@ export default class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBo
     }
   }
 
-  private handleReset = () => {
-    this.setState({ hasError: false })
-  }
-
   render() {
     if (this.state.hasError) {
-      return <ErrorFallbackUI onReset={this.handleReset} />
+      return <ErrorFallbackUI />
     }
     return this.props.children
   }
