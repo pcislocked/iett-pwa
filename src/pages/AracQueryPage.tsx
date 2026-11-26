@@ -72,7 +72,7 @@ export default function AracQueryPage() {
     e.preventDefault()
     if (!query.trim()) return
     const val = query.trim().toUpperCase()
-    navigate(`/arac/bus/${val}`)
+    navigate(`/arac/bus/${encodeURIComponent(val)}`)
   }
 
   return (
@@ -120,7 +120,7 @@ export default function AracQueryPage() {
               {suggestions.map((s, idx) => (
                 <button
                   key={`${s.kapino}-${idx}`}
-                  onClick={() => navigate(`/arac/bus/${s.kapino}`)}
+                  onClick={() => navigate(`/arac/bus/${encodeURIComponent(s.kapino)}`)}
                   className="flex items-center justify-between p-4 bg-surface-card border border-surface-border rounded-xl active:bg-surface-muted transition-colors text-left"
                 >
                   <div className="flex items-center gap-3">

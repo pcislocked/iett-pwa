@@ -41,10 +41,16 @@ export function useWakeLock({ enabled, timeoutMs = 30 * 60 * 1000 }: UseWakeLock
 
     try {
       const sentinel = await navigator.wakeLock.request('screen')
-      sentinelRef.current = sentinel
-      if (isMountedRef.current) {
-        setIsLocked(true)
+      if (!isMountedRef.current) {
+        try {
+          await sentinel.release()
+        } catch {
+          // Ignore release failures during unmount
+        }
+        return
       }
+      sentinelRef.current = sentinel
+      setIsLocked(true)
 
       sentinel.addEventListener('release', () => {
         if (isMountedRef.current && sentinelRef.current === sentinel) {

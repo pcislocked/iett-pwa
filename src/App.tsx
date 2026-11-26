@@ -1,8 +1,9 @@
 import { BrowserRouter, Routes, Route, useNavigate, useLocation, useNavigationType } from 'react-router-dom'
-import { Suspense, lazy, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
+import { Suspense, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import OrientationGuard from '@/components/OrientationGuard'
 import AppBar from '@/components/AppBar'
+import ErrorBoundary from '@/components/ErrorBoundary'
 import InstallBanner from '@/components/InstallBanner'
 import { useInstallBanner } from '@/hooks/useInstallBanner'
 import { useKioskMode } from '@/hooks/useKioskMode'
@@ -11,21 +12,22 @@ import { BottomBarContext, useBottomBarState } from '@/hooks/useBottomBar'
 import { MAIN_PATHS } from '@/routes'
 import { syncServerTime } from '@/utils/timeSync'
 import { isIOSDevice } from '@/utils/platform'
+import { lazyWithRetry } from '@/utils/lazyWithRetry'
 
-const SearchPage = lazy(() => import('@/pages/SearchPage'))
-const StopPage = lazy(() => import('@/pages/StopPage'))
-const RoutePage = lazy(() => import('@/pages/RoutePage'))
-const MapPage = lazy(() => import('@/pages/MapPage'))
-const AracBusOverlayPage = lazy(() => import('@/pages/AracBusOverlayPage'))
-const AracQueryPage = lazy(() => import('@/pages/AracQueryPage'))
-const SettingsPage = lazy(() => import('@/pages/SettingsPage'))
-const FavoritesPage = lazy(() => import('@/pages/FavoritesPage'))
-const NearbyPage = lazy(() => import('@/pages/NearbyPage'))
-const PinnedManagePage = lazy(() => import('@/pages/PinnedManagePage'))
-const ShareTargetPage = lazy(() => import('@/pages/ShareTargetPage'))
-const AnnouncementsPage = lazy(() => import('@/pages/AnnouncementsPage'))
-const ChangelogPage = lazy(() => import('@/pages/ChangelogPage'))
-const TileDemoPage = lazy(() => import('@/pages/TileDemoPage'))
+const SearchPage = lazyWithRetry(() => import('@/pages/SearchPage'))
+const StopPage = lazyWithRetry(() => import('@/pages/StopPage'))
+const RoutePage = lazyWithRetry(() => import('@/pages/RoutePage'))
+const MapPage = lazyWithRetry(() => import('@/pages/MapPage'))
+const AracBusOverlayPage = lazyWithRetry(() => import('@/pages/AracBusOverlayPage'))
+const AracQueryPage = lazyWithRetry(() => import('@/pages/AracQueryPage'))
+const SettingsPage = lazyWithRetry(() => import('@/pages/SettingsPage'))
+const FavoritesPage = lazyWithRetry(() => import('@/pages/FavoritesPage'))
+const NearbyPage = lazyWithRetry(() => import('@/pages/NearbyPage'))
+const PinnedManagePage = lazyWithRetry(() => import('@/pages/PinnedManagePage'))
+const ShareTargetPage = lazyWithRetry(() => import('@/pages/ShareTargetPage'))
+const AnnouncementsPage = lazyWithRetry(() => import('@/pages/AnnouncementsPage'))
+const ChangelogPage = lazyWithRetry(() => import('@/pages/ChangelogPage'))
+const TileDemoPage = lazyWithRetry(() => import('@/pages/TileDemoPage'))
 
 // Set by swipe commit before navigate() so useLayoutEffect skips CSS transition
 let _swipeNav = false
@@ -44,7 +46,12 @@ function RouteFallback() {
 }
 
 function LazyRoute({ children }: { children: ReactNode }) {
-  return <Suspense fallback={<RouteFallback />}>{children}</Suspense>
+  const { pathname } = useLocation()
+  return (
+    <ErrorBoundary resetKey={pathname}>
+      <Suspense fallback={<RouteFallback />}>{children}</Suspense>
+    </ErrorBoundary>
+  )
 }
 
 /** Route definitions shared between exit and enter renderers. */
@@ -103,11 +110,12 @@ function AnimatedMain() {
     const oldLoc = prevLocRef.current
     prevLocRef.current = location
 
-    // On main->main programmatic navigation, strip repositions via inline style.
+    // On navigation onto any main tab path, the strip branch renders; skip exit/enter overlay.
     const newIdx = (MAIN_PATHS as readonly string[]).indexOf(location.pathname)
     const oldIdx = (MAIN_PATHS as readonly string[]).indexOf(oldLoc.pathname)
-    if (newIdx !== -1 && oldIdx !== -1) {
-      // Both main: strip handles it, skip exit/enter overlay
+    if (newIdx !== -1) {
+      setExitLoc(null)
+      setActive(false)
       return
     }
 
@@ -121,15 +129,25 @@ function AnimatedMain() {
     setExitLoc(oldLoc)
     setNavDir(d)
     setActive(false)
-    requestAnimationFrame(() => { requestAnimationFrame(() => { setActive(true) }) })
+    let raf2 = 0
+    const raf1 = requestAnimationFrame(() => {
+      raf2 = requestAnimationFrame(() => {
+        setActive(true)
+      })
+    })
     const t = window.setTimeout(() => { setExitLoc(null); setActive(false) }, 240)
-    return () => window.clearTimeout(t)
-  }, [location.key, navType]) // eslint-disable-line react-hooks/exhaustive-deps
+    return () => {
+      cancelAnimationFrame(raf1)
+      cancelAnimationFrame(raf2)
+      window.clearTimeout(t)
+    }
+  }, [location, navType])
 
   /* Live-swipe touch handler (main-path strip only) */
   useEffect(() => {
     if (!onMainPath) return
 
+    let swipeTimer: number | null = null
     // touchRef holds live drag state; written/read without React state to avoid re-renders
     // startX is null when the touch started on an interactive element and should be ignored
     const touchRef = { startX: null as number | null, startY: 0, locked: false, canceled: false, committed: false }
@@ -188,7 +206,8 @@ function AnimatedMain() {
         const commitDx  = dir === 'left' ? -window.innerWidth : window.innerWidth
         stripX(commitDx, true)
         _swipeNav      = true
-        setTimeout(() => navigate(MAIN_PATHS[targetIdx]), 280)
+        if (swipeTimer !== null) window.clearTimeout(swipeTimer)
+        swipeTimer = window.setTimeout(() => navigate(MAIN_PATHS[targetIdx]), 280)
       } else {
         // Snap back
         stripX(0, true)
@@ -202,6 +221,7 @@ function AnimatedMain() {
       document.removeEventListener('touchstart',  onTouchStart)
       document.removeEventListener('touchmove',   onTouchMove)
       document.removeEventListener('touchend',    onTouchEnd)
+      if (swipeTimer !== null) window.clearTimeout(swipeTimer)
     }
   }, [onMainPath, currentIdx, N, navigate])
 

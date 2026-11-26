@@ -149,6 +149,7 @@ export default function SettingsPage() {
   const isHapticsSupported = typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function'
 
   const isMounted = useRef(true)
+  const isFirstRender = useRef(true)
 
   // Clean up timers on unmount so stale updates don't fire after navigation
   useEffect(() => {
@@ -162,6 +163,10 @@ export default function SettingsPage() {
   }, [])
 
   useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false
+      return
+    }
     saveSettings(settings)
     setSaved(true)
     const t = setTimeout(() => setSaved(false), 1500)
@@ -248,8 +253,19 @@ export default function SettingsPage() {
             min={5}
             max={300}
             value={settings.refreshInterval}
-            onChange={(e) =>
-              setSettings((s) => ({ ...s, refreshInterval: Number(e.target.value) }))
+            onChange={(e) => {
+              const raw = e.target.value
+              if (raw === '') return
+              const parsed = Number(raw)
+              if (Number.isFinite(parsed)) {
+                setSettings((s) => ({ ...s, refreshInterval: parsed }))
+              }
+            }}
+            onBlur={() =>
+              setSettings((s) => ({
+                ...s,
+                refreshInterval: Math.min(300, Math.max(5, Math.round(s.refreshInterval || 20))),
+              }))
             }
             className="w-32 bg-surface border border-surface-muted rounded-lg
                        px-3 py-2 text-sm text-text-primary

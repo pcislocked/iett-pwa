@@ -12,13 +12,16 @@ export default function LocationConsentModal({ onConfirm, onDismiss }: Props) {
   const confirmRef = useRef<HTMLButtonElement>(null)
   const dialogRef = useRef<HTMLDivElement>(null)
   const previouslyFocused = useRef<Element | null>(null)
+  const isMountedRef = useRef(true)
   const [deniedState, setDeniedState] = useState(false)
   const [isLocating, setIsLocating] = useState(false)
 
   useEffect(() => {
+    isMountedRef.current = true
     previouslyFocused.current = document.activeElement
     confirmRef.current?.focus()
     return () => {
+      isMountedRef.current = false
       if (previouslyFocused.current instanceof HTMLElement) {
         previouslyFocused.current.focus()
       }
@@ -91,10 +94,12 @@ export default function LocationConsentModal({ onConfirm, onDismiss }: Props) {
                   setIsLocating(true)
                   navigator.geolocation.getCurrentPosition(
                     () => {
+                      if (!isMountedRef.current) return
                       setIsLocating(false)
                       onConfirm()
                     },
                     () => {
+                      if (!isMountedRef.current) return
                       setIsLocating(false)
                       setDeniedState(true)
                     },

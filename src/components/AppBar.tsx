@@ -109,9 +109,9 @@ export default function AppBar() {
     >
       <div className="flex items-end justify-center gap-8 px-6 py-2.5">
         <AppBtn icon={<IconBack />}     label={t('nav.back', { defaultValue: 'Geri' })}    dim={isHome}      onPress={() => navigate(-1)} />
-        <AppBtn icon={<IconHome />}     label={t('nav.home', { defaultValue: 'Ana' })}     active={isHome}   onPress={() => navigate('/')} />
-        <AppBtn icon={<IconSearch />}   label={t('nav.search', { defaultValue: 'Ara' })}     active={isSearch} onPress={() => navigate('/search')} />
-        <AppBtn icon={<IconSettings />} label={t('nav.settings', { defaultValue: 'Ayarlar' })} active={isSettings} onPress={() => navigate('/settings')} />
+        <AppBtn icon={<IconHome />}     label={t('nav.home', { defaultValue: 'Ana' })}     active={isHome}   onPress={() => { if (location.pathname !== '/') navigate('/') }} />
+        <AppBtn icon={<IconSearch />}   label={t('nav.search', { defaultValue: 'Ara' })}     active={isSearch} onPress={() => { if (!isSearch) navigate('/search') }} />
+        <AppBtn icon={<IconSettings />} label={t('nav.settings', { defaultValue: 'Ayarlar' })} active={isSettings} onPress={() => { if (!isSettings) navigate('/settings') }} />
       </div>
     </div>
   )

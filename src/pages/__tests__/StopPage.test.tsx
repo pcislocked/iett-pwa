@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { onlineManager, QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
 import StopPage from '@/pages/StopPage'
 import { api, ApiHttpError, type Arrival } from '@/api/client'
@@ -220,5 +220,20 @@ describe('StopPage Announcements', () => {
       expect(screen.getByText(/Duyuru \(1\/2\)/i)).toBeInTheDocument()
       expect(screen.getByText(/500T detour active/i)).toBeInTheDocument()
     })
+  })
+
+  it('does not show false 404 stop-not-found screen when offline', async () => {
+    onlineManager.setOnline(false)
+    try {
+      vi.mocked(api.stops.detail).mockImplementation(() => new Promise(() => {}))
+      renderPage('1234')
+
+      await waitFor(() => {
+        expect(screen.getByText(/#1234/)).toBeInTheDocument()
+      })
+      expect(screen.queryByText(/Durak Bulunamadı/i)).not.toBeInTheDocument()
+    } finally {
+      onlineManager.setOnline(true)
+    }
   })
 })

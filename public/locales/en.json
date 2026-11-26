@@ -470,5 +470,11 @@
     "viewOnGithub": "View on GitHub",
     "allReleasesOnGithub": "Browse all releases on GitHub Releases",
     "empty": "No release notes found."
+  },
+  "errorBoundary": {
+    "title": "Something went wrong",
+    "desc": "An unexpected error occurred while loading this page.",
+    "reload": "Reload Page",
+    "home": "Go Home"
   }
 }

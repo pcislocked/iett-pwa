@@ -28,7 +28,7 @@ function parseInlineTokens(text: string): ReactNode[] {
 
       // Sanitization: Only allow http://, https://, mailto:, or relative / URLs (no javascript: or data:)
       const isExternal = /^(https?:\/\/|mailto:)/i.test(rawUrl)
-      const isInternal = rawUrl.startsWith('/')
+      const isInternal = rawUrl.startsWith('/') && !rawUrl.startsWith('//')
 
       if (isInternal) {
         result.push(

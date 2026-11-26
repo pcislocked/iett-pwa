@@ -221,11 +221,14 @@ describe('AracBusOverlayPage', () => {
     fireEvent.click(screen.getByRole('button', { name: /oturumu aç/i }))
 
     await screen.findByText(/34 HO 1753/i)
-    expect(mocks.createSession).toHaveBeenCalledWith({
-      captchaId: 'cid-1',
-      captchaAnswer: 'ABCD',
-      kapino: 'C-1753',
-    })
+    expect(mocks.createSession).toHaveBeenCalledWith(
+      {
+        captchaId: 'cid-1',
+        captchaAnswer: 'ABCD',
+        kapino: 'C-1753',
+      },
+      { signal: expect.any(AbortSignal) },
+    )
     expect(mocks.saveAracSession).toHaveBeenCalledOnce()
     expect(mocks.detail).toHaveBeenCalledOnce()
   })

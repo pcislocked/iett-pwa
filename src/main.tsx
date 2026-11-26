@@ -7,14 +7,22 @@ import 'leaflet/dist/leaflet.css'
 import './index.css'
 import { setupAppUpdateChecks } from '@/utils/appUpdate'
 import { applyTheme, getInitialTheme } from '@/hooks/useTheme'
+import ErrorBoundary from '@/components/ErrorBoundary'
+import { tryGuardedChunkReload } from '@/utils/lazyWithRetry'
 
 // Must run synchronously BEFORE React renders — prevents flash of wrong theme
 applyTheme(getInitialTheme())
 
+window.addEventListener('vite:preloadError', (event) => {
+  event.preventDefault()
+  tryGuardedChunkReload()
+})
+
 // When the service worker updates and takes control, reload so the new
 // assets are served instead of the old cached bundle.
-// Guard prevents multiple rapid reloads if controllerchange fires more than once.
+// Guard prevents reloading on first visit (no prior controller) or rapid reloads.
 if ('serviceWorker' in navigator) {
+  const hadController = Boolean(navigator.serviceWorker.controller)
   const swUrl = `${import.meta.env.BASE_URL}sw.js`
   void navigator.serviceWorker.register(swUrl, { updateViaCache: 'none' }).catch(() => {
     // Ignore registration failures; app still works without offline support.
@@ -22,7 +30,7 @@ if ('serviceWorker' in navigator) {
 
   let hasReloadedForSWUpdate = false
   navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if (hasReloadedForSWUpdate) return
+    if (!hadController || hasReloadedForSWUpdate) return
     hasReloadedForSWUpdate = true
     window.location.reload()
   })
@@ -42,12 +50,14 @@ const queryClient = new QueryClient({
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <Suspense fallback={
-      <div style={{ color: '#94a3b8', padding: 32, textAlign: 'center' }}>…</div>
-    }>
-      <QueryClientProvider client={queryClient}>
-        <App />
-      </QueryClientProvider>
-    </Suspense>
+    <ErrorBoundary>
+      <Suspense fallback={
+        <div style={{ color: '#94a3b8', padding: 32, textAlign: 'center' }}>…</div>
+      }>
+        <QueryClientProvider client={queryClient}>
+          <App />
+        </QueryClientProvider>
+      </Suspense>
+    </ErrorBoundary>
   </React.StrictMode>,
 )

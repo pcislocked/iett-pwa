@@ -12,6 +12,12 @@ export const DEFAULT_SETTINGS: Settings = {
   autoLocate: false,
 }
 
+export function clampRefreshInterval(val: unknown): number {
+  const num = typeof val === 'number' ? val : Number(val)
+  if (!Number.isFinite(num)) return DEFAULT_SETTINGS.refreshInterval
+  return Math.min(300, Math.max(5, Math.round(num)))
+}
+
 export function loadSettings(): Settings {
   try {
     const raw = localStorage.getItem(SETTINGS_KEY)
@@ -21,6 +27,8 @@ export function loadSettings(): Settings {
         ...DEFAULT_SETTINGS,
         ...parsed,
         apiBase: sanitizeApiBase(parsed.apiBase ?? ''),
+        refreshInterval: clampRefreshInterval(parsed.refreshInterval),
+        autoLocate: Boolean(parsed.autoLocate),
       }
     }
   } catch { /* ignore */ }
@@ -57,6 +65,8 @@ export function saveSettings(settings: Settings): void {
     const sanitized: Settings = {
       ...settings,
       apiBase: sanitizeApiBase(settings.apiBase),
+      refreshInterval: clampRefreshInterval(settings.refreshInterval),
+      autoLocate: Boolean(settings.autoLocate),
     }
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(sanitized))
   } catch {

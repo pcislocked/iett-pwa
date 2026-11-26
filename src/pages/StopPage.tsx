@@ -161,7 +161,8 @@ function checkMathMismatch(arrival: Arrival, busPos: BusPosition | null, stopLat
   
   let adjustedDistM = distM
   if (arrival.last_seen_ts) {
-    const staleSeconds = (Date.now() - new Date(arrival.last_seen_ts).getTime()) / 1000
+    const gpsDate = parseGpsTimestamp(arrival.last_seen_ts)
+    const staleSeconds = gpsDate ? (Date.now() - gpsDate.getTime()) / 1000 : 0
     if (staleSeconds > 0) {
       // Assume bus could have travelled at max 90km/h (25m/s) during the stale period
       adjustedDistM = Math.max(0, distM - (staleSeconds * 25))
@@ -714,14 +715,14 @@ export default function StopPage() {
     enabled: !!dcode,
   })
 
-  const { data: stopDetail, isLoading: detailLoading, error: detailErrorObj } = useQuery<StopDetail>({
+  const { data: stopDetail, isPending: detailPending, error: detailErrorObj } = useQuery<StopDetail>({
     queryKey: ['stopDetail', dcode],
     queryFn: ({ signal }) => api.stops.detail(dcode ?? '', { signal }),
     refetchInterval: 3_600_000,
     enabled: !!dcode,
   })
 
-  const isNotFound = (!detailLoading && !stopDetail && !detailErrorObj) || ((detailErrorObj as unknown as { status?: number })?.status === 404)
+  const isNotFound = (!detailPending && !stopDetail && !detailErrorObj) || ((detailErrorObj as unknown as { status?: number })?.status === 404)
 
   // Ordered unique routes from live arrivals (used for colour assignment)
   const arrivalRouteOrder = useMemo(() => {
@@ -1524,7 +1525,7 @@ export default function StopPage() {
                       isActive
                         ? { backgroundColor: color, borderColor: color }
                         : isTop3
-                        ? { borderColor: color, color, backgroundColor: color + '22' }
+                        ? { borderColor: color, color, backgroundColor: `color-mix(in srgb, ${color} 15%, transparent)` }
                         : {}
                     }
                     className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-bold border transition-colors ${

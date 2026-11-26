@@ -6,6 +6,7 @@ export function useArrivals(dcode: string, via?: string) {
     queryKey: ['arrivals', dcode, via],
     queryFn: ({ signal }) => api.stops.arrivals(dcode, via, { signal }),
     refetchInterval: 20_000,
+    enabled: !!dcode,
   })
 
   return {

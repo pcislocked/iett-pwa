@@ -28,10 +28,18 @@ function getConfiguredBase(): string {
   return readRuntimeBase() || STATIC_BASE
 }
 
+function isAbortError(error: unknown): boolean {
+  return (
+    (error instanceof DOMException && error.name === 'AbortError') ||
+    (error instanceof Error && error.name === 'AbortError')
+  )
+}
+
 function isNetworkError(error: unknown): boolean {
+  if (isAbortError(error)) return false
   if (error instanceof TypeError) return true
-  if (error instanceof DOMException && (error.name === 'AbortError' || error.name === 'TimeoutError')) return true
-  if (error instanceof Error && (error.name === 'AbortError' || error.name === 'TimeoutError')) return true
+  if (error instanceof DOMException && error.name === 'TimeoutError') return true
+  if (error instanceof Error && error.name === 'TimeoutError') return true
   return false
 }
 
@@ -58,25 +66,64 @@ export class ApiHttpError extends Error {
   }
 }
 
-type TimeoutSignal = {
+type CombinedSignal = {
   signal?: AbortSignal
+  didTimeout: () => boolean
   clear: () => void
 }
 
-function createTimeoutSignal(timeoutMs: number): TimeoutSignal {
-  if (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function') {
-    return { signal: AbortSignal.timeout(timeoutMs), clear: () => {} }
+function combineSignals(
+  userSignal: AbortSignal | undefined,
+  timeoutMs: number,
+): CombinedSignal {
+  if (
+    userSignal &&
+    typeof AbortSignal !== 'undefined' &&
+    typeof AbortSignal.any === 'function' &&
+    typeof AbortSignal.timeout === 'function'
+  ) {
+    return {
+      signal: AbortSignal.any([userSignal, AbortSignal.timeout(timeoutMs)]),
+      didTimeout: () => false,
+      clear: () => {},
+    }
+  }
+
+  if (!userSignal && typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function') {
+    return { signal: AbortSignal.timeout(timeoutMs), didTimeout: () => false, clear: () => {} }
   }
 
   if (typeof AbortController === 'undefined') {
-    return { signal: undefined, clear: () => {} }
+    return { signal: userSignal, didTimeout: () => false, clear: () => {} }
   }
 
+  let timedOut = false
   const controller = new AbortController()
-  const timerId = globalThis.setTimeout(() => controller.abort(), timeoutMs)
+  const onUserAbort = () => controller.abort(userSignal?.reason)
+  if (userSignal) {
+    if (userSignal.aborted) {
+      controller.abort(userSignal.reason)
+    } else {
+      userSignal.addEventListener('abort', onUserAbort, { once: true })
+    }
+  }
+
+  const timerId = globalThis.setTimeout(() => {
+    timedOut = true
+    const reason =
+      typeof DOMException !== 'undefined'
+        ? new DOMException('Request timed out', 'TimeoutError')
+        : new Error('TimeoutError')
+    controller.abort(reason)
+  }, timeoutMs)
+
   return {
     signal: controller.signal,
-    clear: () => globalThis.clearTimeout(timerId),
+    didTimeout: () => timedOut && !userSignal?.aborted,
+    clear: () => {
+      globalThis.clearTimeout(timerId)
+      userSignal?.removeEventListener('abort', onUserAbort)
+    },
   }
 }
 
@@ -84,13 +131,9 @@ async function requestFull<T>(path: string, init?: RequestInit): Promise<{ data:
   const configuredBase = getConfiguredBase()
 
   const execute = async (url: string): Promise<{ data: T; headers: Headers }> => {
-    const { signal: timeoutSignal, clear } = createTimeoutSignal(REQUEST_TIMEOUT_MS)
+    const userSignal = init?.signal ?? undefined
+    const { signal: finalSignal, didTimeout, clear } = combineSignals(userSignal, REQUEST_TIMEOUT_MS)
     try {
-      let finalSignal = init?.signal || timeoutSignal
-      if (init?.signal && timeoutSignal && typeof AbortSignal !== 'undefined' && 'any' in AbortSignal) {
-        finalSignal = AbortSignal.any([init.signal, timeoutSignal])
-      }
-
       const requestInit = finalSignal ? { ...init, signal: finalSignal } : init
       const res = await fetch(url, requestInit)
       if (!res.ok) {
@@ -101,6 +144,13 @@ async function requestFull<T>(path: string, init?: RequestInit): Promise<{ data:
         throw new ApiHttpError(path, res.status, text)
       }
       return { data: await res.json() as T, headers: res.headers }
+    } catch (error) {
+      if (isAbortError(error) && didTimeout()) {
+        throw typeof DOMException !== 'undefined'
+          ? new DOMException('Request timed out', 'TimeoutError')
+          : new Error('TimeoutError')
+      }
+      throw error
     } finally {
       clear()
     }
@@ -110,12 +160,18 @@ async function requestFull<T>(path: string, init?: RequestInit): Promise<{ data:
     try {
       return await execute(`${configuredBase}${path}`)
     } catch (error) {
+      if (isAbortError(error)) {
+        throw error
+      }
       if (configuredBase && isNetworkError(error)) {
         return await execute(path)
       }
       throw error
     }
   } catch (error) {
+    if (isAbortError(error)) {
+      throw error
+    }
     if (isNetworkError(error)) {
       throw new Error(NETWORK_ERROR_TEXT, { cause: error })
     }
@@ -418,7 +474,7 @@ export const api = {
       return requestFull<Arrival[]>(`/v1/stops/${encodeURIComponent(dcode)}/arrivals${qs ? `?${qs}` : ''}`, init)
     },
     routes: async (dcode: string, init?: RequestInit) => get<string[]>(`/v1/stops/${encodeURIComponent(dcode)}/routes`, init),
-    announcements: (dcode: string, init?: RequestInit) => get<RouteAnnouncement[]>(`/v1/stops/${dcode}/announcements`, init),
+    announcements: (dcode: string, init?: RequestInit) => get<RouteAnnouncement[]>(`/v1/stops/${encodeURIComponent(dcode)}/announcements`, init),
     info: (dcode: string, init?: RequestInit) => get<{ dcode: string; ilce: string | null; fiziki_durum: string | null; akilli_durak: boolean | null }>(`/v1/stops/${encodeURIComponent(dcode)}/info`, init),
   },
   routes: {

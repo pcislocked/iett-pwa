@@ -470,5 +470,11 @@
     "viewOnGithub": "⠀",
     "allReleasesOnGithub": "⠀",
     "empty": "⠀"
+  },
+  "errorBoundary": {
+    "title": "⠀",
+    "desc": "⠀",
+    "reload": "⠀",
+    "home": "⠀"
   }
 }

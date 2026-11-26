@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { api, type StopSearchResult, type RouteSearchResult } from '@/api/client'
 import { addRecent, clearRecent, getRecent, type RecentSearch } from '@/hooks/useRecentSearches'
 import { useFavorites } from '@/hooks/useFavorites'
@@ -14,9 +14,10 @@ type SearchResult =
 export default function SearchPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const inputRef = useRef<HTMLInputElement>(null)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const [query, setQuery] = useState('')
+  const [query, setQuery] = useState(() => searchParams.get('q') ?? '')
   const [results, setResults] = useState<SearchResult[]>([])
   const [loading, setLoading] = useState(false)
   const [recents, setRecents] = useState<RecentSearch[]>([])

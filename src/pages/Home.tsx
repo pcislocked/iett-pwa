@@ -219,10 +219,13 @@ export default function Home() {
   const [nearbyStops, setNearbyStops] = useState<NearbyStop[]>([])
   const [apiLoading, setApiLoading] = useState(false)
   const [apiError, setApiError] = useState<string | null>(null)
+  const nearbyAbortRef = useRef<AbortController | null>(null)
 
   const fetchNearby = useCallback(() => {
     if (!location) return
+    nearbyAbortRef.current?.abort()
     const abort = new AbortController()
+    nearbyAbortRef.current = abort
     setApiLoading(true)
     setApiError(null)
     api.stops.nearby(location[0], location[1], 15, 500, { signal: abort.signal })
@@ -235,7 +238,7 @@ export default function Home() {
         )
       })
       .catch((err) => {
-        if (err instanceof Error && err.name === 'AbortError') return
+        if (abort.signal.aborted || (err instanceof Error && err.name === 'AbortError')) return
         console.error(err)
         setApiError('Duraklar yüklenemedi.')
       })
@@ -248,8 +251,10 @@ export default function Home() {
   }, [location])
 
   useEffect(() => {
-    const abort = fetchNearby()
-    return () => abort?.abort()
+    fetchNearby()
+    return () => {
+      nearbyAbortRef.current?.abort()
+    }
   }, [fetchNearby])
 
   return (
