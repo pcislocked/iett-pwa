@@ -1,3 +1,4 @@
+import { StrictMode } from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
@@ -221,11 +222,14 @@ describe('AracBusOverlayPage', () => {
     fireEvent.click(screen.getByRole('button', { name: /oturumu aç/i }))
 
     await screen.findByText(/34 HO 1753/i)
-    expect(mocks.createSession).toHaveBeenCalledWith({
-      captchaId: 'cid-1',
-      captchaAnswer: 'ABCD',
-      kapino: 'C-1753',
-    })
+    expect(mocks.createSession).toHaveBeenCalledWith(
+      {
+        captchaId: 'cid-1',
+        captchaAnswer: 'ABCD',
+        kapino: 'C-1753',
+      },
+      { signal: expect.any(AbortSignal) },
+    )
     expect(mocks.saveAracSession).toHaveBeenCalledOnce()
     expect(mocks.detail).toHaveBeenCalledOnce()
   })
@@ -337,5 +341,26 @@ describe('AracBusOverlayPage', () => {
   it('shows fatal error when kapino param is missing', async () => {
     renderPage('/arac/bus', '/arac/bus')
     await screen.findByText(/Kapı kodu bulunamadı/i)
+  })
+
+  it('completes flow cleanly under React StrictMode remounts', async () => {
+    mocks.loadAracSession.mockReturnValue(null)
+    mocks.captcha.mockResolvedValue({
+      captchaId: 'cid-strict',
+      captchaImageBase64: 'AAAA',
+      suggestedAnswer: null,
+    })
+
+    render(
+      <StrictMode>
+        <MemoryRouter initialEntries={['/arac/bus/C-1753']}>
+          <Routes>
+            <Route path="/arac/bus/:kapino" element={<AracBusOverlayPage />} />
+          </Routes>
+        </MemoryRouter>
+      </StrictMode>,
+    )
+
+    await screen.findByRole('heading', { name: /captcha manuel doğrulama/i })
   })
 })

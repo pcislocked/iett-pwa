@@ -12,6 +12,11 @@ export default function PullToRefresh({ onRefresh, children, onScroll, innerRef 
   const containerRef = innerRef || defaultRef
   const [pullDistance, setPullDistance] = useState(0)
   const [refreshing, setRefreshing] = useState(false)
+  const pullDistanceRef = useRef(0)
+  const refreshingRef = useRef(false)
+  const onRefreshRef = useRef(onRefresh)
+  onRefreshRef.current = onRefresh
+  const isMountedRef = useRef(true)
   const startY = useRef(0)
   const currentY = useRef(0)
   const isPulling = useRef(false)
@@ -19,8 +24,19 @@ export default function PullToRefresh({ onRefresh, children, onScroll, innerRef 
   const threshold = 60
 
   useEffect(() => {
+    isMountedRef.current = true
     const el = containerRef.current
     if (!el) return
+
+    const updatePullDistance = (val: number) => {
+      pullDistanceRef.current = val
+      if (isMountedRef.current) setPullDistance(val)
+    }
+
+    const updateRefreshing = (val: boolean) => {
+      refreshingRef.current = val
+      if (isMountedRef.current) setRefreshing(val)
+    }
 
     const onTouchStart = (e: TouchEvent) => {
       // Only pull if we are at the very top of the scroll container
@@ -30,7 +46,7 @@ export default function PullToRefresh({ onRefresh, children, onScroll, innerRef 
     }
 
     const onTouchMove = (e: TouchEvent) => {
-      if (!isPulling.current || refreshing) return
+      if (!isPulling.current || refreshingRef.current) return
       currentY.current = e.touches[0].clientY
       const dy = currentY.current - startY.current
       if (dy > 0 && el.scrollTop <= 0) {
@@ -38,7 +54,15 @@ export default function PullToRefresh({ onRefresh, children, onScroll, innerRef 
         if (e.cancelable) e.preventDefault()
         // Dampen the pull
         const pull = Math.min(dy * 0.5, maxPull)
-        setPullDistance(pull)
+        updatePullDistance(pull)
+      }
+    }
+
+    const onTouchCancel = () => {
+      if (!isPulling.current) return
+      isPulling.current = false
+      if (!refreshingRef.current) {
+        updatePullDistance(0)
       }
     }
 
@@ -46,30 +70,33 @@ export default function PullToRefresh({ onRefresh, children, onScroll, innerRef 
       if (!isPulling.current) return
       isPulling.current = false
 
-      if (pullDistance > threshold && !refreshing) {
-        setRefreshing(true)
-        setPullDistance(50) // hold at 50px
+      if (pullDistanceRef.current > threshold && !refreshingRef.current) {
+        updateRefreshing(true)
+        updatePullDistance(50) // hold at 50px
         try {
-          await onRefresh()
+          await onRefreshRef.current()
         } finally {
-          setRefreshing(false)
-          setPullDistance(0)
+          updateRefreshing(false)
+          updatePullDistance(0)
         }
       } else {
-        setPullDistance(0)
+        updatePullDistance(0)
       }
     }
 
     el.addEventListener('touchstart', onTouchStart, { passive: true })
     el.addEventListener('touchmove', onTouchMove, { passive: false })
     el.addEventListener('touchend', onTouchEnd, { passive: true })
+    el.addEventListener('touchcancel', onTouchCancel, { passive: true })
 
     return () => {
+      isMountedRef.current = false
       el.removeEventListener('touchstart', onTouchStart)
       el.removeEventListener('touchmove', onTouchMove)
       el.removeEventListener('touchend', onTouchEnd)
+      el.removeEventListener('touchcancel', onTouchCancel)
     }
-  }, [pullDistance, refreshing, onRefresh, containerRef])
+  }, [containerRef])
 
   return (
     <div

@@ -19,6 +19,7 @@ export default function StopInfoModal({ dcode, isOpen, onClose }: Props) {
     if (!isOpen) return
     let mounted = true
     const controller = new AbortController()
+    setData(null)
     setLoading(true)
     api.stops.info(dcode, { signal: controller.signal })
       .then(res => {
@@ -26,6 +27,7 @@ export default function StopInfoModal({ dcode, isOpen, onClose }: Props) {
       })
       .catch((err) => {
         if (err instanceof Error && err.name === 'AbortError') return
+        if (mounted) setData(null)
       })
       .finally(() => {
         if (mounted) setLoading(false)

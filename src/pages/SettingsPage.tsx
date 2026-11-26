@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { ensureCurrentVersionStored, resetVersionBannerStorage } from '@/hooks/useVersionBanner'
 import { resetDismissedPwaAnnouncements } from '@/hooks/usePwaAnnouncements'
-import { type Settings, loadSettings, saveSettings } from '@/utils/settings'
+import { type Settings, clampRefreshInterval, loadSettings, saveSettings } from '@/utils/settings'
 import { useUserPrefs } from '@/hooks/useUserPrefs'
 import { useTranslation } from 'react-i18next'
 import { useTheme, type Theme } from '@/hooks/useTheme'
@@ -104,6 +104,7 @@ function MockLocationPicker({ initialLat, initialLon, onPick }: { initialLat: nu
 export default function SettingsPage() {
   const { t, i18n } = useTranslation()
   const [settings, setSettings] = useState<Settings>(loadSettings)
+  const [refreshDraft, setRefreshDraft] = useState<string>(() => String(settings.refreshInterval))
   const [saved, setSaved] = useState(false)
   const {
     prefs,
@@ -149,6 +150,7 @@ export default function SettingsPage() {
   const isHapticsSupported = typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function'
 
   const isMounted = useRef(true)
+  const lastSavedRef = useRef<string>(JSON.stringify(settings))
 
   // Clean up timers on unmount so stale updates don't fire after navigation
   useEffect(() => {
@@ -162,6 +164,9 @@ export default function SettingsPage() {
   }, [])
 
   useEffect(() => {
+    const serialized = JSON.stringify(settings)
+    if (serialized === lastSavedRef.current) return
+    lastSavedRef.current = serialized
     saveSettings(settings)
     setSaved(true)
     const t = setTimeout(() => setSaved(false), 1500)
@@ -247,10 +252,23 @@ export default function SettingsPage() {
             type="number"
             min={5}
             max={300}
-            value={settings.refreshInterval}
-            onChange={(e) =>
-              setSettings((s) => ({ ...s, refreshInterval: Number(e.target.value) }))
-            }
+            value={refreshDraft}
+            onChange={(e) => {
+              const raw = e.target.value
+              setRefreshDraft(raw)
+              if (raw.trim() === '') return
+              const parsed = Number(raw)
+              if (Number.isFinite(parsed)) {
+                setSettings((s) => ({ ...s, refreshInterval: clampRefreshInterval(parsed) }))
+              }
+            }}
+            onBlur={() => {
+              const clamped = clampRefreshInterval(
+                refreshDraft.trim() === '' ? settings.refreshInterval : refreshDraft,
+              )
+              setRefreshDraft(String(clamped))
+              setSettings((s) => ({ ...s, refreshInterval: clamped }))
+            }}
             className="w-32 bg-surface border border-surface-muted rounded-lg
                        px-3 py-2 text-sm text-text-primary
                        focus:outline-none focus:ring-1 focus:ring-brand-500"

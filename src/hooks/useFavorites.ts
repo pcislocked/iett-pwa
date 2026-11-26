@@ -16,9 +16,22 @@ export type Favorite = FavoriteStop | FavoriteRoute
 
 const KEY = 'iett_favorites'
 
+function isValidFavorite(item: unknown): item is Favorite {
+  if (!item || typeof item !== 'object') return false
+  const rec = item as Record<string, unknown>
+  if (rec.kind === 'stop') {
+    return typeof rec.dcode === 'string' && rec.dcode.length > 0 && typeof rec.name === 'string'
+  }
+  if (rec.kind === 'route') {
+    return typeof rec.hat_kodu === 'string' && rec.hat_kodu.length > 0 && typeof rec.name === 'string'
+  }
+  return false
+}
+
 function load(): Favorite[] {
   try {
-    return JSON.parse(localStorage.getItem(KEY) ?? '[]') as Favorite[]
+    const parsed: unknown = JSON.parse(localStorage.getItem(KEY) ?? '[]')
+    return Array.isArray(parsed) ? parsed.filter(isValidFavorite) : []
   } catch {
     return []
   }

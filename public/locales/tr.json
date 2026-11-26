@@ -470,5 +470,11 @@
     "viewOnGithub": "GitHub üzerinde incele",
     "allReleasesOnGithub": "Tüm sürümleri GitHub Releases sayfasında incele",
     "empty": "Henüz sürüm kaydı bulunamadı."
+  },
+  "errorBoundary": {
+    "title": "Bir şeyler ters gitti",
+    "desc": "Sayfa yüklenirken beklenmeyen bir hata oluştu.",
+    "reload": "Sayfayı Yenile",
+    "home": "Ana Sayfaya Dön"
   }
 }

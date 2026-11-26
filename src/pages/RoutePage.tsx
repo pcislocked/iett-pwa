@@ -193,6 +193,7 @@ function TimetableView({ schedule, scheduleError, onRetry, metadata, stops, hatK
     const map = new Map<number, { m: number, fn?: number }[]>()
     for (const dep of filtered) {
       const [h, m] = dep.departure_time.split(':').map(Number)
+      if (!Number.isFinite(h) || !Number.isFinite(m)) continue
       if (!map.has(h)) map.set(h, [])
       map.get(h)!.push({ m, fn: footnotes.get(dep.route_variant) })
     }
@@ -226,7 +227,7 @@ function TimetableView({ schedule, scheduleError, onRetry, metadata, stops, hatK
         {availableDirections.length > 1 && (
           <div role="tablist" aria-label={t('routes.directionSelect', 'Yön seçimi')} className="flex gap-0">
             {availableDirections.map((dir) => (
-              <button role="tab" aria-selected={direction === dir} key={dir} onClick={() => setDirection(dir)}
+              <button role="tab" aria-selected={effectiveDirection === dir} key={dir} onClick={() => setDirection(dir)}
                 className={`flex-1 text-xs py-2 px-2 font-medium transition-colors truncate border-b-2 -mb-px ${
                   effectiveDirection === dir ? 'border-brand-primary text-brand-primary' : 'border-transparent text-text-muted hover:text-text-secondary'
                 }`}
@@ -315,7 +316,7 @@ function TimetableView({ schedule, scheduleError, onRetry, metadata, stops, hatK
         <p className="text-[10px] text-text-muted leading-relaxed">
           {t('routes.iettNote')}{' '}
           <a
-            href={`https://iett.istanbul/RouteDetail?hkod=${hatKodu}`}
+            href={`https://iett.istanbul/RouteDetail?hkod=${encodeURIComponent(hatKodu ?? '')}`}
             target="_blank"
             rel="noopener noreferrer"
             className="text-text-muted hover:text-text-secondary underline"

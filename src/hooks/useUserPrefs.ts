@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { applyTheme, type Theme } from '@/hooks/useTheme'
 import i18n from '@/i18n'
 import { loadSettings, saveSettings, type Settings } from '@/utils/settings'
@@ -194,11 +194,20 @@ function broadcastPrefs(p: UserPrefs) {
 
 export function useUserPrefs() {
   const [prefs, setPrefs] = useState<UserPrefs>(load)
+  const prefsRef = useRef<UserPrefs>(prefs)
 
   useEffect(() => {
-    prefsListeners.add(setPrefs)
+    prefsRef.current = prefs
+  }, [prefs])
+
+  useEffect(() => {
+    const syncListener = (next: UserPrefs) => {
+      prefsRef.current = next
+      setPrefs(next)
+    }
+    prefsListeners.add(syncListener)
     return () => {
-      prefsListeners.delete(setPrefs)
+      prefsListeners.delete(syncListener)
     }
   }, [])
 
@@ -207,6 +216,7 @@ export function useUserPrefs() {
       if (e.key === KEY && e.newValue) {
         try {
           const loaded = coercePrefs(JSON.parse(e.newValue))
+          prefsRef.current = loaded
           setPrefs(loaded)
         } catch { /* storage format mismatch */ }
       }
@@ -215,14 +225,13 @@ export function useUserPrefs() {
     return () => window.removeEventListener('storage', handleStorage)
   }, [])
 
-  function patch(fn: (p: UserPrefs) => UserPrefs) {
-    setPrefs((prev) => {
-      const next = fn(prev)
-      persist(next)
-      broadcastPrefs(next)
-      return next
-    })
-  }
+  const patch = useCallback((fn: (p: UserPrefs) => UserPrefs) => {
+    const next = fn(prefsRef.current)
+    prefsRef.current = next
+    setPrefs(next)
+    persist(next)
+    broadcastPrefs(next)
+  }, [])
 
   // ── Pinned stops ──────────────────────────────────────────────────────────
 
@@ -235,7 +244,7 @@ export function useUserPrefs() {
         pinnedStops: [...p.pinnedStops, { dcode, nick, order: p.pinnedStops.length }],
       }
     })
-  }, [])
+  }, [patch])
 
   const unpinStop = useCallback((dcode: string) => {
     patch((p) => {
@@ -244,7 +253,7 @@ export function useUserPrefs() {
         .map((s, idx) => ({ ...s, order: idx }))
       return { ...p, pinnedStops: remaining }
     })
-  }, [])
+  }, [patch])
 
   const isPinned = useCallback(
     (dcode: string) => prefs.pinnedStops.some((s) => s.dcode === dcode),
@@ -259,7 +268,7 @@ export function useUserPrefs() {
       list.splice(toIndex, 0, moved)
       return { ...p, pinnedStops: list.map((s, i) => ({ ...s, order: i })) }
     })
-  }, [])
+  }, [patch])
 
   // ── Nicknames ─────────────────────────────────────────────────────────────
 
@@ -277,11 +286,11 @@ export function useUserPrefs() {
       )
       return { ...p, nicknames, pinnedStops }
     })
-  }, [])
+  }, [patch])
 
   const setNearbySettings = useCallback((radius: number, max: number) => {
     patch((p) => ({ ...p, nearbyRadius: radius, nearbyMax: max }))
-  }, [])
+  }, [patch])
 
   const getNick = useCallback(
     (dcode: string) => prefs.nicknames[dcode] ?? null,
@@ -292,39 +301,39 @@ export function useUserPrefs() {
 
   const setMockLocation = useCallback((lat: number, lng: number) => {
     patch((p) => ({ ...p, mockLocation: [lat, lng] }))
-  }, [])
+  }, [patch])
 
   const setGpsConsent = useCallback((status: 'pending' | 'granted' | 'denied') => {
     patch((p) => ({ ...p, gpsConsent: status }))
-  }, [])
+  }, [patch])
 
   const setTimestampMode = useCallback((mode: 'relative' | 'absolute' | 'both') => {
     patch((p) => ({ ...p, timestampMode: mode }))
-  }, [])
+  }, [patch])
 
   const setTimebarFormat = useCallback((format: 'standard' | 'compact' | 'emoji') => {
     patch((p) => ({ ...p, timebarFormat: format }))
-  }, [])
+  }, [patch])
 
   const setShowCurrentTime = useCallback((show: boolean) => {
     patch((p) => ({ ...p, showCurrentTime: show }))
-  }, [])
+  }, [patch])
 
   const setKeepScreenAwake = useCallback((awake: boolean) => {
     patch((p) => ({ ...p, keepScreenAwake: awake }))
-  }, [])
+  }, [patch])
 
   const setShowUpdateBanner = useCallback((show: boolean) => {
     patch((p) => ({ ...p, showUpdateBanner: show }))
-  }, [])
+  }, [patch])
 
   const setHapticFeedback = useCallback((enabled: boolean) => {
     patch((p) => ({ ...p, hapticFeedback: enabled }))
-  }, [])
+  }, [patch])
 
   const resetConsent = useCallback(() => {
     patch((p) => ({ ...p, gpsConsent: 'pending', mockLocation: null }))
-  }, [])
+  }, [patch])
 
   // ── Favourite stops ───────────────────────────────────────────────────────
 
@@ -338,7 +347,7 @@ export function useUserPrefs() {
           : [...p.favStops, { dcode, name }],
       }
     })
-  }, [])
+  }, [patch])
 
   const isFavStop = useCallback(
     (dcode: string) => prefs.favStops.some((s) => s.dcode === dcode),
@@ -354,7 +363,7 @@ export function useUserPrefs() {
         ? p.favRoutes.filter((r) => r !== hat_kodu)
         : [...p.favRoutes, hat_kodu],
     }))
-  }, [])
+  }, [patch])
 
   const isFavRoute = useCallback(
     (hat_kodu: string) => prefs.favRoutes.includes(hat_kodu),
@@ -629,7 +638,7 @@ export function useUserPrefs() {
     } catch {
       return { success: false, error: 'Dosya içeriği geçerli bir JSON değil.' }
     }
-  }, [])
+  }, [patch])
 
   // Backward-compatible wrappers for exportPrefs and importPrefs
   const exportPrefs = useCallback(() => {

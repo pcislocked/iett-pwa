@@ -135,11 +135,18 @@ export default function AracBusOverlayPage() {
 
 
   const aliveRef = useRef(true)
+  const abortControllerRef = useRef<AbortController | null>(null)
+  const hasStartedFlowRef = useRef(false)
+  const lastKapinoRef = useRef<string | undefined>(undefined)
 
   useEffect(() => {
     aliveRef.current = true
     return () => {
       aliveRef.current = false
+      abortControllerRef.current?.abort()
+      // Reset flow-start guards on unmount so React StrictMode remounts restart cleanly.
+      hasStartedFlowRef.current = false
+      lastKapinoRef.current = undefined
     }
   }, [])
 
@@ -158,25 +165,27 @@ export default function AracBusOverlayPage() {
     return () => clearInterval(interval)
   }, [lastFetchTime, viewState])
 
-  const fetchCaptcha = useCallback(async () => {
-    const challenge = await api.arac.captcha()
-    if (!aliveRef.current) return challenge
+  const fetchCaptcha = useCallback(async (signal?: AbortSignal) => {
+    const challenge = await api.arac.captcha({ signal })
+    if (!aliveRef.current || signal?.aborted) return challenge
     setCaptchaId(challenge.captchaId)
     setCaptchaImage(challenge.captchaImageBase64)
     return challenge
   }, [])
 
-  const fetchBusData = useCallback(async (credentials: AracSessionCredentials) => {
+  const fetchBusData = useCallback(async (credentials: AracSessionCredentials, signal?: AbortSignal) => {
     if (!kapino) return
+    setFatalError(null)
     setViewState('loading-data')
     try {
-      const res = await api.arac.detail(kapino, credentials)
-      if (!aliveRef.current) return
+      const res = await api.arac.detail(kapino, credentials, { signal })
+      if (!aliveRef.current || signal?.aborted) return
       setProfile(res.profile)
       setMissionsData(res.missions)
       setServerTime(res.server_time ?? null)
       setLastFetchTime(Date.now())
       setInlineWarning(null)
+      setFatalError(null)
       setViewState('ready')
     } catch (err) {
       throw err // handled by startFlow or submitManualCaptcha
@@ -184,11 +193,17 @@ export default function AracBusOverlayPage() {
   }, [kapino])
 
   const startFlow = useCallback(async (forceReconnect = false) => {
+    abortControllerRef.current?.abort()
+    const controller = new AbortController()
+    abortControllerRef.current = controller
+    const { signal } = controller
+
     if (!kapino) {
       setViewState('error')
       setFatalError(t('arac.doorCodeMissing', { defaultValue: 'Kapı kodu bulunamadı.' }))
       return
     }
+    setFatalError(null)
     setViewState('booting')
     setInlineWarning(null)
     if (forceReconnect) {
@@ -197,10 +212,10 @@ export default function AracBusOverlayPage() {
     const existing = forceReconnect ? null : loadAracSession(kapino)
     if (existing && existing.sessionId === kapino) {
       try {
-        await fetchBusData(existing)
+        await fetchBusData(existing, signal)
         return
       } catch (error) {
-        if (!aliveRef.current) return
+        if (!aliveRef.current || signal.aborted) return
         if (hasSessionError(error)) {
           clearAracSession(kapino)
           setInlineWarning(t('arac.sessionExpired', { defaultValue: 'Oturum süresi doldu. Yeniden captcha akışı başlatılıyor.' }))
@@ -214,8 +229,8 @@ export default function AracBusOverlayPage() {
     
     // Fallback if no valid session: fetch captcha and auto-submit if possible
     try {
-      const challenge = await fetchCaptcha()
-      if (!aliveRef.current) return
+      const challenge = await fetchCaptcha(signal)
+      if (!aliveRef.current || signal.aborted) return
       
       if (challenge.suggestedAnswer) {
         setViewState('manual-submitting') // Show loading while auto-submitting
@@ -224,9 +239,9 @@ export default function AracBusOverlayPage() {
           try {
             const currentChallenge = attempt === 0
               ? challenge
-              : await fetchCaptcha() // 2. denemede yeni captcha al
+              : await fetchCaptcha(signal) // 2. denemede yeni captcha al
       
-            if (!aliveRef.current) return
+            if (!aliveRef.current || signal.aborted) return
             const answer = currentChallenge.suggestedAnswer
             if (!answer) break // OCR başarısız, manual'e düş
       
@@ -234,38 +249,44 @@ export default function AracBusOverlayPage() {
               captchaId: currentChallenge.captchaId,
               captchaAnswer: answer,
               kapino,
-            })
+            }, { signal })
             const credentials = saveAracSession({
               sessionId: created.sessionId,
               sessionKey: created.sessionKey,
             }, kapino)
-            if (!aliveRef.current) return
-            await fetchBusData(credentials)
+            if (!aliveRef.current || signal.aborted) return
+            await fetchBusData(credentials, signal)
             return // Başarılı, çık
-          } catch {
+          } catch (err) {
+            if (signal.aborted || (err instanceof Error && err.name === 'AbortError')) return
             // Devam et, bir sonraki denemeye geç
           }
         }
-        if (!aliveRef.current) return
+        if (!aliveRef.current || signal.aborted) return
         setInlineWarning(t('arac.autoCaptchaFailed', { defaultValue: 'Otomatik doğrulama başarısız oldu, lütfen manuel girin.' }))
       }
       
       setManualAnswer('')
       setViewState('manual-required')
     } catch (error) {
-      if (!aliveRef.current) return
+      if (!aliveRef.current || signal.aborted || (error instanceof Error && error.name === 'AbortError')) return
       setViewState('error')
       setFatalError(errorText(error, t))
     }
   }, [fetchBusData, fetchCaptcha, kapino, t])
 
-  const flowStartedRef = useRef(false)
-
   useEffect(() => {
-    if (flowStartedRef.current) return
-    flowStartedRef.current = true
+    if (hasStartedFlowRef.current && lastKapinoRef.current === kapino) return
+    hasStartedFlowRef.current = true
+    lastKapinoRef.current = kapino
+    setProfile(null)
+    setMissionsData(null)
+    setCaptchaId(null)
+    setCaptchaImage(null)
+    setFatalError(null)
+    setInlineWarning(null)
     void startFlow()
-  }, [startFlow])
+  }, [kapino, startFlow])
 
   const handlePullRefresh = useCallback(async () => {
     await startFlow()
@@ -281,6 +302,12 @@ export default function AracBusOverlayPage() {
       setInlineWarning(t('arac.captchaStale', { defaultValue: 'Captcha görseli güncel değil. Yeni captcha alın.' }))
       return
     }
+    abortControllerRef.current?.abort()
+    const controller = new AbortController()
+    abortControllerRef.current = controller
+    const { signal } = controller
+
+    setFatalError(null)
     setViewState('manual-submitting')
     setInlineWarning(null)
     try {
@@ -288,26 +315,39 @@ export default function AracBusOverlayPage() {
         captchaId,
         captchaAnswer: answer,
         kapino: kapino!,
-      })
+      }, { signal })
       const credentials = saveAracSession({
         sessionId: created.sessionId,
         sessionKey: created.sessionKey,
       }, kapino!)
-      if (!aliveRef.current) return
-      await fetchBusData(credentials)
+      if (!aliveRef.current || signal.aborted) return
+      await fetchBusData(credentials, signal)
     } catch (error) {
-      if (!aliveRef.current) return
+      if (!aliveRef.current || signal.aborted || (error instanceof Error && error.name === 'AbortError')) return
       setViewState('manual-required')
       setInlineWarning(t('arac.captchaFailed', { defaultValue: 'Captcha doğrulanamadı: {{error}}', error: errorText(error, t) }))
       try {
-        await fetchCaptcha()
+        await fetchCaptcha(signal)
       } catch (captchaErr) {
-        if (!aliveRef.current) return
+        if (!aliveRef.current || signal.aborted || (captchaErr instanceof Error && captchaErr.name === 'AbortError')) return
         setViewState('error')
         setFatalError(errorText(captchaErr, t))
       }
     }
   }, [captchaId, manualAnswer, fetchBusData, fetchCaptcha, kapino, t])
+
+  const handleManualRefreshCaptcha = useCallback(async () => {
+    abortControllerRef.current?.abort()
+    const controller = new AbortController()
+    abortControllerRef.current = controller
+    setInlineWarning(null)
+    try {
+      await fetchCaptcha(controller.signal)
+    } catch (error) {
+      if (!aliveRef.current || controller.signal.aborted || (error instanceof Error && error.name === 'AbortError')) return
+      setInlineWarning(errorText(error, t))
+    }
+  }, [fetchCaptcha, t])
 
   const amenities = useMemo(() => {
     if (!profile) return []
@@ -425,7 +465,7 @@ export default function AracBusOverlayPage() {
                 {t('arac.login', { defaultValue: 'Oturumu Aç' })}
               </button>
               <button
-                onClick={() => { void fetchCaptcha() }}
+                onClick={() => { void handleManualRefreshCaptcha() }}
                 className="metro-tilt px-3 py-2 border border-surface-border text-text-primary text-sm"
               >
                 {t('arac.newCaptcha', { defaultValue: 'Yenile' })}

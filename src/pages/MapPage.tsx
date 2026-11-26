@@ -315,17 +315,33 @@ export default function MapPage() {
     })
   }, [selectedRoutes])
 
+  const lastAddedStopRef = useRef<string | null>(null)
+  const gpsNearbyAbortRef = useRef<AbortController | null>(null)
+
+  useEffect(() => {
+    return () => {
+      gpsNearbyAbortRef.current?.abort()
+    }
+  }, [])
+
   // Stop pin fetching
   useEffect(() => {
+    const controller = new AbortController()
     selectedStops.forEach(s => {
       if (!stopPins[s.dcode]) {
-        api.stops.detail(s.dcode).then(res => {
+        api.stops.detail(s.dcode, { signal: controller.signal }).then(res => {
+          if (controller.signal.aborted) return
           if (res.latitude && res.longitude) {
             setStopPins(prev => ({ ...prev, [s.dcode]: { lat: res.latitude!, lon: res.longitude! } }))
+            if (lastAddedStopRef.current === s.dcode) {
+              lastAddedStopRef.current = null
+              mapRef.current?.flyTo([res.latitude, res.longitude], 15, { duration: 0.5 })
+            }
           }
         }).catch(() => {})
       }
     })
+    return () => controller.abort()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedStops])
 
@@ -440,15 +456,18 @@ export default function MapPage() {
     if (!selectedKapino) {
       return
     }
+    const controller = new AbortController()
+    const { signal } = controller
     let alive = true
     setDetailLoading(true)
-    api.fleet.detail(selectedKapino)
+    api.fleet.detail(selectedKapino, { signal })
       .then(async (res) => {
-        if (!alive) return
+        if (!alive || signal.aborted) return
         let enriched = { ...res }
         let activeFirstStop: string | null = null
         try {
-          const aracData = await api.arac.autoDetail(selectedKapino)
+          const aracData = await api.arac.autoDetail(selectedKapino, { signal })
+          if (!alive || signal.aborted) return
           if (aracData && aracData.profile) {
             enriched = { ...enriched, ...aracData.profile }
             if (aracData.missions?.missions?.length > 0) {
@@ -464,18 +483,21 @@ export default function MapPage() {
               }
             }
           }
-        } catch(e) { console.error(e) }
+        } catch(e) {
+          if (signal.aborted || (e instanceof Error && e.name === 'AbortError')) return
+          console.error(e)
+        }
 
         let routeMeta: RouteMetadata[] | null = null
         if (enriched.resolved_route_code) {
           try {
-            routeMeta = await api.routes.metadata(enriched.resolved_route_code)
+            routeMeta = await api.routes.metadata(enriched.resolved_route_code, { signal })
           } catch {
             routeMeta = null
           }
         }
         
-        if (alive) {
+        if (alive && !signal.aborted) {
           setSelectedDetail(enriched as unknown as BusDetail)
           setSelectedFirstStop(activeFirstStop)
           setSelectedRouteMeta(routeMeta)
@@ -486,27 +508,38 @@ export default function MapPage() {
         }
       })
       .catch(() => {
-        if (alive) setDetailLoading(false)
+        if (alive && !signal.aborted) setDetailLoading(false)
       })
-    return () => { alive = false }
+    return () => {
+      alive = false
+      controller.abort()
+    }
   }, [selectedKapino])
 
   const handleGpsClick = () => {
     requestLocation?.()
     if (location) {
-      api.stops.nearby(location[0], location[1], 15, 500)
-        .then(setNearbyStops)
+      gpsNearbyAbortRef.current?.abort()
+      const controller = new AbortController()
+      gpsNearbyAbortRef.current = controller
+      api.stops.nearby(location[0], location[1], 15, 500, { signal: controller.signal })
+        .then((stops) => {
+          if (!controller.signal.aborted) setNearbyStops(stops)
+        })
         .catch(() => {})
     }
   }
 
   // Effect to handle GPS nearby fetch once location is acquired
   useEffect(() => {
-    if (location && nearbyStops.length === 0) {
-      api.stops.nearby(location[0], location[1], 15, 500)
-        .then(setNearbyStops)
-        .catch(() => {})
-    }
+    if (!location || nearbyStops.length > 0) return
+    const controller = new AbortController()
+    api.stops.nearby(location[0], location[1], 15, 500, { signal: controller.signal })
+      .then((stops) => {
+        if (!controller.signal.aborted) setNearbyStops(stops)
+      })
+      .catch(() => {})
+    return () => controller.abort()
   }, [location, nearbyStops.length])
 
   const mergedDetail = useMemo(() => {
@@ -819,13 +852,8 @@ export default function MapPage() {
           onRemoveRoute={(r) => setSelectedRoutes(selectedRoutes.filter(x => x !== r))}
           onAddStop={(d, n) => {
             if (!selectedStops.find(x => x.dcode === d)) {
+              lastAddedStopRef.current = d
               setSelectedStops([...selectedStops, { dcode: d, name: n }])
-              api.stops.detail(d).then(res => {
-                if (res.latitude && res.longitude) {
-                  setStopPins(prev => ({ ...prev, [d]: { lat: res.latitude!, lon: res.longitude! } }))
-                  mapRef.current?.flyTo([res.latitude, res.longitude], 15, { duration: 0.5 })
-                }
-              }).catch(() => {})
             } else {
               const pin = stopPins[d]
               if (pin) mapRef.current?.flyTo([pin.lat, pin.lon], 15, { duration: 0.5 })

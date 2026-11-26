@@ -98,9 +98,13 @@ async function forceReloadForNewVersion(nextVersion: string): Promise<void> {
     localStorage.setItem(VERSION_RELOAD_FLAG_KEY, nextVersion)
     localStorage.setItem(VERSION_RELOAD_TIMESTAMP_KEY, String(now))
   } catch {
-    const reloadedVersion = sessionStorage.getItem(VERSION_RELOAD_FLAG_KEY)
-    if (reloadedVersion === nextVersion) return
-    sessionStorage.setItem(VERSION_RELOAD_FLAG_KEY, nextVersion)
+    try {
+      const reloadedVersion = sessionStorage.getItem(VERSION_RELOAD_FLAG_KEY)
+      if (reloadedVersion === nextVersion) return
+      sessionStorage.setItem(VERSION_RELOAD_FLAG_KEY, nextVersion)
+    } catch {
+      // Ignore storage failures in restricted contexts
+    }
   }
 
   await clearOriginCaches()
@@ -112,14 +116,20 @@ async function forceReloadForNewVersion(nextVersion: string): Promise<void> {
   window.location.replace(nextUrl.toString())
 }
 
+let activeUpdateCleanup: (() => void) | null = null
+
 /**
  * Keeps the running app aligned with the latest deployed build.
  * If a newer version is detected, stale SW/cache entries are cleared and
  * the page is force-reloaded with a cache-busting URL.
  */
-export function setupAppUpdateChecks(): void {
+export function setupAppUpdateChecks(): () => void {
+  if (activeUpdateCleanup) {
+    return activeUpdateCleanup
+  }
+
   cleanupReloadQueryParams()
-  const currentVersion = __APP_VERSION__
+  const currentVersion = getCurrentAppVersion()
   let checking = false
   let consecutiveFailures = 0
   let nextAllowedCheckAt = 0
@@ -166,10 +176,19 @@ export function setupAppUpdateChecks(): void {
   window.addEventListener('focus', onVisible)
   window.addEventListener('pageshow', onPageShow)
   document.addEventListener('visibilitychange', onVisible)
-  window.setInterval(() => {
+  const intervalId = window.setInterval(() => {
     if (document.visibilityState === 'hidden') return
     void checkForUpdate()
   }, VERSION_CHECK_INTERVAL_MS)
+
+  activeUpdateCleanup = () => {
+    window.removeEventListener('focus', onVisible)
+    window.removeEventListener('pageshow', onPageShow)
+    document.removeEventListener('visibilitychange', onVisible)
+    window.clearInterval(intervalId)
+    activeUpdateCleanup = null
+  }
+  return activeUpdateCleanup
 }
 
 

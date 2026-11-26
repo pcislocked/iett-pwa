@@ -407,15 +407,36 @@ export default function NearbyPage() {
     }
   }, [prefs.nearbyMax, prefs.nearbyRadius, t])
 
+  const nearbyAbortRef = useRef<AbortController | null>(null)
+
+  useEffect(() => {
+    return () => {
+      nearbyAbortRef.current?.abort()
+    }
+  }, [])
+
   // ── React to LocationManager ─────────────────────────────────────────────
   useEffect(() => {
     if (effectiveLat == null || effectiveLon == null) return
+    nearbyAbortRef.current?.abort()
     const controller = new AbortController()
+    nearbyAbortRef.current = controller
     fetchNearby(effectiveLat, effectiveLon, controller.signal)
     return () => {
       controller.abort()
     }
   }, [effectiveLat, effectiveLon, fetchNearby])
+
+  const refetchWithCurrentLocation = useCallback(async () => {
+    if (effectiveLat != null && effectiveLon != null) {
+      nearbyAbortRef.current?.abort()
+      const controller = new AbortController()
+      nearbyAbortRef.current = controller
+      await fetchNearby(effectiveLat, effectiveLon, controller.signal)
+      return
+    }
+    requestLocation?.()
+  }, [effectiveLat, effectiveLon, fetchNearby, requestLocation])
 
 
   // ── Shared header ────────────────────────────────────────────────────────────
@@ -511,11 +532,7 @@ export default function NearbyPage() {
             innerRef={listRef}
             onScroll={handleListScroll}
             onRefresh={async () => {
-              if (overrideLocation) {
-                await fetchNearby(overrideLocation.lat, overrideLocation.lon)
-              } else {
-                requestLocation?.()
-              }
+              await refetchWithCurrentLocation()
               await new Promise(r => setTimeout(r, 600))
             }}
           >
@@ -635,7 +652,7 @@ export default function NearbyPage() {
               {errorMsg || t('nearby.stopsFailed', { defaultValue: 'Duraklar yüklenemedi. Lütfen tekrar deneyin.' })}
             </div>
             <div className="flex gap-2">
-              <button onClick={() => requestLocation?.()} className="btn-primary">
+              <button onClick={() => { void refetchWithCurrentLocation() }} className="btn-primary">
                 {t('common.retry', { defaultValue: 'Tekrar Dene' })}
               </button>
             </div>

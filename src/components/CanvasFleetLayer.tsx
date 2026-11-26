@@ -41,15 +41,19 @@ export default function CanvasFleetLayer({
   }, [buses, stops, selectedKapino, onBusClick, onMultiBusClick, onEntityHit])
 
   useEffect(() => {
-    rendererRef.current = L.canvas({ padding: 0.5 })
+    const renderer = L.canvas({ padding: 0.5 })
+    rendererRef.current = renderer
     layerRef.current = L.layerGroup().addTo(map)
     const markersMap = markersMapRef.current
     return () => {
+      trailsRef.current.forEach((t) => t.remove())
+      trailsRef.current = []
       markersMap.forEach((m) => m.remove())
       markersMap.clear()
       layerRef.current?.clearLayers()
       layerRef.current?.remove()
       layerRef.current = null
+      renderer.remove()
       rendererRef.current = null
     }
   }, [map])
@@ -102,7 +106,8 @@ export default function CanvasFleetLayer({
         })
 
         const kapino = bus.kapino
-        marker.on('click', () => {
+        marker.on('click', (e) => {
+          L.DomEvent.stopPropagation(e)
           const currentMarker = existingMarkers.get(kapino)
           if (!currentMarker) return
           const {

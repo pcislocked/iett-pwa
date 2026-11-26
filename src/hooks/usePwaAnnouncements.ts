@@ -118,6 +118,8 @@ export function usePwaAnnouncements(options?: UsePwaAnnouncementsOptions) {
         try {
           const start = new Date(item.startDate).getTime()
           const end = new Date(item.endDate).getTime()
+          if (item.startDate && Number.isNaN(start)) return false
+          if (item.endDate && Number.isNaN(end)) return false
           if (Number.isFinite(start) && now < start) return false
           if (Number.isFinite(end) && now > end) return false
         } catch {

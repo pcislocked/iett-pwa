@@ -15,14 +15,22 @@ export const TILE_ATTRIBUTION = {
 export function useMapTiles() {
   const { theme } = useTheme()
   const [satellite, setSatellite] = useState(() => {
-    return localStorage.getItem('map-satellite') === '1' || localStorage.getItem('iett_satellite') === 'true'
+    try {
+      return localStorage.getItem('map-satellite') === '1' || localStorage.getItem('iett_satellite') === 'true'
+    } catch {
+      return false
+    }
   })
 
   const toggleSatellite = useCallback(() => {
     setSatellite((s) => {
       const next = !s
-      localStorage.setItem('map-satellite', next ? '1' : '0')
-      localStorage.setItem('iett_satellite', String(next))
+      try {
+        localStorage.setItem('map-satellite', next ? '1' : '0')
+        localStorage.setItem('iett_satellite', String(next))
+      } catch {
+        // Ignore storage quota / security errors
+      }
       return next
     })
   }, [])
