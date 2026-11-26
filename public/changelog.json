@@ -1,6 +1,25 @@
 {
-  "updatedAt": "2026-11-16",
+  "updatedAt": "2026-11-26",
   "releases": [
+    {
+      "version": "0.4.13",
+      "date": "2026-11-26",
+      "title": {
+        "tr": "Kararlılık, Hata Kurtarma ve Önbellek İyileştirmeleri",
+        "en": "Stability, Error Recovery, and Cache Improvements"
+      },
+      "changes": {
+        "tr": [
+          "Rota ve kök seviye ErrorBoundary ile deploy sonrası chunk yenileme kurtarması eklendi.",
+          "İstek iptali (AbortError/AbortController), yerel depolama doğrulaması ve çevrimdışı durak/harita kararlılığı iyileştirildi."
+        ],
+        "en": [
+          "Added root and route ErrorBoundary with post-deploy chunk preload recovery.",
+          "Hardened request cancellation (AbortError/AbortController), localStorage validation, and offline stop/map stability."
+        ]
+      },
+      "url": "https://github.com/pcislocked/iett-pwa/releases/tag/v0.4.13"
+    },
     {
       "version": "0.4.12.6",
       "date": "2026-11-16",
